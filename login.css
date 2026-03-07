@@ -1,0 +1,132 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,500&display=swap");
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Inter", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-style: normal;
+}
+.container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 100vh;
+  padding: 0;
+  margin: 0;
+}
+.box1 {
+  background-image: url(assets/pics/6865395.jpg);
+  grid-column: 1 / span 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 1.5rem;
+}
+
+.box2 {
+  background-color: whitesmoke;
+  grid-column: 2 / span 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+form {
+  display: flex;
+  flex-direction: column;
+  padding: 30px;
+  background-color: white;
+  box-shadow: 10px 10px 15px rgba(0, 0, 0, 0.3);
+  font-family: "Inter", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-style: normal;
+}
+.header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.header img {
+  width: 50px;
+  height: 50px;
+
+  display: flex;
+}
+.label {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+}
+.option {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+}
+input {
+  padding: 8px;
+  margin-top: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 300px;
+}
+select {
+  padding: 8px;
+  margin-top: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 318px;
+}
+a {
+  padding: 10px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+  text-align: center;
+  text-decoration: none;
+}
+form button {
+  padding: 10px;
+  background-color: #3628f1;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+form button:hover {
+  background-color: #665bf8;
+}
+.toast {
+  animation:
+    adminlteSlideIn 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+    adminlteFadeOut 0.35s ease forwards;
+  animation-delay: 0s, 3s;
+}
+/* Add spacing from screen edges */
+.toasts-top-right {
+  top: 20px !important;
+  right: 20px !important;
+}
+
+/* Slide IN from right */
+@keyframes adminlteSlideIn {
+  from {
+    transform: translateX(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Fade OUT only (NO transform here) */
+@keyframes adminlteFadeOut {
+  to {
+    opacity: 0;
+  }
+}
