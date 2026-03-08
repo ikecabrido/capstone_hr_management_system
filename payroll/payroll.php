@@ -1,5 +1,8 @@
 <?php
+session_start();
 require_once "../auth/auth_check.php";
+$theme = $_SESSION['user']['theme'] ?? 'light';
+
 ?>
 
 <!doctype html>
@@ -8,7 +11,7 @@ require_once "../auth/auth_check.php";
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Payroll management system</title>
+  <title>Performance Management</title>
 
   <!-- Google Font: Source Sans Pro -->
   <link
@@ -25,10 +28,11 @@ require_once "../auth/auth_check.php";
   <!-- Theme style -->
   <link rel="stylesheet" href="../assets/dist/css/adminlte.min.css" />
   <link rel="stylesheet" href="custom.css" />
+  <link rel="stylesheet" href="../layout/toast.css" />
 </head>
 
 <body
-  class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed">
+  class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed <?= $theme === 'dark' ? 'dark-mode' : '' ?>">
   <div class="wrapper">
     <!-- Preloader -->
     <div
@@ -49,7 +53,7 @@ require_once "../auth/auth_check.php";
           <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
         </li>
         <li class="nav-item d-none d-sm-inline-block">
-          <a href="payroll.html" class="nav-link">Home</a>
+          <a href="performance.php" class="nav-link">Home</a>
         </li>
       </ul>
 
@@ -57,35 +61,7 @@ require_once "../auth/auth_check.php";
       <ul class="navbar-nav ml-auto">
         <!-- Navbar Search -->
         <li class="nav-item">
-          <a
-            class="nav-link"
-            data-widget="navbar-search"
-            href="#"
-            role="button">
-            <i class="fas fa-search"></i>
-          </a>
-          <div class="navbar-search-block">
-            <form class="form-inline">
-              <div class="input-group input-group-sm">
-                <input
-                  class="form-control form-control-navbar"
-                  type="search"
-                  placeholder="Search"
-                  aria-label="Search" />
-                <div class="input-group-append">
-                  <button class="btn btn-navbar" type="submit">
-                    <i class="fas fa-search"></i>
-                  </button>
-                  <button
-                    class="btn btn-navbar"
-                    type="button"
-                    data-widget="navbar-search">
-                    <i class="fas fa-times"></i>
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
+          <div class="nav-link" id="clock">--:--:--</div>
         </li>
 
         <li class="nav-item">
@@ -111,7 +87,8 @@ require_once "../auth/auth_check.php";
     <!-- Main Sidebar Container -->
     <aside class="main-sidebar sidebar-dark-primary elevation-4">
       <!-- Brand Logo -->
-      <a href="payroll.html" class="brand-link">
+      <a href="performance.php" class="brand-link">
+
         <img
           src="../assets/pics/bcpLogo.png"
           alt="AdminLTE Logo"
@@ -123,15 +100,13 @@ require_once "../auth/auth_check.php";
       <!-- Sidebar -->
       <div class="sidebar">
         <!-- Sidebar user panel (optional) -->
-        <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+        <div class="user-panel mt-3 pb-3 mb-3 d-flex align-items-center">
           <div class="image">
-            <img
-              src="../assets/dist/img/user2-160x160.jpg"
-              class="img-circle elevation-2"
-              alt="User Image" />
           </div>
           <div class="info">
-            <a href="#" class="d-block">Alexander Pierce</a>
+            <a href="#" onclick="openGlobalModal('Profile Settings ','../user_profile/profile_form.php')" class="d-block">
+              Admin <?= htmlspecialchars($_SESSION['user']['name']) ?>
+            </a>
           </div>
         </div>
 
@@ -216,7 +191,7 @@ require_once "../auth/auth_check.php";
         <div class="container-fluid">
           <div class="row mb-2">
             <div class="col-sm-6">
-              <h1 class="m-0">Payroll Management System</h1>
+              <h1 class="m-0">Performance Management System</h1>
             </div>
             <!-- /.col -->
 
@@ -466,16 +441,10 @@ require_once "../auth/auth_check.php";
     <!-- /.control-sidebar -->
 
     <!-- Main Footer -->
-    <footer class="main-footer">
-      <strong>Copyright &copy; 2026-2027 Bestlink College of the
-        Philippines.</strong>
-      All rights reserved.
-      <!-- <div class="float-right d-none d-sm-inline-block">
-          <b>Version</b> 3.2.0
-        </div> -->
-    </footer>
+
   </div>
   <!-- ./wrapper -->
+  <?php include "../layout/global_modal.php"; ?>
 
   <!-- REQUIRED SCRIPTS -->
   <!-- jQuery -->
@@ -500,7 +469,11 @@ require_once "../auth/auth_check.php";
   <!-- <script src="assets/dist/js/demo.js"></script> -->
   <!-- AdminLTE dashboard demo (This is only for demo purposes) -->
   <!-- <script src="assets/dist/js/pages/dashboard2.js"></script> -->
-  <script src="custom.js"></script>
+  <script src="../assets/dist/js/theme.js"></script>
+  <script src="../assets/dist/js/time.js"></script>
+  <script src="../assets/dist/js/global_modal.js"></script>
+  <script src="../assets/dist/js/profile.js"></script>
+
   <script></script>
 </body>
 

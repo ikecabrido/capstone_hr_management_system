@@ -12,11 +12,14 @@ if (!isset($_SESSION['user'])) {
 $userModel = new User();
 $userId = $_SESSION['user']['id'];
 
+$messages = [];
+
 // Update name if provided
 $fullName = $_POST['full_name'] ?? '';
 if ($fullName) {
     $userModel->updateProfile($userId, $fullName);
     $_SESSION['user']['name'] = $fullName;
+    $messages[] = 'Profile updated successfully.';
 }
 
 // Update password if all fields are filled
@@ -42,10 +45,9 @@ if ($current || $new || $confirm) {
     }
 
     $userModel->updatePassword($userId, $new);
-    echo json_encode(['status' => 'success', 'message' => 'Password changed successfully.']);
-    exit;
+    $messages[] = 'Password changed successfully.';
 }
 
-// If only name was changed
-echo json_encode(['status' => 'success', 'message' => 'Profile updated successfully.']);
+// If password and name was changed
+echo json_encode(['status' => 'success', 'message' => $messages]);
 exit;
