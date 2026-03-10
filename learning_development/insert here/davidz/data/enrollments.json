@@ -1,0 +1,17 @@
+{
+    "t2": [
+        {
+            "username": "demo",
+            "status": "banned"
+        }
+    ],
+    "t1": [
+        "demo"
+    ],
+    "t3": [
+        "demo"
+    ],
+    "t6": [
+        "demo"
+    ]
+}

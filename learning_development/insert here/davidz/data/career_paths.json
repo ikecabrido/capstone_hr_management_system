@@ -1,0 +1,46 @@
+{
+  "path_tech_lead": {
+    "id": "path_tech_lead",
+    "name": "Technical Lead",
+    "description": "Progress from senior engineer to technical leadership and team management",
+    "target_position": "Technical Lead / Engineering Manager",
+    "duration_months": 18,
+    "status": "active",
+    "created_at": "2025-01-01 00:00:00",
+    "prerequisites": "5+ years professional experience, proven technical expertise",
+    "skills_required": ["Leadership", "Communication", "System Design", "Mentoring", "Project Management"]
+  },
+  "path_project_manager": {
+    "id": "path_project_manager",
+    "name": "Project Manager",
+    "description": "Develop skills to transition into project management and delivery leadership",
+    "target_position": "Project Manager",
+    "duration_months": 12,
+    "status": "active",
+    "created_at": "2025-01-01 00:00:00",
+    "prerequisites": "3+ years in any professional role",
+    "skills_required": ["Planning", "Stakeholder Management", "Risk Management", "Agile Methodologies", "Communication"]
+  },
+  "path_product": {
+    "id": "path_product",
+    "name": "Product Manager",
+    "description": "Transition into product management with focus on strategy and customer success",
+    "target_position": "Product Manager",
+    "duration_months": 15,
+    "status": "active",
+    "created_at": "2025-01-01 00:00:00",
+    "prerequisites": "Experience with product or customer interaction",
+    "skills_required": ["Product Strategy", "Data Analysis", "User Research", "Roadmap Planning", "Cross-functional Leadership"]
+  },
+  "path_specialist": {
+    "id": "path_specialist",
+    "name": "Subject Matter Expert",
+    "description": "Develop deep expertise in a specific domain and become the go-to specialist",
+    "target_position": "Senior Specialist / Subject Matter Expert",
+    "duration_months": 24,
+    "status": "active",
+    "created_at": "2025-01-01 00:00:00",
+    "prerequisites": "2+ years experience in your domain",
+    "skills_required": ["Deep Technical Knowledge", "Documentation", "Research", "Mentoring", "Innovation"]
+  }
+}

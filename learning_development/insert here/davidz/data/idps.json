@@ -1,0 +1,36 @@
+{
+  "idp_dev001": {
+    "id": "idp_dev001",
+    "username": "john.smith",
+    "path_id": "path_tech_lead",
+    "start_date": "2025-01-15",
+    "end_date": "2026-07-15",
+    "objectives": "Transition from senior engineer to technical team lead with focus on team management, architectural decisions, and mentoring junior team members.",
+    "status": "active",
+    "created_at": "2025-01-10 08:30:00",
+    "milestones": [
+      "Month 2: Complete leadership fundamentals training",
+      "Month 4: Lead first significant architecture review",
+      "Month 6: Start mentoring 2 junior engineers",
+      "Month 10: Own team roadmap planning",
+      "Month 14: Present at company tech talk"
+    ]
+  },
+  "idp_pm001": {
+    "id": "idp_pm001",
+    "username": "sarah.johnson",
+    "path_id": "path_project_manager",
+    "start_date": "2025-02-01",
+    "end_date": "2026-02-01",
+    "objectives": "Develop project management expertise to transition into PM role. Focus on planning, stakeholder management, and agile methodologies.",
+    "status": "active",
+    "created_at": "2025-02-01 09:00:00",
+    "milestones": [
+      "Month 1: Complete Agile certification course",
+      "Month 3: Co-lead project planning for major initiative",
+      "Month 6: Lead retrospectives and team meetings",
+      "Month 9: Manage stakeholder communication for key projects",
+      "Month 12: Demonstrate readiness for PM promotion"
+    ]
+  }
+}
