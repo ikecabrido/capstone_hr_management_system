@@ -1,9 +1,0 @@
-/* Performance module specific styles moved out of PHP */
-
-.performance-brand-logo {
-  opacity: 0.9;
-}
-
-.performance-sales-chart {
-  height: 180px !important;
-}
