@@ -20,7 +20,7 @@ switch ($role) {
         header("Location: payroll/payroll.php");
         break;
     case 'time':
-        header("Location: time_attendance/time_attendance.php");
+        header("Location: time_attendance/public/dashboard.php");
         break;
     case 'compliance':
         header("Location: compliance_legal/compliance.php");
