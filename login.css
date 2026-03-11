@@ -3,11 +3,8 @@ body {
   margin: 0;
   padding: 0;
   font-family: "Inter", sans-serif;
-  font-optical-sizing: auto;
-  font-weight: 500;
-  font-style: normal;
 }
-.container {
+.bigbox {
   display: grid;
   grid-template-columns: 1fr 1fr;
   height: 100vh;
@@ -37,10 +34,10 @@ form {
   padding: 30px;
   background-color: white;
   box-shadow: 10px 10px 15px rgba(0, 0, 0, 0.3);
-  font-family: "Inter", sans-serif;
   font-optical-sizing: auto;
   font-weight: 500;
   font-style: normal;
+  border-radius: 20px;
 }
 .header {
   display: flex;
@@ -77,7 +74,7 @@ select {
   border-radius: 4px;
   width: 318px;
 }
-a {
+/* a {
   padding: 10px;
   background-color: #4caf50;
   color: white;
@@ -87,7 +84,7 @@ a {
   margin-top: 10px;
   text-align: center;
   text-decoration: none;
-}
+} */
 form button {
   padding: 10px;
   background-color: #3628f1;
@@ -128,5 +125,16 @@ form button:hover {
 @keyframes adminlteFadeOut {
   to {
     opacity: 0;
+  }
+}
+@media (max-width: 768px) {
+  .bigbox {
+    grid-template-columns: 1fr;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .box1 {
+    display: none;
   }
 }
