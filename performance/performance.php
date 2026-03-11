@@ -28,6 +28,7 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
   <!-- Theme style -->
   <link rel="stylesheet" href="../assets/dist/css/adminlte.min.css" />
   <link rel="stylesheet" href="custom.css" />
+  <link rel="stylesheet" href="../layout/toast.css" />
 </head>
 
 <body
@@ -103,7 +104,7 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
           <div class="image">
           </div>
           <div class="info">
-            <a href="../user_profile/profile.php" class="d-block">
+            <a href="#" onclick="openGlobalModal('Profile Settings ','../user_profile/profile_form.php')" class="d-block">
               Admin <?= htmlspecialchars($_SESSION['user']['name']) ?>
             </a>
           </div>
@@ -442,6 +443,7 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
     <!-- Main Footer -->
 
   </div>
+  <?php include "../layout/global_modal.php"; ?>
   <!-- ./wrapper -->
 
   <!-- REQUIRED SCRIPTS -->
@@ -469,6 +471,8 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
   <!-- <script src="assets/dist/js/pages/dashboard2.js"></script> -->
   <script src="../assets/dist/js/theme.js"></script>
   <script src="../assets/dist/js/time.js"></script>
+  <script src="../assets/dist/js/global_modal.js"></script>
+  <script src="../assets/dist/js/profile.js"></script>
 
   <script></script>
 </body>
