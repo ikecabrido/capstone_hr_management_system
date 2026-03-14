@@ -1,4 +1,5 @@
 <?php
+session_start();
 
 require 'controllers/RequestTypeController.php';
 require 'controllers/EmployeePortalController.php';
@@ -15,6 +16,21 @@ switch ($url) {
         (new RequestTypeController)->index();
         break;
 
+    case 'request-types-create':
+        (new RequestTypeController)->create();
+        break;
+
+    case 'request-types-update':
+        (new RequestTypeController)->update();
+        break;
+
+    case 'request-types-delete':
+        (new RequestTypeController)->delete();
+        break;
+
     default:
-        echo "Page not found";
+        $title = "Page Not Found";
+        $content = __DIR__ . '/views/error-content.php';
+        require __DIR__ . '/layout.php';
+        break;
 }
