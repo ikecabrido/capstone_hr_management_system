@@ -43,26 +43,4 @@ class Auth
             exit;
         }
     }
-
-    public static function requireEmployee()
-    {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-
-        if (!isset($_SESSION['user_id'])) {
-            header("Location: index.php?url=login");
-            exit;
-        }
-
-        $employeeModel = new EmployeeProfile();
-        $employee = $employeeModel->findByUserId($_SESSION['user_id']);
-
-        if (!$employee) {
-            http_response_code(403);
-            exit("Access denied. Employees only.");
-        }
-
-        return $employee;
-    }
 }

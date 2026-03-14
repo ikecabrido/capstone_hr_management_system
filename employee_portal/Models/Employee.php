@@ -1,5 +1,5 @@
 <?php
-require_once "../app/Core/Database.php";
+require_once __DIR__ . '/../Core/Database.php';
 
 class Employee extends Database
 {

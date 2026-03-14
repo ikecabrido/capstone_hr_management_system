@@ -1,9 +1,0 @@
-RewriteEngine On
-
-# If request is an existing file or folder → serve normally
-RewriteCond %{REQUEST_FILENAME} -f [OR]
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule ^ - [L]
-
-# Otherwise route everything to index.php
-RewriteRule ^ index.php [L]
