@@ -80,7 +80,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             }
             
             // Validate and build URL
-            $qr_url = $protocol . "://" . $host . "/Time_and_Attendance/public/qr_scan.php";
+            $qr_url = $protocol . "://" . $host . "/capstone_hr_management_system/time_attendance/public/qr_scan.php";
             
             // Verify URL is valid
             if (!filter_var($qr_url, FILTER_VALIDATE_URL)) {

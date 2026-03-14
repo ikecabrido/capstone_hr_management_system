@@ -9,8 +9,12 @@ class User
 
     public function __construct()
     {
-        $database = new Database();
-        $this->db = $database->connect();
+        try {
+            $database = new Database();
+            $this->db = $database->connect();
+        } catch (Exception $e) {
+            throw new Exception("User service initialization failed: " . $e->getMessage());
+        }
     }
 
     public function findByUsername($username)

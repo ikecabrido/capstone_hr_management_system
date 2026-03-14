@@ -2,11 +2,53 @@
 
 class Database
 {
-    private $host = "localhost";
+    private $host;
     private $db_name = "time_and_attendance";
     private $username = "root";
     private $password = "";
     private $conn;
+
+    public function __construct()
+    {
+        // Determine the correct host based on where the request came from
+        $this->host = $this->getServerHost();
+    }
+
+    private function getServerHost()
+    {
+        // If accessing via IP address, use that IP
+        if (!empty($_SERVER['HTTP_HOST'])) {
+            $host = explode(':', $_SERVER['HTTP_HOST'])[0]; // Remove port if present
+            
+            // Check if it's already an IP address
+            if (filter_var($host, FILTER_VALIDATE_IP)) {
+                return $host;
+            }
+            
+            // Try to resolve hostname to IP
+            $ip = @gethostbyname($host);
+            if ($ip && $ip !== $host && filter_var($ip, FILTER_VALIDATE_IP)) {
+                return $ip;
+            }
+        }
+        
+        // Try to get server's own IP address
+        if (!empty($_SERVER['SERVER_ADDR'])) {
+            return $_SERVER['SERVER_ADDR'];
+        }
+        
+        // Try to resolve server hostname to IP
+        $hostname = @gethostname();
+        if ($hostname) {
+            $ip = @gethostbyname($hostname);
+            if ($ip && filter_var($ip, FILTER_VALIDATE_IP)) {
+                return $ip;
+            }
+        }
+        
+        // Fallback to localhost
+        return 'localhost';
+    }
 
     public function getConnection()
     {
@@ -25,7 +67,7 @@ class Database
             $this->conn->exec("SET SESSION time_zone = '+08:00'");
 
         } catch (PDOException $exception) {
-            die("Database connection error: " . $exception->getMessage());
+            throw new Exception("Database connection error: " . $exception->getMessage());
         }
 
         return $this->conn;

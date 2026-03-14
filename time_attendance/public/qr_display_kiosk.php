@@ -198,6 +198,44 @@ $qr_image = "https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=" . u
         .new-code {
             animation: pulse 2s infinite;
         }
+
+        .back-button-container {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: center;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            background: #f0f0f0;
+            color: #333;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: 2px solid #ddd;
+            cursor: pointer;
+        }
+
+        .back-button:hover {
+            background: #e0e0e0;
+            border-color: #bbb;
+            transform: translateX(-3px);
+        }
+
+        .back-button:active {
+            transform: translateX(-1px);
+        }
+
+        .back-icon {
+            font-size: 18px;
+        }
     </style>
 </head>
 <body>
@@ -238,6 +276,13 @@ $qr_image = "https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=" . u
             <div class="refresh-timer">
                 New code in: <span id="countdown">30</span> seconds
             </div>
+        </div>
+
+        <!-- Back Button -->
+        <div class="back-button-container">
+            <a href="javascript:history.back()" class="back-button">
+                <span class="back-icon">←</span> Back
+            </a>
         </div>
     </div>
 

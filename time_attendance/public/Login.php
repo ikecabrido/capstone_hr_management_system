@@ -137,7 +137,66 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <link rel="icon" href="../Bestlink College of the Philippines.jpeg" type="image/jpeg">
     <link rel="stylesheet" href="../assets/style.css">
     <script src="../assets/mobile-responsive.js" defer></script>
+    <link rel="stylesheet" href="../assets/dist/css/adminlte.min.css">
     <style>
+        /* Preloader Styles */
+        .preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            flex-direction: column;
+        }
+
+        .flex-column {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .justify-content-center {
+            justify-content: center;
+        }
+
+        .align-items-center {
+            align-items: center;
+        }
+
+        /* Continuous wobble animation for preloader */
+        .animation__wobble {
+            animation: wobble-login 1.5s infinite ease-in-out;
+        }
+
+        @keyframes wobble-login {
+            0% {
+                transform: none;
+            }
+            15% {
+                transform: translate3d(-25%, 0, 0) rotate3d(0, 0, 1, -5deg);
+            }
+            30% {
+                transform: translate3d(20%, 0, 0) rotate3d(0, 0, 1, 3deg);
+            }
+            45% {
+                transform: translate3d(-15%, 0, 0) rotate3d(0, 0, 1, -3deg);
+            }
+            60% {
+                transform: translate3d(10%, 0, 0) rotate3d(0, 0, 1, 2deg);
+            }
+            75% {
+                transform: translate3d(-5%, 0, 0) rotate3d(0, 0, 1, -1deg);
+            }
+            100% {
+                transform: none;
+            }
+        }
+
         body.login-page {
             background-image: url('../bg.jpg');
             background-size: cover;
@@ -232,6 +291,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     </style>
 </head>
 <body class="login-page">
+    <!-- Preloader -->
+    <div class="preloader flex-column justify-content-center align-items-center">
+        <img
+            class="animation__wobble"
+            src="../assets/pics/bcpLogo.png"
+            alt="AdminLTELogo"
+            height="60"
+            width="60" />
+    </div>
+
     <div class="login-container">
         <div class="login-box">
             <div class="login-header">
@@ -301,6 +370,30 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     }
                 });
             });
+        });
+    </script>
+
+    <!-- Preloader Management Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const preloader = document.querySelector('.preloader');
+            const loginForm = document.querySelector('.login-form');
+
+            // Hide preloader after initial page load (800ms)
+            setTimeout(function() {
+                if (preloader) {
+                    preloader.style.display = 'none';
+                }
+            }, 800);
+
+            // Show preloader on form submission
+            if (loginForm) {
+                loginForm.addEventListener('submit', function(e) {
+                    if (preloader) {
+                        preloader.style.display = 'flex';
+                    }
+                });
+            }
         });
     </script>
 </body>

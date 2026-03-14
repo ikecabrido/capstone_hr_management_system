@@ -55,10 +55,22 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/style.css">
     <link rel="stylesheet" href="../assets/dashboard.css">
+    <link rel="stylesheet" href="../assets/realtime-dashboard.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="../assets/mobile-responsive.js" defer></script>
+    <script src="../assets/realtime-dashboard.js" defer></script>
+    
 </head>
 <body>
+    <div
+      class="preloader flex-column justify-content-center align-items-center">
+      <img
+        class="animation__wobble"
+        src="../assets/pics/bcpLogo.png"
+        alt="AdminLTELogo"
+        height="60"
+        width="60" />
+    </div>
     <?php require_once "../app/components/Sidebar.php"; ?>
 
     <div class="main-content">
@@ -88,6 +100,50 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
                     <h3>Pending Approvals</h3>
                     <div class="card-value"><?php echo count($pendingApprovals); ?></div>
                     <div class="card-unit">Manual entries</div>
+                </div>
+            </div>
+
+            <!-- Real-time Updates Widget -->
+            <div class="realtime-dashboard-widget">
+                <div class="realtime-header">
+                    <div class="realtime-title">
+                        <i class="fas fa-signal"></i>
+                        Live Activity Feed
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <div class="realtime-status">
+                            <span class="status-indicator"></span>
+                            <span>Live Updates</span>
+                        </div>
+                        <button id="realtimeRefresh" title="Refresh Now">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="realtimeMetrics">
+                    <div class="metric-item">
+                        <span class="metric-label">Recent Logins:</span>
+                        <span class="metric-value">-</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">Time Ins:</span>
+                        <span class="metric-value">-</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">Time Outs:</span>
+                        <span class="metric-value">-</span>
+                    </div>
+                </div>
+                
+                <div id="realtimeEventsContainer">
+                    <div style="text-align: center; padding: 20px; color: #999;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading live events...
+                    </div>
+                </div>
+                
+                <div style="margin-top: 10px; text-align: right; font-size: 11px; color: #999;">
+                    Last updated: <span id="realtimeLastRefresh">--:--:--</span>
                 </div>
             </div>
 
@@ -244,5 +300,46 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
         updateClock();
         setInterval(updateClock, 1000);
     </script>
+
+    <!-- Preloader Management Script -->
+    <script>
+        // Show preloader when navigating to a link
+        document.addEventListener('DOMContentLoaded', function() {
+            const preloader = document.querySelector('.preloader');
+            
+            // Hide preloader after page load (with delay to make it visible)
+            setTimeout(() => {
+                if (preloader) {
+                    preloader.style.display = 'none';
+                }
+            }, 800); // Show for 800ms
+
+            // Show preloader on navigation links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    // Don't show preloader for logout or external links
+                    const href = this.getAttribute('href');
+                    if (href && !href.includes('logout') && !href.startsWith('javascript')) {
+                        if (preloader) {
+                            preloader.style.display = 'flex';
+                            // Auto-hide after navigation loads
+                            setTimeout(() => {
+                                preloader.style.display = 'none';
+                            }, 800);
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+
+    <script src="../assets/plugins/jquery/jquery.min.js"></script>
+  <!-- Bootstrap -->
+  <script src="../assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <!-- overlayScrollbars -->
+  <script src="../assets/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
+  <!-- AdminLTE App -->
+  <script src="../assets/dist/js/adminlte.js"></script>
+
 </body>
 </html>

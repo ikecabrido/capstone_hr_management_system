@@ -121,38 +121,38 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
                with font-awesome or any other icon font library -->
             <li class="nav-item">
               <a href="#" class="nav-link active">
-                <i class="nav-icon fas fa-tachometer-alt"></i>
+                <i class="nav-icon fas fa-tachometer-alt animation__wobble"></i>
                 <p>Dashboard</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-chart-pie"></i>
+                <i class="nav-icon fas fa-chart-pie animation__wobble"></i>
                 <p>Module 1</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-tree"></i>
+                <i class="nav-icon fas fa-tree animation__wobble"></i>
                 <p>Module 2</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-edit"></i>
+                <i class="nav-icon fas fa-edit animation__wobble"></i>
                 <p>Module 3</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-table"></i>
+                <i class="nav-icon fas fa-table animation__wobble"></i>
                 <p>Module 4</p>
               </a>
             </li>
             <li class="nav-header">OTHER EXAMPLES</li>
             <li class="nav-item">
               <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-calendar-alt"></i>
+                <i class="nav-icon fas fa-calendar-alt animation__wobble"></i>
                 <p>
                   Calendar
                   <span class="badge badge-info right">2</span>
@@ -161,19 +161,19 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
             </li>
             <li class="nav-item">
               <a href="#" class="nav-link">
-                <i class="nav-icon far fa-image"></i>
+                <i class="nav-icon far fa-image animation__wobble"></i>
                 <p>Gallery</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-columns"></i>
+                <i class="nav-icon fas fa-columns animation__wobble"></i>
                 <p>Kanban Board</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="../logout.php" class="nav-link">
-                <i class="nav-icon fas fa-sign-out-alt"></i>
+                <i class="nav-icon fas fa-sign-out-alt animation__wobble"></i>
                 <p>Logout</p>
               </a>
             </li>

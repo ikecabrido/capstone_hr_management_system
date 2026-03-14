@@ -102,29 +102,10 @@ $current_role = $_SESSION['role'] ?? 'EMPLOYEE';
         color: white;
         transition: all 0.3s ease;
         gap: 12px;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .brand-link::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
-        transform: translateX(-100%);
-        transition: transform 0.3s ease;
     }
 
     .brand-link:hover {
-        background: rgba(0, 0, 0, 0.25);
-        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    .brand-link:hover::before {
-        transform: translateX(100%);
+        background: rgba(0, 0, 0, 0.3);
     }
 
     .brand-image {
@@ -244,11 +225,56 @@ $current_role = $_SESSION['role'] ?? 'EMPLOYEE';
         width: 18px;
         text-align: center;
         flex-shrink: 0;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        visibility: visible !important;
+        opacity: 1 !important;
+        z-index: 10 !important;
+    }
+
+    /* Continuous wobble animation for nav icons */
+    .nav-icon.animation__wobble {
+        animation: nav-wobble 2s infinite ease-in-out;
+    }
+
+    @keyframes nav-wobble {
+        0% {
+            transform: none;
+        }
+        15% {
+            transform: translate3d(-3px, 0, 0) rotate3d(0, 0, 1, -3deg);
+        }
+        30% {
+            transform: translate3d(3px, 0, 0) rotate3d(0, 0, 1, 2deg);
+        }
+        45% {
+            transform: translate3d(-2px, 0, 0) rotate3d(0, 0, 1, -2deg);
+        }
+        60% {
+            transform: translate3d(2px, 0, 0) rotate3d(0, 0, 1, 1deg);
+        }
+        75% {
+            transform: translate3d(-1px, 0, 0) rotate3d(0, 0, 1, -1deg);
+        }
+        100% {
+            transform: none;
+        }
     }
 
     .nav-link > p {
         margin: 0;
         flex: 1;
+    }
+    
+    /* Ensure icons stay visible on all states */
+    .nav-link:hover .nav-icon,
+    .nav-link.active .nav-icon,
+    .nav-link:focus .nav-icon {
+        display: inline-flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        z-index: 10 !important;
     }
 
     .nav-header {
@@ -451,12 +477,12 @@ $current_role = $_SESSION['role'] ?? 'EMPLOYEE';
                 <li class="nav-item">
                     <?php if ($current_role === 'HR_ADMIN' || $current_role === 'SYSTEM_ADMIN'): ?>
                         <a href="dashboard.php" class="nav-link <?php echo $current_page === 'dashboard.php' ? 'active' : ''; ?>">
-                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                            <i class="nav-icon fas fa-tachometer-alt animation__wobble"></i>
                             <p>Dashboard</p>
                         </a>
                     <?php else: ?>
                         <a href="employee_dashboard.php" class="nav-link <?php echo $current_page === 'employee_dashboard.php' ? 'active' : ''; ?>">
-                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                            <i class="nav-icon fas fa-tachometer-alt animation__wobble"></i>
                             <p>My Dashboard</p>
                         </a>
                     <?php endif; ?>
@@ -466,13 +492,13 @@ $current_role = $_SESSION['role'] ?? 'EMPLOYEE';
                 <?php if ($current_role === 'HR_ADMIN' || $current_role === 'SYSTEM_ADMIN'): ?>
                     <li class="nav-item">
                         <a href="qr_display_kiosk.php" class="nav-link <?php echo $current_page === 'qr_display_kiosk.php' ? 'active' : ''; ?>">
-                            <i class="nav-icon fas fa-qrcode"></i>
+                            <i class="nav-icon fas fa-qrcode animation__wobble"></i>
                             <p>QR Kiosk</p>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="approve_attendance.php" class="nav-link <?php echo $current_page === 'approve_attendance.php' ? 'active' : ''; ?>">
-                            <i class="nav-icon fas fa-check-circle"></i>
+                            <i class="nav-icon fas fa-check-circle animation__wobble"></i>
                             <p>Approve Manual Time</p>
                         </a>
                     </li>
@@ -482,7 +508,7 @@ $current_role = $_SESSION['role'] ?? 'EMPLOYEE';
                 <?php if (!($current_role === 'HR_ADMIN' || $current_role === 'SYSTEM_ADMIN')): ?>
                     <li class="nav-item">
                         <a href="calendar.php" class="nav-link <?php echo $current_page === 'calendar.php' ? 'active' : ''; ?>">
-                            <i class="nav-icon fas fa-calendar-alt"></i>
+                            <i class="nav-icon fas fa-calendar-alt animation__wobble"></i>
                             <p>Calendar View</p>
                         </a>
                     </li>
@@ -492,7 +518,7 @@ $current_role = $_SESSION['role'] ?? 'EMPLOYEE';
                 <?php if ($current_role === 'HR_ADMIN' || $current_role === 'SYSTEM_ADMIN'): ?>
                     <li class="nav-item">
                         <a href="shifts.php" class="nav-link <?php echo $current_page === 'shifts.php' ? 'active' : ''; ?>">
-                            <i class="nav-icon fas fa-clock"></i>
+                            <i class="nav-icon fas fa-clock animation__wobble"></i>
                             <p>Manage Shifts</p>
                         </a>
                     </li>
@@ -502,21 +528,21 @@ $current_role = $_SESSION['role'] ?? 'EMPLOYEE';
                 <?php if ($current_role === 'HR_ADMIN' || $current_role === 'SYSTEM_ADMIN'): ?>
                     <li class="nav-item">
                         <a href="leave_approvals.php" class="nav-link <?php echo $current_page === 'leave_approvals.php' ? 'active' : ''; ?>">
-                            <i class="nav-icon fas fa-file-alt"></i>
+                            <i class="nav-icon fas fa-file-alt animation__wobble"></i>
                             <p>Approve Leave Requests</p>
                         </a>
                     </li>
                 <?php else: ?>
                     <li class="nav-item">
                         <a href="leave_request.php" class="nav-link <?php echo $current_page === 'leave_request.php' ? 'active' : ''; ?>">
-                            <i class="nav-icon fas fa-plus-circle"></i>
+                            <i class="nav-icon fas fa-plus-circle animation__wobble"></i>
                             <p>Submit Request</p>
                         </a>
                     </li>
                     <?php if ($current_role === 'DEPARTMENT_HEAD'): ?>
                         <li class="nav-item">
                             <a href="leave_approvals.php" class="nav-link <?php echo $current_page === 'leave_approvals.php' ? 'active' : ''; ?>">
-                                <i class="nav-icon fas fa-file-alt"></i>
+                                <i class="nav-icon fas fa-file-alt animation__wobble"></i>
                                 <p>Approve Requests</p>
                             </a>
                         </li>
@@ -527,7 +553,7 @@ $current_role = $_SESSION['role'] ?? 'EMPLOYEE';
                 <li class="nav-header">SETTINGS</li>
                 <li class="nav-item">
                     <a href="../../logout.php" class="nav-link" style="color: #e74c3c;">
-                        <i class="nav-icon fas fa-sign-out-alt"></i>
+                        <i class="nav-icon fas fa-sign-out-alt animation__wobble"></i>
                         <p>Logout</p>
                     </a>
                 </li>
