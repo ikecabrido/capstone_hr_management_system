@@ -2,69 +2,41 @@
 
 class Database
 {
+    private static $instance = null;
+    private PDO $conn;
 
-    private $host;
-    private $dbname = "hr_management";
-    private $username = "root";
-    private $password = "";
+    private string $host = "localhost";
+    private string $db   = "hr_management";
+    private string $user = "root";
+    private string $pass = "";
 
-    public function __construct()
+    private function __construct()
     {
-        // Determine the correct host based on where the request came from
-        $this->host = $this->getServerHost();
-    }
-
-    private function getServerHost()
-    {
-        // If accessing via IP address, use that IP
-        if (!empty($_SERVER['HTTP_HOST'])) {
-            $host = explode(':', $_SERVER['HTTP_HOST'])[0]; // Remove port if present
-            
-            // Check if it's already an IP address
-            if (filter_var($host, FILTER_VALIDATE_IP)) {
-                return $host;
-            }
-            
-            // Try to resolve hostname to IP
-            $ip = @gethostbyname($host);
-            if ($ip && $ip !== $host && filter_var($ip, FILTER_VALIDATE_IP)) {
-                return $ip;
-            }
-        }
-        
-        // Try to get server's own IP address
-        if (!empty($_SERVER['SERVER_ADDR'])) {
-            return $_SERVER['SERVER_ADDR'];
-        }
-        
-        // Try to resolve server hostname to IP
-        $hostname = @gethostname();
-        if ($hostname) {
-            $ip = @gethostbyname($hostname);
-            if ($ip && filter_var($ip, FILTER_VALIDATE_IP)) {
-                return $ip;
-            }
-        }
-        
-        // Fallback to localhost
-        return 'localhost';
-    }
-
-    public function connect()
-    {
-
         try {
-            $pdo = new PDO(
-                "mysql:host={$this->host};dbname={$this->dbname}",
-                $this->username,
-                $this->password
+            $this->conn = new PDO(
+                "mysql:host={$this->host};dbname={$this->db};charset=utf8mb4",
+                $this->user,
+                $this->pass,
+                [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+                ]
             );
-
-            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-            return $pdo;
         } catch (PDOException $e) {
-            throw new Exception("Database connection failed: " . $e->getMessage());
+            die("DB Connection failed: " . $e->getMessage());
         }
+    }
+
+    public static function getInstance(): Database
+    {
+        if (self::$instance === null) {
+            self::$instance = new Database();
+        }
+        return self::$instance;
+    }
+
+    public function getConnection(): PDO
+    {
+        return $this->conn;
     }
 }
