@@ -8,7 +8,7 @@ class Database
     private function __construct()
     {
         $this->conn = new PDO(
-            "mysql:host=localhost;dbname=hrmsys",
+            "mysql:host=localhost;dbname=hr_management",
             "root",
             "",
             [

@@ -1,5 +1,6 @@
 <?php
-require_once "../app/Core/Database.php";
+
+require_once __DIR__ . '/../core/Database.php';
 
 class RequestType
 {
@@ -12,19 +13,7 @@ class RequestType
 
     public function all()
     {
-        $stmt = $this->conn->prepare("
-            SELECT 
-                id,
-                name,
-                description,
-                icon,
-                requires_attachment,
-                is_active,
-                created_at
-            FROM request_types
-            ORDER BY id DESC
-        ");
-
+        $stmt = $this->conn->prepare("SELECT * FROM request_types");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

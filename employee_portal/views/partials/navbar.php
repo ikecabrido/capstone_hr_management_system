@@ -1,42 +1,55 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm px-3 z-40">
-    <button class="btn text-white me-2" id="sidebarToggle">
-        <i class="fas fa-bars"></i>
-    </button>
-
-    <a class="navbar-brand fw-bold tracking-wide" href="index.php?url=dashboard">HRMSYS</a>
-
-    <div class="ms-auto d-flex align-items-center gap-3">
-
-        <div class="d-none d-md-flex align-items-center rounded p-1 transition-all bg-[#0D6EFD]">
-            <div id="searchIcon" class="cursor-pointer text-muted">
-                <i class="fas fa-search fa-xl"></i>
-            </div>
-            <input type="text" id="searchInput" style="transition: width 0.3s ease-in-out, opacity 0.3s ease-in-out;" class="form-control border-0 shadow-none w-0 opacity-0 transition-all duration-300 ease-in-out" placeholder="Search...">
-        </div>
-
-        <button class="btn text-white" id="darkToggle">
-            <i class="fas fa-moon"></i>
-            <span id="currentTime"></span>
-        </button>
-
-        <button class="btn text-white" id="fullscreenBtn">
-            <i class="fas fa-expand"></i>
-        </button>
-
-        <div class="dropdown">
-            <button class="btn text-white dropdown-toggle d-flex align-items-center gap-2" data-bs-toggle="dropdown">
-                <i class="fas fa-user-circle fs-5"></i>
-                <span class="d-none d-md-inline"><?= $_SESSION['user']['name'] ?? 'User'; ?></span>
-            </button>
-
-            <ul class="dropdown-menu dropdown-menu-end shadow">
-                <li><a class="dropdown-item" href="index.php?url=profile">Profile</a></li>
-                <li><a class="dropdown-item" href="#">Settings</a></li>
-                <li>
-                    <hr class="dropdown-divider">
-                </li>
-                <li><a class="dropdown-item text-danger" href="logout.php">Logout</a></li>
-            </ul>
-        </div>
+    <!-- Preloader -->
+    <div class="preloader flex-column justify-content-center align-items-center">
+        <img class="animation__wobble" src="../assets/pics/bcpLogo.png" alt="AdminLTELogo" height="60" width="60" />
     </div>
-</nav>
+
+    <!-- navbar -->
+    <nav class="main-header navbar navbar-expand navbar-dark">
+        <!-- Left navbar links -->
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="employee_portal.html" class="nav-link">Home</a>
+            </li>
+        </ul>
+
+        <!-- Right navbar links -->
+        <ul class="navbar-nav ml-auto">
+            <!-- Navbar Search -->
+            <li class="nav-item">
+                <a class="nav-link" data-widget="navbar-search" href="#" role="button">
+                    <i class="fas fa-search"></i>
+                </a>
+                <div class="navbar-search-block">
+                    <form class="form-inline">
+                        <div class="input-group input-group-sm">
+                            <input class="form-control form-control-navbar" type="search" placeholder="Search"
+                                aria-label="Search" />
+                            <div class="input-group-append">
+                                <button class="btn btn-navbar" type="submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                <button class="btn btn-navbar" type="button" data-widget="navbar-search">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" data-widget="fullscreen" href="#" role="button">
+                    <i class="fas fa-expand-arrows-alt"></i>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="darkToggle" role="button" title="Toggle Dark Mode">
+                    <i class="fas fa-moon" id="themeIcon"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
