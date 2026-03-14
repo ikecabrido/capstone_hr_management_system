@@ -230,4 +230,57 @@ class Attendance
 
         return $stmt->execute();
     }
+
+    /**
+     * Check if a date is a holiday
+     */
+    public function isHoliday($date)
+    {
+        $query = "SELECT is_working_day FROM holidays 
+                  WHERE holiday_date = :date 
+                  AND year = YEAR(:date) 
+                  AND is_working_day = 0";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':date', $date);
+        $stmt->execute();
+
+        return $stmt->fetch(PDO::FETCH_ASSOC) ? true : false;
+    }
+
+    /**
+     * Get holiday information for a date
+     */
+    public function getHolidayInfo($date)
+    {
+        $query = "SELECT holiday_id, holiday_name, description, is_working_day 
+                  FROM holidays 
+                  WHERE holiday_date = :date 
+                  AND year = YEAR(:date)";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':date', $date);
+        $stmt->execute();
+
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Get all holidays for a year
+     */
+    public function getHolidaysByYear($year = null)
+    {
+        $year = $year ?: date('Y');
+        
+        $query = "SELECT holiday_date, holiday_name, description, is_working_day 
+                  FROM holidays 
+                  WHERE year = :year 
+                  ORDER BY holiday_date ASC";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':year', $year, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

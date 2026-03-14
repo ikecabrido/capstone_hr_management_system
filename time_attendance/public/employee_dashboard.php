@@ -690,6 +690,38 @@ $attendance_percentage = $working_days > 0 ? ($present_count / $working_days) * 
         setInterval(updateClock, 1000);
     </script>
 
+    <!-- Preloader Management Script -->
+    <script>
+        // Show preloader when navigating to a link
+        document.addEventListener('DOMContentLoaded', function() {
+            const preloader = document.querySelector('.preloader');
+            
+            // Hide preloader after page load (with delay to make it visible)
+            setTimeout(() => {
+                if (preloader) {
+                    preloader.style.display = 'none';
+                }
+            }, 800); // Show for 800ms
+
+            // Show preloader on navigation links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    // Don't show preloader for logout or external links
+                    const href = this.getAttribute('href');
+                    if (href && !href.includes('logout') && !href.startsWith('javascript')) {
+                        if (preloader) {
+                            preloader.style.display = 'flex';
+                            // Auto-hide after navigation loads
+                            setTimeout(() => {
+                                preloader.style.display = 'none';
+                            }, 800);
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+
     <!-- Export Confirmation Modal -->
     <div id="exportModal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); justify-content: center; align-items: center;">
         <div style="background: var(--bg-primary); padding: 30px; border-radius: 8px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);">

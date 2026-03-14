@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once "../auth/User.php";
+require_once "../auth/user.php";
 
 header('Content-Type: application/json');
 

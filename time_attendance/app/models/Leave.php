@@ -120,4 +120,83 @@ class Leave
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
+
+    /**
+     * Check if employee has sufficient leave balance
+     */
+    public function checkLeaveBalance($employee_id, $leave_type_id, $requested_days)
+    {
+        $query = "SELECT remaining_days FROM leave_balances 
+                  WHERE employee_id = :employee_id 
+                  AND leave_type_id = :leave_type_id 
+                  AND year = YEAR(CURDATE())";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':employee_id', $employee_id, PDO::PARAM_INT);
+        $stmt->bindParam(':leave_type_id', $leave_type_id, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$result) {
+            return ['status' => false, 'message' => 'Leave balance record not found'];
+        }
+
+        if ($result['remaining_days'] < $requested_days) {
+            return [
+                'status' => false, 
+                'message' => 'Insufficient leave balance. Available: ' . $result['remaining_days'] . ' days'
+            ];
+        }
+
+        return ['status' => true, 'remaining_balance' => $result['remaining_days']];
+    }
+
+    /**
+     * Deduct days from leave balance after approval
+     */
+    public function deductLeaveBalance($employee_id, $leave_type_id, $days_to_deduct)
+    {
+        $query = "UPDATE leave_balances 
+                  SET used_days = used_days + :days,
+                      remaining_days = remaining_days - :days,
+                      updated_at = NOW()
+                  WHERE employee_id = :employee_id 
+                  AND leave_type_id = :leave_type_id 
+                  AND year = YEAR(CURDATE())";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':employee_id', $employee_id, PDO::PARAM_INT);
+        $stmt->bindParam(':leave_type_id', $leave_type_id, PDO::PARAM_INT);
+        $stmt->bindParam(':days', $days_to_deduct, PDO::PARAM_INT);
+
+        return $stmt->execute();
+    }
+
+    /**
+     * Get leave balance details for an employee
+     */
+    public function getLeaveBalance($employee_id, $leave_type_id = null)
+    {
+        $query = "SELECT lb.*, lt.leave_type_name, lt.days_per_year
+                  FROM leave_balances lb
+                  JOIN leave_types lt ON lb.leave_type_id = lt.leave_type_id
+                  WHERE lb.employee_id = :employee_id 
+                  AND lb.year = YEAR(CURDATE())";
+
+        if ($leave_type_id) {
+            $query .= " AND lb.leave_type_id = :leave_type_id";
+        }
+
+        $query .= " ORDER BY lt.leave_type_name";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':employee_id', $employee_id, PDO::PARAM_INT);
+        if ($leave_type_id) {
+            $stmt->bindParam(':leave_type_id', $leave_type_id, PDO::PARAM_INT);
+        }
+        $stmt->execute();
+
+        return $leave_type_id ? $stmt->fetch(PDO::FETCH_ASSOC) : $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

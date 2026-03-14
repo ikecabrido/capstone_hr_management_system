@@ -42,6 +42,19 @@ class AttendanceController
         $user_id = Session::get('user_id');
 
         try {
+            // Check if today is a holiday
+            $todayDate = date('Y-m-d');
+            if ($this->attendanceModel->isHoliday($todayDate)) {
+                $holiday = $this->attendanceModel->getHolidayInfo($todayDate);
+                $this->auditLog->log('TIME_IN_FAILED', $user_id, $employee_id, null, 
+                    ['reason' => 'Holiday'], 'FAILED', 'Cannot time in on holiday: ' . $holiday['holiday_name']);
+                return [
+                    'success' => false,
+                    'message' => 'Today is a holiday (' . $holiday['holiday_name'] . '). No attendance recording required.',
+                    'holiday_name' => $holiday['holiday_name']
+                ];
+            }
+
             // Check if employee has already timed in today
             $existingRecord = $this->attendanceModel->getTodayAttendance($employee_id);
 

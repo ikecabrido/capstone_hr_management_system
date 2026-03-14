@@ -1,6 +1,6 @@
 <?php
 
-require_once "auth/Auth.php";
+require_once "auth/auth.php";
 
 $auth = new Auth();
 
@@ -45,5 +45,10 @@ switch ($role) {
         break;
 
     default:
-        echo "No module assigned.";
+        echo "Debug: No module assigned for role: " . ($role ? "'{$role}'" : "NULL") . "<br>";
+        echo "Session data: ";
+        echo "<pre>";
+        var_dump($_SESSION['user'] ?? "No session");
+        echo "</pre>";
+        die("Please check your user role in the database.");
 }
