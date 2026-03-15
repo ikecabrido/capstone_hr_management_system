@@ -28,7 +28,7 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `users` (
-  `id` int(11) NOT NULL,
+  id INT AUTO_INCREMENT PRIMARY KEY,
   `username` varchar(50) NOT NULL,
   `password` varchar(255) NOT NULL,
   `full_name` varchar(100) DEFAULT NULL,
@@ -88,7 +88,7 @@ COMMIT;
 --
 
 CREATE TABLE `requests` (
-  `id` int(11) NOT NULL,
+  id INT AUTO_INCREMENT PRIMARY KEY,
   `user_id` int(11) DEFAULT NULL,
   `request_type_id` int(11) DEFAULT NULL,
   `title` varchar(255) DEFAULT NULL,
@@ -107,7 +107,7 @@ CREATE TABLE `requests` (
 --
 
 CREATE TABLE `request_types` (
-  `id` int(11) NOT NULL,
+  id INT AUTO_INCREMENT PRIMARY KEY,
   `name` varchar(100) DEFAULT NULL,
   `description` text DEFAULT NULL,
   `icon` varchar(100) DEFAULT NULL,

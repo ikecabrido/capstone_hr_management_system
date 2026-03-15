@@ -27,22 +27,16 @@ class Request extends Database
         ]);
     }
 
-    public function getAll()
+    public function all()
     {
         $stmt = $this->conn->prepare("
-SELECT r.id,
-       r.title,
-       r.details,
-       r.status,
-       r.attachment,
-       r.admin_remarks,
-       r.created_at,
-       u.name AS user_name,
-       rt.name AS request_type
-FROM requests r
-JOIN users u ON r.user_id = u.id
-JOIN request_types rt ON r.request_type_id = rt.id
-ORDER BY r.created_at DESC
+        SELECT 
+            r.*,
+            rt.name AS request_type
+        FROM requests r
+        LEFT JOIN request_types rt 
+            ON r.request_type_id = rt.id
+        ORDER BY r.created_at DESC
     ");
 
         $stmt->execute();
