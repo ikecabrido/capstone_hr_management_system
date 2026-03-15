@@ -45,6 +45,14 @@ switch ($url) {
         (new RequestController)->download();
         break;
 
+    case 'request-update-status':
+        (new RequestController)->updateRequestStatus();
+        break;
+    
+    case 'request-delete':
+        (new RequestController)->delete();
+        break;
+
     default:
         $title = "Page Not Found";
         $content = __DIR__ . '/views/error-content.php';

@@ -85,12 +85,21 @@
                                 </td>
 
                                 <td class="text-center">
-                                    <button class="btn btn-sm btn-outline-primary"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#manageRequest<?= $request['id']; ?>">
-                                        Manage
-                                    </button>
+                                    <div class="flex">
+                                        <button class="btn btn-sm btn-outline-primary"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#manageRequest<?= $request['id']; ?>">
+                                            Manage
+                                        </button>
+                                        <form method="POST" action="index.php?url=request-delete" onsubmit="return confirm('Are you sure you want to delete this request?');">
+                                            <input type="hidden" name="id" value="<?= $request['id']; ?>">
+                                            <button type="submit" class="ml-2 btn btn-sm btn-outline-danger">
+                                                <i class="fa-solid fa-trash"></i> Delete
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
+                                <?php require __DIR__ . '/modal-request.php'; ?>
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
