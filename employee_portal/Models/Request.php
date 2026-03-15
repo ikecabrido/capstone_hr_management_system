@@ -78,4 +78,10 @@ class Request extends Database
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
+
+    public function delete($id)
+    {
+        $stmt = $this->conn->prepare("DELETE FROM requests WHERE id = ?");
+        return $stmt->execute([$id]);
+    }
 }

@@ -165,4 +165,48 @@ class RequestController
         readfile($filePath);
         exit;
     }
+
+    public function delete()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $_SESSION['error'] = "Invalid request method.";
+            header("Location: index.php?url=request-index");
+            exit;
+        }
+
+        $id = $_POST['id'] ?? null;
+
+        if (!$id) {
+            $_SESSION['error'] = "Invalid request ID.";
+            header("Location: index.php?url=request-index");
+            exit;
+        }
+
+        $requestModel = new Request();
+
+        $request = $requestModel->find($id);
+        if (!$request) {
+            $_SESSION['error'] = "Request not found.";
+            header("Location: index.php?url=request-index");
+            exit;
+        }
+
+        if (!empty($request['attachment'])) {
+            $filePath = $_SERVER['DOCUMENT_ROOT'] . "/capstone_hr_management_system/employee_portal/public/uploads/" . $request['attachment'];
+            if (file_exists($filePath)) {
+                @unlink($filePath); 
+            }
+        }
+
+        $deleted = $requestModel->delete($id);
+
+        if ($deleted) {
+            $_SESSION['success'] = "Request deleted successfully.";
+        } else {
+            $_SESSION['error'] = "Failed to delete request.";
+        }
+
+        header("Location: index.php?url=request-index");
+        exit;
+    }
 }
