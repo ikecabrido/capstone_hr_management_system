@@ -1,0 +1,175 @@
+
+        /* HEADER */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        .header > div:nth-child(2) {
+            flex: 1;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.8em;
+            color: #667eea;
+            margin: 0;
+        }
+
+        .update-time {
+margin-left: auto;
+    margin-right: 1rem;
+    font-size: 1rem;
+    color: var(--color8);
+    padding: 0.5rem 1rem;
+
+        }
+
+        .menu-toggle {
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 10px;
+            gap: 5px;
+            margin-right: 20px;
+        }
+
+        .menu-toggle span {
+            width: 25px;
+            height: 3px;
+            background: #667eea;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+            display: block;
+        }
+
+        /* user-info styles moved to style.css */
+
+        /* MAIN CONTENT */
+        .main-content {
+            margin-left: 0;
+            flex: 1;
+            padding: 30px;
+            transition: margin-left 0.3s ease;
+        }
+
+        .sidebar:not(.hidden) ~ .main-content {
+            margin-left: 260px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                left: -260px;
+            }
+
+            .sidebar:not(.hidden) ~ .main-content {
+                margin-left: 0;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 15px;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                padding: 12px 15px;
+                margin-bottom: 20px;
+                position: sticky;
+                top: 0;
+                z-index: 999;
+            }
+
+            .header h1 {
+                font-size: 1.3em;
+            }
+
+            .update-time {
+                font-size: 0.85em;
+            }
+
+            .menu-toggle {
+                margin-right: 10px;
+            }
+        }
+
+        .announcement-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 4px solid #667eea;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .announcement-card.read {
+            opacity: 0.7;
+            background: #f9f9f9;
+        }
+        .announcement-card.unread {
+            border-left-color: #ec1c1c;
+            background: #fffbfb;
+        }
+        .read-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        .read-badge.read {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        .read-badge.unread {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .announcement-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+            padding-right: 120px;
+        }
+        .announcement-title {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #333;
+        }
+        .announcement-date {
+            font-size: 0.9em;
+            color: #888;
+        }
+        .announcement-content {
+            color: #555;
+            line-height: 1.6;
+            margin: 10px 0;
+        }
+        .announcement-meta {
+            font-size: 0.85em;
+            color: #999;
+            margin-top: 10px;
+        }
+        .read-info {
+            font-size: 0.85em;
+            color: #888;
+            margin-top: 10px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
