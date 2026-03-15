@@ -3,6 +3,7 @@ session_start();
 
 require 'controllers/RequestTypeController.php';
 require 'controllers/EmployeePortalController.php';
+require 'controllers/RequestController.php';
 
 $url = $_GET['url'] ?? 'dashboard';
 
@@ -26,6 +27,22 @@ switch ($url) {
 
     case 'request-types-delete':
         (new RequestTypeController)->delete();
+        break;
+
+    case 'request-index':
+        (new RequestController)->index();
+        break;
+
+    case 'request-create':
+        (new RequestController)->create();
+        break;
+
+    case 'request-status-update':
+        (new RequestController)->updateRequestStatus();
+        break;
+
+    case 'request-download':
+        (new RequestController)->download();
         break;
 
     default:

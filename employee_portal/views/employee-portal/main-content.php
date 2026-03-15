@@ -13,27 +13,18 @@
         </div>
 
         <div>
-            <a href="/capstone_hr_management_system/employee_portal/index.php?url=request-types"
+            <a href="/capstone_hr_management_system/employee_portal/index.php?url=request-index"
                 class="btn btn-outline-primary bg-slate-50">
+                <i class="fa-solid fa-gear me-1"></i> Manage Request
+            </a>
+            <a href="/capstone_hr_management_system/employee_portal/index.php?url=request-types"
+                class="btn btn-outline-primary bg-slate-50 ml-2">
                 <i class="fa-solid fa-gear me-1"></i> Manage Request Types
             </a>
         </div>
     </div>
 
-    <div class="mb-5">
-        <p class="fw-bold mb-2 fs-5">Request Buttons:</p>
-        <div class="d-flex flex-wrap gap-2">
-            <?php foreach ($requestTypes as $type): ?>
-                <a href="#"
-                    class="btn btn-primary rounded-pill shadow-sm py-2 px-3 btn-sm"
-                    data-bs-toggle="modal"
-                    data-bs-target="#requestModal<?= $type['id']; ?>">
-                    <i class="fa-solid <?= htmlspecialchars($type['icon']); ?>"></i>
-                    <?= htmlspecialchars($type['name']); ?>
-                </a>
-            <?php endforeach; ?>
-        </div>
-    </div>
+    <?php require __DIR__ . '/../partials/notif.php'; ?>
 
     <div class="position-relative">
         <div
@@ -126,56 +117,48 @@
     </div>
 
     <div class="row mb-4 mt-3">
-        <div class="col-md-3 mb-3">
-            <div class="card shadow-sm h-100 text-center">
-                <div class="card-body">
-                    <h5>📝 Leave Requests</h5>
-                    <p class="text-muted">Apply & track leave</p>
-                    <a href="#" class="btn btn-outline-primary btn-sm"
-                        data-bs-toggle="modal"
-                        data-bs-target="#requestLeaveModal">
-                        Request Leave
-                    </a>
-                </div>
-            </div>
-        </div>
+        <div class="mb-5">
+            <p class="fw-bold mb-3 fs-5">Request Buttons:</p>
 
-        <div class="col-md-3 mb-3">
-            <div class="card shadow-sm h-100 text-center">
-                <div class="card-body">
-                    <h5>💰 Payslips</h5>
-                    <p class="text-muted">Salary history</p>
-                    <a href="#" class="btn btn-outline-success btn-sm"
-                        data-bs-toggle="modal"
-                        data-bs-target="#viewPayslipsModal">
-                        View Payslips
-                    </a>
-                </div>
-            </div>
-        </div>
+            <div class="row g-3">
 
-        <div class="col-md-3 mb-3">
-            <div class="card shadow-sm h-100 text-center">
-                <div class="card-body">
-                    <h5>📅 Attendance</h5>
-                    <p class="text-muted">View attendance</p>
-                    <a href="#" class="btn btn-outline-warning btn-sm">
-                        View Logs
-                    </a>
-                </div>
-            </div>
-        </div>
+                <?php foreach ($requestTypes as $type): ?>
+                    <div class="col-md-3">
+                        <div class="card shadow-sm border-0 h-100 request-card">
 
-        <div class="col-md-3 mb-3">
-            <div class="card shadow-sm h-100 text-center">
-                <div class="card-body">
-                    <h5>🔐 Security</h5>
-                    <p class="text-muted">Account protection</p>
-                    <a href="index.php?url=profile-save-password"
-                        class="btn btn-outline-danger btn-sm">
-                        Change Password
-                    </a>
-                </div>
+                            <div class="card-body d-flex flex-column text-center">
+
+                                <div class="mb-3">
+                                    <i class="fa-solid <?= htmlspecialchars($type['icon']); ?> fa-2x text-primary"></i>
+                                </div>
+
+                                <h5 class="fw-semibold">
+                                    <?= htmlspecialchars($type['name']); ?>
+                                </h5>
+
+                                <p class="text-muted small flex-grow-1">
+                                    <?= htmlspecialchars($type['description'] ?? 'No description available.') ?>
+                                </p>
+
+                                <a href="#"
+                                    class="btn btn-outline-primary btn-sm mt-auto"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#requestModal<?= $type['id']; ?>">
+                                    <i class="fa-solid fa-paper-plane me-1"></i>
+                                    Request
+                                </a>
+
+                            </div>
+
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+
+                <?php
+                $types = $requestTypes;
+                require __DIR__ . '/request-modal.php';
+                ?>
+
             </div>
         </div>
     </div>
@@ -193,3 +176,5 @@
     </div>
 
 </div>
+
+<?php __DIR__ . '/request-modal.php'; ?>

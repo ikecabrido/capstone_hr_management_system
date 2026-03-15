@@ -12,11 +12,4 @@ $employee = [
     'profile_image' => '',
     'cover_image' => ''
 ];
-
-$requestTypes = [
-    ['id' => 1, 'name' => 'Leave Request', 'icon' => 'fa-calendar'],
-    ['id' => 2, 'name' => 'Overtime Request', 'icon' => 'fa-clock'],
-    ['id' => 3, 'name' => 'Reimbursement', 'icon' => 'fa-money-bill'],
-    ['id' => 4, 'name' => 'Certificate Request', 'icon' => 'fa-file']
-];
 ?>

@@ -11,7 +11,7 @@ $content = $content ?? __DIR__ . '/main-content.php';
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title><?= $title ?? 'Request Types'; ?></title>
+    <title><?= $title ?? 'Request Management'; ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="<?= $base ?>/employee_portal/public/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -32,7 +32,6 @@ $content = $content ?? __DIR__ . '/main-content.php';
 
         <div class="content-wrapper">
             <section class="content p-3">
-
                 <?php
                 if (file_exists($content)) {
                     require $content;
@@ -40,20 +39,18 @@ $content = $content ?? __DIR__ . '/main-content.php';
                     echo "<div class='alert alert-danger'>Page content not found.</div>";
                 }
                 ?>
-
             </section>
         </div>
 
         <?php require $partials . 'footer.php'; ?>
 
     </div>
-
-    <script src="<?= $base ?>/employee_portal/public/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script src="<?= $base ?>/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script src="<?= $base ?>/assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="<?= $base ?>/assets/plugins/jquery/jquery.min.js"></script>
+    <script src="<?= $base ?>/assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="<?= $base ?>/assets/dist/js/adminlte.min.js"></script>
     <script src="<?= $base ?>/employee_portal/views/partials/custom.js"></script>
+    <script src="<?= $base ?>/employee_portal/public/assets/js/selectFAIcon.js"></script>
+
 
 </body>
 

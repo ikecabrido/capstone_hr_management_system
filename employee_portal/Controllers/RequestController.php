@@ -1,30 +1,30 @@
 <?php
 
 require_once __DIR__ . '/../Models/Request.php';
-require_once __DIR__ . '/../Core/Controller.php';
-require_once __DIR__ . '/../Core/Auth.php';
 
-class RequestController extends Controller
+class RequestController
 {
     public function index()
     {
-        Auth::requireLogin();
+        $title = "Manage Request";
+        $model = new Request();
+        $requests = $model->all();
 
-        $requestModel = new Request();
-        $requests = $requestModel->getAll();
+        $content = __DIR__ . '/../views/request/main-content.php';
 
-        $this->view('admin/request/index', [
-            'title' => 'All Requests Table',
-            'requests' => $requests
-        ]);
+        require __DIR__ . '/../views/request/index.php';
     }
     public function create()
     {
-        Auth::requireLogin();
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $_SESSION['error'] = "Invalid request method.";
+            header("Location: index.php?url=dashboard");
+            exit;
+        }
 
         try {
 
-            $userId = $_SESSION['user']['id'];
+            $userId = $_SESSION['user']['id'] ?? 1;
 
             if (
                 empty($_POST['request_type_id']) ||
@@ -49,18 +49,20 @@ class RequestController extends Controller
 
             if (!empty($_FILES['attachment']['name'])) {
 
-                $uploadDir = __DIR__ . "/../../public/uploads/requests/";
+                $uploadDir = __DIR__ . "/../public/uploads/";
 
                 if (!is_dir($uploadDir)) {
                     mkdir($uploadDir, 0777, true);
                 }
 
-                $attachmentName = time() . "_" . basename($_FILES['attachment']['name']);
+                $fileName = basename($_FILES['attachment']['name']);
+                $attachmentName = time() . "_" . $fileName;
 
-                move_uploaded_file(
-                    $_FILES['attachment']['tmp_name'],
-                    $uploadDir . $attachmentName
-                );
+                $targetPath = $uploadDir . $attachmentName;
+
+                if (!move_uploaded_file($_FILES['attachment']['tmp_name'], $targetPath)) {
+                    throw new Exception("Failed to upload attachment.");
+                }
             }
 
             $data = [
@@ -80,32 +82,31 @@ class RequestController extends Controller
             $_SESSION['error'] = $e->getMessage();
         }
 
-        header("Location: index.php?url=employee-portal");
+        header("Location: index.php?url=dashboard");
         exit;
     }
-
     public function updateRequestStatus()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header("Location: index.php?url=admin-requests");
+            header("Location: index.php?url=request-index");
             exit;
         }
 
         $id = $_POST['id'] ?? null;
-        $status = $_POST['status'] ?? 'Pending';
-        $remarks = $_POST['admin_remarks'] ?? '';
+        $status = $_POST['status'] ?? null;
+        $remarks = trim($_POST['admin_remarks'] ?? '');
 
         if (!$id) {
             $_SESSION['error'] = "Invalid request ID.";
-            header("Location: index.php?url=admin-requests");
+            header("Location: index.php?url=request-index");
             exit;
         }
 
         $allowedStatuses = ['Pending', 'Approved', 'Rejected', 'Cancelled', 'Completed'];
 
-        if (!in_array($status, $allowedStatuses)) {
+        if (!$status || !in_array($status, $allowedStatuses)) {
             $_SESSION['error'] = "Invalid status value.";
-            header("Location: index.php?url=admin-requests");
+            header("Location: index.php?url=request-index");
             exit;
         }
 
@@ -114,41 +115,52 @@ class RequestController extends Controller
         $updated = $requestModel->updateStatusAndRemarks($id, $status, $remarks);
 
         if ($updated) {
-            $_SESSION['success'] = "Request updated successfully.";
+            $_SESSION['success'] = "Request status updated successfully.";
         } else {
             $_SESSION['error'] = "Failed to update request.";
         }
 
-        header("Location: index.php?url=admin-request");
+        header("Location: index.php?url=request-index");
         exit;
     }
 
-    public function downloadRequest()
+    public function download()
     {
-        Auth::requireAdmin();
-
         $id = $_GET['id'] ?? null;
 
         if (!$id) {
-            die('Invalid request.');
+            die("Invalid file request.");
         }
 
         $requestModel = new Request();
         $request = $requestModel->find($id);
 
         if (!$request || empty($request['attachment'])) {
-            die('File not found.');
+            die("File not found.");
         }
 
-        $filePath = __DIR__ . "/../../public/uploads/requests/" . $request['attachment'];
+        $fileName = trim($request['attachment']);
+        $filePath = $_SERVER['DOCUMENT_ROOT']
+            . "/capstone_hr_management_system/employee_portal/public/uploads/"
+            . $fileName;
 
         if (!file_exists($filePath)) {
-            die('File does not exist.');
+            die("File missing: " . $filePath);
         }
 
-        header('Content-Type: application/octet-stream');
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        $mime = mime_content_type($filePath) ?: "application/octet-stream";
+
+        header('Content-Description: File Transfer');
+        header('Content-Type: ' . $mime);
         header('Content-Disposition: attachment; filename="' . basename($filePath) . '"');
         header('Content-Length: ' . filesize($filePath));
+        header('Cache-Control: no-cache, must-revalidate');
+        header('Pragma: public');
+        header('Expires: 0');
 
         readfile($filePath);
         exit;
