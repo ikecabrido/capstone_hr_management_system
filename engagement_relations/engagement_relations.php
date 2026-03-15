@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 require_once "../auth/auth_check.php";
 $theme = $_SESSION['user']['theme'] ?? 'light';
@@ -27,7 +27,7 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
     href="../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css" />
   <!-- Theme style -->
   <link rel="stylesheet" href="../assets/dist/css/adminlte.min.css" />
-  <link rel="stylesheet" href="custom.css" />
+  <link rel="stylesheet" href="/custom.css" />
   <link rel="stylesheet" href="../layout/toast.css" />
 </head>
 
@@ -120,33 +120,69 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
             <!-- Add icons to the links using the .nav-icon class
                with font-awesome or any other icon font library -->
             <li class="nav-item">
-              <a href="#" class="nav-link active">
+              <a href="dashboard.php" class="nav-link active">
                 <i class="nav-icon fas fa-tachometer-alt"></i>
                 <p>Dashboard</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
+              <a href="announcements.php" class="nav-link">
                 <i class="nav-icon fas fa-chart-pie"></i>
-                <p>Module 1</p>
+                <p>Announcements</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
+              <a href="survey-management.php" class="nav-link">
                 <i class="nav-icon fas fa-tree"></i>
-                <p>Module 2</p>
+                <p>Surveys</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
+              <a href="feedback-suggestions.php" class="nav-link">
                 <i class="nav-icon fas fa-edit"></i>
-                <p>Module 3</p>
+                <p>Feedback & Suggestions</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
+              <a href="grievances.php" class="nav-link">
                 <i class="nav-icon fas fa-table"></i>
-                <p>Module 4</p>
+                <p> Grievances</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="events.php" class="nav-link">
+                <i class="nav-icon fas fa-table"></i>
+                <p>Events</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="recognition-rewards.php" class="nav-link">
+                <i class="nav-icon fas fa-table"></i>
+                <p>Recognition & Rewards</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="employees.php" class="nav-link">
+                <i class="nav-icon fas fa-table"></i>
+                <p>Employees</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="departments.php" class="nav-link">
+                <i class="nav-icon fas fa-table"></i>
+                <p>Departments</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="auditlogs.php" class="nav-link">
+                <i class="nav-icon fas fa-table"></i>
+                <p>Audit logs</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="reports.php" class="nav-link">
+                <i class="nav-icon fas fa-table"></i>
+                <p>Reports</p>
               </a>
             </li>
             <li class="nav-header">OTHER EXAMPLES</li>

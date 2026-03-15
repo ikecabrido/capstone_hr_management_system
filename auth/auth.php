@@ -30,6 +30,11 @@ class Auth
                 'theme' => $user['theme'] ?? 'light'
             ];
 
+            // Token support for API and cURL fallback
+            if (!isset($_SESSION['token']) || empty($_SESSION['token'])) {
+                $_SESSION['token'] = bin2hex(random_bytes(16));
+            }
+
             return true;
         }
 
