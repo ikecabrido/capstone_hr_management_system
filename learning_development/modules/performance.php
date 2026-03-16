@@ -4,6 +4,10 @@ if (!defined('NO_HEADER')) {
 require_once __DIR__ . '/header.php';
 }
 
+require_once __DIR__ . '/toast.php';
+require_once __DIR__ . '/search_filter.php';
+require_once __DIR__ . '/image_upload.php';
+
 $message = '';
 $messageType = 'success';
 $username = $_SESSION['username'] ?? null;
@@ -30,9 +34,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'create_review' && in_array($role, ['admin', 'manager', 'learning'])) {
         try {
+            // Handle image upload
+            $cover_photo = null;
+            if (isset($_FILES['cover_photo']) && $_FILES['cover_photo']['error'] === UPLOAD_ERR_OK) {
+                $uploadResult = uploadImage($_FILES['cover_photo'], 'performance', 2 * 1024 * 1024);
+                if ($uploadResult['success']) {
+                    $cover_photo = $uploadResult['path'];
+                } else {
+                    throw new Exception('Image upload failed: ' . $uploadResult['error']);
+                }
+            }
+            
             $stmt = $pdo->prepare('
-                INSERT INTO performance_reviews (employee_id, reviewer_id, review_period_start, review_period_end, rating, comments, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO performance_reviews (employee_id, reviewer_id, review_period_start, review_period_end, rating, comments, status, cover_photo)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ');
                 $stmt->execute([
                 $_POST['employee_id'],
@@ -41,7 +56,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_POST['review_period_end'],
                 $_POST['rating'] ?? 0,
                 $_POST['comments'] ?? '',
-                $_POST['status'] ?? 'draft'
+                $_POST['status'] ?? 'draft',
+                $cover_photo
             ]);
             $message = 'Performance review created successfully!';
         } catch (Exception $e) {
@@ -64,16 +80,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $message = 'Review not found.';
                     $messageType = 'danger';
                 } elseif (in_array($role, ['admin', 'manager', 'learning']) || ($userId && $userId == $orig['reviewer_id'])) {
-                    $stmt = $pdo->prepare('UPDATE performance_reviews SET employee_id = ?, review_period_start = ?, review_period_end = ?, rating = ?, comments = ?, status = ? WHERE id = ?');
-                    $stmt->execute([
-                        $_POST['employee_id'] ?? null,
-                        $_POST['review_period_start'] ?? null,
-                        $_POST['review_period_end'] ?? null,
-                        ($_POST['rating'] === "" ? null : ($_POST['rating'] ?? null)),
-                        $_POST['comments'] ?? '',
-                        $_POST['status'] ?? 'draft',
-                        $reviewId
-                    ]);
+                    // Handle image upload
+                    $cover_photo = null;
+                    if (isset($_FILES['cover_photo']) && $_FILES['cover_photo']['error'] === UPLOAD_ERR_OK) {
+                        // Get existing image to delete old one
+                        $existing = $pdo->prepare('SELECT cover_photo FROM performance_reviews WHERE id = ?');
+                        $existing->execute([$reviewId]);
+                        $old_image = $existing->fetch(PDO::FETCH_ASSOC)['cover_photo'] ?? null;
+                        
+                        $uploadResult = uploadImage($_FILES['cover_photo'], 'performance', 2 * 1024 * 1024);
+                        if ($uploadResult['success']) {
+                            $cover_photo = $uploadResult['path'];
+                            // Delete old image if new one uploaded
+                            if ($old_image && file_exists($old_image)) {
+                                deleteImage($old_image);
+                            }
+                        } else {
+                            throw new Exception('Image upload failed: ' . $uploadResult['error']);
+                        }
+                    }
+                    
+                    if ($cover_photo) {
+                        $stmt = $pdo->prepare('UPDATE performance_reviews SET employee_id = ?, review_period_start = ?, review_period_end = ?, rating = ?, comments = ?, status = ?, cover_photo = ? WHERE id = ?');
+                        $stmt->execute([
+                            $_POST['employee_id'] ?? null,
+                            $_POST['review_period_start'] ?? null,
+                            $_POST['review_period_end'] ?? null,
+                            ($_POST['rating'] === "" ? null : ($_POST['rating'] ?? null)),
+                            $_POST['comments'] ?? '',
+                            $_POST['status'] ?? 'draft',
+                            $cover_photo,
+                            $reviewId
+                        ]);
+                    } else {
+                        $stmt = $pdo->prepare('UPDATE performance_reviews SET employee_id = ?, review_period_start = ?, review_period_end = ?, rating = ?, comments = ?, status = ? WHERE id = ?');
+                        $stmt->execute([
+                            $_POST['employee_id'] ?? null,
+                            $_POST['review_period_start'] ?? null,
+                            $_POST['review_period_end'] ?? null,
+                            ($_POST['rating'] === "" ? null : ($_POST['rating'] ?? null)),
+                            $_POST['comments'] ?? '',
+                            $_POST['status'] ?? 'draft',
+                            $reviewId
+                        ]);
+                    }
                     $message = 'Performance review updated successfully!';
                 } else {
                     $message = 'Permission denied to edit this review.';
@@ -146,11 +196,40 @@ if ($userId) {
     </div>
 
     <?php if ($message): ?>
-        <div class="alert alert-<?php echo htmlspecialchars($messageType); ?> alert-dismissible fade show" role="alert">
-            <?php echo htmlspecialchars($message); ?>
-            <button type="button" class="btn-close" data-dismiss="alert"></button>
-        </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        showToast(<?php echo json_encode($message); ?>, <?php echo json_encode($messageType); ?>, 4000);
+    });
+    </script>
     <?php endif; ?>
+
+    <!-- Search & Filter Bar -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3" style="display: flex; gap: 1rem; align-items: flex-end;">
+                <input type="hidden" name="page" value="performance">
+                <div class="col-md-4">
+                    <label class="form-label">Search Reviews</label>
+                    <input type="text" name="search" class="form-control" placeholder="Search by employee, comments..." value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="draft" <?php echo ($_GET['status'] ?? '') === 'draft' ? 'selected' : ''; ?>>Draft</option>
+                        <option value="submitted" <?php echo ($_GET['status'] ?? '') === 'submitted' ? 'selected' : ''; ?>>Submitted</option>
+                        <option value="completed" <?php echo ($_GET['status'] ?? '') === 'completed' ? 'selected' : ''; ?>>Completed</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Search</button>
+                </div>
+                <div class="col-md-2">
+                    <a href="?page=performance" class="btn btn-secondary w-100">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- User's Reviews -->
     <?php if ($username && $userReviews): ?>
@@ -268,7 +347,7 @@ if ($userId) {
                 <h5 class="modal-title" id="modalTitle">Create Performance Review</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
-            <form method="POST">
+            <form method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="action" id="modal_action" value="create_review">
                 <input type="hidden" id="review_id" name="review_id" value="">
                 <div class="modal-body">
@@ -322,6 +401,11 @@ if ($userId) {
                     <div class="mb-3">
                         <label for="comments" class="form-label">Comments</label>
                         <textarea id="comments" name="comments" class="form-control" rows="4" placeholder="Provide detailed feedback"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cover_photo" class="form-label">Cover Photo</label>
+                        <input type="file" id="cover_photo" name="cover_photo" class="form-control" accept="image/*">
+                        <small class="text-muted">JPG, PNG, GIF, or WebP (max 2MB)</small>
                     </div>
                 </div>
                 <div class="modal-footer">

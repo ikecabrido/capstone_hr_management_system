@@ -4,6 +4,11 @@ if (!defined('NO_HEADER')) {
 require_once __DIR__ . '/header.php';
 }
 
+require_once __DIR__ . '/toast.php';
+require_once __DIR__ . '/search_filter.php';
+require_once __DIR__ . '/validation.php';
+require_once __DIR__ . '/image_upload.php';
+
 $role = current_role();
 $userId = get_current_user_id();
 $username = $_SESSION['username'] ?? null;
@@ -44,25 +49,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $duration_months = intval($_POST['duration_months'] ?? 12);
             $prerequisites = trim($_POST['prerequisites'] ?? '');
             $skills_required = json_encode(array_filter(array_map('trim', explode(',', $_POST['skills_required'] ?? ''))));
+            
+            // Validate inputs
+            $errors = validateForm($_POST, [
+                'path_name' => [
+                    function($v) { return validateRequired($v, 'Career Path Name'); },
+                    function($v) { return validateMinLength($v, 3, 'Career Path Name'); },
+                    function($v) { return validateMaxLength($v, 100, 'Career Path Name'); }
+                ],
+                'path_description' => [
+                    function($v) { return validateRequired($v, 'Description'); },
+                    function($v) { return validateMinLength($v, 10, 'Description'); },
+                    function($v) { return validateMaxLength($v, 500, 'Description'); }
+                ],
+                'target_position' => [
+                    function($v) { return validateRequired($v, 'Target Position'); },
+                    function($v) { return validateMaxLength($v, 100, 'Target Position'); }
+                ],
+                'duration_months' => [
+                    function($v) { return validateRequired($v, 'Duration'); },
+                    function($v) { return validateInteger($v, 'Duration', 1, 120); }
+                ]
+            ]);
+            
+            if (!empty($errors)) {
+                $message = 'Validation error: ' . implode(' ', array_values($errors));
+                $messageType = 'danger';
+            } else {
+                // use the current user id as creator if available
+                $creator = $userId ?: null;
+                if (!$creator) {
+                    // fallback to first admin if for some reason session is missing
+                    $tmp = $pdo->query('SELECT id FROM users WHERE role = "admin" LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+                    $creator = $tmp ? $tmp['id'] : null;
+                }
+                if (!$creator) {
+                    throw new Exception('No valid creator user available for career path');
+                }
 
-            // use the current user id as creator if available
-            $creator = $userId ?: null;
-            if (!$creator) {
-                // fallback to first admin if for some reason session is missing
-                $tmp = $pdo->query('SELECT id FROM users WHERE role = "admin" LIMIT 1')->fetch(PDO::FETCH_ASSOC);
-                $creator = $tmp ? $tmp['id'] : null;
-            }
-            if (!$creator) {
-                throw new Exception('No valid creator user available for career path');
-            }
+                // Handle image upload
+                $cover_photo = null;
+                if (isset($_FILES['cover_photo']) && $_FILES['cover_photo']['error'] === UPLOAD_ERR_OK) {
+                    $uploadResult = uploadImage($_FILES['cover_photo'], 'career', 2 * 1024 * 1024);
+                    if ($uploadResult['success']) {
+                        $cover_photo = $uploadResult['path'];
+                    } else {
+                        throw new Exception('Image upload failed: ' . $uploadResult['error']);
+                    }
+                }
 
-            $stmt = $pdo->prepare('
-                INSERT INTO career_paths (name, description, target_position, prerequisites, skills_required, duration_months, status, created_by)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ');
-            $stmt->execute([$name, $description, $target_position, $prerequisites, $skills_required, $duration_months, 'active', $creator]);
-            $message = 'Career path created successfully!';
-            $messageType = 'success';
+                $stmt = $pdo->prepare('
+                    INSERT INTO career_paths (name, description, target_position, prerequisites, skills_required, duration_months, status, created_by, cover_photo)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ');
+                $stmt->execute([$name, $description, $target_position, $prerequisites, $skills_required, $duration_months, 'active', $creator, $cover_photo]);
+                $message = 'Career path created successfully!';
+                $messageType = 'success';
+            }
         }
 
         // Admin: Edit career path
@@ -76,12 +119,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $prerequisites = trim($_POST['prerequisites'] ?? '');
             $skills_required = json_encode(array_filter(array_map('trim', explode(',', $_POST['skills_required'] ?? ''))));
 
-            $stmt = $pdo->prepare('
-                UPDATE career_paths 
-                SET name = ?, description = ?, target_position = ?, prerequisites = ?, skills_required = ?, duration_months = ?, status = ?
-                WHERE id = ?
-            ');
-            $stmt->execute([$name, $description, $target_position, $prerequisites, $skills_required, $duration_months, $status, $path_id]);
+            $cover_photo = null;
+            
+            // Handle image upload if provided
+            if (isset($_FILES['cover_photo']) && $_FILES['cover_photo']['error'] === UPLOAD_ERR_OK) {
+                // Get existing image to delete old one
+                $existing = $pdo->prepare('SELECT cover_photo FROM career_paths WHERE id = ?');
+                $existing->execute([$path_id]);
+                $old_image = $existing->fetch(PDO::FETCH_ASSOC)['cover_photo'] ?? null;
+                
+                $uploadResult = uploadImage($_FILES['cover_photo'], 'career', 2 * 1024 * 1024);
+                if ($uploadResult['success']) {
+                    $cover_photo = $uploadResult['path'];
+                    // Delete old image if new one uploaded
+                    if ($old_image && file_exists($old_image)) {
+                        deleteImage($old_image);
+                    }
+                } else {
+                    throw new Exception('Image upload failed: ' . $uploadResult['error']);
+                }
+            }
+
+            if ($cover_photo) {
+                $stmt = $pdo->prepare('
+                    UPDATE career_paths 
+                    SET name = ?, description = ?, target_position = ?, prerequisites = ?, skills_required = ?, duration_months = ?, status = ?, cover_photo = ?
+                    WHERE id = ?
+                ');
+                $stmt->execute([$name, $description, $target_position, $prerequisites, $skills_required, $duration_months, $status, $cover_photo, $path_id]);
+            } else {
+                $stmt = $pdo->prepare('
+                    UPDATE career_paths 
+                    SET name = ?, description = ?, target_position = ?, prerequisites = ?, skills_required = ?, duration_months = ?, status = ?
+                    WHERE id = ?
+                ');
+                $stmt->execute([$name, $description, $target_position, $prerequisites, $skills_required, $duration_months, $status, $path_id]);
+            }
             $message = 'Career path updated successfully!';
             $messageType = 'success';
         }
@@ -184,13 +257,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = 'Development plan deleted.';
             $messageType = 'success';
         }
-
-        // Redirect after POST
-        // Redirect after POST (don't redirect if error so message can be seen)
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && $messageType !== 'danger') {
-            header('Location: ' . $_SERVER['PHP_SELF']);
-            exit;
-        }
     } catch (Exception $e) {
         error_log('Career module error: ' . $e->getMessage());
         $debug = !empty($e->getMessage()) ? ' (' . htmlspecialchars($e->getMessage()) . ')' : '';
@@ -202,7 +268,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Fetch career paths from database
 $paths = [];
 try {
-    $stmt = $pdo->query('SELECT * FROM career_paths ORDER BY created_at DESC');
+    // Check if created_at column exists, fallback to id if not
+    $stmt = $pdo->query('SELECT * FROM career_paths ORDER BY COALESCE(created_at, id) DESC LIMIT 1000');
     $paths = $stmt->fetchAll(PDO::FETCH_ASSOC);
     foreach ($paths as &$path) {
         if (isset($path['skills_required']) && $path['skills_required']) {
@@ -240,11 +307,36 @@ if ($userId) {
     }
 }
 
+// Handle search, status filter, and pagination
+$searchQuery = $_GET['search'] ?? '';
+$statusFilter = $_GET['status'] ?? '';
+$pathPage = intval($_GET['path_page'] ?? 1);
+$idpPage = intval($_GET['idp_page'] ?? 1);
+
+// Filter and paginate career paths
+$filteredPaths = $paths;
+if (!empty($searchQuery)) {
+    $filteredPaths = filterBySearch($filteredPaths, $searchQuery, ['name', 'description', 'target_position']);
+}
+if (!empty($statusFilter)) {
+    $filteredPaths = filterByStatus($filteredPaths, $statusFilter, 'status');
+}
+$paginatedPaths = paginateItems($filteredPaths, $pathPage, 12);
+
+// Filter and paginate IDPs
+$filteredIdps = $userIdps;
+if (!empty($searchQuery)) {
+    $filteredIdps = filterBySearch($filteredIdps, $searchQuery, ['objectives', 'path_name']);
+}
+$paginatedIdps = paginateItems($filteredIdps, $idpPage, 12);
+
 ?>
 
 <div class="container" style="margin-top:90px; margin-bottom: 40px;">
     <div class="career-toolbar d-flex justify-content-between align-items-center mb-4">
-        <h2 class="m-0">Career Development</h2>
+        <div>
+            <h2 class="m-0">Career Development</h2>
+        </div>
         <?php if (in_array($role, ['admin', 'manager', 'learning'])): ?>
             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#createPathModal">Create Career Path</button>
         <?php elseif ($username): ?>
@@ -253,21 +345,49 @@ if ($userId) {
     </div>
 
     <?php if ($message): ?>
-        <div class="alert alert-<?php echo htmlspecialchars($messageType); ?> alert-dismissible fade show" role="alert">
-            <?php echo htmlspecialchars($message); ?>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        showToast(<?php echo json_encode($message); ?>, <?php echo json_encode($messageType); ?>, 4000);
+    });
+    </script>
     <?php endif; ?>
+
+    <!-- Search & Filter Bar -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3" style="display: flex; gap: 1rem; align-items: flex-end;">
+                <div class="col-md-4">
+                    <label class="form-label">Search Career Paths</label>
+                    <input type="text" name="search" class="form-control" placeholder="Search by name, target, description..." 
+                        value="<?php echo htmlspecialchars($searchQuery); ?>">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="active" <?php echo $statusFilter === 'active' ? 'selected' : ''; ?>>Active</option>
+                        <option value="inactive" <?php echo $statusFilter === 'inactive' ? 'selected' : ''; ?>>Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Search</button>
+                </div>
+                <div class="col-md-2">
+                    <a href="?page=career" class="btn btn-secondary w-100">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Career Paths Section -->
     <div class="mb-5">
         <h3 class="mb-3">Career Paths</h3>
-        <?php if ($paths): ?>
+        <?php if ($paginatedPaths['items']): ?>
             <div class="row g-3">
-                <?php $idx = 0; foreach ($paths as $path): $idx++; $delay = ($idx - 1) * 0.08; ?>
+                <?php $idx = 0; foreach ($paginatedPaths['items'] as $path): $idx++; $delay = ($idx - 1) * 0.08; ?>
                     <div class="col-md-4">
                         <div class="card h-100 career-card pop-in" data-id="<?php echo htmlspecialchars($path['id']); ?>" data-title="<?php echo htmlspecialchars($path['name']); ?>" style="animation-delay: <?php echo $delay; ?>s;">
-                            <img src="img/placeholder.gif" class="card-img-top" style="height:160px;object-fit:cover;" alt="">
+                            <img src="<?php echo htmlspecialchars(getImageUrl($path['cover_photo'] ?? null, 'img/placeholder.gif')); ?>" class="card-img-top" style="height:160px;object-fit:cover;" alt="<?php echo htmlspecialchars($path['name']); ?> cover">
                             <div class="card-body d-flex flex-column">
                                 <h5 class="card-title"><?php echo htmlspecialchars($path['name']); ?></h5>
                                 <p class="card-text text-muted mb-2"><?php echo htmlspecialchars($path['description']); ?></p>
@@ -301,10 +421,9 @@ if ($userId) {
                                 <?php if (in_array($role, ['admin', 'manager', 'learning'])): ?>
                                         <button type="button" class="btn btn-sm btn-outline-secondary edit-path-btn" data-toggle="modal" data-target="#editPathModal" 
                                             onclick="editPath(<?php echo htmlspecialchars(json_encode($path)); ?>)">Edit</button>
-                                        <form method="POST" style="display:inline" class="delete-form" data-id="<?php echo intval($path['id']); ?>">
-                                            <input type="hidden" name="action" value="delete_path">
+                                        <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this career path? All associated development plans will also be deleted.');"><input type="hidden" name="action" value="delete_path">
                                             <input type="hidden" name="path_id" value="<?php echo intval($path['id']); ?>">
-                                            <button type="button" class="btn btn-sm btn-danger delete-trigger">Delete</button>
+                                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                                         </form>
                                     <?php endif; ?>
                                 </div>
@@ -313,22 +432,53 @@ if ($userId) {
                     </div>
                 <?php endforeach; ?>
             </div>
+            
+            <!-- Pagination for Career Paths -->
+            <nav aria-label="Career paths pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <?php if ($paginatedPaths['hasPrevPage']): ?>
+                        <li class="page-item">
+                            <a class="page-link" href="?page=career&search=<?php echo urlencode($searchQuery); ?>&status=<?php echo urlencode($statusFilter); ?>&path_page=<?php echo $paginatedPaths['currentPage'] - 1; ?>">Previous</a>
+                        </li>
+                    <?php else: ?>
+                        <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                    <?php endif; ?>
+                    
+                    <?php for ($i = 1; $i <= $paginatedPaths['totalPages']; $i++): ?>
+                        <li class="page-item <?php echo $i === $paginatedPaths['currentPage'] ? 'active' : ''; ?>">
+                            <a class="page-link" href="?page=career&search=<?php echo urlencode($searchQuery); ?>&status=<?php echo urlencode($statusFilter); ?>&path_page=<?php echo $i; ?>">
+                                <?php echo $i; ?>
+                            </a>
+                        </li>
+                    <?php endfor; ?>
+                    
+                    <?php if ($paginatedPaths['hasNextPage']): ?>
+                        <li class="page-item">
+                            <a class="page-link" href="?page=career&search=<?php echo urlencode($searchQuery); ?>&status=<?php echo urlencode($statusFilter); ?>&path_page=<?php echo $paginatedPaths['currentPage'] + 1; ?>">Next</a>
+                        </li>
+                    <?php else: ?>
+                        <li class="page-item disabled"><span class="page-link">Next</span></li>
+                    <?php endif; ?>
+                </ul>
+            </nav>
         <?php else: ?>
-            <div class="alert alert-info">No career paths available yet.</div>
+            <div class="alert alert-info">
+                <?php echo !empty($searchQuery) || !empty($statusFilter) ? 'No career paths match your search.' : 'No career paths available yet.'; ?>
+            </div>
         <?php endif; ?>
     </div>
 
     <!-- My Development Plans Section -->
-    <?php if ($username && !empty($userIdps)): ?>
+    <?php if ($username && !empty($paginatedIdps['items'])): ?>
         <div class="mb-5">
             <h3 class="mb-3">My Development Plans</h3>
             <div class="row g-3">
-                <?php $idx = 0; foreach ($userIdps as $idp): $idx++; $delay = ($idx - 1) * 0.08; 
+                <?php $idx = 0; foreach ($paginatedIdps['items'] as $idp): $idx++; $delay = ($idx - 1) * 0.08; 
                     $pathName = $idp['path_name'] ?? 'Custom Plan';
                 ?>
                     <div class="col-md-4">
                         <div class="card h-100 pop-in" style="animation-delay: <?php echo $delay; ?>s;">
-                            <img src="img/placeholder.gif" class="card-img-top" style="height:160px;object-fit:cover;" alt="">
+                            <img src="<?php echo htmlspecialchars(getImageUrl($idp['cover_photo'] ?? null, 'img/placeholder.gif')); ?>" class="card-img-top" style="height:160px;object-fit:cover;" alt="<?php echo htmlspecialchars($pathName); ?> cover">
                             <div class="card-body d-flex flex-column">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                     <h5 class="card-title mb-0"><?php echo htmlspecialchars($pathName); ?></h5>
@@ -364,6 +514,40 @@ if ($userId) {
                     </div>
                 <?php endforeach; ?>
             </div>
+            
+            <!-- Pagination for IDPs -->
+            <nav aria-label="Development plans pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <?php if ($paginatedIdps['hasPrevPage']): ?>
+                        <li class="page-item">
+                            <a class="page-link" href="?page=career&search=<?php echo urlencode($searchQuery); ?>&idp_page=<?php echo $paginatedIdps['currentPage'] - 1; ?>">Previous</a>
+                        </li>
+                    <?php else: ?>
+                        <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                    <?php endif; ?>
+                    
+                    <?php for ($i = 1; $i <= $paginatedIdps['totalPages']; $i++): ?>
+                        <li class="page-item <?php echo $i === $paginatedIdps['currentPage'] ? 'active' : ''; ?>">
+                            <a class="page-link" href="?page=career&search=<?php echo urlencode($searchQuery); ?>&idp_page=<?php echo $i; ?>">
+                                <?php echo $i; ?>
+                            </a>
+                        </li>
+                    <?php endfor; ?>
+                    
+                    <?php if ($paginatedIdps['hasNextPage']): ?>
+                        <li class="page-item">
+                            <a class="page-link" href="?page=career&search=<?php echo urlencode($searchQuery); ?>&idp_page=<?php echo $paginatedIdps['currentPage'] + 1; ?>">Next</a>
+                        </li>
+                    <?php else: ?>
+                        <li class="page-item disabled"><span class="page-link">Next</span></li>
+                    <?php endif; ?>
+                </ul>
+            </nav>
+        </div>
+    <?php elseif ($username): ?>
+        <div class="alert alert-info">
+            <?php echo !empty($searchQuery) ? 'No development plans match your search.' : 'You haven\'t created any development plans yet. '; ?>
+            <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#createIdpModal">Create one now</button>
         </div>
     <?php endif; ?>
 </div>
@@ -372,7 +556,7 @@ if ($userId) {
 <div class="modal fade" id="createPathModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="POST">
+            <form method="POST" id="createPathForm" enctype="multipart/form-data">
                 <div class="modal-header">
                     <h5 class="modal-title">Create Career Path</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
@@ -380,28 +564,36 @@ if ($userId) {
                 <div class="modal-body">
                     <input type="hidden" name="action" value="create_path">
                     <div class="mb-3">
-                        <label class="form-label">Path Name</label>
-                        <input type="text" name="path_name" class="form-control" required>
+                        <label class="form-label">Path Name <span class="text-danger">*</span></label>
+                        <input type="text" name="path_name" class="form-control" minlength="3" maxlength="100" required>
+                        <small class="text-muted">3-100 characters</small>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        <textarea name="path_description" class="form-control" rows="3" required></textarea>
+                        <label class="form-label">Description <span class="text-danger">*</span></label>
+                        <textarea name="path_description" class="form-control" rows="3" minlength="10" maxlength="500" required></textarea>
+                        <small class="text-muted">10-500 characters</small>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Target Position</label>
-                        <input type="text" name="target_position" class="form-control" required>
+                        <label class="form-label">Target Position <span class="text-danger">*</span></label>
+                        <input type="text" name="target_position" class="form-control" maxlength="100" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Duration (months)</label>
-                        <input type="number" name="duration_months" class="form-control" value="12" min="1" required>
+                        <label class="form-label">Duration (months) <span class="text-danger">*</span></label>
+                        <input type="number" name="duration_months" class="form-control" value="12" min="1" max="120" required>
+                        <small class="text-muted">1-120 months</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Prerequisites</label>
-                        <input type="text" name="prerequisites" class="form-control" placeholder="e.g., 2 years experience">
+                        <input type="text" name="prerequisites" class="form-control" maxlength="255" placeholder="e.g., 2 years experience">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Skills Required (comma-separated)</label>
                         <input type="text" name="skills_required" class="form-control" placeholder="e.g., Leadership, Communication, Analysis">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cover Photo</label>
+                        <input type="file" name="cover_photo" class="form-control" accept="image/*">
+                        <small class="text-muted">JPG, PNG, GIF, or WebP (max 2MB)</small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -417,7 +609,7 @@ if ($userId) {
 <div class="modal fade" id="editPathModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="POST">
+            <form method="POST" enctype="multipart/form-data">
                 <div class="modal-header">
                     <h5 class="modal-title">Edit Career Path</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
@@ -455,6 +647,11 @@ if ($userId) {
                     <div class="mb-3">
                         <label class="form-label">Skills Required (comma-separated)</label>
                         <input type="text" name="skills_required" class="form-control" id="edit_skills_required">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cover Photo</label>
+                        <input type="file" name="cover_photo" class="form-control" accept="image/*">
+                        <small class="text-muted">JPG, PNG, GIF, or WebP (max 2MB). Leave empty to keep current image</small>
                     </div>
                 </div>
                 <div class="modal-footer">

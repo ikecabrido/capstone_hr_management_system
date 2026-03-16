@@ -4,6 +4,10 @@ if (!defined('NO_HEADER')) {
 require_once __DIR__ . '/header.php';
 }
 
+require_once __DIR__ . '/toast.php';
+require_once __DIR__ . '/search_filter.php';
+require_once __DIR__ . '/image_upload.php';
+
 $message = '';
 $messageType = 'success';
 $username = $_SESSION['username'] ?? null;
@@ -56,9 +60,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_POST['participant_count'] ?? 0,
                 'planned'
             ]);
-            // Redirect after successful creation to prevent form resubmission
-            header('Location: orgdev.php?success=created', true, 303);
-            exit;
+            // Success - activity created
+            $message = 'Team activity created successfully!';
+            $messageType = 'success';
         } catch (Exception $e) {
             $message = 'Error creating activity: ' . $e->getMessage();
             $messageType = 'danger';
@@ -68,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $pdo->prepare('
                 UPDATE team_activities
                 SET name = ?, description = ?, activity_date = ?, department = ?, budget = ?, participant_count = ?
-                WHERE id = ? AND organizer_id = ?
+                WHERE id = ?
             ');
             $stmt->execute([
                 $_POST['name'],
@@ -77,14 +81,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_POST['department'] ?? '',
                 $_POST['budget'] ?? 0,
                 $_POST['participant_count'] ?? 0,
-                $_POST['activity_id'],
-                $userId
+                $_POST['activity_id']
             ]);
             if ($stmt->rowCount() > 0) {
-                header('Location: orgdev.php?success=updated', true, 303);
-                exit;
+                $message = 'Team activity updated successfully!';
+                $messageType = 'success';
             } else {
-                $message = 'Activity not found or you do not have permission to edit it.';
+                $message = 'Activity not found.';
                 $messageType = 'warning';
             }
         } catch (Exception $e) {
@@ -93,13 +96,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif ($action === 'delete_activity' && in_array($role, ['admin', 'manager', 'learning'])) {
         try {
-            $stmt = $pdo->prepare('DELETE FROM team_activities WHERE id = ? AND organizer_id = ?');
-            $stmt->execute([$_POST['activity_id'], $userId]);
+            $stmt = $pdo->prepare('DELETE FROM team_activities WHERE id = ?');
+            $stmt->execute([$_POST['activity_id']]);
             if ($stmt->rowCount() > 0) {
-                header('Location: orgdev.php?success=deleted', true, 303);
-                exit;
+                $message = 'Team activity deleted successfully!';
+                $messageType = 'success';
             } else {
-                $message = 'Activity not found or you do not have permission to delete it.';
+                $message = 'Activity not found.';
                 $messageType = 'warning';
             }
         } catch (Exception $e) {
@@ -138,11 +141,40 @@ try {
     </div>
 
     <?php if ($message): ?>
-        <div class="alert alert-<?php echo htmlspecialchars($messageType); ?> alert-dismissible fade show" role="alert">
-            <?php echo htmlspecialchars($message); ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        showToast(<?php echo json_encode($message); ?>, <?php echo json_encode($messageType); ?>, 4000);
+    });
+    </script>
     <?php endif; ?>
+
+    <!-- Search & Filter Bar -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3" style="display: flex; gap: 1rem; align-items: flex-end;">
+                <input type="hidden" name="page" value="orgdev">
+                <div class="col-md-4">
+                    <label class="form-label">Search Activities</label>
+                    <input type="text" name="search" class="form-control" placeholder="Search by name, department..." value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="planned" <?php echo ($_GET['status'] ?? '') === 'planned' ? 'selected' : ''; ?>>Planned</option>
+                        <option value="in_progress" <?php echo ($_GET['status'] ?? '') === 'in_progress' ? 'selected' : ''; ?>>In Progress</option>
+                        <option value="completed" <?php echo ($_GET['status'] ?? '') === 'completed' ? 'selected' : ''; ?>>Completed</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Search</button>
+                </div>
+                <div class="col-md-2">
+                    <a href="?page=orgdev" class="btn btn-secondary w-100">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Team Activities -->
     <div class="mb-5">

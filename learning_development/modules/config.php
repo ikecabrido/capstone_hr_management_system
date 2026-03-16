@@ -40,9 +40,16 @@ try {
     $pdo->exec('ALTER TABLE career_paths ADD COLUMN IF NOT EXISTS prerequisites VARCHAR(255)');
     $pdo->exec('ALTER TABLE career_paths ADD COLUMN IF NOT EXISTS skills_required JSON');
     $pdo->exec('ALTER TABLE career_paths ADD COLUMN IF NOT EXISTS created_by INT');
+    $pdo->exec('ALTER TABLE career_paths ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
+    $pdo->exec('ALTER TABLE career_paths ADD COLUMN IF NOT EXISTS cover_photo VARCHAR(255)');
     $pdo->exec('ALTER TABLE training_programs ADD COLUMN IF NOT EXISTS created_by INT');
+    $pdo->exec('ALTER TABLE training_programs ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
+    $pdo->exec('ALTER TABLE training_programs ADD COLUMN IF NOT EXISTS cover_photo VARCHAR(255)');
     $pdo->exec('ALTER TABLE leadership_programs ADD COLUMN IF NOT EXISTS created_by INT');
+    $pdo->exec('ALTER TABLE leadership_programs ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
+    $pdo->exec('ALTER TABLE leadership_programs ADD COLUMN IF NOT EXISTS cover_photo VARCHAR(255)');
     $pdo->exec('ALTER TABLE individual_development_plans ADD COLUMN IF NOT EXISTS created_by INT');
+    $pdo->exec('ALTER TABLE performance_reviews ADD COLUMN IF NOT EXISTS cover_photo VARCHAR(255)');
     $pdo->exec('ALTER TABLE compliance_trainings ADD COLUMN IF NOT EXISTS created_by INT');
 } catch (Exception $e) {
     // ignore any errors during migration, column may already exist or engine may not support

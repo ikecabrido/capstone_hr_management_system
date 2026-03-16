@@ -4,6 +4,10 @@ if (!defined('NO_HEADER')) {
 require_once __DIR__ . '/header.php';
 }
 
+require_once __DIR__ . '/toast.php';
+require_once __DIR__ . '/search_filter.php';
+require_once __DIR__ . '/image_upload.php';
+
 $message = '';
 $messageType = 'success';
 $username = $_SESSION['username'] ?? null;
@@ -54,9 +58,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 isset($_POST['mandatory']) ? 1 : 0,
                 $userId
             ]);
-            // Redirect after successful creation to prevent form resubmission
-            header('Location: compliance.php?success=created', true, 303);
-            exit;
+            // Success - training created
+            $message = 'Compliance training created successfully!';
+            $messageType = 'success';
         } catch (Exception $e) {
             $message = 'Error creating training: ' . $e->getMessage();
             $messageType = 'danger';
@@ -66,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $pdo->prepare('
                 UPDATE compliance_trainings
                 SET title = ?, description = ?, compliance_type = ?, due_date = ?, mandatory = ?
-                WHERE id = ? AND created_by = ?
+                WHERE id = ?
             ');
             $stmt->execute([
                 $_POST['title'],
@@ -74,14 +78,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_POST['compliance_type'] ?? '',
                 $_POST['due_date'] ?? null,
                 isset($_POST['mandatory']) ? 1 : 0,
-                $_POST['training_id'],
-                $userId
+                $_POST['training_id']
             ]);
             if ($stmt->rowCount() > 0) {
-                header('Location: compliance.php?success=updated', true, 303);
-                exit;
+                $message = 'Compliance training updated successfully!';
+                $messageType = 'success';
             } else {
-                $message = 'Training not found or you do not have permission to edit it.';
+                $message = 'Training not found.';
                 $messageType = 'warning';
             }
         } catch (Exception $e) {
@@ -90,13 +93,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif ($action === 'delete_training' && in_array($role, ['admin', 'trainer', 'learning'])) {
         try {
-            $stmt = $pdo->prepare('DELETE FROM compliance_trainings WHERE id = ? AND created_by = ?');
-            $stmt->execute([$_POST['training_id'], $userId]);
+            $stmt = $pdo->prepare('DELETE FROM compliance_trainings WHERE id = ?');
+            $stmt->execute([$_POST['training_id']]);
             if ($stmt->rowCount() > 0) {
-                header('Location: compliance.php?success=deleted', true, 303);
-                exit;
+                $message = 'Compliance training deleted successfully!';
+                $messageType = 'success';
             } else {
-                $message = 'Training not found or you do not have permission to delete it.';
+                $message = 'Training not found.';
                 $messageType = 'warning';
             }
         } catch (Exception $e) {
@@ -178,11 +181,40 @@ if ($userId) {
     </div>
 
     <?php if ($message): ?>
-        <div class="alert alert-<?php echo htmlspecialchars($messageType); ?> alert-dismissible fade show" role="alert">
-            <?php echo htmlspecialchars($message); ?>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        showToast(<?php echo json_encode($message); ?>, <?php echo json_encode($messageType); ?>, 4000);
+    });
+    </script>
     <?php endif; ?>
+
+    <!-- Search & Filter Bar -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3" style="display: flex; gap: 1rem; align-items: flex-end;">
+                <input type="hidden" name="page" value="compliance">
+                <div class="col-md-4">
+                    <label class="form-label">Search Trainings</label>
+                    <input type="text" name="search" class="form-control" placeholder="Search by title, type..." value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="pending" <?php echo ($_GET['status'] ?? '') === 'pending' ? 'selected' : ''; ?>>Pending</option>
+                        <option value="in_progress" <?php echo ($_GET['status'] ?? '') === 'in_progress' ? 'selected' : ''; ?>>In Progress</option>
+                        <option value="completed" <?php echo ($_GET['status'] ?? '') === 'completed' ? 'selected' : ''; ?>>Completed</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Search</button>
+                </div>
+                <div class="col-md-2">
+                    <a href="?page=compliance" class="btn btn-secondary w-100">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- My Assignments -->
     <?php if ($username && $userAssignments): ?>

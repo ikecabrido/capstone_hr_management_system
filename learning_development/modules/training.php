@@ -5,6 +5,10 @@ if (!defined('NO_HEADER')) {
 require_once __DIR__ . '/header.php';
 }
 
+require_once __DIR__ . '/toast.php';
+require_once __DIR__ . '/search_filter.php';
+require_once __DIR__ . '/image_upload.php';
+
 $q = trim($_GET['q'] ?? '');
 $currentUserId = get_current_user_id();
 $currentUsername = $_SESSION['username'] ?? null;
@@ -37,21 +41,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $name = trim($_POST['title'] ?? '');
             $description = trim($_POST['description'] ?? '');
-            $image = trim($_POST['image'] ?? '');
             $date = trim($_POST['date'] ?? '');
             $capacity = intval($_POST['capacity'] ?? 0);
             $location = trim($_POST['location'] ?? '');
             $trainer = trim($_POST['trainer'] ?? '');
             $status = trim($_POST['status'] ?? 'Active');
             $sessions = intval($_POST['sessions'] ?? 1);
+            
+            // Handle image upload
+            $cover_photo = null;
+            if (isset($_FILES['cover_photo']) && $_FILES['cover_photo']['error'] === UPLOAD_ERR_OK) {
+                $uploadResult = uploadImage($_FILES['cover_photo'], 'training', 2 * 1024 * 1024);
+                if ($uploadResult['success']) {
+                    $cover_photo = $uploadResult['path'];
+                } else {
+                    throw new Exception('Image upload failed: ' . $uploadResult['error']);
+                }
+            }
 
             $creatorId = $currentUserId;
 
             $stmt = $pdo->prepare('
-                INSERT INTO training_programs (name, description, category, type, duration, created_by, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO training_programs (name, description, category, type, duration, created_by, status, cover_photo)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ');
-            $stmt->execute([$name, $description, 'General', 'Workshop', $sessions, $creatorId, $status]);
+            $stmt->execute([$name, $description, 'General', 'Workshop', $sessions, $creatorId, $status, $cover_photo]);
             $programId = $pdo->lastInsertId();
             
             // Store extra fields in a JSON meta field (we'll use description for now, but ideally add course_content)
@@ -65,7 +79,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = intval($_POST['id'] ?? 0);
         $name = trim($_POST['title'] ?? '');
         $description = trim($_POST['description'] ?? '');
-        $image = trim($_POST['image'] ?? '');
         $date = trim($_POST['date'] ?? '');
         $capacity = intval($_POST['capacity'] ?? 0);
         $location = trim($_POST['location'] ?? '');
@@ -73,12 +86,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $status = trim($_POST['status'] ?? 'Active');
         $sessions = intval($_POST['sessions'] ?? 1);
         
-        $stmt = $pdo->prepare('
-            UPDATE training_programs 
-            SET name = ?, description = ?, category = ?, type = ?, duration = ?, status = ?
-            WHERE id = ?
-        ');
-        $stmt->execute([$name, $description, 'General', $trainer, $sessions, $status, $id]);
+        // Handle image upload
+        $cover_photo = null;
+        if (isset($_FILES['cover_photo']) && $_FILES['cover_photo']['error'] === UPLOAD_ERR_OK) {
+            // Get existing image to delete old one
+            $existing = $pdo->prepare('SELECT cover_photo FROM training_programs WHERE id = ?');
+            $existing->execute([$id]);
+            $old_image = $existing->fetch(PDO::FETCH_ASSOC)['cover_photo'] ?? null;
+            
+            $uploadResult = uploadImage($_FILES['cover_photo'], 'training', 2 * 1024 * 1024);
+            if ($uploadResult['success']) {
+                $cover_photo = $uploadResult['path'];
+                // Delete old image if new one uploaded
+                if ($old_image && file_exists($old_image)) {
+                    deleteImage($old_image);
+                }
+            } else {
+                throw new Exception('Image upload failed: ' . $uploadResult['error']);
+            }
+        }
+        
+        if ($cover_photo) {
+            $stmt = $pdo->prepare('
+                UPDATE training_programs 
+                SET name = ?, description = ?, category = ?, type = ?, duration = ?, status = ?, cover_photo = ?
+                WHERE id = ?
+            ');
+            $stmt->execute([$name, $description, 'General', $trainer, $sessions, $status, $cover_photo, $id]);
+        } else {
+            $stmt = $pdo->prepare('
+                UPDATE training_programs 
+                SET name = ?, description = ?, category = ?, type = ?, duration = ?, status = ?
+                WHERE id = ?
+            ');
+            $stmt->execute([$name, $description, 'General', $trainer, $sessions, $status, $id]);
+        }
         $message = 'Program updated.';
         $messageType = 'success';
     }
@@ -198,11 +240,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // Redirect after POST (skip redirect if we set a danger message so that it can be shown)
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && $messageType !== 'danger') {
-        header('Location: ' . $_SERVER['PHP_SELF']);
-        exit;
-    }
   } catch (Exception $e) {
     // log full exception for server-side diagnosis
     error_log('Training module error: ' . $e->getMessage());
@@ -216,7 +253,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Fetch training programs from database
 $items = [];
 try {
-    $stmt = $pdo->query('SELECT * FROM training_programs ORDER BY created_at DESC');
+    $stmt = $pdo->query('SELECT * FROM training_programs ORDER BY COALESCE(created_at, id) DESC LIMIT 1000');
     $items = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 } catch (Exception $e) {
     error_log('Error fetching training programs: ' . $e->getMessage());
@@ -253,6 +290,21 @@ try {
     error_log('Error calculating enrollment counts: ' . $e->getMessage());
 }
 
+// Handle search, filter, and pagination
+$searchQuery = $_GET['search'] ?? '';
+$statusFilter = $_GET['status'] ?? '';
+$programPage = intval($_GET['program_page'] ?? 1);
+
+// Filter training programs
+$filteredItems = $items;
+if (!empty($searchQuery)) {
+    $filteredItems = filterBySearch($filteredItems, $searchQuery, ['name', 'description']);
+}
+if (!empty($statusFilter)) {
+    $filteredItems = filterByStatus($filteredItems, $statusFilter, 'status');
+}
+$paginatedPrograms = paginateItems($filteredItems, $programPage, 12);
+
 ?>
 
 <div class="container" style="margin-top:90px; margin-bottom: 40px;">
@@ -270,18 +322,52 @@ try {
   </div>
 
   <?php if ($message): ?>
-    <div class="alert alert-<?php echo htmlspecialchars($messageType); ?> alert-dismissible fade show" role="alert">
-        <?php echo htmlspecialchars($message); ?>
-        <button type="button" class="btn-close" data-dismiss="alert"></button>
-    </div>
-    <?php if ($messageType === 'danger' && stripos($message, 'must be logged in') !== false): ?>
-      <p><a href="login.php" class="btn btn-sm btn-primary">Log in</a></p>
-    <?php endif; ?>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    showToast(<?php echo json_encode($message); ?>, <?php echo json_encode($messageType); ?>, 4000);
+  });
+  </script>
   <?php endif; ?>
 
-  <?php if ($items): ?>
+  <!-- Search & Filter Bar -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="GET" class="row g-3" style="display: flex; gap: 1rem; align-items: flex-end;">
+        <input type="hidden" name="page" value="training">
+        <div class="col-md-4">
+          <label class="form-label">Search Programs</label>
+          <input type="text" name="search" class="form-control" placeholder="Search by name, description..." 
+            value="<?php echo htmlspecialchars($searchQuery); ?>">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Status</label>
+          <select name="status" class="form-select">
+            <option value="">All Statuses</option>
+            <option value="Active" <?php echo $statusFilter === 'Active' ? 'selected' : ''; ?>>Active</option>
+            <option value="Inactive" <?php echo $statusFilter === 'Inactive' ? 'selected' : ''; ?>>Inactive</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary w-100">Search</button>
+        </div>
+        <div class="col-md-2">
+          <a href="?page=training" class="btn btn-secondary w-100">Clear</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <?php if ($message): ?>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    showToast(<?php echo json_encode($message); ?>, <?php echo json_encode($messageType); ?>, 4000);
+  });
+  </script>
+  <?php endif; ?>
+
+  <?php if ($paginatedPrograms['items']): ?>
     <div class="row g-3 training-grid">
-      <?php $__idx = 0; foreach ($items as $it): $__idx++; $delay = ($__idx - 1) * 0.12; ?>
+      <?php $__idx = 0; foreach ($paginatedPrograms['items'] as $it): $__idx++; $delay = ($__idx - 1) * 0.12; ?>
         <?php
           // Map database fields for template compatibility
           $it['title'] = $it['name'] ?? '';
@@ -302,7 +388,7 @@ try {
               data-enrolled='<?php echo htmlspecialchars(json_encode($dataEnrolledArr), ENT_QUOTES, "UTF-8"); ?>'
               data-status="<?php echo htmlspecialchars($it['status'] ?? 'Active'); ?>"
             >
-            <img src="img/placeholder.gif" class="card-img-top" style="height:160px;object-fit:cover;" alt="">
+            <img src="<?php echo htmlspecialchars(getImageUrl($it['cover_photo'] ?? null, 'img/placeholder.gif')); ?>" class="card-img-top" style="height:160px;object-fit:cover;" alt="<?php echo htmlspecialchars($it['title']); ?> cover">
             <div class="card-body d-flex flex-column">
               <h5 class="card-title"><?php echo htmlspecialchars($it['title']); ?></h5>
               <p class="card-text text-muted mb-2"><?php echo htmlspecialchars($it['description']); ?></p>
@@ -337,10 +423,9 @@ try {
                         data-sessions="<?php echo intval($it['duration'] ?? 1); ?>"
                         data-status="<?php echo htmlspecialchars($it['status'] ?? 'Active'); ?>"
                     >Edit</button>
-                    <form method="post" style="display:inline" class="delete-form" data-id="<?php echo intval($it['id']); ?>">
-                      <input type="hidden" name="action" value="delete">
+                    <form method="post" style="display:inline;" onsubmit="return confirm('Delete this training program?');"><input type="hidden" name="action" value="delete">
                       <input type="hidden" name="id" value="<?php echo intval($it['id']); ?>">
-                      <button type="button" class="btn btn-sm btn-danger delete-trigger">Delete</button>
+                      <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                     </form>
                   <?php else: ?>
                     <?php $enrolled = false; if ($currentUserId) { foreach ($dataEnrolledArr as $ee) { if ($ee['user_id'] == $currentUserId) { $enrolled = true; break; } } } ?>
@@ -373,10 +458,9 @@ try {
                       data-trainer="<?php echo htmlspecialchars($it['type'] ?? ''); ?>"
                       data-status="<?php echo htmlspecialchars($it['status'] ?? 'Active'); ?>"
                   >Edit</button>
-                  <form method="post" style="display:inline" class="delete-form" data-id="<?php echo intval($it['id']); ?>">
-                    <input type="hidden" name="action" value="delete">
+                  <form method="post" style="display:inline;" onsubmit="return confirm('Delete this training program?');"><input type="hidden" name="action" value="delete">
                     <input type="hidden" name="id" value="<?php echo intval($it['id']); ?>">
-                    <button type="button" class="btn btn-sm btn-danger delete-trigger">Delete</button>
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                   </form>
                 <?php else: ?>
                   <?php $tmpEnrolled = false; if ($currentUserId) { foreach ($dataEnrolledArr as $ee) { if ($ee['user_id'] == $currentUserId) { $tmpEnrolled = true; break; } } } ?>
@@ -400,8 +484,39 @@ try {
         </div>
       <?php endforeach; ?>
     </div>
+
+    <!-- Pagination -->
+    <nav aria-label="Training programs pagination" class="mt-4">
+      <ul class="pagination justify-content-center">
+        <?php if ($paginatedPrograms['hasPrevPage']): ?>
+          <li class="page-item">
+            <a class="page-link" href="?page=training&search=<?php echo urlencode($searchQuery); ?>&status=<?php echo urlencode($statusFilter); ?>&program_page=<?php echo $paginatedPrograms['currentPage'] - 1; ?>">Previous</a>
+          </li>
+        <?php else: ?>
+          <li class="page-item disabled"><span class="page-link">Previous</span></li>
+        <?php endif; ?>
+        
+        <?php for ($i = 1; $i <= $paginatedPrograms['totalPages']; $i++): ?>
+          <li class="page-item <?php echo $i === $paginatedPrograms['currentPage'] ? 'active' : ''; ?>">
+            <a class="page-link" href="?page=training&search=<?php echo urlencode($searchQuery); ?>&status=<?php echo urlencode($statusFilter); ?>&program_page=<?php echo $i; ?>">
+              <?php echo $i; ?>
+            </a>
+          </li>
+        <?php endfor; ?>
+        
+        <?php if ($paginatedPrograms['hasNextPage']): ?>
+          <li class="page-item">
+            <a class="page-link" href="?page=training&search=<?php echo urlencode($searchQuery); ?>&status=<?php echo urlencode($statusFilter); ?>&program_page=<?php echo $paginatedPrograms['currentPage'] + 1; ?>">Next</a>
+          </li>
+        <?php else: ?>
+          <li class="page-item disabled"><span class="page-link">Next</span></li>
+        <?php endif; ?>
+      </ul>
+    </nav>
   <?php else: ?>
-    <p class="mb-0">No training content yet.</p>
+    <div class="alert alert-info">
+      <?php echo !empty($searchQuery) || !empty($statusFilter) ? 'No training programs match your search.' : 'No training programs available yet.'; ?>
+    </div>
   <?php endif; ?>
 
 </div>
@@ -410,7 +525,7 @@ try {
 <div class="modal fade" id="editProgramModal" tabindex="-1" aria-labelledby="editProgramModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
-      <form method="post" id="editProgramForm" novalidate>
+      <form method="post" id="editProgramForm" novalidate enctype="multipart/form-data">
         <div class="modal-header">
           <h5 class="modal-title" id="editProgramModalLabel">Edit Program</h5>
           <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
@@ -421,7 +536,10 @@ try {
           <div class="row g-1">
             <div class="col-12 mb-1"><input id="modal-title" class="form-control" name="title" placeholder="Program title"></div>
             <div class="col-md-6"><input id="modal-trainer" class="form-control" name="trainer" placeholder="Trainer name (optional)"></div>
-            <div class="col-md-6"><input id="modal-image" class="form-control" name="image" placeholder="Image URL (optional)"></div>
+            <div class="col-md-6">
+              <input id="modal-cover" class="form-control" name="cover_photo" type="file" accept="image/*" placeholder="Cover Photo">
+              <small class="text-muted">JPG, PNG, GIF, or WebP (max 2MB). Leave empty to keep current</small>
+            </div>
             <div class="col-md-3"><input id="modal-date" class="form-control" name="date" placeholder="YYYY-MM-DD (optional)"></div>
             <div class="col-md-3"><input id="modal-capacity" class="form-control" name="capacity" placeholder="Capacity" type="number"></div>
             <div class="col-md-3"><input id="modal-sessions" class="form-control" name="sessions" placeholder="Sessions" type="number" min="1"></div>
@@ -502,7 +620,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="modal fade" id="createProgramModal" tabindex="-1" aria-labelledby="createProgramModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
-      <form method="post" id="createProgramForm" novalidate>
+      <form method="post" id="createProgramForm" novalidate enctype="multipart/form-data">
         <div class="modal-header">
           <h5 class="modal-title" id="createProgramModalLabel">Create Training Program</h5>
           <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
@@ -512,7 +630,10 @@ document.addEventListener('DOMContentLoaded', function(){
           <div class="row g-1">
             <div class="col-12 mb-1"><input id="create-title" class="form-control" name="title" placeholder="Program title" required></div>
             <div class="col-md-6"><input id="create-trainer" class="form-control" name="trainer" placeholder="Trainer name (optional)"></div>
-            <div class="col-md-6"><input id="create-image" class="form-control" name="image" placeholder="Image URL (optional)"></div>
+            <div class="col-md-6">
+              <input id="create-cover" class="form-control" name="cover_photo" type="file" accept="image/*" placeholder="Cover Photo">
+              <small class="text-muted">JPG, PNG, GIF, or WebP (max 2MB)</small>
+            </div>
             <div class="col-md-3"><input id="create-date" class="form-control" name="date" placeholder="YYYY-MM-DD (optional)"></div>
             <div class="col-md-3"><input id="create-capacity" class="form-control" name="capacity" placeholder="Capacity" type="number" min="0"></div>
             <div class="col-md-3"><input id="create-sessions" class="form-control" name="sessions" placeholder="Sessions" type="number" min="1" value="1"></div>
@@ -761,42 +882,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
     <script>
     document.addEventListener('DOMContentLoaded', function(){
-      var pendingDeleteForm = null;
-      var pendingId = null;
-      var deleteModalEl = document.getElementById('deleteConfirmModal');
-      var deleteModal = new bootstrap.Modal(deleteModalEl);
-
-      document.querySelectorAll('.delete-trigger').forEach(function(btn){
-        btn.addEventListener('click', function(e){
-          var form = btn.closest('.delete-form');
-          if (!form) return;
-          pendingDeleteForm = form;
-          pendingId = form.dataset.id || form.querySelector('input[name="id"]').value;
-          var title = '';
-          var card = document.querySelector('.training-card[data-id="'+CSS.escape(pendingId)+'"]');
-          if (card) title = card.dataset.title || '';
-          document.getElementById('deleteConfirmText').textContent = title ? 'Delete "' + title + '"? This action cannot be undone.' : 'Delete this program?';
-          deleteModal.show();
-        });
-      });
-
-      document.getElementById('delete-confirm-btn').addEventListener('click', function(){
-        if (pendingDeleteForm) {
-          pendingDeleteForm.submit();
-          pendingDeleteForm = null;
-          pendingId = null;
-          deleteModal.hide();
-        }
-      });
-
-      document.getElementById('delete-edit-btn').addEventListener('click', function(){
-        if (!pendingId) return;
-        // close delete modal then open edit modal for the same program
-        deleteModal.hide();
-        // find the edit button on the card and trigger click
-        var editBtn = document.querySelector('.training-card[data-id="'+CSS.escape(pendingId)+'"] .edit-program-btn');
-        if (editBtn) editBtn.click();
-      });
+      // Delete buttons now use inline confirmations
     });
     </script>
 

@@ -4,6 +4,10 @@ if (!defined('NO_HEADER')) {
 require_once __DIR__ . '/header.php';
 }
 
+require_once __DIR__ . '/toast.php';
+require_once __DIR__ . '/search_filter.php';
+require_once __DIR__ . '/image_upload.php';
+
 $message = '';
 $messageType = 'success';
 $username = $_SESSION['username'] ?? null;
@@ -30,9 +34,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'create_program' && in_array($role, ['admin', 'trainer', 'learning'])) {
         try {
+            // Handle image upload
+            $cover_photo = null;
+            if (isset($_FILES['cover_photo']) && $_FILES['cover_photo']['error'] === UPLOAD_ERR_OK) {
+                $uploadResult = uploadImage($_FILES['cover_photo'], 'leadership', 2 * 1024 * 1024);
+                if ($uploadResult['success']) {
+                    $cover_photo = $uploadResult['path'];
+                } else {
+                    throw new Exception('Image upload failed: ' . $uploadResult['error']);
+                }
+            }
+            
             $stmt = $pdo->prepare('
-                INSERT INTO leadership_programs (name, description, level, focus_area, duration_weeks, target_audience, outcomes, created_by, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO leadership_programs (name, description, level, focus_area, duration_weeks, target_audience, outcomes, created_by, status, cover_photo)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ');
             $outcomes = isset($_POST['outcomes']) ? json_encode(array_filter(array_map('trim', explode(',', $_POST['outcomes'])))) : '[]';
             $stmt->execute([
@@ -44,7 +59,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_POST['target_audience'] ?? '',
                 $outcomes,
                 $userId,
-                $_POST['status'] ?? 'active'
+                $_POST['status'] ?? 'active',
+                $cover_photo
             ]);
             $message = 'Leadership program created successfully!';
         } catch (Exception $e) {
@@ -53,23 +69,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif ($action === 'update_program' && in_array($role, ['admin', 'trainer', 'learning'])) {
         try {
-            $stmt = $pdo->prepare('
-                UPDATE leadership_programs 
-                SET name = ?, description = ?, level = ?, focus_area = ?, duration_weeks = ?, target_audience = ?, outcomes = ?, status = ?
-                WHERE id = ?
-            ');
+            // Handle image upload
+            $cover_photo = null;
+            if (isset($_FILES['cover_photo']) && $_FILES['cover_photo']['error'] === UPLOAD_ERR_OK) {
+                // Get existing image to delete old one
+                $existing = $pdo->prepare('SELECT cover_photo FROM leadership_programs WHERE id = ?');
+                $existing->execute([$_POST['program_id']]);
+                $old_image = $existing->fetch(PDO::FETCH_ASSOC)['cover_photo'] ?? null;
+                
+                $uploadResult = uploadImage($_FILES['cover_photo'], 'leadership', 2 * 1024 * 1024);
+                if ($uploadResult['success']) {
+                    $cover_photo = $uploadResult['path'];
+                    // Delete old image if new one uploaded
+                    if ($old_image && file_exists($old_image)) {
+                        deleteImage($old_image);
+                    }
+                } else {
+                    throw new Exception('Image upload failed: ' . $uploadResult['error']);
+                }
+            }
+
             $outcomes = isset($_POST['outcomes']) ? json_encode(array_filter(array_map('trim', explode(',', $_POST['outcomes'])))) : '[]';
-            $stmt->execute([
-                $_POST['name'],
-                $_POST['description'],
-                $_POST['level'] ?? '',
-                $_POST['focus_area'] ?? '',
-                $_POST['duration_weeks'] ?? 0,
-                $_POST['target_audience'] ?? '',
-                $outcomes,
-                $_POST['status'] ?? 'active',
-                $_POST['program_id']
-            ]);
+            
+            if ($cover_photo) {
+                $stmt = $pdo->prepare('
+                    UPDATE leadership_programs 
+                    SET name = ?, description = ?, level = ?, focus_area = ?, duration_weeks = ?, target_audience = ?, outcomes = ?, status = ?, cover_photo = ?
+                    WHERE id = ?
+                ');
+                $stmt->execute([
+                    $_POST['name'],
+                    $_POST['description'],
+                    $_POST['level'] ?? '',
+                    $_POST['focus_area'] ?? '',
+                    $_POST['duration_weeks'] ?? 0,
+                    $_POST['target_audience'] ?? '',
+                    $outcomes,
+                    $_POST['status'] ?? 'active',
+                    $cover_photo,
+                    $_POST['program_id']
+                ]);
+            } else {
+                $stmt = $pdo->prepare('
+                    UPDATE leadership_programs 
+                    SET name = ?, description = ?, level = ?, focus_area = ?, duration_weeks = ?, target_audience = ?, outcomes = ?, status = ?
+                    WHERE id = ?
+                ');
+                $stmt->execute([
+                    $_POST['name'],
+                    $_POST['description'],
+                    $_POST['level'] ?? '',
+                    $_POST['focus_area'] ?? '',
+                    $_POST['duration_weeks'] ?? 0,
+                    $_POST['target_audience'] ?? '',
+                    $outcomes,
+                    $_POST['status'] ?? 'active',
+                    $_POST['program_id']
+                ]);
+            }
             $message = 'Leadership program updated successfully!';
         } catch (Exception $e) {
             $message = 'Error updating program: ' . $e->getMessage();
@@ -117,7 +174,8 @@ try {
         LEFT JOIN users u ON lp.created_by = u.id
         LEFT JOIN leadership_enrollments le ON lp.id = le.program_id AND le.status IN ("pending", "in_progress")
         GROUP BY lp.id
-        ORDER BY lp.created_at DESC
+        ORDER BY COALESCE(lp.created_at, lp.id) DESC
+        LIMIT 1000
     ');
     $stmt->execute();
     $programs = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -130,7 +188,16 @@ try {
         }
     }
 } catch (Exception $e) {
-    error_log('Error fetching leadership programs: ' . $e->getMessage());
+    error_log('Error fetching leadership programs with join: ' . $e->getMessage());
+    // Fallback to simple query if join fails
+    try {
+        $stmt = $pdo->prepare('SELECT * FROM leadership_programs ORDER BY COALESCE(created_at, id) DESC LIMIT 1000');
+        $stmt->execute();
+        $programs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e2) {
+        error_log('Error fetching leadership programs fallback: ' . $e2->getMessage());
+        $programs = [];
+    }
 }
 
 // Fetch user's enrollments
@@ -174,11 +241,40 @@ if ($userId) {
     </div>
 
     <?php if ($message): ?>
-        <div class="alert alert-<?php echo htmlspecialchars($messageType); ?> alert-dismissible fade show" role="alert">
-            <?php echo htmlspecialchars($message); ?>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        showToast(<?php echo json_encode($message); ?>, <?php echo json_encode($messageType); ?>, 4000);
+    });
+    </script>
     <?php endif; ?>
+
+    <!-- Search & Filter Bar -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3" style="display: flex; gap: 1rem; align-items: flex-end;">
+                <input type="hidden" name="page" value="leadership">
+                <div class="col-md-4">
+                    <label class="form-label">Search Programs</label>
+                    <input type="text" name="search" class="form-control" placeholder="Search by name, description..." value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Level</label>
+                    <select name="level" class="form-select">
+                        <option value="">All Levels</option>
+                        <option value="Basic" <?php echo ($_GET['level'] ?? '') === 'Basic' ? 'selected' : ''; ?>>Basic</option>
+                        <option value="Intermediate" <?php echo ($_GET['level'] ?? '') === 'Intermediate' ? 'selected' : ''; ?>>Intermediate</option>
+                        <option value="Advanced" <?php echo ($_GET['level'] ?? '') === 'Advanced' ? 'selected' : ''; ?>>Advanced</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Search</button>
+                </div>
+                <div class="col-md-2">
+                    <a href="?page=leadership" class="btn btn-secondary w-100">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Leadership Programs Section -->
     <div class="mb-5">
@@ -188,7 +284,7 @@ if ($userId) {
                 <?php $idx = 0; foreach ($programs as $program): $idx++; $delay = ($idx - 1) * 0.08; ?>
                     <div class="col-12">
                         <div class="card h-100 leadership-card pop-in" data-id="<?php echo htmlspecialchars($program['id']); ?>" data-title="<?php echo htmlspecialchars($program['name']); ?>" style="animation-delay: <?php echo $delay; ?>s;">
-                            <img src="img/placeholder.gif" class="card-img-top" style="height:90px;object-fit:cover;" alt="">
+                            <img src="<?php echo htmlspecialchars(getImageUrl($program['cover_photo'] ?? null, 'img/placeholder.gif')); ?>" class="card-img-top" style="height:90px;object-fit:cover;" alt="<?php echo htmlspecialchars($program['name']); ?> cover">
                             <div class="card-body d-flex flex-column" style="padding: 0.75rem;">
                                 <h6 class="card-title mb-1" style="font-size: 13px;"><?php echo htmlspecialchars($program['name']); ?></h6>
                                 <p class="card-text text-muted mb-1" style="font-size: 11px;"><?php echo htmlspecialchars(substr($program['description'], 0, 60) . '...'); ?></p>
@@ -219,10 +315,9 @@ if ($userId) {
                                     <?php if (in_array($role, ['admin', 'trainer', 'learning'])): ?>
                                         <button class="btn btn-sm btn-warning edit-program-btn" style="font-size: 11px; padding: 0.25rem 0.5rem;" onclick="editProgram(<?php echo htmlspecialchars(json_encode($program)); ?>)" data-toggle="modal" data-target="#editProgramModal">Edit</button>
                                         <?php if (in_array($role, ['admin', 'learning'])): ?>
-                                          <form method="post" style="display:inline" class="delete-form" data-id="<?php echo intval($program['id']); ?>">
-                                            <input type="hidden" name="action" value="delete_program">
+                                          <form method="post" style="display:inline;" onsubmit="return confirm('Delete this leadership program?');"><input type="hidden" name="action" value="delete_program">
                                             <input type="hidden" name="program_id" value="<?php echo intval($program['id']); ?>">
-                                            <button type="button" class="btn btn-sm btn-danger delete-trigger" style="font-size: 11px; padding: 0.25rem 0.5rem;">Delete</button>
+                                            <button type="submit" class="btn btn-sm btn-danger" style="font-size: 11px; padding: 0.25rem 0.5rem;">Delete</button>
                                           </form>
                                         <?php endif; ?>
                                     <?php endif; ?>
@@ -279,7 +374,7 @@ if ($userId) {
                 <h5 class="modal-title">Create Leadership Program</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
-            <form method="POST">
+            <form method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="create_program">
                 <div class="modal-body">
                     <div class="mb-3">
@@ -321,6 +416,11 @@ if ($userId) {
                         <input type="text" id="outcomes" name="outcomes" class="form-control" placeholder="e.g., Team Building, Strategic Thinking, Communication">
                     </div>
                     <div class="mb-3">
+                        <label for="cover_photo" class="form-label">Cover Photo</label>
+                        <input type="file" id="cover_photo" name="cover_photo" class="form-control" accept="image/*">
+                        <small class="text-muted">JPG, PNG, GIF, or WebP (max 2MB)</small>
+                    </div>
+                    <div class="mb-3">
                         <label for="status" class="form-label">Status</label>
                         <select id="status" name="status" class="form-select">
                             <option value="active">Active</option>
@@ -345,7 +445,7 @@ if ($userId) {
                 <h5 class="modal-title">Edit Leadership Program</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
-            <form method="POST">
+            <form method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="update_program">
                 <input type="hidden" id="edit_program_id" name="program_id">
                 <div class="modal-body">
@@ -386,6 +486,11 @@ if ($userId) {
                     <div class="mb-3">
                         <label for="edit_outcomes" class="form-label">Key Outcomes (comma-separated)</label>
                         <input type="text" id="edit_outcomes" name="outcomes" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_cover_photo" class="form-label">Cover Photo</label>
+                        <input type="file" id="edit_cover_photo" name="cover_photo" class="form-control" accept="image/*">
+                        <small class="text-muted">JPG, PNG, GIF, or WebP (max 2MB). Leave empty to keep current image</small>
                     </div>
                     <div class="mb-3">
                         <label for="edit_status" class="form-label">Status</label>
@@ -561,40 +666,7 @@ function editProgram(program) {
 
 <script>
 document.addEventListener('DOMContentLoaded', function(){
-  var pendingDeleteForm = null;
-  var pendingId = null;
-  var deleteModalEl = document.getElementById('deleteConfirmModal');
-  var deleteModal = new bootstrap.Modal(deleteModalEl);
-
-  document.querySelectorAll('.delete-trigger').forEach(function(btn){
-    btn.addEventListener('click', function(e){
-      var form = btn.closest('.delete-form');
-      if (!form) return;
-      pendingDeleteForm = form;
-      pendingId = form.dataset.id || form.querySelector('input[name="id"]').value;
-      var title = '';
-      var card = document.querySelector('.leadership-card[data-id="'+CSS.escape(pendingId)+'"]');
-      if (card) title = card.dataset.title || '';
-      document.getElementById('deleteConfirmText').textContent = title ? 'Delete "' + title + '"? This action cannot be undone.' : 'Delete this program?';
-      deleteModal.show();
-    });
-  });
-
-  document.getElementById('delete-confirm-btn').addEventListener('click', function(){
-    if (pendingDeleteForm) {
-      pendingDeleteForm.submit();
-      pendingDeleteForm = null;
-      pendingId = null;
-      deleteModal.hide();
-    }
-  });
-
-  document.getElementById('delete-edit-btn').addEventListener('click', function(){
-    if (!pendingId) return;
-    deleteModal.hide();
-    var editBtn = document.querySelector('.leadership-card[data-id="'+CSS.escape(pendingId)+'"] .edit-program-btn');
-    if (editBtn) editBtn.click();
-  });
+  // Delete buttons now use inline confirmations
 });
 </script>
 

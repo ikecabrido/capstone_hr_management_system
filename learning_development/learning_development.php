@@ -281,7 +281,15 @@ $page = $_GET['page'] ?? 'analytics';
   <script src="../assets/dist/js/profile.js"></script>
 
 
-  <script></script>
+  <script>
+  // Hide preloader when DOM is ready
+  document.addEventListener('DOMContentLoaded', function(){
+    const preloader = document.querySelector('.preloader');
+    if (preloader) {
+      preloader.style.display = 'none';
+    }
+  });
+  </script>
 </body>
 
 </html>
