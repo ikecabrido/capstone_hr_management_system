@@ -2,27 +2,41 @@
 
 class Database
 {
+    private static $instance = null;
+    private PDO $conn;
 
-    private $host = "localhost";
-    private $dbname = "hr_management";
-    private $username = "root";
-    private $password = "";
+    private string $host = "localhost";
+    private string $db   = "sample_hr";
+    private string $user = "root";
+    private string $pass = "";
 
-    public function connect()
+    private function __construct()
     {
-
         try {
-            $pdo = new PDO(
-                "mysql:host={$this->host};dbname={$this->dbname}",
-                $this->username,
-                $this->password
+            $this->conn = new PDO(
+                "mysql:host={$this->host};dbname={$this->db};charset=utf8mb4",
+                $this->user,
+                $this->pass,
+                [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+                ]
             );
-
-            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-            return $pdo;
         } catch (PDOException $e) {
-            die("Database Connection Failed: " . $e->getMessage());
+            die("DB Connection failed: " . $e->getMessage());
         }
+    }
+
+    public static function getInstance(): Database
+    {
+        if (self::$instance === null) {
+            self::$instance = new Database();
+        }
+        return self::$instance;
+    }
+
+    public function getConnection(): PDO
+    {
+        return $this->conn;
     }
 }

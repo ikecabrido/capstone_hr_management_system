@@ -9,8 +9,7 @@ class User
 
     public function __construct()
     {
-        $database = new Database();
-        $this->db = $database->connect();
+        $this->db = Database::getInstance()->getConnection();
     }
 
     public function findByUsername($username)
@@ -21,7 +20,7 @@ class User
         $stmt = $this->db->prepare($sql);
         $stmt->execute(['username' => $username]);
 
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        return $stmt->fetch();
     }
     public function findById($id)
     {
@@ -30,7 +29,7 @@ class User
         $stmt = $this->db->prepare($sql);
         $stmt->execute(['id' => $id]);
 
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        return $stmt->fetch();
     }
     public function updateProfile($id, $full_name)
     {
