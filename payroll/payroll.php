@@ -1,6 +1,5 @@
 <?php
 session_start();
-// require_once "auth.php";
 require_once "../auth/database.php";
 require_once "controllers/dashboardController.php";
 require_once "../auth/auth_check.php";
@@ -230,7 +229,7 @@ $stats = $controller->getStats();
                 <span class="info-box-icon bg-info elevation-1"><i class="nav-icon fas fa-calendar-day"></i></span>
 
                 <div class="info-box-content">
-                  <span class="info-box-text">Current Period</span>
+                  <span class="info-box-text">Last Period</span>
                   <span class="info-box-number">
                     <?= $stats['period']['period_name'] ?? 'None' ?>
                   </span>
@@ -266,9 +265,82 @@ $stats = $controller->getStats();
                 <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-clock"></i></span>
 
                 <div class="info-box-content">
-                  <span class="info-box-text">Pending Payroll</span>
+                  <span class="info-box-text">Pending Employees</span>
                   <span class="info-box-number">
                     <?= $stats['pending_runs'] ?>
+                  </span>
+
+                </div>
+                <!-- /.info-box-content -->
+              </div>
+              <!-- /.info-box -->
+            </div>
+            <!-- /.col -->
+          </div>
+          <!-- /.row -->
+
+          <!-- Additional Analytics Row -->
+          <div class="row">
+            <div class="col-12 col-sm-6 col-md-3">
+              <div class="info-box">
+                <span class="info-box-icon bg-info elevation-1"><i class="fas fa-calculator"></i></span>
+
+                <div class="info-box-content">
+                  <span class="info-box-text">Average Salary</span>
+                  <span class="info-box-number">
+                    ₱<?= number_format($stats['average_salary'], 2) ?>
+                  </span>
+
+                </div>
+                <!-- /.info-box-content -->
+              </div>
+              <!-- /.info-box -->
+            </div>
+            <!-- /.col -->
+            <div class="col-12 col-sm-6 col-md-3">
+              <div class="info-box mb-3">
+                <span class="info-box-icon bg-success elevation-1"><i class="fas fa-plus-circle"></i></span>
+
+                <div class="info-box-content">
+                  <span class="info-box-text">Total Allowances</span>
+                  <span class="info-box-number">
+                    ₱<?= number_format($stats['total_allowances'], 2) ?>
+                  </span>
+
+                </div>
+                <!-- /.info-box-content -->
+              </div>
+              <!-- /.info-box -->
+            </div>
+            <!-- /.col -->
+
+            <!-- fix for small devices only -->
+            <div class="clearfix hidden-md-up"></div>
+
+            <div class="col-12 col-sm-6 col-md-3">
+              <div class="info-box mb-3">
+                <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-minus-circle"></i></span>
+
+                <div class="info-box-content">
+                  <span class="info-box-text">Total Deductions</span>
+                  <span class="info-box-number">
+                    ₱<?= number_format($stats['total_deductions'], 2) ?>
+                  </span>
+
+                </div>
+                <!-- /.info-box-content -->
+              </div>
+              <!-- /.info-box -->
+            </div>
+            <!-- /.col -->
+            <div class="col-12 col-sm-6 col-md-3">
+              <div class="info-box mb-3">
+                <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-chart-line"></i></span>
+
+                <div class="info-box-content">
+                  <span class="info-box-text">Net Payroll</span>
+                  <span class="info-box-number">
+                    ₱<?= number_format($stats['total_payroll'] - $stats['total_deductions'] + $stats['total_allowances'], 2) ?>
                   </span>
 
                 </div>
@@ -378,61 +450,47 @@ $stats = $controller->getStats();
                   <!-- /.row -->
                 </div>
                 <!-- ./card-body -->
-                <div class="card-footer">
-                  <div class="row">
-                    <div class="col-sm-3 col-6">
-                      <div class="description-block border-right">
-                        <span class="description-percentage text-success"><i class="fas fa-caret-up"></i> 17%</span>
-                        <h5 class="description-header">
-                          ₱<?= number_format($stats['lifetime'], 2) ?>
-                        </h5>
-                        <span class="description-text">TOTAL PAID</span>
-                      </div>
-                      <!-- /.description-block -->
-                    </div>
-                    <!-- /.col -->
-                    <div class="col-sm-3 col-6">
-                      <div class="description-block border-right">
-                        <span class="description-percentage text-warning"><i class="fas fa-caret-left"></i> 0%</span>
-                        <h5 class="description-header">
-                          ₱<?= number_format($stats['total_payroll'], 2) ?>
-                        </h5>
-                        <span class="description-text">CURRENT PERIOD</span>
-                      </div>
-                      <!-- /.description-block -->
-                    </div>
-                    <!-- /.col -->
-                    <div class="col-sm-3 col-6">
-                      <div class="description-block border-right">
-                        <span class="description-percentage text-success"><i class="fas fa-caret-up"></i> 20%</span>
-                        <h5 class="description-header">
-                          <?= $stats['employees'] ?>
-                        </h5>
-                        <span class="description-text">EMPLOYEES</span>
-                      </div>
-                      <!-- /.description-block -->
-                    </div>
-                    <!-- /.col -->
-                    <div class="col-sm-3 col-6">
-                      <div class="description-block">
-                        <span class="description-percentage text-danger"><i class="fas fa-caret-down"></i> 18%</span>
-                        <h5 class="description-header">
-                          <?= $stats['pending_runs'] ?>
-                        </h5>
-                        <span class="description-text">PENDING PAYROLL</span>
-                      </div>
-                      <!-- /.description-block -->
-                    </div>
-                  </div>
-                  <!-- /.row -->
-                </div>
-                <!-- /.card-footer -->
               </div>
               <!-- /.card -->
             </div>
             <!-- /.col -->
           </div>
           <!-- Main row -->
+          <!-- Quick Actions -->
+          <div class="row">
+            <div class="col-md-12">
+              <div class="card">
+                <div class="card-header">
+                  <h5 class="card-title">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-md-3">
+                      <a href="views/payrollProcess.php" class="btn btn-primary btn-block">
+                        <i class="fas fa-play"></i> Process Payroll
+                      </a>
+                    </div>
+                    <div class="col-md-3">
+                      <a href="views/payslip.php" class="btn btn-success btn-block">
+                        <i class="fas fa-receipt"></i> Generate Payslips
+                      </a>
+                    </div>
+                    <div class="col-md-3">
+                      <a href="views/allowance.php" class="btn btn-warning btn-block">
+                        <i class="fas fa-file-invoice-dollar"></i> Manage Adjustments
+                      </a>
+                    </div>
+                    <div class="col-md-3">
+                      <a href="views/reports.php" class="btn btn-info btn-block">
+                        <i class="fas fa-chart-bar"></i> View Reports
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- /.row -->
         </div>
         <!--/. container-fluid -->
       </section>
@@ -479,7 +537,7 @@ $stats = $controller->getStats();
   <script src="../assets/dist/js/time.js"></script>
   <script src="../assets/dist/js/global_modal.js"></script>
   <script src="../assets/dist/js/profile.js"></script>
-  <script src="../custom.js"></script>
+  <script src="custom.js"></script>
 
   <script>
     const chartData = <?= json_encode($stats['chart']) ?>;
