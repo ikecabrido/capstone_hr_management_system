@@ -13,12 +13,16 @@
         </div>
 
         <div>
+            <a href="/capstone_hr_management_system/employee_portal/index.php?url=leave-requests-index"
+                class="btn btn-outline-primary bg-slate-50">
+                <i class="fa-solid fa-gear me-1"></i> Manage Leave Request
+            </a>
             <a href="/capstone_hr_management_system/employee_portal/index.php?url=request-index"
                 class="btn btn-outline-primary bg-slate-50">
                 <i class="fa-solid fa-gear me-1"></i> Manage Request
             </a>
             <a href="/capstone_hr_management_system/employee_portal/index.php?url=request-types"
-                class="btn btn-outline-primary bg-slate-50 ml-2">
+                class="btn btn-outline-primary bg-slate-50">
                 <i class="fa-solid fa-gear me-1"></i> Manage Request Types
             </a>
         </div>
@@ -50,8 +54,10 @@
     </div>
 
     <div class="row mt-5 pt-4 g-4">
+
+        <!-- Profile Card -->
         <div class="col-md-4">
-            <div class="card shadow-sm">
+            <div class="card shadow-sm h-100">
                 <div class="card-body text-center">
                     <h5 class="mb-1"><?= htmlspecialchars($employee['name']); ?></h5>
                     <p class="text-muted mb-2"><?= htmlspecialchars($employee['position']); ?></p>
@@ -72,39 +78,35 @@
             </div>
         </div>
 
-        <div class="col-md-8">
-            <div class="card shadow-sm">
+        <!-- Employee Information Card -->
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
                 <div class="card-header bg-white">
                     <h5 class="mb-0">Employee Information</h5>
                 </div>
                 <div class="card-body">
                     <div class="row g-2">
-                        <div class="col-md-6">
+                        <div class="col-6">
                             <strong>Email:</strong><br>
                             <?= htmlspecialchars($employee['email']); ?>
                         </div>
-
-                        <div class="col-md-6">
+                        <div class="col-6">
                             <strong>Type:</strong><br>
                             <?= htmlspecialchars($employee['employee_type']); ?>
                         </div>
-
-                        <div class="col-md-6">
+                        <div class="col-6">
                             <strong>Department:</strong><br>
                             <?= htmlspecialchars($employee['department']); ?>
                         </div>
-
-                        <div class="col-md-6">
+                        <div class="col-6">
                             <strong>Campus:</strong><br>
                             <?= htmlspecialchars($employee['campus']); ?>
                         </div>
-
-                        <div class="col-md-6">
+                        <div class="col-6">
                             <strong>Date Hired:</strong><br>
                             <?= htmlspecialchars($employee['date_hired']); ?>
                         </div>
-
-                        <div class="col-md-6">
+                        <div class="col-6">
                             <strong>Years in Service:</strong><br>
                             <?= $employee['date_hired']
                                 ? date_diff(date_create($employee['date_hired']), date_create())->y
@@ -114,6 +116,26 @@
                 </div>
             </div>
         </div>
+
+        <!-- Leave Request Card -->
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100 text-center">
+                <div class="card-body d-flex flex-column justify-content-center">
+                    <i class="fa-solid fa-calendar-plus fa-2x text-success mb-2"></i>
+                    <h5 class="fw-semibold mb-2">Submit Leave Request</h5>
+                    <p class="text-muted small mb-3">
+                        Quickly submit a new leave request for approval.
+                    </p>
+                    <a href="#"
+                        class="btn btn-success w-100 mt-auto"
+                        data-bs-toggle="modal"
+                        data-bs-target="#createLeaveRequestModal">
+                        <i class="fa-solid fa-paper-plane me-1"></i> Create Leave Request
+                    </a>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <div class="row mb-4 mt-3">
@@ -178,3 +200,4 @@
 </div>
 
 <?php __DIR__ . '/request-modal.php'; ?>
+<?php require __DIR__ . '/../leave-request/create-leave-request-modal.php'; ?>

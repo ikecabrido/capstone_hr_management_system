@@ -59,7 +59,6 @@ class RequestTypeController
         header("Location: index.php?url=request-types");
         exit;
     }
-
     public function update()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

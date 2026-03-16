@@ -129,3 +129,32 @@ INSERT INTO `request_types` (`id`, `name`, `description`, `icon`, `requires_atta
 (7, 'sample_3', 'nigga nigga', 'fa-users', 1, 1, '2026-03-01 15:57:44');
 
 -- --------------------------------------------------------
+CREATE TABLE `requests` (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` int(11) DEFAULT NULL,
+  `request_type_id` int(11) DEFAULT NULL,
+  `title` varchar(255) DEFAULT NULL,
+  `details` text DEFAULT NULL,
+  `attachment` varchar(255) DEFAULT NULL,
+  `status` enum('Pending','Approved','Rejected','Cancelled','Completed') DEFAULT 'Pending',
+  `admin_remarks` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+
+-- Leave Request Table
+CREATE TABLE `leave_requests` (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  `name` varchar(100) DEFAULT NULL, 
+  `type_of_leave` varchar(100) DEFAULT NULL,
+  `start_date` timestamp NULL DEFAULT NULL,
+  `end_date` timestamp NULL DEFAULT NULL,
+  `date_submitted` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `status` enum('Pending','Approved','Rejected') NOT NULL DEFAULT 'Pending',
+  `details` varchar(100) DEFAULT NULL,
+  `supporting_document` varchar(255) DEFAULT NULL,
+  `reject_reason` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
