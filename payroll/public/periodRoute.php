@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../auth.php';
+require_once __DIR__ . '/../../auth/auth.php';
 require_once __DIR__ . '/../controllers/periodController.php';
 
 header('Content-Type: application/json');
