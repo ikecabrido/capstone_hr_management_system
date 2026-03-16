@@ -13,6 +13,9 @@ $role = $auth->role();
 
 switch ($role) {
 
+    case 'admin':
+        header("Location: admin_dashboard.php");
+        break;
     case 'recruitment':
         header("Location: recruitment/recruitment.php");
         break;
