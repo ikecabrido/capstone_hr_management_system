@@ -40,7 +40,7 @@ if (isset($_GET['success'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
-    if ($action === 'create_training' && in_array($role, ['admin', 'trainer'])) {
+    if ($action === 'create_training' && in_array($role, ['admin', 'trainer', 'learning'])) {
         try {
             $stmt = $pdo->prepare('
                 INSERT INTO compliance_trainings (title, description, compliance_type, due_date, mandatory, created_by)
@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = 'Error creating training: ' . $e->getMessage();
             $messageType = 'danger';
         }
-    } elseif ($action === 'edit_training' && in_array($role, ['admin', 'trainer'])) {
+    } elseif ($action === 'edit_training' && in_array($role, ['admin', 'trainer', 'learning'])) {
         try {
             $stmt = $pdo->prepare('
                 UPDATE compliance_trainings
@@ -88,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = 'Error updating training: ' . $e->getMessage();
             $messageType = 'danger';
         }
-    } elseif ($action === 'delete_training' && in_array($role, ['admin', 'trainer'])) {
+    } elseif ($action === 'delete_training' && in_array($role, ['admin', 'trainer', 'learning'])) {
         try {
             $stmt = $pdo->prepare('DELETE FROM compliance_trainings WHERE id = ? AND created_by = ?');
             $stmt->execute([$_POST['training_id'], $userId]);
@@ -172,15 +172,15 @@ if ($userId) {
             <h2 class="m-0">Compliance Training</h2>
             <p class="text-muted mt-2 mb-0">Stay compliant with required training programs</p>
         </div>
-        <?php if (in_array($role, ['admin', 'trainer'])): ?>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTrainingModal">Create Training</button>
+        <?php if (in_array($role, ['admin', 'trainer', 'learning'])): ?>
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#createTrainingModal">Create Compliance Training</button>
         <?php endif; ?>
     </div>
 
     <?php if ($message): ?>
         <div class="alert alert-<?php echo htmlspecialchars($messageType); ?> alert-dismissible fade show" role="alert">
             <?php echo htmlspecialchars($message); ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
     <?php endif; ?>
 
@@ -232,7 +232,7 @@ if ($userId) {
     <?php endif; ?>
 
     <!-- Available Trainings -->
-    <?php if (in_array($role, ['admin', 'trainer'])): ?>
+    <?php if (in_array($role, ['admin', 'trainer', 'learning'])): ?>
         <div class="mb-5">
             <h3 class="mb-3">Compliance Trainings</h3>
             <?php if ($trainings): ?>
@@ -291,7 +291,7 @@ if ($userId) {
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="viewComplianceModalTitle">Training Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <h4 id="viewComplianceTitle"></h4>
@@ -301,7 +301,7 @@ if ($userId) {
                 <div class="mb-2"><span id="viewComplianceMandatory" class="badge"></span></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -313,7 +313,7 @@ if ($userId) {
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="trainingModalTitle">Create Compliance Training</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <form method="POST">
                 <input type="hidden" name="action" id="trainingAction" value="create_training">
@@ -347,8 +347,8 @@ if ($userId) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary" id="trainingSubmitBtn">Create Training</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary" id="trainingSubmitBtn">Create Compliance Training</button>
                 </div>
             </form>
         </div>
@@ -361,14 +361,14 @@ if ($userId) {
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Delete Training</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <p>Are you sure you want to delete the training "<span id="trainingToDeleteName"></span>"?</p>
                 <p class="text-muted small">This action cannot be undone.</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 <form method="POST" class="d-inline">
                     <input type="hidden" name="action" value="delete_training">
                     <input type="hidden" name="training_id" id="trainingIdToDelete" value="">
@@ -444,7 +444,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Reset form when create modal is closed, to prepare for new create
     document.getElementById('createTrainingModal').addEventListener('hide.bs.modal', function() {
         document.getElementById('trainingModalTitle').textContent = 'Create Compliance Training';
-        document.getElementById('trainingSubmitBtn').textContent = 'Create Training';
+        document.getElementById('trainingSubmitBtn').textContent = 'Create Compliance Training';
         document.getElementById('trainingAction').value = 'create_training';
         document.getElementById('trainingId').value = '';
         document.getElementById('title').value = '';

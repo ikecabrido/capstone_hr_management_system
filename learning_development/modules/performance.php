@@ -28,7 +28,7 @@ try {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
-    if ($action === 'create_review' && in_array($role, ['admin', 'manager'])) {
+    if ($action === 'create_review' && in_array($role, ['admin', 'manager', 'learning'])) {
         try {
             $stmt = $pdo->prepare('
                 INSERT INTO performance_reviews (employee_id, reviewer_id, review_period_start, review_period_end, rating, comments, status)
@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!$orig) {
                     $message = 'Review not found.';
                     $messageType = 'danger';
-                } elseif (in_array($role, ['admin', 'manager']) || ($userId && $userId == $orig['reviewer_id'])) {
+                } elseif (in_array($role, ['admin', 'manager', 'learning']) || ($userId && $userId == $orig['reviewer_id'])) {
                     $stmt = $pdo->prepare('UPDATE performance_reviews SET employee_id = ?, review_period_start = ?, review_period_end = ?, rating = ?, comments = ?, status = ? WHERE id = ?');
                     $stmt->execute([
                         $_POST['employee_id'] ?? null,
@@ -140,15 +140,15 @@ if ($userId) {
             <h2 class="m-0">Performance Management</h2>
             <p class="text-muted mt-2 mb-0">Track and manage employee performance reviews</p>
         </div>
-        <?php if (in_array($role, ['admin', 'manager'])): ?>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createReviewModal">Create Review</button>
+        <?php if (in_array($role, ['admin', 'manager', 'learning'])): ?>
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#createReviewModal">Create Performance Review</button>
         <?php endif; ?>
     </div>
 
     <?php if ($message): ?>
         <div class="alert alert-<?php echo htmlspecialchars($messageType); ?> alert-dismissible fade show" role="alert">
             <?php echo htmlspecialchars($message); ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <button type="button" class="btn-close" data-dismiss="alert"></button>
         </div>
     <?php endif; ?>
 
@@ -165,7 +165,7 @@ if ($userId) {
                                     <h5 class="card-title mb-0">Review by <?php echo htmlspecialchars($review['reviewer_name']); ?></h5>
                                     <div class="d-flex align-items-center" style="gap:8px;">
                                         <span class="badge badge-outline badge-outline-<?php echo htmlspecialchars($review['status']); ?>"><?php echo ucfirst(htmlspecialchars($review['status'])); ?></span>
-                                        <?php if ($userId && (in_array($role, ['admin','manager']) || $userId == $review['reviewer_id'])): ?>
+                                        <?php if ($userId && (in_array($role, ['admin','manager','learning']) || $userId == $review['reviewer_id'])): ?>
                                             <button type="button" class="btn btn-outline-secondary btn-sm edit-review-btn"
                                                 data-id="<?php echo intval($review['id']); ?>"
                                                 data-employee-id="<?php echo intval($review['employee_id']); ?>"
@@ -176,6 +176,7 @@ if ($userId) {
                                                 data-status="<?php echo htmlspecialchars($review['status'] ?? '', ENT_QUOTES); ?>"
                                             >Edit</button>
                                         <?php endif; ?>
+
                                     </div>
                                 </div>
                                 <div class="mb-3">
@@ -201,7 +202,7 @@ if ($userId) {
     <?php endif; ?>
 
     <!-- All Reviews (Manager/Admin) -->
-    <?php if (in_array($role, ['admin', 'manager']) && !empty($reviews)): ?>
+    <?php if (in_array($role, ['admin', 'manager', 'learning']) && !empty($reviews)): ?>
         <div class="mb-5">
             <h3 class="mb-3">Performance Reviews</h3>
             <div class="row g-3">
@@ -213,7 +214,7 @@ if ($userId) {
                                     <h5 class="card-title mb-0"><?php echo htmlspecialchars($review['employee_name']); ?></h5>
                                     <div class="d-flex align-items-center" style="gap:8px;">
                                         <span class="badge badge-outline badge-outline-<?php echo htmlspecialchars($review['status']); ?>"><?php echo htmlspecialchars($review['status']); ?></span>
-                                        <?php if ($userId && (in_array($role, ['admin','manager']) || $userId == $review['reviewer_id'])): ?>
+                                        <?php if ($userId && (in_array($role, ['admin','manager','learning']) || $userId == $review['reviewer_id'])): ?>
                                             <button type="button" class="btn btn-outline-secondary btn-sm edit-review-btn"
                                                 data-id="<?php echo intval($review['id']); ?>"
                                                 data-employee-id="<?php echo intval($review['employee_id']); ?>"
@@ -225,6 +226,7 @@ if ($userId) {
                                                 data-status="<?php echo htmlspecialchars($review['status'] ?? '', ENT_QUOTES); ?>"
                                             >Edit</button>
                                         <?php endif; ?>
+
                                     </div>
                                 </div>
                                 <p class="text-muted small mb-2">Reviewed by: <?php echo htmlspecialchars($review['reviewer_name']); ?></p>
@@ -264,7 +266,7 @@ if ($userId) {
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="modalTitle">Create Performance Review</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <form method="POST">
                 <input type="hidden" name="action" id="modal_action" value="create_review">
@@ -323,8 +325,8 @@ if ($userId) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" id="modal_submit_btn" class="btn btn-primary">Create Review</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" id="modal_submit_btn" class="btn btn-primary">Create Performance Review</button>
                 </div>
             </form>
         </div>
@@ -424,7 +426,7 @@ document.addEventListener('DOMContentLoaded', function(){
                 items.forEach(function(it){ it.style.display = ''; it.classList.remove('active'); });
                 var modalTitle = document.getElementById('modalTitle');
                 if (modalTitle) modalTitle.textContent = 'Create Performance Review';
-                var submitBtn = document.getElementById('modal_submit_btn'); if (submitBtn) submitBtn.textContent = 'Create Review';
+                var submitBtn = document.getElementById('modal_submit_btn'); if (submitBtn) submitBtn.textContent = 'Create Performance Review';
                 var reviewIdEl = document.getElementById('review_id'); if (reviewIdEl) reviewIdEl.value = '';
                 var statusSel = document.getElementById('status'); if (statusSel) statusSel.value = 'draft';
                 var ratingSel = document.getElementById('rating'); if (ratingSel) ratingSel.value = '';

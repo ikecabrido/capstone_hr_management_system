@@ -63,3 +63,49 @@ body.dark-mode .main-footer {
   transform: rotate(180deg) scale(0.5);
   opacity: 0;
 }
+
+/* CARD BACKGROUNDS - shows when no image or placeholder is used */
+.training-card,
+.career-card,
+.compliance-card,
+.activity-card {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url('modules/img/card-bg-portrait.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.leadership-card,
+.course-card {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url('modules/img/card-bg-landscape.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Hide placeholder image - show background instead */
+.card-img-top {
+  display: none;
+}
+
+/* Card hover effects */
+.card {
+  overflow: hidden;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.training-card,
+.career-card,
+.compliance-card,
+.activity-card,
+.leadership-card,
+.course-card {
+  cursor: pointer;
+}

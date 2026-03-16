@@ -28,7 +28,7 @@ try {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
-    if ($action === 'create_program' && in_array($role, ['admin', 'trainer'])) {
+    if ($action === 'create_program' && in_array($role, ['admin', 'trainer', 'learning'])) {
         try {
             $stmt = $pdo->prepare('
                 INSERT INTO leadership_programs (name, description, level, focus_area, duration_weeks, target_audience, outcomes, created_by, status)
@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = 'Error creating program: ' . $e->getMessage();
             $messageType = 'danger';
         }
-    } elseif ($action === 'update_program' && in_array($role, ['admin', 'trainer'])) {
+    } elseif ($action === 'update_program' && in_array($role, ['admin', 'trainer', 'learning'])) {
         try {
             $stmt = $pdo->prepare('
                 UPDATE leadership_programs 
@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = 'Error updating program: ' . $e->getMessage();
             $messageType = 'danger';
         }
-    } elseif ($action === 'delete_program' && in_array($role, ['admin'])) {
+    } elseif ($action === 'delete_program' && in_array($role, ['admin', 'learning'])) {
         try {
             $stmt = $pdo->prepare('DELETE FROM leadership_programs WHERE id = ?');
             $stmt->execute([$_POST['program_id']]);
@@ -160,23 +160,23 @@ if ($userId) {
 
 ?>
 
-<div class="container" style="margin-top:90px; margin-bottom: 40px; max-width: 500px; margin-left: 0; margin-right: auto;">
+<div class="container-fluid" style="margin-top:90px; margin-bottom: 40px; padding-left: 20px; padding-right: 20px;">
     <div class="leadership-toolbar d-flex justify-content-between align-items-center mb-4">
         <div>
             <h3 class="m-0" style="font-size: 20px;">Leadership Development</h3>
             <p class="text-muted mt-1 mb-0" style="font-size: 12px;">Build your leadership skills with our comprehensive programs</p>
         </div>
-        <?php if (in_array($role, ['admin', 'trainer'])): ?>
-            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createProgramModal">Create Program</button>
+        <?php if (in_array($role, ['admin', 'trainer', 'learning'])): ?>
+            <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#createProgramModal">Create Leadership Program</button>
         <?php elseif ($username): ?>
-            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createProgramModal" style="display:none;">Create Program</button>
+            <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#createProgramModal" style="display:none;">Create Leadership Program</button>
         <?php endif; ?>
     </div>
 
     <?php if ($message): ?>
         <div class="alert alert-<?php echo htmlspecialchars($messageType); ?> alert-dismissible fade show" role="alert">
             <?php echo htmlspecialchars($message); ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
     <?php endif; ?>
 
@@ -216,9 +216,9 @@ if ($userId) {
                                             <button type="submit" class="btn btn-sm btn-primary w-100" style="font-size: 11px; padding: 0.25rem 0.5rem;">Enroll</button>
                                         </form>
                                     <?php endif; ?>
-                                    <?php if (in_array($role, ['admin', 'trainer'])): ?>
-                                        <button class="btn btn-sm btn-warning edit-program-btn" style="font-size: 11px; padding: 0.25rem 0.5rem;" onclick="editProgram(<?php echo htmlspecialchars(json_encode($program)); ?>)" data-bs-toggle="modal" data-bs-target="#editProgramModal">Edit</button>
-                                        <?php if ($role === 'admin'): ?>
+                                    <?php if (in_array($role, ['admin', 'trainer', 'learning'])): ?>
+                                        <button class="btn btn-sm btn-warning edit-program-btn" style="font-size: 11px; padding: 0.25rem 0.5rem;" onclick="editProgram(<?php echo htmlspecialchars(json_encode($program)); ?>)" data-toggle="modal" data-target="#editProgramModal">Edit</button>
+                                        <?php if (in_array($role, ['admin', 'learning'])): ?>
                                           <form method="post" style="display:inline" class="delete-form" data-id="<?php echo intval($program['id']); ?>">
                                             <input type="hidden" name="action" value="delete_program">
                                             <input type="hidden" name="program_id" value="<?php echo intval($program['id']); ?>">
@@ -277,7 +277,7 @@ if ($userId) {
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Create Leadership Program</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <form method="POST">
                 <input type="hidden" name="action" value="create_program">
@@ -329,8 +329,8 @@ if ($userId) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Create Program</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Create Leadership Program</button>
                 </div>
             </form>
         </div>
@@ -343,7 +343,7 @@ if ($userId) {
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Edit Leadership Program</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <form method="POST">
                 <input type="hidden" name="action" value="update_program">
@@ -396,7 +396,7 @@ if ($userId) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                     <button type="submit" class="btn btn-primary">Update Program</button>
                 </div>
             </form>
@@ -410,7 +410,7 @@ if ($userId) {
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="viewProgramTitle"></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <img src="img/placeholder.gif" class="img-fluid mb-3" style="max-height:250px;object-fit:cover;width:100%;border-radius:8px;" alt="">
@@ -436,7 +436,7 @@ if ($userId) {
                 <div id="viewProgramOutcomes" class="mt-3"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-primary" id="viewProgramEnrollBtn">Enroll Now</button>
             </div>
         </div>

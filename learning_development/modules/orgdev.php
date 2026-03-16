@@ -40,7 +40,7 @@ if (isset($_GET['success'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
-    if ($action === 'create_activity' && in_array($role, ['admin', 'manager'])) {
+    if ($action === 'create_activity' && in_array($role, ['admin', 'manager', 'learning'])) {
         try {
             $stmt = $pdo->prepare('
                 INSERT INTO team_activities (name, description, activity_date, department, organizer_id, budget, participant_count, status)
@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = 'Error creating activity: ' . $e->getMessage();
             $messageType = 'danger';
         }
-    } elseif ($action === 'edit_activity' && in_array($role, ['admin', 'manager'])) {
+    } elseif ($action === 'edit_activity' && in_array($role, ['admin', 'manager', 'learning'])) {
         try {
             $stmt = $pdo->prepare('
                 UPDATE team_activities
@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = 'Error updating activity: ' . $e->getMessage();
             $messageType = 'danger';
         }
-    } elseif ($action === 'delete_activity' && in_array($role, ['admin', 'manager'])) {
+    } elseif ($action === 'delete_activity' && in_array($role, ['admin', 'manager', 'learning'])) {
         try {
             $stmt = $pdo->prepare('DELETE FROM team_activities WHERE id = ? AND organizer_id = ?');
             $stmt->execute([$_POST['activity_id'], $userId]);
@@ -132,8 +132,8 @@ try {
             <h2 class="m-0">Organizational Development</h2>
             <p class="text-muted mt-2 mb-0">Team building activities and organizational initiatives</p>
         </div>
-        <?php if (in_array($role, ['admin', 'manager'])): ?>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createActivityModal">Create Activity</button>
+        <?php if (in_array($role, ['admin', 'manager', 'learning'])): ?>
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#createActivityModal">Create Org Dev Activity</button>
         <?php endif; ?>
     </div>
 
@@ -211,7 +211,7 @@ try {
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="viewActivityModalTitle">Activity Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <h4 id="viewActivityName"></h4>
@@ -223,7 +223,7 @@ try {
                 <div class="mb-2"><small class="text-secondary"><strong>Status:</strong> <span id="viewActivityStatus"></span></small></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -235,7 +235,7 @@ try {
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="activityModalTitle">Create Team Activity</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <form method="POST">
                 <input type="hidden" name="action" id="activityAction" value="create_activity">
@@ -271,8 +271,8 @@ try {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary" id="activitySubmitBtn">Create Activity</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary" id="activitySubmitBtn">Create Org Dev Activity</button>
                 </div>
             </form>
         </div>
@@ -285,14 +285,14 @@ try {
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Delete Activity</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <p>Are you sure you want to delete the activity "<span id="activityToDeleteName"></span>"?</p>
                 <p class="text-muted small">This action cannot be undone.</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 <form method="POST" class="d-inline">
                     <input type="hidden" name="action" value="delete_activity">
                     <input type="hidden" name="activity_id" id="activityIdToDelete" value="">
@@ -370,7 +370,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Reset form when create modal is closed
     document.getElementById('createActivityModal').addEventListener('hide.bs.modal', function() {
         document.getElementById('activityModalTitle').textContent = 'Create Team Activity';
-        document.getElementById('activitySubmitBtn').textContent = 'Create Activity';
+        document.getElementById('activitySubmitBtn').textContent = 'Create Org Dev Activity';
         document.getElementById('activityAction').value = 'create_activity';
         document.getElementById('activityId').value = '';
         document.getElementById('name').value = '';

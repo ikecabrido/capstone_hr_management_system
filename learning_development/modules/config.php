@@ -4,9 +4,22 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Normalize session keys to work with different auth systems (old app uses $_SESSION['user'] vs. legacy code using $_SESSION['username'] / $_SESSION['role'])
+if (isset($_SESSION['user']) && is_array($_SESSION['user'])) {
+    if (isset($_SESSION['user']['username'])) {
+        $_SESSION['username'] = $_SESSION['user']['username'];
+    }
+    if (isset($_SESSION['user']['name'])) {
+        $_SESSION['full_name'] = $_SESSION['user']['name'];
+    }
+    if (isset($_SESSION['user']['role'])) {
+        $_SESSION['role'] = $_SESSION['user']['role'];
+    }
+}
+
 // Database configuration - adjust as needed for your environment
 define('DB_HOST', '127.0.0.1');
-define('DB_NAME', 'hr_learning_dev');
+define('DB_NAME', 'hr_management');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 
@@ -35,9 +48,12 @@ try {
     // ignore any errors during migration, column may already exist or engine may not support
 }
 
-// Simple helper: return current user role or null
+// Simple helper: return current user role or null (normalized to lowercase/trimmed)
 function current_role() {
-    return isset($_SESSION['role']) ? $_SESSION['role'] : null;
+    if (!isset($_SESSION['role']) || !is_string($_SESSION['role'])) {
+        return null;
+    }
+    return strtolower(trim($_SESSION['role']));
 }
 
 function current_user_display() {
@@ -49,9 +65,23 @@ function is_logged_in() {
     return isset($_SESSION['username']) && !empty($_SESSION['username']);
 }
 
-// Check if user is authorized for CRUD operations (admin/manager)
+// Check if user is authorized for CRUD operations (admin/manager/learning)
 function can_manage() {
-    return is_logged_in() && in_array(current_role(), ['admin', 'manager']);
+    if (!is_logged_in()) {
+        return false;
+    }
+
+    $role = current_role();
+    if (!$role) {
+        return false;
+    }
+
+    // Support role variations (e.g., "Learning", "learning_admin", "learning-manager")
+    if (in_array($role, ['admin', 'manager', 'learning'], true)) {
+        return true;
+    }
+
+    return str_contains($role, 'learn');
 }
 
 // Get current user ID

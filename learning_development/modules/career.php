@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         // Admin: Create career path
-        if ($action === 'create_path' && in_array($role, ['admin', 'manager'])) {
+        if ($action === 'create_path' && in_array($role, ['admin', 'manager', 'learning'])) {
             $name = trim($_POST['path_name'] ?? '');
             $description = trim($_POST['path_description'] ?? '');
             $target_position = trim($_POST['target_position'] ?? '');
@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Admin: Edit career path
-        if ($action === 'edit_path' && in_array($role, ['admin', 'manager'])) {
+        if ($action === 'edit_path' && in_array($role, ['admin', 'manager', 'learning'])) {
             $path_id = intval($_POST['path_id'] ?? 0);
             $name = trim($_POST['path_name'] ?? '');
             $description = trim($_POST['path_description'] ?? '');
@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Admin: Delete career path
-        if ($action === 'delete_path' && in_array($role, ['admin', 'manager'])) {
+        if ($action === 'delete_path' && in_array($role, ['admin', 'manager', 'learning'])) {
             $path_id = intval($_POST['path_id'] ?? 0);
             
             // Delete associated IDPs first
@@ -245,17 +245,17 @@ if ($userId) {
 <div class="container" style="margin-top:90px; margin-bottom: 40px;">
     <div class="career-toolbar d-flex justify-content-between align-items-center mb-4">
         <h2 class="m-0">Career Development</h2>
-        <?php if (in_array($role, ['admin', 'manager'])): ?>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createPathModal">Create Career Path</button>
+        <?php if (in_array($role, ['admin', 'manager', 'learning'])): ?>
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#createPathModal">Create Career Path</button>
         <?php elseif ($username): ?>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createIdpModal">Create Development Plan</button>
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#createIdpModal">Create Development Plan</button>
         <?php endif; ?>
     </div>
 
     <?php if ($message): ?>
         <div class="alert alert-<?php echo htmlspecialchars($messageType); ?> alert-dismissible fade show" role="alert">
             <?php echo htmlspecialchars($message); ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
     <?php endif; ?>
 
@@ -298,8 +298,8 @@ if ($userId) {
                                             Start Plan
                                         </button>
                                     <?php endif; ?>
-                                    <?php if (in_array($role, ['admin', 'manager'])): ?>
-                                        <button class="btn btn-sm btn-outline-secondary edit-path-btn" data-bs-toggle="modal" data-bs-target="#editPathModal" 
+                                <?php if (in_array($role, ['admin', 'manager', 'learning'])): ?>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary edit-path-btn" data-toggle="modal" data-target="#editPathModal" 
                                             onclick="editPath(<?php echo htmlspecialchars(json_encode($path)); ?>)">Edit</button>
                                         <form method="POST" style="display:inline" class="delete-form" data-id="<?php echo intval($path['id']); ?>">
                                             <input type="hidden" name="action" value="delete_path">
@@ -351,7 +351,7 @@ if ($userId) {
                                     </div>
                                 <?php endif; ?>
                                 <div class="mt-auto d-flex gap-2">
-                                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editIdpModal"
+                                    <button type="button" class="btn btn-sm btn-outline-primary" data-toggle="modal" data-target="#editIdpModal"
                                         onclick="editIdp(<?php echo htmlspecialchars(json_encode($idp)); ?>)">Edit</button>
                                     <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this development plan?');">
                                         <input type="hidden" name="action" value="delete_idp">
@@ -375,7 +375,7 @@ if ($userId) {
             <form method="POST">
                 <div class="modal-header">
                     <h5 class="modal-title">Create Career Path</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" name="action" value="create_path">
@@ -405,7 +405,7 @@ if ($userId) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Create</button>
                 </div>
             </form>
@@ -420,7 +420,7 @@ if ($userId) {
             <form method="POST">
                 <div class="modal-header">
                     <h5 class="modal-title">Edit Career Path</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" name="action" value="edit_path">
@@ -458,7 +458,7 @@ if ($userId) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Update</button>
                 </div>
             </form>
@@ -473,7 +473,7 @@ if ($userId) {
             <form method="POST">
                 <div class="modal-header">
                     <h5 class="modal-title">Create Development Plan</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" name="action" value="create_idp">
@@ -506,7 +506,7 @@ if ($userId) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Create Plan</button>
                 </div>
             </form>
@@ -521,7 +521,7 @@ if ($userId) {
             <form method="POST">
                 <div class="modal-header">
                     <h5 class="modal-title">Edit Development Plan</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" name="action" value="update_idp">
@@ -552,7 +552,7 @@ if ($userId) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Update</button>
                 </div>
             </form>
@@ -566,7 +566,7 @@ if ($userId) {
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="viewPathTitle"></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <img src="img/placeholder.gif" class="img-fluid mb-3" style="max-height:250px;object-fit:cover;width:100%;border-radius:8px;" alt="">
@@ -588,7 +588,7 @@ if ($userId) {
                 <div id="viewPathSkills" class="mt-3"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-primary" id="viewPathStartBtn">Start Development Plan</button>
             </div>
         </div>
@@ -717,14 +717,14 @@ function selectPathForIdp(pathId) {
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="deleteConfirmModalLabel">Confirm Delete</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
       </div>
       <div class="modal-body">
         <p id="deleteConfirmText">Are you sure you want to delete this item?</p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" id="delete-edit-btn">Edit</button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Decline</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Decline</button>
         <button type="button" class="btn btn-danger" id="delete-confirm-btn">Confirm</button>
       </div>
     </div>

@@ -163,28 +163,6 @@ $page = $_GET['page'] ?? 'analytics';
                 <p>Organizational Development</p>
               </a>
             </li>
-            <li class="nav-header">OTHER EXAMPLES</li>
-            <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-calendar-alt"></i>
-                <p>
-                  Calendar
-                  <span class="badge badge-info right">2</span>
-                </p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="nav-icon far fa-image"></i>
-                <p>Gallery</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-columns"></i>
-                <p>Kanban Board</p>
-              </a>
-            </li>
             <li class="nav-item">
               <a href="../logout.php" class="nav-link">
                 <i class="nav-icon fas fa-sign-out-alt"></i>
@@ -203,15 +181,6 @@ $page = $_GET['page'] ?? 'analytics';
       <!-- Content Header (Page header) -->
       <div class="content-header">
         <div class="container-fluid">
-          <div class="row mb-2">
-            <div class="col-sm-6">
-              <h1 class="m-0">Learning and Development Management System</h1>
-            </div>
-            <!-- /.col -->
-
-            <!-- /.col -->
-          </div>
-          <!-- /.row -->
         </div>
         <!-- /.container-fluid -->
       </div>

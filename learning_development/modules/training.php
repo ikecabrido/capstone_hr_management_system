@@ -29,10 +29,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   try {
     // Create training program
-    if ($action === 'create' && in_array(current_role(), ['admin', 'manager'])) {
+    if ($action === 'create' && in_array(current_role(), ['admin', 'manager', 'learning'])) {
         if (!$currentUserId) {
             // sessions or DB state are inconsistent - require a logged-in user
-            $message = 'Cannot create program: you must be logged in as an admin or manager.';
+            $message = 'Cannot create program: you must be logged in as an admin, manager, or learning admin.';
             $messageType = 'danger';
         } else {
             $name = trim($_POST['title'] ?? '');
@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Edit training program
-    if ($action === 'edit' && in_array(current_role(), ['admin', 'manager'])) {
+    if ($action === 'edit' && in_array(current_role(), ['admin', 'manager', 'learning'])) {
         $id = intval($_POST['id'] ?? 0);
         $name = trim($_POST['title'] ?? '');
         $description = trim($_POST['description'] ?? '');
@@ -84,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Delete training program
-    if ($action === 'delete' && in_array(current_role(), ['admin', 'manager'])) {
+    if ($action === 'delete' && in_array(current_role(), ['admin', 'manager', 'learning'])) {
         $id = intval($_POST['id'] ?? 0);
         
         // Delete enrollments first
@@ -260,16 +260,19 @@ try {
     <div>
       <h2 class="m-0">Training Programs</h2>
       <p class="text-muted small mt-2 mb-0">Enhance your skills with our professional development programs</p>
+      <?php if ($role = current_role()): ?>
+        <p class="text-muted small mb-0">Your role: <strong><?php echo htmlspecialchars($role); ?></strong> <?php echo can_manage() ? '(management access)' : ''; ?></p>
+      <?php endif; ?>
     </div>
-    <?php if (in_array(current_role(), ['admin','manager'])): ?>
-      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createProgramModal">Create Program</button>
+    <?php if (can_manage()): ?>
+      <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#createProgramModal">Create Training Program</button>
     <?php endif; ?>
   </div>
 
   <?php if ($message): ?>
     <div class="alert alert-<?php echo htmlspecialchars($messageType); ?> alert-dismissible fade show" role="alert">
         <?php echo htmlspecialchars($message); ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <button type="button" class="btn-close" data-dismiss="alert"></button>
     </div>
     <?php if ($messageType === 'danger' && stripos($message, 'must be logged in') !== false): ?>
       <p><a href="login.php" class="btn btn-sm btn-primary">Log in</a></p>
@@ -321,7 +324,7 @@ try {
               <div class="mt-auto d-flex justify-content-between align-items-center">
                 <small class="text-muted">Enrolled: <?php echo $enrollmentCounts[$it['id']] ?? 0; ?></small>
                 <div class="card-action-set">
-                  <?php if (in_array(current_role(), ['admin','manager'])): ?>
+                  <?php if (can_manage()): ?>
                     <button class="btn btn-sm btn-outline-secondary me-1 edit-program-btn" 
                       data-id="<?php echo intval($it['id']); ?>" 
                       data-title="<?php echo htmlspecialchars($it['title']); ?>" 
@@ -358,7 +361,7 @@ try {
                 </div>
               </div>
               <div class="d-none card-actions">
-                <?php if (in_array(current_role(), ['admin','manager'])): ?>
+                <?php if (can_manage()): ?>
                   <button class="btn btn-sm btn-outline-secondary me-1 edit-program-btn" 
                     data-id="<?php echo intval($it['id']); ?>" 
                     data-title="<?php echo htmlspecialchars($it['title']); ?>" 
@@ -410,7 +413,7 @@ try {
       <form method="post" id="editProgramForm" novalidate>
         <div class="modal-header">
           <h5 class="modal-title" id="editProgramModalLabel">Edit Program</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
         <div class="modal-body">
           <input type="hidden" name="action" value="edit">
@@ -434,7 +437,7 @@ try {
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
           <button type="submit" class="btn btn-primary">Save changes</button>
         </div>
       </form>
@@ -501,8 +504,8 @@ document.addEventListener('DOMContentLoaded', function(){
     <div class="modal-content">
       <form method="post" id="createProgramForm" novalidate>
         <div class="modal-header">
-          <h5 class="modal-title" id="createProgramModalLabel">Create Program</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title" id="createProgramModalLabel">Create Training Program</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
         <div class="modal-body">
           <input type="hidden" name="action" value="create">
@@ -524,8 +527,8 @@ document.addEventListener('DOMContentLoaded', function(){
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary btn-create">Create program</button>
+          <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-create">Create Training Program</button>
         </div>
       </form>
     </div>
@@ -538,7 +541,7 @@ document.addEventListener('DOMContentLoaded', function(){
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title" id="viewProgramModalLabel">Program Details</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
           </div>
           <div class="modal-body">
             <img id="view-image" src="img/placeholder.gif" class="img-fluid mb-3 view-image-anim" style="max-height:300px;object-fit:cover;width:100%;border-radius:8px;" alt="">
@@ -742,14 +745,14 @@ document.addEventListener('DOMContentLoaded', function(){
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title" id="deleteConfirmModalLabel">Confirm Delete</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
           </div>
           <div class="modal-body">
             <p id="deleteConfirmText">Are you sure you want to delete this program?</p>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-outline-secondary" id="delete-edit-btn">Edit</button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Decline</button>
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Decline</button>
             <button type="button" class="btn btn-danger" id="delete-confirm-btn">Confirm</button>
           </div>
         </div>

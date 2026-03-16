@@ -38,7 +38,7 @@ if (isset($_GET['success'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
-    if ($action === 'create_course' && in_array($role, ['admin', 'trainer'])) {
+    if ($action === 'create_course' && in_array($role, ['admin', 'trainer', 'learning'])) {
         try {
             $stmt = $pdo->prepare('
                 INSERT INTO lms_courses (title, description, category, instructor_id, course_content, duration_hours, status)
@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = 'Error enrolling: ' . $e->getMessage();
             $messageType = 'danger';
         }
-    } elseif ($action === 'edit_course' && in_array($role, ['admin', 'trainer'])) {
+    } elseif ($action === 'edit_course' && in_array($role, ['admin', 'trainer', 'learning'])) {
         try {
             $stmt = $pdo->prepare('
                 UPDATE lms_courses 
@@ -108,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = 'Error updating course: ' . $e->getMessage();
             $messageType = 'danger';
         }
-    } elseif ($action === 'delete_course' && in_array($role, ['admin', 'trainer'])) {
+    } elseif ($action === 'delete_course' && in_array($role, ['admin', 'trainer', 'learning'])) {
         try {
             $stmt = $pdo->prepare('
                 DELETE FROM lms_courses 
@@ -175,9 +175,10 @@ if ($userId) {
             <h2 class="m-0">Learning Management System</h2>
             <p class="text-muted mt-2 mb-0">Access online courses and learning materials</p>
         </div>
-        <?php if (in_array($role, ['admin', 'trainer'])): ?>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createCourseModal">Create Course</button>
+        <?php if (in_array($role, ['admin', 'trainer', 'learning'])): ?>
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#createCourseModal">Create Course</button>
         <?php endif; ?>
+
     </div>
 
     <?php if ($message): ?>
@@ -224,7 +225,7 @@ if ($userId) {
                                         <button type="submit" class="btn btn-sm btn-primary w-100">Enroll</button>
                                     </form>
                                 <?php endif; ?>
-                                <?php if (in_array($role, ['admin', 'trainer'])): ?>
+                                <?php if (in_array($role, ['admin', 'trainer', 'learning'])): ?>
                                     <button type="button" class="btn btn-sm btn-outline-secondary edit-course-btn" 
                                         data-id="<?php echo intval($course['id']); ?>"
                                         data-title="<?php echo htmlspecialchars($course['title'], ENT_QUOTES); ?>"
