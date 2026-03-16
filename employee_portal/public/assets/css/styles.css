@@ -1,0 +1,192 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Mozilla+Headline:wght@200..700&display=swap");
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.home-bg {
+  font-family: "Inter", sans-serif;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.85) 0%,
+      rgba(0, 0, 0, 0.65) 40%,
+      rgba(0, 0, 0, 0.55) 70%,
+      rgba(0, 0, 0, 0.9) 100%
+    ),
+    url("../images/bg.jpg") center/cover no-repeat;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+}
+
+.icon1 {
+  background: url("../images/icon.png") center/contain no-repeat;
+  width: 60px;
+  height: 60px;
+}
+
+.home-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+  border-radius: 22px;
+
+  padding: 3rem 2.5rem;
+  width: 100%;
+  max-width: 420px;
+
+  box-shadow:
+    0 25px 60px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+
+  color: #fff;
+  animation: fadeUp 0.9s ease;
+}
+
+.divider {
+  width: 60px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.6);
+  margin: 1rem auto 1.2rem;
+  border-radius: 10px;
+}
+
+.description {
+  font-size: 0.9rem;
+  opacity: 0.85;
+  line-height: 1.5;
+}
+
+.custom-btn {
+  border-radius: 14px;
+  font-weight: 600;
+  transition: all 0.25s ease;
+}
+
+.custom-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.35);
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(25px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.school-logo {
+  margin: 0 auto 1.5rem;
+  background: url("../images/bcp-logo.png") center/contain no-repeat;
+  width: 130px;
+  height: 130px;
+  display: block;
+}
+
+.login-container {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 400px;
+  min-height: 555px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.input-group {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group label {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.btn-login {
+  width: 100%;
+  max-width: 340px;
+  padding: 12px;
+  background: linear-gradient(
+    to right,
+    rgba(37, 0, 150, 1),
+    rgba(15, 0, 59, 1)
+  );
+  color: white;
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0 auto;
+  display: block;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.btn-login:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 0, 150, 0.4);
+}
+
+.btn-login:active {
+  transform: translateY(0);
+}
+
+.input-group input,
+.input-group select {
+  width: 100%;
+  max-width: 340px;
+  height: 47px;
+  padding: 0 15px;
+  border-radius: 15px;
+  border: 1px solid #ccc;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-size: 16px;
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.input-group input:focus,
+.input-group select:focus {
+  outline: none;
+  border-color: rgba(37, 0, 150, 1);
+  box-shadow: 0 0 0 3px rgba(37, 0, 150, 0.1);
+}
+
+option {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.forgot {
+  text-align: center;
+  margin-bottom: 20px;
+  cursor: pointer;
+  font-size: 16px;
+  color: rgba(92, 92, 92, 1);
+  transition: color 0.3s ease;
+}
+
+.forgot:hover {
+  color: rgba(37, 0, 150, 1);
+  text-decoration: underline;
+}
+
+
