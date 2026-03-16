@@ -4,6 +4,7 @@ session_start();
 require 'controllers/RequestTypeController.php';
 require 'controllers/EmployeePortalController.php';
 require 'controllers/RequestController.php';
+require 'controllers/LeaveRequestController.php';
 
 $url = $_GET['url'] ?? 'dashboard';
 
@@ -48,9 +49,25 @@ switch ($url) {
     case 'request-update-status':
         (new RequestController)->updateRequestStatus();
         break;
-    
+
     case 'request-delete':
         (new RequestController)->delete();
+        break;
+
+    case 'leave-requests-index':
+        (new LeaveRequestController)->index();
+        break;
+
+    case 'leave-requests-create':
+        (new LeaveRequestController)->create();
+        break;
+    
+    case 'leave-requests-update-status':
+        (new LeaveRequestController)->updateStatus();
+        break;
+
+    case 'leave-requests-delete':
+        (new LeaveRequestController)->delete(); 
         break;
 
     default:

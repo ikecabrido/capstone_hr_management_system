@@ -11,7 +11,7 @@ $content = $content ?? __DIR__ . '/main-content.php';
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title><?= $title ?? 'Request Types'; ?></title>
+    <title><?= $title ?? 'Leave Request'; ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="<?= $base ?>/employee_portal/public/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">

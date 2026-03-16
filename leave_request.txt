@@ -1,0 +1,11 @@
+[[LEAVE REQUEST FORM]]
+-Type of Leave
+-Start Date and End Date of leave
+-Details
+-Supporting Documents
+-Date of submission of request
+-Approve/Reject date
+-Admin name
+-Reject reason
+
+(Yung start date ng leave request dapat 30 days after ng current date)

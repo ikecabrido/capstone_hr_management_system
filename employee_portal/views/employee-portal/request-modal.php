@@ -11,7 +11,7 @@
                         <h5 class="modal-title text-2xl">
                             <i class="fa-solid <?= $type['icon']; ?>"></i>
                             <?= htmlspecialchars($type['name']); ?>
-                            Request
+                            
                         </h5>
 
                         <button type="button"
