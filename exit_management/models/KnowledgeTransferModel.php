@@ -219,7 +219,6 @@ class KnowledgeTransferModel extends ExitManagementModel
                 ktp.successor_id,
                 ktp.start_date,
                 ktp.end_date,
-                ktp.details,
                 ktp.status,
                 ktp.created_at,
                 ktp.updated_at,
@@ -231,5 +230,29 @@ class KnowledgeTransferModel extends ExitManagementModel
             ORDER BY ktp.created_at DESC
         ");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Delete a knowledge transfer plan and its associated items
+     */
+    public function deleteTransferPlan(int $planId): bool
+    {
+        try {
+            // Delete associated transfer items first (cascade)
+            $stmt = $this->db->prepare("
+                DELETE FROM knowledge_transfer_items
+                WHERE plan_id = ?
+            ");
+            $stmt->execute([$planId]);
+
+            // Delete the transfer plan
+            $stmt = $this->db->prepare("
+                DELETE FROM knowledge_transfer_plans
+                WHERE id = ?
+            ");
+            return $stmt->execute([$planId]);
+        } catch (Exception $e) {
+            throw new Exception('Database error: ' . $e->getMessage());
+        }
     }
 }

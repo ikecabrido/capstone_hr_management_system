@@ -123,6 +123,27 @@ class KnowledgeTransferController extends ExitManagementController
     }
 
     /**
+     * Delete transfer plan
+     */
+    public function deleteTransferPlan(int $planId): array
+    {
+        try {
+            $success = $this->transferModel->deleteTransferPlan($planId);
+
+            if ($success) {
+                return [
+                    'success' => true,
+                    'message' => 'Knowledge transfer plan deleted successfully'
+                ];
+            } else {
+                return ['success' => false, 'message' => 'Failed to delete transfer plan'];
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
      * Get active transfer plans
      */
     public function getActiveTransferPlans(): array
@@ -175,6 +196,9 @@ class KnowledgeTransferController extends ExitManagementController
 
             case 'complete_transfer_plan':
                 return $this->completeTransferPlan($data['plan_id'] ?? 0);
+
+            case 'delete_transfer_plan':
+                return $this->deleteTransferPlan($data['plan_id'] ?? 0);
 
             case 'get_active_plans':
                 return $this->getActiveTransferPlans();

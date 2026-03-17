@@ -447,10 +447,25 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
   <script>
     // Load dashboard statistics
     function loadDashboardStats() {
-      // This would normally fetch real data from the database
-      // For now, showing placeholder data
-      $('#total-employees').text('150');
-      $('#pending-resignations').text('3');
+      // Fetch pending resignations count
+      $.post('dashboard_api.php', {
+        action: 'get_pending_resignations_count'
+      }, function(response) {
+        if (response.success) {
+          $('#pending-resignations').text(response.count);
+        }
+      }, 'json');
+
+      // Fetch total employees count
+      $.post('dashboard_api.php', {
+        action: 'get_total_employees'
+      }, function(response) {
+        if (response.success) {
+          $('#total-employees').text(response.count);
+        }
+      }, 'json');
+
+      // Placeholder values for other stats
       $('#active-projects').text('12');
       $('#performance-reviews').text('8');
     }

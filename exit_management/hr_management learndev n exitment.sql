@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 16, 2026 at 08:02 PM
+-- Generation Time: Mar 17, 2026 at 05:34 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -47,6 +47,10 @@ CREATE TABLE `career_paths` (
 --
 
 INSERT INTO `career_paths` (`id`, `name`, `description`, `target_position`, `prerequisites`, `skills_required`, `duration_months`, `status`, `created_by`, `created_at`, `updated_at`, `cover_photo`) VALUES
+(1, 'Technical Lead', 'Progress from senior engineer to technical leadership and team management', 'Technical Lead / Engineering Manager', '5+ years professional experience, proven technical expertise', '[\"Leadership\", \"Communication\", \"System Design\", \"Mentoring\", \"Project Management\"]', 18, 'active', 1, '2026-03-15 17:19:01', '2026-03-15 17:19:01', NULL),
+(2, 'Project Manager', 'Develop skills to transition into project management and delivery leadership', 'Project Manager', '3+ years in any professional role', '[\"Planning\", \"Stakeholder Management\", \"Risk Management\", \"Agile Methodologies\", \"Communication\"]', 12, 'active', 1, '2026-03-15 17:19:01', '2026-03-15 17:19:01', NULL),
+(3, 'Product Manager', 'Transition into product management with focus on strategy and customer success', 'Product Manager', 'Experience with product or customer interaction', '[\"Product Strategy\", \"Data Analysis\", \"User Research\", \"Roadmap Planning\", \"Cross-functional Leadership\"]', 15, 'active', 1, '2026-03-15 17:19:01', '2026-03-15 17:19:01', NULL),
+(4, 'Subject Matter Expert', 'Develop deep expertise in a specific domain and become the go-to specialist', 'Senior Specialist / Subject Matter Expert', '2+ years experience in your domain', '[\"Deep Technical Knowledge\", \"Documentation\", \"Research\", \"Mentoring\", \"Innovation\"]', 24, 'active', 1, '2026-03-15 17:19:01', '2026-03-15 17:19:01', NULL),
 (6, 'sda', 'sadasdasdasdad', 'das', 'das', '[\"ads\"]', 12, 'active', 7, '2026-03-16 16:16:44', '2026-03-16 16:16:44', NULL);
 
 -- --------------------------------------------------------
@@ -113,6 +117,8 @@ CREATE TABLE `compliance_trainings` (
 --
 
 INSERT INTO `compliance_trainings` (`id`, `title`, `description`, `compliance_type`, `due_date`, `frequency`, `mandatory`, `created_by`, `created_at`, `cover_photo`) VALUES
+(1, 'Code of Conduct Training', 'Annual code of conduct review', 'Ethics', NULL, NULL, 1, 1, '2026-03-15 17:19:01', NULL),
+(2, 'Data Privacy Compliance', 'GDPR and data protection training', 'Privacy', NULL, NULL, 1, 1, '2026-03-15 17:19:01', NULL),
 (3, 'sadasd', 'dasadsdsa', 'dasdasd', '2026-03-01', NULL, 1, 7, '2026-03-16 14:42:43', NULL);
 
 -- --------------------------------------------------------
@@ -143,6 +149,128 @@ INSERT INTO `employees` (`employee_id`, `full_name`, `address`, `contact_number`
 ('EMP001', 'John Doe', '123 Main St', '123-456-7890', 'john.doe@example.com', 'IT', 'Software Engineer', '2023-01-01', 'Active', '2026-03-16 18:02:12', '2026-03-16 18:02:12'),
 ('EMP002', 'Jane Smith', '456 Oak Ave', '098-765-4321', 'jane.smith@example.com', 'HR', 'HR Manager', '2023-02-15', 'Active', '2026-03-16 18:02:12', '2026-03-16 18:02:12'),
 ('EMP003', 'Mike Johnson', '789 Pine Rd', '555-123-4567', 'mike.johnson@example.com', 'Finance', 'Accountant', '2023-03-10', 'Active', '2026-03-16 18:02:12', '2026-03-16 18:02:12');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `employee_settlements`
+--
+
+CREATE TABLE `employee_settlements` (
+  `id` int(11) NOT NULL,
+  `employee_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `resignation_id` int(11) DEFAULT NULL,
+  `basic_salary` decimal(10,2) NOT NULL,
+  `hra` decimal(10,2) DEFAULT 0.00,
+  `conveyance` decimal(10,2) DEFAULT 0.00,
+  `lta` decimal(10,2) DEFAULT 0.00,
+  `medical_allowance` decimal(10,2) DEFAULT 0.00,
+  `other_allowances` decimal(10,2) DEFAULT 0.00,
+  `provident_fund` decimal(10,2) DEFAULT 0.00,
+  `gratuity` decimal(10,2) DEFAULT 0.00,
+  `notice_pay` decimal(10,2) DEFAULT 0.00,
+  `outstanding_loans` decimal(10,2) DEFAULT 0.00,
+  `other_deductions` decimal(10,2) DEFAULT 0.00,
+  `net_payable` decimal(10,2) NOT NULL,
+  `settlement_date` date NOT NULL,
+  `status` enum('draft','approved','paid') DEFAULT 'draft',
+  `approved_by` int(11) DEFAULT NULL,
+  `approved_at` timestamp NULL DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `employee_settlements`
+--
+
+INSERT INTO `employee_settlements` (`id`, `employee_id`, `resignation_id`, `basic_salary`, `hra`, `conveyance`, `lta`, `medical_allowance`, `other_allowances`, `provident_fund`, `gratuity`, `notice_pay`, `outstanding_loans`, `other_deductions`, `net_payable`, `settlement_date`, `status`, `approved_by`, `approved_at`, `created_by`, `created_at`, `updated_at`) VALUES
+(1, 'EMP002', 8, 123.00, 12.00, 12.00, 3.00, 3.00, 3.00, 5.00, 0.00, 5.00, 111.00, 55.00, -20.00, '2026-03-18', 'draft', NULL, NULL, NULL, '2026-03-17 09:04:17', '2026-03-17 09:04:17'),
+(2, 'EMP001', 5, 321.00, 1.00, 42342.00, 13.00, 43.00, 453534.00, 3454.00, 5435.00, 435.00, 435.00, 435.00, 486060.00, '2026-03-20', 'draft', NULL, NULL, 10, '2026-03-17 12:55:11', '2026-03-17 12:55:11');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `exit_documents`
+--
+
+CREATE TABLE `exit_documents` (
+  `id` int(11) NOT NULL,
+  `employee_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `document_type` enum('resignation_letter','clearance_form','handover_document','certificate','other') NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `file_path` varchar(500) NOT NULL,
+  `uploaded_by` int(11) DEFAULT NULL,
+  `status` enum('active','archived') DEFAULT 'active',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `exit_documents`
+--
+
+INSERT INTO `exit_documents` (`id`, `employee_id`, `document_type`, `title`, `file_path`, `uploaded_by`, `status`, `created_at`) VALUES
+(1, 'EMP002', '', 'sdadasd', 'uploads/documents/1773752497_sir mark docu.docx', 10, 'active', '2026-03-17 13:01:37'),
+(2, '1', 'clearance_form', 'dasdasd', 'uploads/documents/1773755616_sir mark docu.docx', 10, 'active', '2026-03-17 13:53:36');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `exit_interviews`
+--
+
+CREATE TABLE `exit_interviews` (
+  `id` int(11) NOT NULL,
+  `employee_id` varchar(50) NOT NULL,
+  `interviewer_id` int(11) DEFAULT NULL,
+  `scheduled_date` date NOT NULL,
+  `scheduled_time` time NOT NULL,
+  `location` varchar(255) DEFAULT 'Virtual',
+  `notes` text DEFAULT NULL,
+  `status` enum('scheduled','completed','cancelled') DEFAULT 'scheduled',
+  `feedback` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `exit_interviews`
+--
+
+INSERT INTO `exit_interviews` (`id`, `employee_id`, `interviewer_id`, `scheduled_date`, `scheduled_time`, `location`, `notes`, `status`, `feedback`, `created_at`, `updated_at`) VALUES
+(1, 'EMP002', 0, '2026-03-20', '03:23:00', 'Virtual', 'dsaa', 'scheduled', NULL, '2026-03-17 07:24:03', '2026-03-17 07:24:14'),
+(2, 'EMP002', 0, '2026-03-11', '05:03:00', 'Virtual', '456456', 'scheduled', NULL, '2026-03-17 09:03:18', '2026-03-17 09:03:18'),
+(3, 'EMP003', 0, '2026-03-11', '16:23:00', 'Virtual', 'jhtuoyikuioy', 'scheduled', NULL, '2026-03-17 09:21:28', '2026-03-17 09:21:28');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `exit_surveys`
+--
+
+CREATE TABLE `exit_surveys` (
+  `id` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `target_audience` enum('all','voluntary','involuntary') DEFAULT 'all',
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `status` enum('active','inactive','completed') DEFAULT 'active',
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `exit_surveys`
+--
+
+INSERT INTO `exit_surveys` (`id`, `title`, `description`, `target_audience`, `start_date`, `end_date`, `status`, `created_by`, `created_at`, `updated_at`) VALUES
+(1, 'casedca', 'dcasdcas', 'voluntary', '2026-03-01', '2026-03-31', 'active', NULL, '2026-03-17 09:05:00', '2026-03-17 09:05:00'),
+(2, 'casedca', 'dcasdcas', 'voluntary', '2026-03-01', '2026-03-31', 'active', NULL, '2026-03-17 09:05:23', '2026-03-17 09:05:23'),
+(3, 'dsadsaadsda', 'adsdasadsadsasd', 'all', '2026-03-18', '2026-03-18', 'active', 10, '2026-03-17 14:01:22', '2026-03-17 14:01:22'),
+(4, 'dasdasd', 'sadasdasd', 'all', '2026-03-25', '2026-03-25', 'active', 10, '2026-03-17 15:34:26', '2026-03-17 15:34:26');
 
 -- --------------------------------------------------------
 
@@ -198,6 +326,68 @@ INSERT INTO `individual_development_plans` (`id`, `user_id`, `career_path_id`, `
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `knowledge_transfer_items`
+--
+
+CREATE TABLE `knowledge_transfer_items` (
+  `id` int(11) NOT NULL,
+  `plan_id` int(11) NOT NULL,
+  `item_type` enum('document','process','contact','system','other') NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `priority` enum('low','medium','high') DEFAULT 'medium',
+  `status` enum('pending','in_progress','completed') DEFAULT 'pending',
+  `completed_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `knowledge_transfer_items`
+--
+
+INSERT INTO `knowledge_transfer_items` (`id`, `plan_id`, `item_type`, `title`, `description`, `priority`, `status`, `completed_at`, `created_at`) VALUES
+(1, 1, 'process', 'asd', 'das', 'medium', 'pending', NULL, '2026-03-17 06:07:27'),
+(2, 2, 'process', 'ghjhgj', 'jhjjhj', 'medium', 'pending', NULL, '2026-03-17 08:48:34'),
+(3, 3, 'process', 'asd', 'iyggyi', 'medium', 'pending', NULL, '2026-03-17 08:55:48'),
+(4, 4, 'contact', 'ghjhgj', 'f j;dhk;jhgrl;hjfgb;jgvl;bj', 'low', 'pending', NULL, '2026-03-17 08:59:31'),
+(5, 5, 'system', 'sadda', 'das', 'medium', 'pending', NULL, '2026-03-17 09:09:40'),
+(6, 6, 'system', 'sadda', 'das', 'medium', 'pending', NULL, '2026-03-17 09:09:51'),
+(10, 10, 'system', 'ads', 'asdasdas', 'medium', 'pending', NULL, '2026-03-17 12:41:47');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `knowledge_transfer_plans`
+--
+
+CREATE TABLE `knowledge_transfer_plans` (
+  `id` int(11) NOT NULL,
+  `employee_id` varchar(50) NOT NULL,
+  `successor_id` varchar(50) DEFAULT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `status` enum('active','completed','cancelled') DEFAULT 'active',
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `knowledge_transfer_plans`
+--
+
+INSERT INTO `knowledge_transfer_plans` (`id`, `employee_id`, `successor_id`, `start_date`, `end_date`, `status`, `created_by`, `created_at`, `updated_at`) VALUES
+(1, 'EMP002', 'EMP001', '2026-03-16', '2026-03-17', 'active', 10, '2026-03-17 06:07:26', '2026-03-17 06:07:26'),
+(2, 'EMP002', 'EMP001', '2026-03-12', '2026-03-18', 'active', NULL, '2026-03-17 08:48:34', '2026-03-17 08:48:34'),
+(3, 'EMP003', 'EMP001', '2026-03-19', '2026-03-19', 'active', NULL, '2026-03-17 08:55:48', '2026-03-17 08:55:48'),
+(4, 'EMP002', 'EMP001', '2026-03-19', '2026-03-11', 'active', NULL, '2026-03-17 08:59:31', '2026-03-17 08:59:31'),
+(5, 'EMP002', 'EMP003', '2026-03-18', '2026-03-26', 'active', NULL, '2026-03-17 09:09:39', '2026-03-17 09:09:39'),
+(6, 'EMP002', 'EMP003', '2026-03-18', '2026-03-26', 'active', NULL, '2026-03-17 09:09:51', '2026-03-17 09:09:51'),
+(10, 'EMP002', 'EMP003', '2026-03-10', '2026-03-18', 'active', 10, '2026-03-17 12:41:47', '2026-03-17 12:41:47');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `leadership_enrollments`
 --
 
@@ -221,6 +411,8 @@ CREATE TABLE `leadership_enrollments` (
 --
 
 INSERT INTO `leadership_enrollments` (`id`, `user_id`, `program_id`, `enrollment_date`, `start_date`, `end_date`, `completion_date`, `status`, `feedback`, `progress_percentage`, `certificate_issued`, `certificate_url`) VALUES
+(1, 4, 1, '2026-03-15 17:19:02', NULL, NULL, NULL, 'in_progress', NULL, 0, 0, NULL),
+(2, 7, 2, '2026-03-15 17:19:02', NULL, NULL, NULL, 'completed', NULL, 0, 0, NULL),
 (3, 7, 3, '2026-03-16 17:16:37', NULL, NULL, NULL, 'pending', NULL, 0, 0, NULL);
 
 -- --------------------------------------------------------
@@ -250,6 +442,8 @@ CREATE TABLE `leadership_programs` (
 --
 
 INSERT INTO `leadership_programs` (`id`, `name`, `description`, `level`, `focus_area`, `duration_weeks`, `target_audience`, `outcomes`, `created_by`, `status`, `created_at`, `updated_at`, `cover_photo`) VALUES
+(1, 'Executive Leadership', 'Advanced leadership for senior managers', 'Executive', 'Strategic Leadership', 8, 'Senior Managers', '[\"Strategic Thinking\", \"Change Management\"]', 1, 'active', '2026-03-15 17:19:01', '2026-03-15 17:19:01', NULL),
+(2, 'Team Leadership Workshop', 'Building effective teams', 'Mid-Level', 'Team Management', 4, 'Team Leads', '[\"Communication\", \"Conflict Resolution\"]', 1, 'active', '2026-03-15 17:19:01', '2026-03-15 17:19:01', NULL),
 (3, 'dsadas', 'dasdsadsa', 'Foundation', '2ad', 2, 'asdasd', '[\"asdasd\"]', 7, 'active', '2026-03-16 15:55:38', '2026-03-16 15:55:38', NULL);
 
 -- --------------------------------------------------------
@@ -335,6 +529,39 @@ INSERT INTO `performance_reviews` (`id`, `employee_id`, `reviewer_id`, `review_p
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `resignations`
+--
+
+CREATE TABLE `resignations` (
+  `id` int(11) NOT NULL,
+  `employee_id` varchar(50) NOT NULL,
+  `resignation_type` enum('voluntary','involuntary') NOT NULL,
+  `reason` text NOT NULL,
+  `notice_date` date NOT NULL,
+  `last_working_date` date NOT NULL,
+  `comments` text DEFAULT NULL,
+  `submitted_by` int(11) DEFAULT NULL,
+  `status` enum('pending','approved','rejected','withdrawn') DEFAULT 'pending',
+  `approved_by` int(11) DEFAULT NULL,
+  `approved_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `resignations`
+--
+
+INSERT INTO `resignations` (`id`, `employee_id`, `resignation_type`, `reason`, `notice_date`, `last_working_date`, `comments`, `submitted_by`, `status`, `approved_by`, `approved_at`, `created_at`, `updated_at`) VALUES
+(5, 'EMP002', 'voluntary', 'dasdadsa', '2026-03-17', '2026-03-17', 'dsadas', 10, 'pending', NULL, NULL, '2026-03-17 07:05:31', '2026-03-17 07:23:35'),
+(8, 'EMP001', 'voluntary', 'rsdsrd', '2026-04-02', '2026-03-18', 'rsd', NULL, 'pending', NULL, NULL, '2026-03-17 08:39:24', '2026-03-17 08:39:24'),
+(9, 'EMP001', 'involuntary', 'kgkvhgl;bkvlnkfgbjfvb', '2026-03-26', '2026-03-27', 'fjgkdfahgkljhfgklhnjg', 10, 'pending', NULL, NULL, '2026-03-17 08:58:09', '2026-03-17 08:58:09'),
+(12, 'EMP003', 'voluntary', 'sad', '2026-03-18', '2026-03-12', 'asdasdas', 10, 'pending', NULL, NULL, '2026-03-17 16:00:02', '2026-03-17 16:00:02'),
+(13, 'EMP003', 'involuntary', 'dsa', '2026-03-19', '2026-03-19', 'sad', 10, 'pending', NULL, NULL, '2026-03-17 16:15:17', '2026-03-17 16:15:17');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `succession_plans`
 --
 
@@ -361,6 +588,66 @@ INSERT INTO `succession_plans` (`id`, `position_id`, `position_name`, `current_h
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `survey_answers`
+--
+
+CREATE TABLE `survey_answers` (
+  `id` int(11) NOT NULL,
+  `response_id` int(11) NOT NULL,
+  `question_id` int(11) NOT NULL,
+  `answer_text` text DEFAULT NULL,
+  `answer_value` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `survey_questions`
+--
+
+CREATE TABLE `survey_questions` (
+  `id` int(11) NOT NULL,
+  `survey_id` int(11) NOT NULL,
+  `question_text` text NOT NULL,
+  `question_type` enum('text','textarea','radio','checkbox','select','rating') NOT NULL,
+  `options` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`options`)),
+  `required` tinyint(1) DEFAULT 0,
+  `order_num` int(11) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `survey_questions`
+--
+
+INSERT INTO `survey_questions` (`id`, `survey_id`, `question_text`, `question_type`, `options`, `required`, `order_num`, `created_at`) VALUES
+(1, 1, 'casdcacd', 'textarea', NULL, 0, 1, '2026-03-17 09:05:01'),
+(2, 2, 'casdcacd', 'textarea', NULL, 0, 1, '2026-03-17 09:05:23'),
+(3, 2, '2323232', 'textarea', NULL, 0, 2, '2026-03-17 09:05:23'),
+(4, 3, 'dsadasds', 'textarea', NULL, 0, 1, '2026-03-17 14:01:23'),
+(5, 4, 'hello', 'checkbox', '\"hi\\r\\nhello\\r\\nwao\"', 0, 1, '2026-03-17 15:34:26'),
+(6, 4, 'mwke', 'rating', NULL, 0, 2, '2026-03-17 15:34:27'),
+(7, 4, 'asdw', 'radio', '\"das\\r\\ndasd\\r\\nweq\"', 0, 3, '2026-03-17 15:34:27'),
+(8, 4, 'sad', 'textarea', NULL, 0, 4, '2026-03-17 15:34:27');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `survey_responses`
+--
+
+CREATE TABLE `survey_responses` (
+  `id` int(11) NOT NULL,
+  `survey_id` int(11) NOT NULL,
+  `employee_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `responses` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`responses`)),
+  `submitted_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `team_activities`
 --
 
@@ -383,7 +670,8 @@ CREATE TABLE `team_activities` (
 --
 
 INSERT INTO `team_activities` (`id`, `name`, `description`, `activity_date`, `department`, `organizer_id`, `budget`, `participant_count`, `status`, `created_at`, `cover_photo`) VALUES
-(1, 'Team Building Retreat', 'Annual team building eventd', '2026-04-15', 'All', 1, 5000.00, 50, 'planned', '2026-03-15 17:19:02', NULL);
+(1, 'Team Building Retreat', 'Annual team building eventd', '2026-04-15', 'All', 1, 5000.00, 50, 'planned', '2026-03-15 17:19:02', NULL),
+(2, 'Diversity Workshop', 'Promoting inclusivity', '2026-05-10', 'HR', 1, 2000.00, 20, 'completed', '2026-03-15 17:19:02', NULL);
 
 -- --------------------------------------------------------
 
@@ -445,6 +733,7 @@ CREATE TABLE `training_programs` (
 --
 
 INSERT INTO `training_programs` (`id`, `name`, `description`, `category`, `type`, `duration`, `created_by`, `status`, `created_at`, `updated_at`, `cover_photo`) VALUES
+(1, 'dsa', '435ewr', 'General', 'Workshop', 13, 7, 'Active', '2026-03-15 18:33:09', '2026-03-15 18:33:09', NULL),
 (4, 'das', 'dsdasdsadasdasdaasdasd', 'General', 'Workshop', 1, 7, 'Active', '2026-03-16 17:22:22', '2026-03-16 17:22:22', NULL);
 
 -- --------------------------------------------------------
@@ -556,6 +845,39 @@ ALTER TABLE `employees`
   ADD PRIMARY KEY (`employee_id`);
 
 --
+-- Indexes for table `employee_settlements`
+--
+ALTER TABLE `employee_settlements`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_settlement_employee` (`employee_id`),
+  ADD KEY `fk_settlement_resignation` (`resignation_id`),
+  ADD KEY `fk_settlement_approved_by` (`approved_by`),
+  ADD KEY `fk_settlement_created_by` (`created_by`);
+
+--
+-- Indexes for table `exit_documents`
+--
+ALTER TABLE `exit_documents`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_document_employee` (`employee_id`),
+  ADD KEY `fk_document_uploaded_by` (`uploaded_by`);
+
+--
+-- Indexes for table `exit_interviews`
+--
+ALTER TABLE `exit_interviews`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_interview_employee` (`employee_id`),
+  ADD KEY `fk_interview_interviewer` (`interviewer_id`);
+
+--
+-- Indexes for table `exit_surveys`
+--
+ALTER TABLE `exit_surveys`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_survey_created_by` (`created_by`);
+
+--
 -- Indexes for table `feedback_360`
 --
 ALTER TABLE `feedback_360`
@@ -572,6 +894,22 @@ ALTER TABLE `individual_development_plans`
   ADD KEY `idx_user` (`user_id`),
   ADD KEY `idx_career_path` (`career_path_id`),
   ADD KEY `idx_status` (`status`);
+
+--
+-- Indexes for table `knowledge_transfer_items`
+--
+ALTER TABLE `knowledge_transfer_items`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_item_plan` (`plan_id`);
+
+--
+-- Indexes for table `knowledge_transfer_plans`
+--
+ALTER TABLE `knowledge_transfer_plans`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_transfer_employee` (`employee_id`),
+  ADD KEY `fk_transfer_successor` (`successor_id`),
+  ADD KEY `fk_transfer_created_by` (`created_by`);
 
 --
 -- Indexes for table `leadership_enrollments`
@@ -620,6 +958,15 @@ ALTER TABLE `performance_reviews`
   ADD KEY `idx_status` (`status`);
 
 --
+-- Indexes for table `resignations`
+--
+ALTER TABLE `resignations`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_resignation_employee` (`employee_id`),
+  ADD KEY `fk_resignation_submitted_by` (`submitted_by`),
+  ADD KEY `fk_resignation_approved_by` (`approved_by`);
+
+--
 -- Indexes for table `succession_plans`
 --
 ALTER TABLE `succession_plans`
@@ -627,6 +974,29 @@ ALTER TABLE `succession_plans`
   ADD KEY `current_holder_id` (`current_holder_id`),
   ADD KEY `successor_id` (`successor_id`),
   ADD KEY `idx_status` (`status`);
+
+--
+-- Indexes for table `survey_answers`
+--
+ALTER TABLE `survey_answers`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_answer_response` (`response_id`),
+  ADD KEY `fk_answer_question` (`question_id`);
+
+--
+-- Indexes for table `survey_questions`
+--
+ALTER TABLE `survey_questions`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_question_survey` (`survey_id`);
+
+--
+-- Indexes for table `survey_responses`
+--
+ALTER TABLE `survey_responses`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_response_survey` (`survey_id`),
+  ADD KEY `fk_response_employee` (`employee_id`);
 
 --
 -- Indexes for table `team_activities`
@@ -712,6 +1082,30 @@ ALTER TABLE `compliance_trainings`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
+-- AUTO_INCREMENT for table `employee_settlements`
+--
+ALTER TABLE `employee_settlements`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `exit_documents`
+--
+ALTER TABLE `exit_documents`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `exit_interviews`
+--
+ALTER TABLE `exit_interviews`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `exit_surveys`
+--
+ALTER TABLE `exit_surveys`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
 -- AUTO_INCREMENT for table `feedback_360`
 --
 ALTER TABLE `feedback_360`
@@ -722,6 +1116,18 @@ ALTER TABLE `feedback_360`
 --
 ALTER TABLE `individual_development_plans`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `knowledge_transfer_items`
+--
+ALTER TABLE `knowledge_transfer_items`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- AUTO_INCREMENT for table `knowledge_transfer_plans`
+--
+ALTER TABLE `knowledge_transfer_plans`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `leadership_enrollments`
@@ -754,10 +1160,34 @@ ALTER TABLE `performance_reviews`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
+-- AUTO_INCREMENT for table `resignations`
+--
+ALTER TABLE `resignations`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+
+--
 -- AUTO_INCREMENT for table `succession_plans`
 --
 ALTER TABLE `succession_plans`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `survey_answers`
+--
+ALTER TABLE `survey_answers`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `survey_questions`
+--
+ALTER TABLE `survey_questions`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT for table `survey_responses`
+--
+ALTER TABLE `survey_responses`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `team_activities`
@@ -912,402 +1342,6 @@ ALTER TABLE `user_competencies`
   ADD CONSTRAINT `user_competencies_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `user_competencies_ibfk_2` FOREIGN KEY (`competency_id`) REFERENCES `competencies` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `user_competencies_ibfk_3` FOREIGN KEY (`assessed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Table structure for table `resignations`
---
-
-CREATE TABLE `resignations` (
-  `id` int(11) NOT NULL,
-  `employee_id` varchar(50) NOT NULL,
-  `resignation_type` enum('voluntary','involuntary') NOT NULL,
-  `reason` text NOT NULL,
-  `notice_date` date NOT NULL,
-  `last_working_date` date NOT NULL,
-  `comments` text,
-  `submitted_by` int(11) DEFAULT NULL,
-  `status` enum('pending','approved','rejected','withdrawn') DEFAULT 'pending',
-  `approved_by` int(11) DEFAULT NULL,
-  `approved_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Table structure for table `exit_interviews`
---
-
-CREATE TABLE `exit_interviews` (
-  `id` int(11) NOT NULL,
-  `employee_id` varchar(50) NOT NULL,
-  `interviewer_id` int(11) DEFAULT NULL,
-  `scheduled_date` date NOT NULL,
-  `scheduled_time` time NOT NULL,
-  `location` varchar(255) DEFAULT 'Virtual',
-  `notes` text,
-  `status` enum('scheduled','completed','cancelled') DEFAULT 'scheduled',
-  `feedback` text,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Table structure for table `knowledge_transfer_plans`
---
-
-CREATE TABLE `knowledge_transfer_plans` (
-  `id` int(11) NOT NULL,
-  `employee_id` varchar(50) NOT NULL,
-  `successor_id` varchar(50) DEFAULT NULL,
-  `start_date` date NOT NULL,
-  `end_date` date NOT NULL,
-  `status` enum('active','completed','cancelled') DEFAULT 'active',
-  `created_by` int(11) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Table structure for table `knowledge_transfer_items`
---
-
-CREATE TABLE `knowledge_transfer_items` (
-  `id` int(11) NOT NULL,
-  `plan_id` int(11) NOT NULL,
-  `item_type` enum('document','process','contact','system','other') NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `description` text,
-  `priority` enum('low','medium','high') DEFAULT 'medium',
-  `status` enum('pending','in_progress','completed') DEFAULT 'pending',
-  `completed_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Table structure for table `employee_settlements`
---
-
-CREATE TABLE `employee_settlements` (
-  `id` int(11) NOT NULL,
-  `employee_id` varchar(50) NOT NULL,
-  `resignation_id` int(11) DEFAULT NULL,
-  `basic_salary` decimal(10,2) NOT NULL,
-  `hra` decimal(10,2) DEFAULT 0.00,
-  `conveyance` decimal(10,2) DEFAULT 0.00,
-  `lta` decimal(10,2) DEFAULT 0.00,
-  `medical_allowance` decimal(10,2) DEFAULT 0.00,
-  `other_allowances` decimal(10,2) DEFAULT 0.00,
-  `provident_fund` decimal(10,2) DEFAULT 0.00,
-  `gratuity` decimal(10,2) DEFAULT 0.00,
-  `notice_pay` decimal(10,2) DEFAULT 0.00,
-  `outstanding_loans` decimal(10,2) DEFAULT 0.00,
-  `other_deductions` decimal(10,2) DEFAULT 0.00,
-  `net_payable` decimal(10,2) NOT NULL,
-  `settlement_date` date NOT NULL,
-  `status` enum('draft','approved','paid') DEFAULT 'draft',
-  `approved_by` int(11) DEFAULT NULL,
-  `approved_at` timestamp NULL DEFAULT NULL,
-  `created_by` int(11) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Table structure for table `exit_documents`
---
-
-CREATE TABLE `exit_documents` (
-  `id` int(11) NOT NULL,
-  `employee_id` varchar(50) NOT NULL,
-  `document_type` enum('resignation_letter','clearance_form','handover_document','certificate','other') NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `file_path` varchar(500) NOT NULL,
-  `uploaded_by` int(11) DEFAULT NULL,
-  `status` enum('active','archived') DEFAULT 'active',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Table structure for table `exit_surveys`
---
-
-CREATE TABLE `exit_surveys` (
-  `id` int(11) NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `description` text,
-  `target_audience` enum('all','voluntary','involuntary') DEFAULT 'all',
-  `start_date` date NOT NULL,
-  `end_date` date NOT NULL,
-  `status` enum('active','inactive','completed') DEFAULT 'active',
-  `created_by` int(11) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Table structure for table `survey_questions`
---
-
-CREATE TABLE `survey_questions` (
-  `id` int(11) NOT NULL,
-  `survey_id` int(11) NOT NULL,
-  `question_text` text NOT NULL,
-  `question_type` enum('text','textarea','radio','checkbox','select','rating') NOT NULL,
-  `options` json DEFAULT NULL,
-  `required` tinyint(1) DEFAULT 0,
-  `order_num` int(11) DEFAULT 0,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Table structure for table `survey_responses`
---
-
-CREATE TABLE `survey_responses` (
-  `id` int(11) NOT NULL,
-  `survey_id` int(11) NOT NULL,
-  `employee_id` varchar(50) NOT NULL,
-  `responses` json NOT NULL,
-  `submitted_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Table structure for table `survey_answers`
---
-
-CREATE TABLE `survey_answers` (
-  `id` int(11) NOT NULL,
-  `response_id` int(11) NOT NULL,
-  `question_id` int(11) NOT NULL,
-  `answer_text` text,
-  `answer_value` varchar(255) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Indexes for dumped tables
---
-
---
--- Indexes for table `resignations`
---
-ALTER TABLE `resignations`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_resignation_employee` (`employee_id`),
-  ADD KEY `fk_resignation_submitted_by` (`submitted_by`),
-  ADD KEY `fk_resignation_approved_by` (`approved_by`);
-
---
--- Indexes for table `exit_interviews`
---
-ALTER TABLE `exit_interviews`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_interview_employee` (`employee_id`),
-  ADD KEY `fk_interview_interviewer` (`interviewer_id`);
-
---
--- Indexes for table `knowledge_transfer_plans`
---
-ALTER TABLE `knowledge_transfer_plans`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_transfer_employee` (`employee_id`),
-  ADD KEY `fk_transfer_successor` (`successor_id`),
-  ADD KEY `fk_transfer_created_by` (`created_by`);
-
---
--- Indexes for table `knowledge_transfer_items`
---
-ALTER TABLE `knowledge_transfer_items`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_item_plan` (`plan_id`);
-
---
--- Indexes for table `employee_settlements`
---
-ALTER TABLE `employee_settlements`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_settlement_employee` (`employee_id`),
-  ADD KEY `fk_settlement_resignation` (`resignation_id`),
-  ADD KEY `fk_settlement_approved_by` (`approved_by`),
-  ADD KEY `fk_settlement_created_by` (`created_by`);
-
---
--- Indexes for table `exit_documents`
---
-ALTER TABLE `exit_documents`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_document_employee` (`employee_id`),
-  ADD KEY `fk_document_uploaded_by` (`uploaded_by`);
-
---
--- Indexes for table `exit_surveys`
---
-ALTER TABLE `exit_surveys`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_survey_created_by` (`created_by`);
-
---
--- Indexes for table `survey_questions`
---
-ALTER TABLE `survey_questions`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_question_survey` (`survey_id`);
-
---
--- Indexes for table `survey_responses`
---
-ALTER TABLE `survey_responses`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_response_survey` (`survey_id`),
-  ADD KEY `fk_response_employee` (`employee_id`);
-
---
--- Indexes for table `survey_answers`
---
-ALTER TABLE `survey_answers`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_answer_response` (`response_id`),
-  ADD KEY `fk_answer_question` (`question_id`);
-
---
--- AUTO_INCREMENT for dumped tables
---
-
---
--- AUTO_INCREMENT for table `resignations`
---
-ALTER TABLE `resignations`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `exit_interviews`
---
-ALTER TABLE `exit_interviews`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `knowledge_transfer_plans`
---
-ALTER TABLE `knowledge_transfer_plans`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `knowledge_transfer_items`
---
-ALTER TABLE `knowledge_transfer_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `employee_settlements`
---
-ALTER TABLE `employee_settlements`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `exit_documents`
---
-ALTER TABLE `exit_documents`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `exit_surveys`
---
-ALTER TABLE `exit_surveys`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `survey_questions`
---
-ALTER TABLE `survey_questions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `survey_responses`
---
-ALTER TABLE `survey_responses`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `survey_answers`
---
-ALTER TABLE `survey_answers`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- Constraints for dumped tables
---
-
---
--- Constraints for table `resignations`
---
-ALTER TABLE `resignations`
-  ADD CONSTRAINT `fk_resignation_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_resignation_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_resignation_submitted_by` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `exit_interviews`
---
-ALTER TABLE `exit_interviews`
-  ADD CONSTRAINT `fk_interview_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_interview_interviewer` FOREIGN KEY (`interviewer_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `knowledge_transfer_plans`
---
-ALTER TABLE `knowledge_transfer_plans`
-  ADD CONSTRAINT `fk_transfer_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_transfer_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_transfer_successor` FOREIGN KEY (`successor_id`) REFERENCES `employees` (`employee_id`) ON DELETE SET NULL;
-
---
--- Constraints for table `knowledge_transfer_items`
---
-ALTER TABLE `knowledge_transfer_items`
-  ADD CONSTRAINT `fk_item_plan` FOREIGN KEY (`plan_id`) REFERENCES `knowledge_transfer_plans` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `employee_settlements`
---
-ALTER TABLE `employee_settlements`
-  ADD CONSTRAINT `fk_settlement_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_settlement_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_settlement_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_settlement_resignation` FOREIGN KEY (`resignation_id`) REFERENCES `resignations` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `exit_documents`
---
-ALTER TABLE `exit_documents`
-  ADD CONSTRAINT `fk_document_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_document_uploaded_by` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `exit_surveys`
---
-ALTER TABLE `exit_surveys`
-  ADD CONSTRAINT `fk_survey_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `survey_questions`
---
-ALTER TABLE `survey_questions`
-  ADD CONSTRAINT `fk_question_survey` FOREIGN KEY (`survey_id`) REFERENCES `exit_surveys` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `survey_responses`
---
-ALTER TABLE `survey_responses`
-  ADD CONSTRAINT `fk_response_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_response_survey` FOREIGN KEY (`survey_id`) REFERENCES `exit_surveys` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `survey_answers`
---
-ALTER TABLE `survey_answers`
-  ADD CONSTRAINT `fk_answer_question` FOREIGN KEY (`question_id`) REFERENCES `survey_questions` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_answer_response` FOREIGN KEY (`response_id`) REFERENCES `survey_responses` (`id`) ON DELETE CASCADE;
-
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

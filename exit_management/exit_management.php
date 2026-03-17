@@ -30,6 +30,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
     $data = $_POST;
     unset($data['ajax_action'], $data['controller']);
 
+    error_log("=== AJAX REQUEST: action=$action, controller=$controller ===");
+
     switch ($controller) {
         case 'resignation':
             $response = $resignationController->handleAjaxRequest($action, $data);
@@ -53,6 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
             $response = $exitController->handleAjaxRequest($action, $data);
     }
 
+    error_log("=== AJAX RESPONSE: " . json_encode($response) . " ===");
     echo json_encode($response);
     exit;
 }
@@ -303,13 +306,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                 </div>
               </div>
               <div class="card-body">
-                <table id="resignations-table" class="table table-bordered table-striped">
+                <table id="resignations-table" class="table table-bordered table-striped table-sm">
                   <thead>
                     <tr>
                       <th>Employee</th>
+                      <th>Department</th>
+                      <th>Email</th>
                       <th>Type</th>
+                      <th>Reason</th>
                       <th>Notice Date</th>
                       <th>Last Working Date</th>
+                      <th>Comments</th>
                       <th>Status</th>
                       <th>Actions</th>
                     </tr>
