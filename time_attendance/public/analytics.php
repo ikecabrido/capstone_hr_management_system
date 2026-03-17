@@ -14,7 +14,7 @@ Session::start();
 
 // Check authentication
 if (!AuthController::isAuthenticated()) {
-    header("Location: Login.php");
+    header("Location: ../../login_form.php");
     exit;
 }
 
@@ -121,7 +121,7 @@ $dept_stmt->execute([$year]);
 $dept_comparison = $dept_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Employee rankings
-$emp_query = "SELECT e.employee_id, e.first_name, e.last_name, e.department,
+$emp_query = "SELECT e.employee_id, e.full_name, e.department,
                      COUNT(*) as total_days,
                      SUM(CASE WHEN a.status IN ('PRESENT', 'EARLY_OUT') THEN 1 ELSE 0 END) as on_time_days,
                      SUM(CASE WHEN a.status = 'LATE' THEN 1 ELSE 0 END) as late_days
@@ -401,7 +401,7 @@ $top_employees = $emp_stmt->fetchAll(PDO::FETCH_ASSOC);
                         elseif ($on_time_pct >= 85) $performance = 'medium';
                         ?>
                         <tr>
-                            <td><strong><?php echo htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']); ?></strong></td>
+                            <td><strong><?php echo htmlspecialchars($emp['full_name']); ?></strong></td>
                             <td><?php echo htmlspecialchars($emp['department']); ?></td>
                             <td><?php echo $emp['total_days']; ?></td>
                             <td><?php echo $emp['on_time_days']; ?></td>
@@ -470,62 +470,68 @@ $top_employees = $emp_stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Trend Chart
         <?php if ($report_type === 'monthly' && !empty($daily_data)): ?>
-            const trendData = <?php echo json_encode($daily_data); ?>;
-            const ctx2 = document.getElementById('trendChart').getContext('2d');
-            const trendChart = new Chart(ctx2, {
-                type: 'bar',
-                data: {
-                    labels: trendData.map(d => new Date(d.date).toLocaleDateString()),
-                    datasets: [{
-                        label: 'Attendance Records',
-                        data: trendData.map(d => d.count),
-                        backgroundColor: '#3498db'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: true } }
-                }
-            });
+            {
+                const trendData = <?php echo json_encode($daily_data); ?>;
+                const ctxTrend = document.getElementById('trendChart').getContext('2d');
+                new Chart(ctxTrend, {
+                    type: 'bar',
+                    data: {
+                        labels: trendData.map(d => new Date(d.date).toLocaleDateString()),
+                        datasets: [{
+                            label: 'Attendance Records',
+                            data: trendData.map(d => d.count),
+                            backgroundColor: '#3498db'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            }
         <?php elseif ($report_type === 'weekly' && !empty($weekly_data)): ?>
-            const weeklyData = <?php echo json_encode($weekly_data); ?>;
-            const ctx2 = document.getElementById('trendChart').getContext('2d');
-            const trendChart = new Chart(ctx2, {
-                type: 'bar',
-                data: {
-                    labels: weeklyData.map(d => 'Week ' + d.week),
-                    datasets: [{
-                        label: 'On-Time',
-                        data: weeklyData.map(d => d.on_time_count),
-                        backgroundColor: '#27ae60'
-                    }, {
-                        label: 'Late',
-                        data: weeklyData.map(d => d.late_count),
-                        backgroundColor: '#f39c12'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
+            {
+                const weeklyData = <?php echo json_encode($weekly_data); ?>;
+                const ctxTrend = document.getElementById('trendChart').getContext('2d');
+                new Chart(ctxTrend, {
+                    type: 'bar',
+                    data: {
+                        labels: weeklyData.map(d => 'Week ' + d.week),
+                        datasets: [{
+                            label: 'On-Time',
+                            data: weeklyData.map(d => d.on_time_count),
+                            backgroundColor: '#27ae60'
+                        }, {
+                            label: 'Late',
+                            data: weeklyData.map(d => d.late_count),
+                            backgroundColor: '#f39c12'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            }
         <?php else: ?>
-            const ctx2 = document.getElementById('trendChart').getContext('2d');
-            const trendChart = new Chart(ctx2, {
-                type: 'doughnut',
-                data: {
-                    labels: ['On Time', 'Late', 'Absent'],
-                    datasets: [{
-                        data: [<?php echo $on_time; ?>, <?php echo $late; ?>, <?php echo $absent; ?>],
-                        backgroundColor: ['#27ae60', '#f39c12', '#e74c3c']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
+            {
+                const ctxTrend = document.getElementById('trendChart').getContext('2d');
+                new Chart(ctxTrend, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['On Time', 'Late', 'Absent'],
+                        datasets: [{
+                            data: [<?php echo $on_time; ?>, <?php echo $late; ?>, <?php echo $absent; ?>],
+                            backgroundColor: ['#27ae60', '#f39c12', '#e74c3c']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            }
         <?php endif; ?>
     </script>
 </body>

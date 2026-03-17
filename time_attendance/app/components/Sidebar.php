@@ -522,6 +522,12 @@ $current_role = $_SESSION['role'] ?? 'EMPLOYEE';
                             <p>Manage Shifts</p>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="schedule_calendar.php" class="nav-link <?php echo $current_page === 'schedule_calendar.php' ? 'active' : ''; ?>">
+                            <i class="nav-icon fas fa-calendar animation__wobble"></i>
+                            <p>Schedule Calendar</p>
+                        </a>
+                    </li>
                 <?php endif; ?>
 
                 <!-- Leave Management Section -->

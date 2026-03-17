@@ -22,9 +22,9 @@ class Employee
      */
     public function getByUserId($user_id)
     {
-        $query = "SELECT e.*, u.username, u.email, u.role 
+        $query = "SELECT e.*, u.username, u.role 
                   FROM " . $this->table . " e
-                  JOIN users u ON e.user_id = u.user_id
+                  JOIN users u ON e.user_id = u.id
                   WHERE e.user_id = :user_id LIMIT 1";
 
         $stmt = $this->conn->prepare($query);
@@ -39,9 +39,9 @@ class Employee
      */
     public function getById($employee_id)
     {
-        $query = "SELECT e.*, u.username, u.email, u.role 
+        $query = "SELECT e.*, u.username, u.role 
                   FROM " . $this->table . " e
-                  JOIN users u ON e.user_id = u.user_id
+                  LEFT JOIN users u ON e.user_id = u.id
                   WHERE e.employee_id = :employee_id LIMIT 1";
 
         $stmt = $this->conn->prepare($query);
@@ -54,13 +54,13 @@ class Employee
     /**
      * Get all active employees
      */
-    public function getAll($status = 'ACTIVE', $limit = 100, $offset = 0)
+    public function getAll($status = 'Active', $limit = 100, $offset = 0)
     {
-        $query = "SELECT e.*, u.username, u.email, u.role 
+        $query = "SELECT e.*, u.username, u.role 
                   FROM " . $this->table . " e
-                  JOIN users u ON e.user_id = u.user_id
-                  WHERE e.status = :status
-                  ORDER BY e.first_name, e.last_name
+                  LEFT JOIN users u ON e.user_id = u.id
+                  WHERE e.employment_status = :status
+                  ORDER BY e.full_name
                   LIMIT :limit OFFSET :offset";
 
         $stmt = $this->conn->prepare($query);
@@ -77,7 +77,7 @@ class Employee
      */
     public function getFullName($employee_id)
     {
-        $query = "SELECT CONCAT(first_name, ' ', last_name) as full_name 
+        $query = "SELECT full_name 
                   FROM " . $this->table . " 
                   WHERE employee_id = :employee_id LIMIT 1";
 
@@ -116,9 +116,9 @@ class Employee
     /**
      * Get employee count
      */
-    public function getTotalCount($status = 'ACTIVE')
+    public function getTotalCount($status = 'Active')
     {
-        $query = "SELECT COUNT(*) as count FROM " . $this->table . " WHERE status = :status";
+        $query = "SELECT COUNT(*) as count FROM " . $this->table . " WHERE employment_status = :status";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':status', $status);
         $stmt->execute();

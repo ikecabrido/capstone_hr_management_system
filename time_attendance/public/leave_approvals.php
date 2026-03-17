@@ -13,7 +13,7 @@ Session::start();
 
 // Check if user is authenticated
 if (!AuthController::isAuthenticated()) {
-    header("Location: Login.php");
+    header("Location: ../../login_form.php");
     exit;
 }
 
@@ -372,7 +372,7 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
                         <tbody>
                             <?php foreach ($pendingRequests as $req): ?>
                                 <tr>
-                                    <td><?php echo htmlspecialchars($req['first_name'] . ' ' . $req['last_name']); ?></td>
+                                    <td><?php echo htmlspecialchars($req['full_name']); ?></td>
                                     <td><?php echo htmlspecialchars($req['leave_type_name']); ?></td>
                                     <td><?php echo Helper::formatDate($req['start_date']); ?></td>
                                     <td><?php echo Helper::formatDate($req['end_date']); ?></td>

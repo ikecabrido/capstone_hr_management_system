@@ -17,7 +17,7 @@ Session::start();
 
 // Check authentication (must be HR Admin to access this)
 if (!AuthController::isAuthenticated() || !AuthController::hasRole('HR_ADMIN')) {
-    header("Location: Login.php");
+    header("Location: ../../login_form.php");
     exit;
 }
 
@@ -47,7 +47,8 @@ if ($port != 80 && $port != 443) {
     $host .= ':' . $port;
 }
 
-$qr_url = $protocol . "://" . $host . "/Time_and_Attendance/public/qr_scan.php?token=" . $token;
+// Point to root login form with qr_token parameter instead of direct qr_scan path
+$qr_url = $protocol . "://" . $host . "/capstone_hr_management_system/login_form.php?qr_token=" . $token;
 $qr_image = "https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=" . urlencode($qr_url);
 
 ?>

@@ -282,10 +282,10 @@ class NotificationService {
      * Send approval notification
      */
     public function notifyApproval($user_id, $type, $details) {
-        $query = "SELECT users.email, users.phone, employees.first_name 
+        $query = "SELECT users.email, users.phone, employees.full_name 
                   FROM users 
-                  JOIN employees ON users.user_id = employees.user_id
-                  WHERE users.user_id = ?";
+                  JOIN employees ON users.id = employees.user_id
+                  WHERE users.id = ?";
         
         $conn = $this->db->getConnection();
         $stmt = $conn->prepare($query);
@@ -295,7 +295,7 @@ class NotificationService {
         if ($type === 'leave_approved') {
             $subject = "Your Leave Request Has Been Approved";
             $body = $this->getEmailTemplate('leave_approved', [
-                'name' => $user['first_name'],
+                'name' => $user['full_name'],
                 'start_date' => $details['start_date'],
                 'end_date' => $details['end_date']
             ]);
@@ -303,7 +303,7 @@ class NotificationService {
         } elseif ($type === 'leave_rejected') {
             $subject = "Your Leave Request Has Been Rejected";
             $body = $this->getEmailTemplate('leave_rejected', [
-                'name' => $user['first_name'],
+                'name' => $user['full_name'],
                 'reason' => $details['reason']
             ]);
             $sms = "Your leave request has been rejected. Reason: " . substr($details['reason'], 0, 50);

@@ -13,7 +13,7 @@ Session::start();
 
 // Check if user is authenticated
 if (!AuthController::isAuthenticated()) {
-    header("Location: Login.php");
+    header("Location: ../../login_form.php");
     exit;
 }
 
@@ -79,8 +79,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 }
             }
             
-            // Validate and build URL
-            $qr_url = $protocol . "://" . $host . "/capstone_hr_management_system/time_attendance/public/qr_scan.php";
+            // Validate and build URL - Point to root login with qr_token parameter
+            $qr_url = $protocol . "://" . $host . "/capstone_hr_management_system/login_form.php";
             
             // Verify URL is valid
             if (!filter_var($qr_url, FILTER_VALIDATE_URL)) {
@@ -90,7 +90,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             for ($i = 0; $i < $count; $i++) {
                 $token = $qrHelper->generateToken($user_id, Helper::getCurrentDate());
                 if ($token) {
-                    $qr_data_url = $qr_url . "?token=" . $token;
+                    $qr_data_url = $qr_url . "?qr_token=" . $token;
                     $generated_tokens[] = [
                         'token' => $token,
                         'qr_data' => $qr_data_url,

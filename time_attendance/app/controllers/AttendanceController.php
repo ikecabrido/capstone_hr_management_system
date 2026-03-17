@@ -85,7 +85,7 @@ class AttendanceController
                 return [
                     'success' => true,
                     'message' => 'Time In recorded successfully at ' . Helper::formatTime($record['time_in']),
-                    'employee_name' => $employee['first_name'] . ' ' . $employee['last_name'],
+                    'employee_name' => $employee['full_name'],
                     'time_in' => $record['time_in'],
                     'status' => $status
                 ];
@@ -164,7 +164,7 @@ class AttendanceController
                 return [
                     'success' => true,
                     'message' => 'Time Out recorded successfully at ' . Helper::formatTime($updatedRecord['time_out']),
-                    'employee_name' => $employee['first_name'] . ' ' . $employee['last_name'],
+                    'employee_name' => $employee['full_name'],
                     'time_out' => $updatedRecord['time_out'],
                     'duration' => $duration,
                     'total_hours' => $hoursData['total_hours'],

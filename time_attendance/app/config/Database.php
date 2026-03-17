@@ -3,7 +3,7 @@
 class Database
 {
     private $host;
-    private $db_name = "time_and_attendance";
+    private $db_name = "hr_management";
     private $username = "root";
     private $password = "";
     private $conn;

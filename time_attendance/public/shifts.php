@@ -13,13 +13,13 @@ require_once(__DIR__ . '/../app/helpers/Helper.php');
 
 // Verify user is logged in and is HR
 if (empty($_SESSION['user_id']) || !isset($_SESSION['role'])) {
-    header('Location: Login.php');
+    header('Location: ../../login_form.php');
     exit();
 }
 
-// Check if user has HR permissions
+// Check if user has time & attendance permissions
 $user_role = $_SESSION['role'] ?? '';
-if ($user_role !== 'HR_ADMIN' && $user_role !== 'SYSTEM_ADMIN') {
+if ($user_role !== 'time' && $user_role !== 'HR_ADMIN' && $user_role !== 'payroll') {
     header('Location: dashboard.php');
     exit();
 }
@@ -1013,9 +1013,9 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                     <select id="employee_id" name="employee_id" required>
                         <option value="">Select an employee...</option>
                         <?php
-                        $stmt = $db->query("SELECT employee_id, first_name, last_name, employee_number FROM employees ORDER BY first_name, last_name");
+                        $stmt = $db->query("SELECT employee_id, full_name FROM employees ORDER BY full_name");
                         while ($emp = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                            echo '<option value="' . $emp['employee_id'] . '">' . htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']) . ' (' . $emp['employee_number'] . ')</option>';
+                            echo '<option value="' . $emp['employee_id'] . '">' . htmlspecialchars($emp['full_name']) . '</option>';
                         }
                         ?>
                     </select>
@@ -1080,7 +1080,7 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                         <tbody>
                             <?php foreach ($allAssignments as $assign): ?>
                                 <tr>
-                                    <td><?php echo htmlspecialchars($assign['first_name'] . ' ' . $assign['last_name']); ?></td>
+                                    <td><?php echo htmlspecialchars($assign['full_name']); ?></td>
                                     <td><?php echo htmlspecialchars($assign['shift_name']); ?></td>
                                     <td><?php echo date('g:i A', strtotime($assign['start_time'])); ?> - <?php echo date('g:i A', strtotime($assign['end_time'])); ?></td>
                                     <td><?php echo date('M d, Y', strtotime($assign['effective_from'])); ?></td>

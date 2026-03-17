@@ -14,7 +14,7 @@ Session::start();
 
 // Check if user is authenticated
 if (!AuthController::isAuthenticated()) {
-    header("Location: Login.php");
+    header("Location: ../../login_form.php");
     exit;
 }
 
@@ -316,15 +316,14 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
                             <?php foreach ($pendingApprovals as $record): ?>
                                 <tr>
                                     <td>
-                                        <strong><?php echo htmlspecialchars($record['first_name'] . ' ' . $record['last_name']); ?></strong><br>
-                                        <small style="color: #999;"><?php echo htmlspecialchars($record['employee_number']); ?></small>
+                                        <strong><?php echo htmlspecialchars($record['full_name']); ?></strong>
                                     </td>
                                     <td><?php echo Helper::formatDate($record['attendance_date']); ?></td>
                                     <td><?php echo Helper::formatTime($record['time_in']); ?></td>
                                     <td><?php echo Helper::formatTime($record['time_out'] ?? 'N/A'); ?></td>
                                     <td><span class="badge badge-info"><?php echo $record['recorded_by']; ?></span></td>
                                     <td>
-                                        <button class="action-btn btn-approve" onclick="openApproveModal(<?php echo $record['attendance_id']; ?>, '<?php echo htmlspecialchars($record['first_name'] . ' ' . $record['last_name']); ?>', '<?php echo Helper::formatDate($record['attendance_date']); ?>', '<?php echo Helper::formatTime($record['time_in']); ?>', '<?php echo Helper::formatTime($record['time_out'] ?? 'N/A'); ?>')">Approve</button>
+                                        <button class="action-btn btn-approve" onclick="openApproveModal(<?php echo $record['attendance_id']; ?>, '<?php echo htmlspecialchars($record['full_name']); ?>', '<?php echo Helper::formatDate($record['attendance_date']); ?>', '<?php echo Helper::formatTime($record['time_in']); ?>', '<?php echo Helper::formatTime($record['time_out'] ?? 'N/A'); ?>')">Approve</button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

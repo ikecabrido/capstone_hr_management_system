@@ -12,31 +12,34 @@ class Database
 
     private function __construct()
     {
-        try {
-            $this->conn = new PDO(
-                "mysql:host={$this->host};dbname={$this->db};charset=utf8mb4",
-                $this->user,
-                $this->pass,
-                [
-                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-                ]
-            );
-        } catch (PDOException $e) {
-            die("DB Connection failed: " . $e->getMessage());
-        }
+        $this->connect();
     }
 
-    public static function getInstance(): Database
+    public static function getInstance()
     {
         if (self::$instance === null) {
-            self::$instance = new Database();
+            self::$instance = new self();
         }
         return self::$instance;
     }
 
-    public function getConnection(): PDO
+    private function connect()
     {
-        return $this->conn;
+        try {
+            $this->pdo = new PDO(
+                "mysql:host={$this->host};dbname={$this->dbname}",
+                $this->username,
+                $this->password
+            );
+
+            $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        } catch (PDOException $e) {
+            die("Database Connection Failed: " . $e->getMessage());
+        }
+    }
+
+    public function getConnection()
+    {
+        return $this->pdo;
     }
 }

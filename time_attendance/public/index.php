@@ -19,6 +19,6 @@ if (AuthController::isAuthenticated()) {
     exit;
 }
 
-// Not authenticated, redirect to login
-header("Location: Login.php");
+// Not authenticated, redirect to root login
+header("Location: ../../login_form.php");
 exit;
