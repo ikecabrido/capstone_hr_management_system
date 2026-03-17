@@ -4,11 +4,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const apiBase = `${window.location.origin}${window.location.pathname.replace(/\/[^\/]*$/, '')}/api`;
 
-  const userId = document.querySelector('script[data-user-id]')?.getAttribute('data-user-id');
-  if (!userId || userId === 'null') {
-    container.innerHTML = '<div style="padding:20px; color:#a00;">User not authenticated.</div>';
-    return;
-  }
+  const userId = document.querySelector('script[data-user-id]')?.getAttribute('data-user-id') || null;
+  const isUserAuthenticated = userId && userId !== 'null';
 
   container.innerHTML = '<div style="padding:20px; color:#666;">Loading events...</div>';
 
@@ -35,6 +32,9 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function fetchRegistrations() {
+    if (!isUserAuthenticated) {
+      return Promise.resolve({ registrations: [] });
+    }
     return fetch(`${apiBase}/event-registrations.php?employee_id=${encodeURIComponent(userId)}`, { cache: 'no-store', credentials: 'same-origin' })
       .then((res) => res.text().then((text) => {
         if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}: ${text}`);
@@ -77,8 +77,8 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="detail-item"><div class="detail-label">Created By</div><div class="detail-value">${createdBy}</div></div>
             <div class="detail-item"><div class="detail-label">Location</div><div class="detail-value">${location}</div></div>
           </div>
-          <button class="registration-btn ${isRegistered ? 'registered' : 'register'}" ${isRegistered ? 'disabled' : ''} data-event-id="${eventId}">
-            ${isRegistered ? 'Registered' : 'Register for Event'}
+          <button class="registration-btn ${isRegistered ? 'registered' : 'register'}" ${isRegistered || !isUserAuthenticated ? 'disabled' : ''} data-event-id="${eventId}">
+            ${isRegistered ? 'Registered' : (!isUserAuthenticated ? 'Login to register' : 'Register for Event')}
           </button>
         </div>
       `;

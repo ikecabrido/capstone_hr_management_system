@@ -1,27 +1,9 @@
 <?php
 session_start();
-
-// Aggressive cache prevention - prevent ALL caching
-header('Cache-Control: no-cache, no-store, must-revalidate, private, max-age=0, must-revalidate, post-check=0, pre-check=0');
-header('Pragma: no-cache');
-header('Expires: 0');
-header('Date: ' . date('r'));
-header('ETag: "' . time() . mt_rand() . '"');
-header('Vary: *');
-header('X-UA-Compatible: IE=edge');
-header('X-Frame-Options: SAMEORIGIN');
-
-// Start output buffering to prevent any cached content
-ob_start();
-
-// CRITICAL: Check authentication FIRST before any output
-if (!isset($_SESSION['user']) || empty($_SESSION['user']) || isset($_SESSION['logged_out'])) {
-    ob_end_clean();
-    header('Location: login.php');
-    exit;
-}
-
-$user = $_SESSION['user'];
+// require_once "auth.php";
+require_once "../auth/database.php";
+require_once "../auth/auth_check.php";
+$theme = $_SESSION['user']['theme'] ?? 'light';
 $token = $_SESSION['token'] ?? null;
 $sessionId = session_id();
 
@@ -33,7 +15,9 @@ $survey_answers = [];
 
 function fetchFromApi($path, $sessionId, $token = null)
 {
-    $url = 'http://localhost/EER/api/' . $path . '?t=' . time();
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']);
+    $url = $baseUrl . '/api/' . $path . '?t=' . time();
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, [

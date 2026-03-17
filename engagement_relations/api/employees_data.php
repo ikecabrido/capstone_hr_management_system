@@ -4,7 +4,7 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../config/db.php';
 
 try {
-    $stmt = $pdo->query('SELECT id, name, email, role, status FROM employees ORDER BY name ASC');
+    $stmt = $pdo->query('SELECT employee_id AS id, full_name AS name, email, position AS role, employment_status AS status FROM employees ORDER BY full_name ASC');
     $employees = $stmt->fetchAll();
 
     echo json_encode([

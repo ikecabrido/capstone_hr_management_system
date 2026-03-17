@@ -22,8 +22,14 @@ class Auth
 
         if ($user && password_verify($password, $user['password'])) {
 
+            $employeeId = $user['employee_id'] ?? null;
+            if (empty($employeeId) && !empty($user['id']) && is_numeric($user['id'])) {
+                $employeeId = 'EMP' . str_pad((string)$user['id'], 3, '0', STR_PAD_LEFT);
+            }
+
             $_SESSION['user'] = [
                 'id' => $user['id'],
+                'employee_id' => $employeeId,
                 'username' => $user['username'],
                 'name' => $user['full_name'],
                 'role' => $user['role'],

@@ -18,19 +18,23 @@ class GrievanceController {
         $method = $_SERVER['REQUEST_METHOD'];
         switch ($method) {
             case 'GET':
+                $role = $this->user['role'] ?? null;
+                $userId = $this->user['id'] ?? null;
+                $employeeId = $this->user['employee_id'] ?? null;
+
                 if (isset($_GET['id'])) {
-                    $result = $this->model->getById($_GET['id'], $this->user['role'] ?? null, $this->user['id'] ?? null);
+                    $result = $this->model->getById($_GET['id'], $role, $userId, $employeeId);
                     echo json_encode($result);
                 } elseif (isset($_GET['employee_id'])) {
                     // Employees can only view their own grievances
-                    if ($this->user['role'] === 'employee' && $_GET['employee_id'] != $this->user['id']) {
+                    if ($role === 'employee' && $_GET['employee_id'] != ($employeeId ?? $userId)) {
                         echo json_encode(['error' => 'Unauthorized']);
                     } else {
                         $result = $this->model->getByEmployee($_GET['employee_id']);
                         echo json_encode($result);
                     }
                 } else {
-                    return $this->model->getAll($this->user['role'] ?? null, $this->user['id'] ?? null);
+                    return $this->model->getAll($role, $userId, $employeeId);
                 }
                 break;
             case 'POST':
