@@ -1,0 +1,50 @@
+.profile-icon {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4e73df, #6f42c1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 28px;
+}
+
+/* Card Hover Effects */
+.profile-card:hover,
+.info-card:hover,
+.action-card:hover {
+    transform: translateY(-6px);
+    transition: 0.3s ease;
+    box-shadow: 0 12px 25px rgba(0,0,0,0.15);
+}
+
+/* Info Items */
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f1f1f1;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+/* Action Icon */
+.action-icon {
+    font-size: 40px;
+    color: #4e73df;
+}
+
+/* Gradient Button */
+.btn-gradient {
+    background: linear-gradient(135deg, #4e73df, #6f42c1);
+    color: white;
+    border: none;
+}
+
+.btn-gradient:hover {
+    opacity: 0.9;
+}
