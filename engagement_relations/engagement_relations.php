@@ -5,6 +5,8 @@ require_once "../auth/database.php";
 require_once "../auth/auth_check.php";
 $theme = $_SESSION['user']['theme'] ?? 'light';
 
+$user = $_SESSION['user'];
+$token = $_SESSION['token'] ?? null;
 ?>
 <!doctype html>
 <html lang="en">
