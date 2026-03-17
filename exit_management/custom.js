@@ -356,6 +356,13 @@ function submitDocumentForm() {
     const formData = new FormData($('#documentForm')[0]);
     const documentId = $('#documentId').val();
     
+    // Log form data for debugging
+    console.log('=== DOCUMENT FORM SUBMISSION ===');
+    console.log('Employee ID:', formData.get('employee_id'));
+    console.log('Document Type:', formData.get('document_type'));
+    console.log('Title:', formData.get('title'));
+    console.log('File:', formData.get('document_file'));
+    
     formData.append('ajax_action', documentId ? 'update_document' : 'submit_document');
     formData.append('controller', 'documentation');
 
@@ -367,16 +374,24 @@ function submitDocumentForm() {
         data: formData,
         processData: false,
         contentType: false,
+        dataType: 'json',
         success: function(response) {
-            if (response.success) {
+            console.log('=== UPLOAD RESPONSE ===');
+            console.log('Response:', response);
+            if (response && response.success) {
                 $('#documentModal').modal('hide');
                 showToast('success', response.message);
+                console.log('Upload succeeded, loading documents table...');
                 loadDocumentsTable();
             } else {
-                showToast('error', response.message);
+                console.error('Upload failed:', response);
+                showToast('error', response ? response.message : 'An error occurred while uploading the document.');
             }
         },
-        error: function() {
+        error: function(xhr, status, error) {
+            console.error('=== AJAX ERROR ===');
+            console.error('Status:', status, 'Error:', error);
+            console.error('Response text:', xhr.responseText);
             showToast('error', 'An error occurred while uploading the document.');
         },
         complete: function() {
@@ -595,6 +610,7 @@ function loadResignationsTable() {
         ajax_action: 'get_resignations',
         controller: 'resignation'
     }, function(response) {
+        console.log('Resignations Response:', response);
         const tbody = $('#resignations-tbody');
         tbody.empty();
 
@@ -612,17 +628,21 @@ function loadResignationsTable() {
 
                 tbody.append(`
                     <tr>
-                        <td>${resignation.employee_name}</td>
+                        <td>${resignation.employee_name || '<em class="text-danger">Missing Employee</em>'}</td>
+                        <td>${resignation.department || '-'}</td>
+                        <td>${resignation.email || '-'}</td>
                         <td>${resignation.resignation_type}</td>
+                        <td>${resignation.reason || '-'}</td>
                         <td>${resignation.notice_date}</td>
                         <td>${resignation.last_working_date}</td>
+                        <td>${resignation.comments ? resignation.comments.substring(0, 50) + '...' : '-'}</td>
                         <td>${statusBadge}</td>
                         <td>${actions}</td>
                     </tr>
                 `);
             });
         } else {
-            tbody.append('<tr><td colspan="6" class="text-center">No resignations found</td></tr>');
+            tbody.append('<tr><td colspan="10" class="text-center">No resignations found</td></tr>');
         }
     });
 }
@@ -682,6 +702,9 @@ function loadTransfersTable() {
                     <button class="btn btn-sm btn-warning" onclick="viewTransferItems(${plan.id})">
                         <i class="fas fa-list"></i>
                     </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteTransferPlan(${plan.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 `;
 
                 tbody.append(`
@@ -740,15 +763,24 @@ function loadSettlementsTable() {
 }
 
 function loadDocumentsTable() {
+    console.log('=== LOADING DOCUMENTS TABLE ===');
     $.post('exit_management.php', {
         ajax_action: 'get_documents',
         controller: 'documentation'
     }, function(response) {
+        console.log('=== DOCUMENTS TABLE RESPONSE ===');
+        console.log('Full response:', response);
+        console.log('Response type:', typeof response);
+        console.log('Is array:', Array.isArray(response));
+        console.log('Response length:', response ? response.length : 'null/undefined');
+        
         const tbody = $('#documents-tbody');
         tbody.empty();
 
-        if (response && response.length > 0) {
-            response.forEach(function(doc) {
+        if (response && Array.isArray(response) && response.length > 0) {
+            console.log('Found ' + response.length + ' documents');
+            response.forEach(function(doc, index) {
+                console.log('Document ' + index + ':', doc);
                 const actions = `
                     <button class="btn btn-sm btn-info" onclick="viewDocument(${doc.id})">
                         <i class="fas fa-eye"></i>
@@ -763,17 +795,23 @@ function loadDocumentsTable() {
 
                 tbody.append(`
                     <tr>
-                        <td>${doc.employee_name}</td>
-                        <td>${doc.document_type}</td>
-                        <td>${doc.title}</td>
-                        <td>${doc.created_at}</td>
+                        <td>${doc.employee_name || 'Unknown'}</td>
+                        <td>${doc.document_type || 'N/A'}</td>
+                        <td>${doc.title || 'N/A'}</td>
+                        <td>${doc.created_at || 'N/A'}</td>
                         <td>${actions}</td>
                     </tr>
                 `);
             });
         } else {
+            console.log('No documents found or invalid response');
             tbody.append('<tr><td colspan="5" class="text-center">No documents found</td></tr>');
         }
+    }, 'json').fail(function(xhr, status, error) {
+        console.error('Error loading documents:', status, error, xhr.responseText);
+        const tbody = $('#documents-tbody');
+        tbody.empty();
+        tbody.append('<tr><td colspan="5" class="text-center text-danger">Error loading documents: ' + error + '</td></tr>');
     });
 }
 
@@ -789,13 +827,16 @@ function loadSurveysTable() {
             response.forEach(function(survey) {
                 const statusBadge = getStatusBadge(survey.status);
                 const actions = `
+                    <button class="btn btn-sm btn-success" onclick="answerSurvey(${survey.id})">
+                        <i class="fas fa-pen"></i> Answer
+                    </button>
                     <button class="btn btn-sm btn-info" onclick="showSurveyModal(${survey.id})">
                         <i class="fas fa-edit"></i>
                     </button>
                     <button class="btn btn-sm btn-warning" onclick="viewSurveyResponses(${survey.id})">
                         <i class="fas fa-chart-bar"></i>
                     </button>
-                    <button class="btn btn-sm btn-success" onclick="duplicateSurvey(${survey.id})">
+                    <button class="btn btn-sm btn-primary" onclick="duplicateSurvey(${survey.id})">
                         <i class="fas fa-copy"></i>
                     </button>
                 `;
@@ -920,6 +961,24 @@ function completeInterview(id) {
     }
 }
 
+function deleteTransferPlan(id) {
+    if (confirm('Are you sure you want to delete this knowledge transfer plan? This will also delete all associated transfer items.')) {
+        $.post('exit_management.php', {
+            ajax_action: 'delete_transfer_plan',
+            controller: 'transfer',
+            plan_id: id
+        }, function(response) {
+            if (response.success) {
+                showToast('success', response.message);
+                loadTransfersTable();
+                loadDashboardData();
+            } else {
+                showToast('error', response.message);
+            }
+        });
+    }
+}
+
 function viewTransferItems(id) {
     $.post('exit_management.php', {
         ajax_action: 'get_transfer_items',
@@ -987,7 +1046,7 @@ function deleteDocument(id) {
             } else {
                 showToast('error', response.message);
             }
-        });
+        }, 'json');
     }
 }
 
@@ -1045,4 +1104,195 @@ function duplicateSurvey(id) {
             }
         });
     }
+}
+
+// Answer Survey Functions
+function answerSurvey(surveyId) {
+    $.post('exit_management.php', {
+        ajax_action: 'get_survey',
+        controller: 'survey',
+        survey_id: surveyId
+    }, function(response) {
+        if (response && response.id) {
+            const survey = response;
+            
+            // Set survey title and description
+            $('#answerSurveyTitle').text('Answer: ' + survey.title);
+            $('#answerSurveyDesc').text(survey.description || '');
+            $('#answerSurveyId').val(surveyId);
+            
+            // Load survey questions
+            loadSurveyQuestionsForAnswering(survey);
+            
+            // Show modal
+            $('#answerSurveyModal').modal('show');
+        } else {
+            showToast('error', 'Failed to load survey');
+        }
+    });
+}
+
+function loadSurveyQuestionsForAnswering(survey) {
+    const questionsContainer = $('#surveyQuestionsAnswer');
+    questionsContainer.empty();
+    
+    if (survey.questions && survey.questions.length > 0) {
+        survey.questions.forEach(function(question, index) {
+            const questionHtml = generateQuestionAnswerField(question, index);
+            questionsContainer.append(questionHtml);
+        });
+    } else {
+        questionsContainer.html('<p class="text-muted">No questions in this survey</p>');
+    }
+}
+
+function generateQuestionAnswerField(question, index) {
+    const questionId = question.id || index;
+    const questionText = question.question_text || question.text || '';
+    const questionType = question.question_type || question.type || 'text';
+    const required = question.required ? ' required' : '';
+    let fieldHtml = `
+        <div class="form-group mb-4 p-3 border rounded">
+            <label class="font-weight-bold">${index + 1}. ${questionText}${question.required ? '<span class="text-danger">*</span>' : ''}</label>
+    `;
+    
+    switch(questionType) {
+        case 'text':
+            fieldHtml += `<input type="text" class="form-control" name="responses[${questionId}]"${required}>`;
+            break;
+            
+        case 'textarea':
+            fieldHtml += `<textarea class="form-control" name="responses[${questionId}]" rows="4"${required}></textarea>`;
+            break;
+            
+        case 'radio':
+            let radioOptions = [];
+            if (question.options) {
+                if (Array.isArray(question.options)) {
+                    radioOptions = question.options;
+                } else if (typeof question.options === 'string') {
+                    radioOptions = question.options.split('\n');
+                }
+            }
+            radioOptions.forEach(function(option) {
+                const optionText = typeof option === 'string' ? option.trim() : option;
+                if (optionText) {
+                    fieldHtml += `
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="radio" name="responses[${questionId}]" value="${optionText}" id="radio_${questionId}_${optionText.replace(/\s+/g, '_')}"${required}>
+                            <label class="form-check-label" for="radio_${questionId}_${optionText.replace(/\s+/g, '_')}">
+                                ${optionText}
+                            </label>
+                        </div>
+                    `;
+                }
+            });
+            break;
+            
+        case 'checkbox':
+            let checkboxOptions = [];
+            if (question.options) {
+                if (Array.isArray(question.options)) {
+                    checkboxOptions = question.options;
+                } else if (typeof question.options === 'string') {
+                    checkboxOptions = question.options.split('\n');
+                }
+            }
+            fieldHtml += `<input type="hidden" name="responses[${questionId}]" value="">`;
+            checkboxOptions.forEach(function(option) {
+                const optionText = typeof option === 'string' ? option.trim() : option;
+                if (optionText) {
+                    fieldHtml += `
+                        <div class="form-check mt-2">
+                            <input class="form-check-input checkbox-group" type="checkbox" name="responses[${questionId}]" value="${optionText}" id="checkbox_${questionId}_${optionText.replace(/\s+/g, '_')}">
+                            <label class="form-check-label" for="checkbox_${questionId}_${optionText.replace(/\s+/g, '_')}">
+                                ${optionText}
+                            </label>
+                        </div>
+                    `;
+                }
+            });
+            break;
+            
+        case 'select':
+            let selectOptions = [];
+            if (question.options) {
+                if (Array.isArray(question.options)) {
+                    selectOptions = question.options;
+                } else if (typeof question.options === 'string') {
+                    selectOptions = question.options.split('\n');
+                }
+            }
+            fieldHtml += `<select class="form-control" name="responses[${questionId}]"${required}>
+                <option value="">-- Select an option --</option>`;
+            selectOptions.forEach(function(option) {
+                const optionText = typeof option === 'string' ? option.trim() : option;
+                if (optionText) {
+                    fieldHtml += `<option value="${optionText}">${optionText}</option>`;
+                }
+            });
+            fieldHtml += `</select>`;
+            break;
+            
+        case 'rating':
+            fieldHtml += `<div class="rating-group mt-2">`;
+            for (let i = 1; i <= 5; i++) {
+                fieldHtml += `
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="responses[${questionId}]" value="${i}" id="rating_${questionId}_${i}"${required}>
+                        <label class="form-check-label" for="rating_${questionId}_${i}">
+                            ${'⭐'.repeat(i)} ${i}
+                        </label>
+                    </div>
+                `;
+            }
+            fieldHtml += `</div>`;
+            break;
+            
+        default:
+            fieldHtml += `<input type="text" class="form-control" name="responses[${questionId}]"${required}>`;
+    }
+    
+    fieldHtml += `</div>`;
+    return fieldHtml;
+}
+
+// Handle answer survey form submission
+$('#answerSurveyForm').on('submit', function(e) {
+    e.preventDefault();
+    submitSurveyAnswers();
+});
+
+function submitSurveyAnswers() {
+    const surveyId = $('#answerSurveyId').val();
+    const formData = new FormData($('#answerSurveyForm')[0]);
+    
+    formData.append('ajax_action', 'submit_survey_response');
+    formData.append('controller', 'survey');
+    formData.append('employee_id', 0); // Will be set by controller from session
+
+    $('#answerSurveySubmitBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Submitting...');
+
+    $.ajax({
+        url: 'exit_management.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            if (response.success) {
+                $('#answerSurveyModal').modal('hide');
+                showToast('success', 'Survey answers submitted successfully!');
+                loadSurveysTable();
+            } else {
+                showToast('error', response.message || 'Failed to submit survey answers');
+            }
+        },
+        error: function() {
+            showToast('error', 'An error occurred while submitting your answers.');
+        },
+        complete: function() {
+            $('#answerSurveySubmitBtn').prop('disabled', false).html('Submit Answers');
+        }
+    });
 }

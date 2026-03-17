@@ -9,21 +9,61 @@ class DocumentationModel extends ExitManagementModel
      */
     public function createDocument(array $data): int
     {
-        $stmt = $this->db->prepare("
-            INSERT INTO exit_documents (employee_id, document_type, title, file_path,
-                                      uploaded_by, status, created_at)
-            VALUES (?, ?, ?, ?, ?, 'active', NOW())
-        ");
+        try {
+            error_log("=== DocumentationModel::createDocument START ===");
+            error_log("Input data: " . json_encode($data));
+            
+            $sql = "
+                INSERT INTO exit_documents (employee_id, document_type, title, file_path,
+                                          uploaded_by, status, created_at)
+                VALUES (?, ?, ?, ?, ?, 'active', NOW())
+            ";
+            error_log("SQL: " . $sql);
+            
+            $stmt = $this->db->prepare($sql);
+            
+            $values = [
+                $data['employee_id'],
+                $data['document_type'],
+                $data['title'],
+                $data['file_path'],
+                $data['uploaded_by']
+            ];
+            error_log("Bind values: " . json_encode($values));
 
-        $stmt->execute([
-            $data['employee_id'],
-            $data['document_type'],
-            $data['title'],
-            $data['file_path'],
-            $data['uploaded_by']
-        ]);
+            $result = $stmt->execute($values);
+            
+            error_log("Execute result: " . ($result ? 'TRUE' : 'FALSE'));
+            
+            if (!$result) {
+                $errorInfo = $stmt->errorInfo();
+                error_log("SQLSTATE: " . $errorInfo[0] . ", Driver: " . $errorInfo[1] . ", Message: " . $errorInfo[2]);
+                return 0;
+            }
 
-        return (int)$this->db->lastInsertId();
+            $lastId = $this->db->lastInsertId();
+            error_log("lastInsertId: " . $lastId);
+            
+            // Verify it was inserted
+            $verifyStmt = $this->db->prepare("SELECT COUNT(*) as cnt FROM exit_documents WHERE id = ?");
+            $verifyStmt->execute([$lastId]);
+            $verify = $verifyStmt->fetch(PDO::FETCH_ASSOC);
+            error_log("Verification - Document ID $lastId exists: " . $verify['cnt']);
+            
+            // Check status value
+            $statusStmt = $this->db->prepare("SELECT id, status FROM exit_documents WHERE id = ?");
+            $statusStmt->execute([$lastId]);
+            $statusRow = $statusStmt->fetch(PDO::FETCH_ASSOC);
+            error_log("Document status in DB: " . json_encode($statusRow));
+            
+            error_log("=== DocumentationModel::createDocument END (ID: $lastId) ===");
+            
+            return (int)$lastId;
+        } catch (Exception $e) {
+            error_log("DocumentationModel::createDocument EXCEPTION: " . $e->getMessage());
+            error_log("Stack: " . $e->getTraceAsString());
+            throw $e;
+        }
     }
 
     /**
@@ -33,7 +73,7 @@ class DocumentationModel extends ExitManagementModel
     {
         $stmt = $this->db->prepare("
             UPDATE exit_documents
-            SET employee_id = ?, document_type = ?, title = ?, updated_at = NOW()
+            SET employee_id = ?, document_type = ?, title = ?
             WHERE id = ?
         ");
 
@@ -65,9 +105,9 @@ class DocumentationModel extends ExitManagementModel
     public function getDocumentById(int $documentId): ?array
     {
         $stmt = $this->db->prepare("
-            SELECT d.*, e.full_name, e.employee_id as emp_id
+            SELECT d.*, u.full_name, u.id as user_id
             FROM exit_documents d
-            JOIN employees e ON d.employee_id = e.employee_id
+            JOIN users u ON d.employee_id = u.id
             WHERE d.id = ? AND d.status = 'active'
         ");
         $stmt->execute([$documentId]);
@@ -81,7 +121,7 @@ class DocumentationModel extends ExitManagementModel
     {
         $stmt = $this->db->prepare("
             UPDATE exit_documents
-            SET status = ?, updated_at = NOW()
+            SET status = ?
             WHERE id = ?
         ");
         return $stmt->execute([$status, $documentId]);
@@ -100,26 +140,36 @@ class DocumentationModel extends ExitManagementModel
      */
     public function getAllDocuments(): array
     {
-        $stmt = $this->db->query("
-            SELECT 
-                d.id,
-                d.employee_id,
-                d.document_type,
-                d.title,
-                d.file_name,
-                d.file_path,
-                d.file_size,
-                d.uploaded_by,
-                d.status,
-                d.created_at,
-                d.updated_at,
-                e.full_name as employee_name
-            FROM exit_documents d
-            JOIN employees e ON d.employee_id = e.employee_id
-            WHERE d.status = 'active'
-            ORDER BY d.created_at DESC
-        ");
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        error_log(">>> getAllDocuments() CALLED");
+        try {
+            // Query all documents - no filtering
+            $query = "
+                SELECT 
+                    d.id,
+                    d.employee_id,
+                    d.document_type,
+                    d.title,
+                    d.file_path,
+                    d.uploaded_by,
+                    d.status,
+                    d.created_at,
+                    u.full_name as employee_name
+                FROM exit_documents d
+                LEFT JOIN users u ON d.employee_id = u.id
+                ORDER BY d.created_at DESC
+            ";
+            
+            $stmt = $this->db->query($query);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            error_log(">>> getAllDocuments() RESULT: " . count($result) . " documents");
+            error_log(">>> JSON: " . json_encode($result));
+            
+            return $result;
+        } catch (Exception $e) {
+            error_log(">>> getAllDocuments() ERROR: " . $e->getMessage());
+            return [];
+        }
     }
 
     /**

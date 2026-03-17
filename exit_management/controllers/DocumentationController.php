@@ -18,20 +18,73 @@ class DocumentationController extends ExitManagementController
     public function uploadDocument(array $data): array
     {
         try {
+            error_log("=== DOCUMENT UPLOAD START ===");
+            error_log("POST data: " . json_encode($data));
+            error_log("FILES data: " . json_encode(array_keys($_FILES)));
+            
             // Validate required fields
-            $required = ['employee_id', 'document_type', 'title', 'file_path'];
+            $required = ['employee_id', 'document_type', 'title'];
             foreach ($required as $field) {
                 if (empty($data[$field])) {
+                    error_log("Document validation failed: $field is required. Data: " . json_encode($data));
                     return ['success' => false, 'message' => "Field '$field' is required"];
                 }
             }
+
+            // Handle file upload if present
+            $filePath = $data['file_path'] ?? null;
+            
+            if (isset($_FILES['document_file']) && $_FILES['document_file']['error'] === UPLOAD_ERR_OK) {
+                error_log("File upload detected: " . $_FILES['document_file']['name']);
+                
+                // Create documents directory if it doesn't exist
+                $uploadDir = __DIR__ . '/../uploads/documents/';
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0755, true);
+                    error_log("Created upload directory: $uploadDir");
+                }
+
+                $fileName = basename($_FILES['document_file']['name']);
+                $filePath = 'uploads/documents/' . time() . '_' . $fileName;
+                $fullPath = __DIR__ . '/../' . $filePath;
+
+                error_log("Moving file to: $fullPath");
+                
+                // Move uploaded file
+                if (!move_uploaded_file($_FILES['document_file']['tmp_name'], $fullPath)) {
+                    error_log("Failed to move uploaded file from " . $_FILES['document_file']['tmp_name'] . " to: $fullPath");
+                    return ['success' => false, 'message' => 'Failed to save uploaded file'];
+                }
+                error_log("File uploaded successfully to: $fullPath");
+            } elseif (isset($_FILES['document_file'])) {
+                error_log("File upload error code: " . $_FILES['document_file']['error']);
+                return ['success' => false, 'message' => 'File upload error: ' . $_FILES['document_file']['error']];
+            }
+
+            // If no file was uploaded and no file_path provided, it's an error
+            if (empty($filePath)) {
+                error_log("No file provided - filePath is empty");
+                return ['success' => false, 'message' => 'No file provided'];
+            }
+
+            $data['file_path'] = $filePath;
 
             // Set uploaded_by from session if available
             if (!isset($data['uploaded_by'])) {
                 $data['uploaded_by'] = $_SESSION['user']['id'] ?? null;
             }
 
+            error_log("About to insert document with data: " . json_encode($data));
+            error_log("Will insert status='active' for this document");
+            
             $documentId = $this->documentationModel->createDocument($data);
+            
+            if (!$documentId) {
+                error_log("Document creation failed - returned 0 or false");
+                return ['success' => false, 'message' => 'Failed to create document record'];
+            }
+            
+            error_log("Document created with ID: $documentId, should be queryable now");
 
             return [
                 'success' => true,
@@ -39,7 +92,8 @@ class DocumentationController extends ExitManagementController
                 'document_id' => $documentId
             ];
         } catch (Exception $e) {
-            return ['success' => false, 'message' => $e->getMessage()];
+            error_log("Document upload exception: " . $e->getMessage() . " | Trace: " . $e->getTraceAsString());
+            return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
         }
     }
 
@@ -202,6 +256,7 @@ class DocumentationController extends ExitManagementController
         switch ($action) {
             case 'upload_document':
             case 'upload_documentation':
+            case 'submit_document':
                 return $this->uploadDocument($data);
 
             case 'update_document':

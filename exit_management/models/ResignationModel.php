@@ -73,7 +73,7 @@ class ResignationModel extends ExitManagementModel
                 e.email,
                 e.department
             FROM resignations r
-            JOIN employees e ON r.employee_id = e.employee_id
+            LEFT JOIN employees e ON r.employee_id = e.employee_id
         ";
 
         if ($status) {

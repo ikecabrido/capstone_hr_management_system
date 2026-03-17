@@ -21,28 +21,25 @@ class ExitManagementModel
 
     /**
      * Get all employees eligible for exit management
+     * Returns users for exit_documents and other tables that reference users.id
      */
     public function getEligibleEmployees(): array
     {
-        // Prefer the employees table for exit management so values match foreign keys
-        // used by resignations, interviews, settlements, documents, surveys, etc.
+        // Get employees from employees table for exit management
         $stmt = $this->db->query("
             SELECT
-                e.employee_id AS id,
-                e.employee_id AS username,
+                e.employee_id as id,
+                e.employee_id as username,
                 e.full_name,
                 e.email,
                 e.position,
                 e.department,
-                'active' AS status
+                e.employment_status as employee_status
             FROM employees e
-            -- use the employment_status column present in the employees table
-            WHERE e.employment_status = 'Active'
+            WHERE e.employment_status = 'Active' OR e.employment_status = 'active'
             ORDER BY e.full_name
         ");
 
-        // Return array shaped like the previous users-based result so the frontend
-        // `loadEmployees()` and other callers continue to work without change.
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 

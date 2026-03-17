@@ -608,6 +608,37 @@
     </div>
 </div>
 
+<!-- Answer Survey Modal -->
+<div class="modal fade" id="answerSurveyModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success">
+                <h5 class="modal-title" id="answerSurveyTitle">Answer Survey</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="answerSurveyForm">
+                <div class="modal-body">
+                    <input type="hidden" id="answerSurveyId" name="survey_id">
+                    
+                    <div class="survey-info mb-4">
+                        <h6 id="answerSurveyDesc" class="text-muted"></h6>
+                    </div>
+
+                    <div id="surveyQuestionsAnswer">
+                        <!-- Questions will be loaded here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success" id="answerSurveySubmitBtn">Submit Answers</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Confirmation Modal -->
 <div class="modal fade" id="confirmationModal" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
