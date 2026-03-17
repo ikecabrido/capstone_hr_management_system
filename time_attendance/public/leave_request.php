@@ -16,7 +16,7 @@ Session::start();
 
 // Check if user is authenticated and is employee
 if (!AuthController::isAuthenticated()) {
-    header("Location: Login.php");
+    header("Location: ../../login_form.php");
     exit;
 }
 

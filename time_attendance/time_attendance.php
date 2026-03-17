@@ -27,6 +27,10 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
     href="../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css" />
   <!-- Theme style -->
   <link rel="stylesheet" href="../assets/dist/css/adminlte.min.css" />
+  <!-- FullCalendar CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
+  <!-- Calendar Schedule CSS -->
+  <link rel="stylesheet" href="app/css/calendar_schedule.css" />
   <link rel="stylesheet" href="custom.css" />
   <link rel="stylesheet" href="../layout/toast.css" />
 </head>
@@ -206,23 +210,41 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
       <!-- Main content -->
       <section class="content">
         <div class="container-fluid">
-          <!-- Info boxes -->
-          <div class="row">
-            <div class="col-12 col-sm-6 col-md-3">
-              <div class="info-box">
-                <span class="info-box-icon bg-info elevation-1"><i class="fas fa-cog"></i></span>
+          <!-- Navigation Tabs -->
+          <ul class="nav nav-tabs mb-3" id="mainTabs" role="tablist">
+            <li class="nav-item">
+              <a class="nav-link active" id="dashboard-tab" href="#dashboard" role="tab" data-toggle="tab">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" id="calendar-tab" href="#calendar" role="tab" data-toggle="tab">
+                <i class="fas fa-calendar"></i> Schedule Calendar
+              </a>
+            </li>
+          </ul>
 
-                <div class="info-box-content">
-                  <span class="info-box-text">CPU Traffic</span>
-                  <span class="info-box-number">
-                    10
-                    <small>%</small>
-                  </span>
+          <!-- Tab Content -->
+          <div class="tab-content" id="mainTabContent">
+            <!-- Dashboard Tab -->
+            <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+              <!-- Info boxes -->
+              <div class="row">
+                <div class="col-12 col-sm-6 col-md-3">
+                  <div class="info-box">
+                    <span class="info-box-icon bg-info elevation-1"><i class="fas fa-cog"></i></span>
+
+                    <div class="info-box-content">
+                      <span class="info-box-text">CPU Traffic</span>
+                      <span class="info-box-number">
+                        10
+                        <small>%</small>
+                      </span>
+                    </div>
+                    <!-- /.info-box-content -->
+                  </div>
+                  <!-- /.info-box -->
                 </div>
-                <!-- /.info-box-content -->
-              </div>
-              <!-- /.info-box -->
-            </div>
             <!-- /.col -->
             <div class="col-12 col-sm-6 col-md-3">
               <div class="info-box mb-3">
@@ -427,6 +449,17 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
             <!-- /.col -->
           </div>
           <!-- Main row -->
+            </div>
+            <!-- /.tab-pane dashboard -->
+
+            <!-- Calendar Tab -->
+            <div class="tab-pane fade" id="calendar" role="tabpanel">
+              <?php include 'app/components/calendar_schedule.php'; ?>
+            </div>
+            <!-- /.tab-pane calendar -->
+
+          </div>
+          <!-- /.tab-content -->
         </div>
         <!--/. container-fluid -->
       </section>
@@ -472,6 +505,31 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
   <script src="../assets/dist/js/time.js"></script>
   <script src="../assets/dist/js/global_modal.js"></script>
   <script src="../assets/dist/js/profile.js"></script>
+
+  <!-- FullCalendar JS -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+  <!-- Calendar Schedule JS -->
+  <script src="app/js/calendar_schedule.js"></script>
+
+  <script>
+    // Activate correct tab based on URL parameter
+    (function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tab = urlParams.get('tab');
+      if (tab) {
+        const tabLink = document.querySelector('a[href="#' + tab + '"]');
+        if (tabLink) {
+          // Use Bootstrap tab or jQuery fallback
+          if (typeof $.fn.tab === 'function') {
+            $(tabLink).tab('show');
+          } else if (typeof bootstrap !== 'undefined') {
+            const bsTab = new bootstrap.Tab(tabLink);
+            bsTab.show();
+          }
+        }
+      }
+    })();
+  </script>
 
   <script></script>
 </body>

@@ -28,8 +28,8 @@ if (!$tokenData) {
     
     // Check if user is authenticated
     if (!AuthController::isAuthenticated()) {
-        // Redirect to login with error
-        header("Location: Login.php");
+        // Redirect to root login with error
+        header("Location: ../../login_form.php");
         exit;
     } else {
         // User is authenticated, send to dashboard with error
@@ -44,8 +44,8 @@ if (!$tokenData) {
 
 // Check if user is authenticated
 if (!AuthController::isAuthenticated()) {
-    // Redirect to login with the QR token
-    header("Location: Login.php?qr_token=" . urlencode($token));
+    // Redirect to root login with the QR token
+    header("Location: ../../login_form.php?qr_token=" . urlencode($token));
     exit;
 }
 
@@ -62,12 +62,12 @@ try {
     
     if (!$userId) {
         $_SESSION['qr_error'] = 'User session invalid';
-        header("Location: Login.php");
+        header("Location: ../../login_form.php");
         exit;
     }
 
     // Get employee ID from user ID
-    $query = "SELECT employee_id, first_name, last_name FROM employees WHERE user_id = :user_id LIMIT 1";
+    $query = "SELECT employee_id, full_name FROM employees WHERE user_id = :user_id LIMIT 1";
     $stmt = $conn->prepare($query);
     $stmt->execute([':user_id' => $userId]);
     $employee = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -141,7 +141,7 @@ try {
         $markStmt->execute([':emp_id' => $employee['employee_id'], ':token' => $token]);
 
         // Store success message in session and redirect to dashboard
-        $_SESSION['qr_success'] = $message . ' for ' . $employee['first_name'] . ' ' . $employee['last_name'];
+        $_SESSION['qr_success'] = $message . ' for ' . $employee['full_name'];
         
         if (AuthController::hasRole('HR_ADMIN')) {
             header("Location: dashboard.php");
@@ -171,7 +171,7 @@ try {
             header("Location: employee_dashboard.php");
         }
     } else {
-        header("Location: Login.php");
+        header("Location: ../../login_form.php");
     }
     exit;
 }

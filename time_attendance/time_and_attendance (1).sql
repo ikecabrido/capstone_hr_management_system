@@ -20,7 +20,7 @@ SET time_zone = "+00:00";
 --
 -- Database: `time_and_attendance`
 --
-use 'hr_management'
+use 'time_and_attendance';
 -- --------------------------------------------------------
 
 --

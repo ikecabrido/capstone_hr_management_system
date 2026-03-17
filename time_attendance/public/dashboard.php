@@ -15,7 +15,7 @@ Session::start();
 
 // Check if user is authenticated
 if (!AuthController::isAuthenticated()) {
-    header("Location: Login.php");
+    header("Location: ../../login_form.php");
     exit;
 }
 
@@ -204,8 +204,7 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
                 
                 row.innerHTML = `
                     <td>
-                        <strong>${escapeHtml(record.first_name + ' ' + record.last_name)}</strong><br>
-                        <small style="color: #999;">${escapeHtml(record.employee_number)}</small>
+                        <strong>${escapeHtml(record.full_name)}</strong>
                     </td>
                     <td>${escapeHtml(record.department || 'N/A')}</td>
                     <td>${escapeHtml(record.position || 'N/A')}</td>
@@ -238,19 +237,18 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
             const sortOption = document.getElementById('attendanceSort').value;
             
             let filtered = attendanceData.filter(record => {
-                const name = (record.first_name + ' ' + record.last_name).toLowerCase();
-                const empNum = record.employee_number.toLowerCase();
+                const name = record.full_name.toLowerCase();
                 const dept = (record.department || '').toLowerCase();
-                return name.includes(searchTerm) || empNum.includes(searchTerm) || dept.includes(searchTerm);
+                return name.includes(searchTerm) || dept.includes(searchTerm);
             });
             
             // Sort
             switch(sortOption) {
                 case 'name':
-                    filtered.sort((a, b) => (a.first_name + a.last_name).localeCompare(b.first_name + b.last_name));
+                    filtered.sort((a, b) => a.full_name.localeCompare(b.full_name));
                     break;
                 case 'name-desc':
-                    filtered.sort((a, b) => (b.first_name + b.last_name).localeCompare(a.first_name + a.last_name));
+                    filtered.sort((a, b) => b.full_name.localeCompare(a.full_name));
                     break;
                 case 'time':
                     filtered.sort((a, b) => new Date(b.time_in || 0) - new Date(a.time_in || 0));

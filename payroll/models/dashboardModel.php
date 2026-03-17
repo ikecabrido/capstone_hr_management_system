@@ -186,4 +186,89 @@ class DashboardModel
 
         return $this->db->query($sql)->fetchColumn() ?? 0;
     }
+
+    public function getLatestFinalizedRunWithDetails()
+    {
+        $sql = "
+            SELECT
+                pr.id,
+                pp.period_name,
+                pp.start_date,
+                pp.end_date,
+                COUNT(p.id) as total_employees,
+                SUM(CASE WHEN p.net_pay > 0 THEN 1 ELSE 0 END) AS processed,
+                SUM(CASE WHEN p.net_pay = 0 THEN 1 ELSE 0 END) AS pending,
+                SUM(p.net_pay) as total_payroll
+            FROM payroll_runs pr
+            JOIN payroll_periods pp ON pr.payroll_period_id = pp.id
+            JOIN payslips p ON p.payroll_run_id = pr.id
+            WHERE pr.status = 'finalized'
+            AND pr.id = (
+                SELECT id
+                FROM payroll_runs
+                WHERE status = 'finalized'
+                ORDER BY id DESC
+                LIMIT 1
+            )
+            GROUP BY pr.id, pp.period_name, pp.start_date, pp.end_date
+        ";
+
+        return $this->db->query($sql)->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /* ================= ADDITIONAL STATS ================= */
+
+    public function getAverageSalary()
+    {
+        $sql = "
+            SELECT AVG(net_pay)
+            FROM payslips p
+            JOIN payroll_runs r ON p.payroll_run_id = r.id
+            WHERE r.status = 'finalized'
+        ";
+
+        return $this->db->query($sql)->fetchColumn() ?? 0;
+    }
+
+    public function getTotalAllowances($periodId = null)
+    {
+        $sql = "
+            SELECT SUM(amount)
+            FROM employee_adjustments
+            WHERE type = 'allowance'
+        ";
+
+        $params = [];
+
+        if ($periodId) {
+            $sql .= " AND payroll_period_id = ?";
+            $params[] = $periodId;
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchColumn() ?? 0;
+    }
+
+    public function getTotalDeductions($periodId = null)
+    {
+        $sql = "
+            SELECT SUM(amount)
+            FROM employee_adjustments
+            WHERE type = 'deduction'
+        ";
+
+        $params = [];
+
+        if ($periodId) {
+            $sql .= " AND payroll_period_id = ?";
+            $params[] = $periodId;
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchColumn() ?? 0;
+    }
 }

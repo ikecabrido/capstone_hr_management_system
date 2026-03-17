@@ -17,7 +17,7 @@ Session::start();
 
 // Check authentication
 if (!AuthController::isAuthenticated()) {
-    header("Location: Login.php");
+    header("Location: ../../login_form.php");
     exit;
 }
 
@@ -164,7 +164,7 @@ $attendance_percentage = $working_days > 0 ? ($present_count / $working_days) * 
         </div>
         <div class="content-wrapper">
             <h1>Dashboard</h1>
-            <p>Welcome back, <strong><?php echo htmlspecialchars($employee['first_name']); ?></strong>!</p>
+            <p>Welcome back, <strong><?php echo htmlspecialchars($employee['full_name']); ?></strong>!</p>
 
             <!-- Messages -->
             <?php if (!empty($message)): ?>

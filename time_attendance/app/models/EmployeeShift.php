@@ -76,7 +76,7 @@ class EmployeeShift {
      */
     public function getEmployeeAssignments($employee_id, $active_only = true) {
         $query = "SELECT es.*, s.shift_name, s.start_time, s.end_time, 
-                         e.first_name, e.last_name, e.employee_number
+                         e.full_name
                   FROM " . $this->table . " es
                   INNER JOIN shifts s ON es.shift_id = s.shift_id
                   INNER JOIN employees e ON es.employee_id = e.employee_id
@@ -123,7 +123,7 @@ class EmployeeShift {
      */
     public function getAllAssignments($shift_id = null) {
         $query = "SELECT es.*, s.shift_name, s.start_time, s.end_time,
-                         e.first_name, e.last_name, e.employee_number, e.department
+                         e.full_name, e.department
                   FROM " . $this->table . " es
                   INNER JOIN shifts s ON es.shift_id = s.shift_id
                   INNER JOIN employees e ON es.employee_id = e.employee_id
@@ -133,7 +133,7 @@ class EmployeeShift {
             $query .= " AND es.shift_id = ?";
         }
 
-        $query .= " ORDER BY s.shift_name, e.first_name, e.last_name";
+        $query .= " ORDER BY s.shift_name, e.full_name";
 
         $stmt = $this->conn->prepare($query);
 

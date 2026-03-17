@@ -70,8 +70,7 @@ try {
                     WHEN time_out IS NOT NULL THEN 'TIME_OUT'
                     ELSE 'TIME_IN'
                 END as event_type,
-                CONCAT(e.first_name, ' ', e.last_name) as user_name,
-                e.employee_number,
+                e.full_name as user_name,
                 COALESCE(a.time_out, a.time_in) as event_time
             FROM attendance a
             JOIN employees e ON a.employee_id = e.employee_id
@@ -104,7 +103,6 @@ try {
         $formatted_events[] = [
             'type' => $event['event_type'],
             'name' => $event['user_name'] ?? 'Unknown User',
-            'employee_number' => $event['employee_number'] ?? 'N/A',
             'time' => $event['event_time'] ?? date('Y-m-d H:i:s'),
             'details' => $event['details'] ?? ''
         ];
@@ -138,10 +136,8 @@ try {
             'LOGIN' as event_type,
             u.name as user_name,
             u.email,
-            e.employee_number,
             MAX(al.created_at) as event_time
         FROM users u
-        LEFT JOIN employees e ON u.employee_id = e.employee_id
         LEFT JOIN (
             SELECT user_id, created_at 
             FROM activity_logs 
@@ -150,7 +146,7 @@ try {
             LIMIT 500
         ) al ON u.id = al.user_id
         WHERE al.created_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
-        GROUP BY u.id, u.name, u.email, e.employee_number
+        GROUP BY u.id, u.name, u.email
         ORDER BY al.created_at DESC
         LIMIT ?
     ";
@@ -159,8 +155,7 @@ try {
     $attendance_query = "
         SELECT 
             'TIME_IN' as event_type,
-            CONCAT(e.first_name, ' ', e.last_name) as user_name,
-            e.employee_number,
+            e.full_name as user_name,
             a.time_in as event_time
         FROM attendance a
         JOIN employees e ON a.employee_id = e.employee_id
@@ -170,8 +165,7 @@ try {
         
         SELECT 
             'TIME_OUT' as event_type,
-            CONCAT(e.first_name, ' ', e.last_name) as user_name,
-            e.employee_number,
+            e.full_name as user_name,
             a.time_out as event_time
         FROM attendance a
         JOIN employees e ON a.employee_id = e.employee_id
@@ -218,7 +212,6 @@ try {
             return [
                 'type' => $event['event_type'],
                 'user_name' => $event['user_name'],
-                'employee_number' => $event['employee_number'] ?? 'N/A',
                 'time' => date('H:i:s', strtotime($event['event_time'])),
                 'date_time' => $event['event_time'],
                 'readable_time' => date('Y-m-d H:i:s', strtotime($event['event_time']))

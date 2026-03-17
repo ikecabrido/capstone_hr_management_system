@@ -13,7 +13,7 @@ require_once '../app/controllers/AuthController.php';
 // Verify session
 Session::start();
 if (!AuthController::isAuthenticated()) {
-    header('Location: Login.php');
+    header('Location: ../../login_form.php');
     exit;
 }
 
@@ -86,12 +86,12 @@ foreach ($attendance_data as $record) {
 
 // Get employee info for header
 if ($view_employee_id !== $employee_id) {
-    $emp_stmt = $db->prepare("SELECT first_name, last_name FROM employees WHERE id = :id");
+    $emp_stmt = $db->prepare("SELECT full_name FROM employees WHERE employee_id = :id");
     $emp_stmt->execute([':id' => $view_employee_id]);
     $employee_info = $emp_stmt->fetch(PDO::FETCH_ASSOC);
-    $view_employee_name = ($employee_info) ? $employee_info['first_name'] . ' ' . $employee_info['last_name'] : 'Unknown';
+    $view_employee_name = ($employee_info) ? $employee_info['full_name'] : 'Unknown';
 } else {
-    $view_employee_name = htmlspecialchars($_SESSION['first_name'] ?? 'You');
+    $view_employee_name = htmlspecialchars($_SESSION['full_name'] ?? 'You');
 }
 
 // Get month name
@@ -146,15 +146,15 @@ if ($next_month > 12) {
 $employees_list = [];
 if ($current_role === 'HR_ADMIN' || $current_role === 'DEPARTMENT_HEAD') {
     $emp_query = "
-        SELECT id, first_name, last_name, employee_id 
+        SELECT employee_id, full_name 
         FROM employees 
-        WHERE status = 'ACTIVE'
+        WHERE employment_status = 'Active'
     ";
     
     if ($current_role === 'DEPARTMENT_HEAD') {
         // Get current user's department
         $dept_stmt = $db->prepare("
-            SELECT department FROM employees WHERE id = :id
+            SELECT department FROM employees WHERE employee_id = :id
         ");
         $dept_stmt->execute([':id' => $employee_id]);
         $dept_result = $dept_stmt->fetch(PDO::FETCH_ASSOC);
@@ -165,7 +165,7 @@ if ($current_role === 'HR_ADMIN' || $current_role === 'DEPARTMENT_HEAD') {
         }
     }
     
-    $emp_query .= " ORDER BY first_name, last_name";
+    $emp_query .= " ORDER BY full_name";
     $employees_list = $db->query($emp_query)->fetchAll(PDO::FETCH_ASSOC);
 }
 
@@ -602,8 +602,8 @@ $current_page = 'calendar.php';
                         My Calendar
                     </option>
                     <?php foreach ($employees_list as $emp): ?>
-                        <option value="<?php echo $emp['id']; ?>" <?php echo ($view_employee_id === $emp['id']) ? 'selected' : ''; ?>>
-                            <?php echo htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']); ?>
+                        <option value="<?php echo $emp['employee_id']; ?>" <?php echo ($view_employee_id === $emp['employee_id']) ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars($emp['full_name']); ?>
                         </option>
                     <?php endforeach; ?>
                 </select>

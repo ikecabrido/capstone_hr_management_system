@@ -3,6 +3,9 @@ session_start();
 
 $error = $_SESSION['login_error'] ?? null;
 unset($_SESSION['login_error']);
+
+// Capture QR token if provided
+$qrToken = isset($_GET['qr_token']) ? trim($_GET['qr_token']) : '';
 ?>
 
 <!doctype html>
@@ -76,6 +79,10 @@ unset($_SESSION['login_error']);
           <h1>Login</h1>
           <div></div>
         </div>
+        <!-- Hidden field to pass QR token if present -->
+        <?php if (!empty($qrToken)): ?>
+          <input type="hidden" name="qr_token" value="<?php echo htmlspecialchars($qrToken); ?>" />
+        <?php endif; ?>
         <div class="label">
           <label for="username">Username</label>
           <input

@@ -14,7 +14,7 @@ Session::start();
 
 // Check if user is authenticated
 if (!AuthController::isAuthenticated()) {
-    header("Location: Login.php");
+    header("Location: ../../login_form.php");
     exit;
 }
 
@@ -215,7 +215,7 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
                                 <?php foreach ($employees as $emp): ?>
                                     <option value="<?php echo $emp['employee_id']; ?>" 
                                         <?php echo ($employee_id == $emp['employee_id'] ? 'selected' : ''); ?>>
-                                        <?php echo htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']); ?>
+                                        <?php echo htmlspecialchars($emp['full_name']); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -294,8 +294,7 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
                             <?php foreach ($records as $record): ?>
                                 <tr>
                                     <td>
-                                        <strong><?php echo htmlspecialchars($record['first_name'] . ' ' . $record['last_name']); ?></strong><br>
-                                        <small style="color: #999;"><?php echo htmlspecialchars($record['employee_number']); ?></small>
+                                        <strong><?php echo htmlspecialchars($record['full_name']); ?></strong>
                                     </td>
                                     <td><?php echo Helper::formatDate($record['attendance_date']); ?></td>
                                     <td>

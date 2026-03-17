@@ -74,7 +74,10 @@ class DashboardController
 
             // IMPORTANT
             'chart' => $this->model->getMonthlyTotals(),
-            'lifetime' => $this->model->getLifetimePayroll()
+            'lifetime' => $this->model->getLifetimePayroll(),
+            'average_salary' => $this->model->getAverageSalary(),
+            'total_allowances' => 0,
+            'total_deductions' => 0
         ];
 
         /* ===== ACTIVE PERIOD (optional) ===== */
@@ -101,6 +104,44 @@ class DashboardController
 
 
                 $stats['total_payroll'] = $total['totals'] ?? 0;
+            } else {
+                // No run for active period, show latest finalized run stats instead
+                $latestRun = $this->model->getLatestFinalizedRunWithDetails();
+                if ($latestRun) {
+                    $stats['progress'] = [
+                        'total' => $latestRun['total_employees'],
+                        'processed' => $latestRun['processed'],
+                        'pending' => $latestRun['pending']
+                    ];
+                    $stats['pending_runs'] = $latestRun['pending'];
+                    $stats['total_payroll'] = $latestRun['total_payroll'];
+                    $stats['period'] = [
+                        'period_name' => $latestRun['period_name'],
+                        'start_date' => $latestRun['start_date'],
+                        'end_date' => $latestRun['end_date']
+                    ];
+                }
+            }
+
+            // Add allowances and deductions for the period
+            $stats['total_allowances'] = $this->model->getTotalAllowances($period['id']);
+            $stats['total_deductions'] = $this->model->getTotalDeductions($period['id']);
+        } else {
+            // No active period, show latest finalized run stats
+            $latestRun = $this->model->getLatestFinalizedRunWithDetails();
+            if ($latestRun) {
+                $stats['progress'] = [
+                    'total' => $latestRun['total_employees'],
+                    'processed' => $latestRun['processed'],
+                    'pending' => $latestRun['pending']
+                ];
+                $stats['pending_runs'] = $latestRun['pending'];
+                $stats['total_payroll'] = $latestRun['total_payroll'];
+                $stats['period'] = [
+                    'period_name' => $latestRun['period_name'],
+                    'start_date' => $latestRun['start_date'],
+                    'end_date' => $latestRun['end_date']
+                ];
             }
         }
 

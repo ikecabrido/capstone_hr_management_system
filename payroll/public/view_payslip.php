@@ -34,8 +34,8 @@ $netPay = number_format($payslip['net_pay'], 2);
     <title>Payslip - <?= $employeeName ?></title>
     <link
         rel="stylesheet"
-        href="../assets/plugins/fontawesome-free/css/all.min.css" />
-    <link rel="stylesheet" href="../assets/dist/css/adminlte.min.css">
+        href="../../assets/plugins/fontawesome-free/css/all.min.css" />
+    <link rel="stylesheet" href="../../assets/dist/css/adminlte.min.css">
     <style>
         body {
             font-family: "Source Sans Pro", sans-serif;

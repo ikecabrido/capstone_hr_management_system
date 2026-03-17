@@ -70,7 +70,7 @@ class Attendance
      */
     public function getByDateRange($start_date, $end_date, $employee_id = null, $limit = 500, $offset = 0)
     {
-        $query = "SELECT a.*, e.first_name, e.last_name, e.employee_number, e.department
+        $query = "SELECT a.*, e.full_name, e.department, e.position
                   FROM $this->table a
                   JOIN employees e ON a.employee_id = e.employee_id
                   WHERE a.attendance_date BETWEEN :start_date AND :end_date";
@@ -120,12 +120,12 @@ class Attendance
      */
     public function getTodayAllEmployees($limit = 100, $offset = 0)
     {
-        $query = "SELECT a.*, e.first_name, e.last_name, e.employee_number, e.department, e.position
+        $query = "SELECT a.*, e.full_name, e.department, e.position
                   FROM $this->table a
                   RIGHT JOIN employees e ON a.employee_id = e.employee_id 
                     AND a.attendance_date = CURDATE()
-                  WHERE e.status = 'ACTIVE'
-                  ORDER BY e.first_name, e.last_name
+                  WHERE e.employment_status = 'Active'
+                  ORDER BY e.full_name
                   LIMIT :limit OFFSET :offset";
 
         $stmt = $this->conn->prepare($query);
@@ -160,7 +160,7 @@ class Attendance
      */
     public function getPendingApprovals($limit = 50, $offset = 0)
     {
-        $query = "SELECT a.*, e.first_name, e.last_name, e.employee_number, e.department
+        $query = "SELECT a.*, e.full_name, e.department
                   FROM $this->table a
                   JOIN employees e ON a.employee_id = e.employee_id
                   WHERE a.is_approved = 0

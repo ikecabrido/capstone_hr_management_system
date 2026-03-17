@@ -44,7 +44,16 @@ try {
     $loginResult = $auth->login($username, $password);
     
     if ($loginResult) {
-        sendResponse(true, 'Login successful', 200, 'router.php');
+        // Check if there's a QR token to process
+        $qrToken = trim($_POST['qr_token'] ?? '');
+        
+        if (!empty($qrToken)) {
+            // Redirect to QR scan handler with token
+            sendResponse(true, 'Login successful', 200, 'time_attendance/public/qr_scan.php?token=' . urlencode($qrToken));
+        } else {
+            // Normal login redirect
+            sendResponse(true, 'Login successful', 200, 'router.php');
+        }
     } else {
         sendResponse(false, 'Invalid username or password', 401);
     }

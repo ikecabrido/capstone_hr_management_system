@@ -11,7 +11,7 @@ require_once "../app/core/Session.php";
 Session::start();
 
 if (!AuthController::isAuthenticated()) {
-    header("Location: Login.php");
+    header("Location: ../../login_form.php");
     exit;
 }
 
@@ -78,7 +78,7 @@ foreach ($monthly_attendance as $record) {
 }
 
 // Prepare employee info
-$emp_name = htmlspecialchars($employee['first_name'] . ' ' . $employee['last_name']);
+$emp_name = htmlspecialchars($employee['full_name']);
 $emp_id = htmlspecialchars($employee_id);
 $emp_dept = htmlspecialchars($employee['department'] ?? 'N/A');
 $emp_pos = htmlspecialchars($employee['position'] ?? 'N/A');
