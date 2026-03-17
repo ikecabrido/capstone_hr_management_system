@@ -4,6 +4,22 @@ $(document).ready(function() {
     initializeModals();
     loadEmployees();
     loadDashboardData();
+    
+    // Handle URL hash for section navigation
+    const hash = window.location.hash.substring(1);
+    if (hash) {
+        setTimeout(function() {
+            showSection(hash);
+        }, 100);
+    }
+    
+    // Listen for hash changes
+    $(window).on('hashchange', function() {
+        const hash = window.location.hash.substring(1);
+        if (hash) {
+            showSection(hash);
+        }
+    });
 });
 
 // Initialize modal event handlers
@@ -75,17 +91,12 @@ function loadEmployees() {
     $.post('exit_management.php', {
         ajax_action: 'get_eligible_employees'
     }, function(response) {
-        console.log('Employee response:', response);
-        if (response && Array.isArray(response) && response.length > 0) {
+        if (response && response.length > 0) {
             const employeeOptions = '<option value="">Select Employee</option>' +
                 response.map(emp => `<option value="${emp.id}">${emp.full_name} (${emp.username})</option>`).join('');
 
             $('#employeeSelect, #interviewEmployeeSelect, #transferEmployeeSelect, #settlementEmployeeSelect, #documentEmployeeSelect').html(employeeOptions);
-        } else {
-            console.warn('No employees returned or not an array:', response);
         }
-    }, 'json').fail(function(err) {
-        console.error('Error loading employees:', err);
     });
 }
 
@@ -134,27 +145,46 @@ function loadResignations() {
 
 // Modal display functions
 function showResignationModal(resignationId = null) {
+    console.log('showResignationModal called with ID:', resignationId);
+    
     if (resignationId) {
         // Edit mode
         $('#resignationModalTitle').text('Edit Resignation');
+        $('input[name="ajax_action"]').val('update_resignation');
+        $('#resignationSubmitBtn').html('Update Resignation');
         loadResignationData(resignationId);
     } else {
         // Create mode
         $('#resignationModalTitle').text('Submit Resignation');
+        $('input[name="ajax_action"]').val('submit_resignation');
+        $('#resignationSubmitBtn').html('Submit Resignation');
         $('#resignationForm')[0].reset();
         $('#resignationId').val('');
         $('#approvalSection').hide();
     }
-    $('#resignationModal').modal('show');
+    
+    console.log('Modal element exists:', $('#resignationModal').length > 0);
+    console.log('jQuery available:', typeof $ !== 'undefined');
+    
+    try {
+        $('#resignationModal').modal('show');
+        console.log('Modal show() called successfully');
+    } catch (e) {
+        console.error('Error showing modal:', e);
+    }
 }
 
 function showInterviewModal(interviewId = null) {
     loadInterviewers();
     if (interviewId) {
         $('#interviewModalTitle').text('Edit Exit Interview');
+        $('input[name="ajax_action"]').val('update_interview');
+        $('#interviewSubmitBtn').html('Update Interview');
         loadInterviewData(interviewId);
     } else {
         $('#interviewModalTitle').text('Schedule Exit Interview');
+        $('input[name="ajax_action"]').val('schedule_interview');
+        $('#interviewSubmitBtn').html('Schedule Interview');
         $('#interviewForm')[0].reset();
         $('#interviewId').val('');
         $('#feedbackSection').hide();
@@ -166,9 +196,13 @@ function showTransferModal(planId = null) {
     loadSuccessors();
     if (planId) {
         $('#transferModalTitle').text('Edit Transfer Plan');
+        $('input[name="ajax_action"]').val('update_transfer_plan');
+        $('#transferSubmitBtn').html('Update Transfer Plan');
         loadTransferData(planId);
     } else {
         $('#transferModalTitle').text('Create Knowledge Transfer Plan');
+        $('input[name="ajax_action"]').val('create_transfer_plan');
+        $('#transferSubmitBtn').html('Create Transfer Plan');
         $('#transferForm')[0].reset();
         $('#transferPlanId').val('');
         $('#transferItemsContainer').html(getTransferItemTemplate(0));
@@ -180,9 +214,13 @@ function showSettlementModal(settlementId = null) {
     loadResignations();
     if (settlementId) {
         $('#settlementModalTitle').text('Edit Settlement');
+        $('input[name="ajax_action"]').val('update_settlement');
+        $('#settlementSubmitBtn').html('Update Settlement');
         loadSettlementData(settlementId);
     } else {
         $('#settlementModalTitle').text('Calculate Final Settlement');
+        $('input[name="ajax_action"]').val('create_settlement');
+        $('#settlementSubmitBtn').html('Save Settlement');
         $('#settlementForm')[0].reset();
         $('#settlementId').val('');
     }
@@ -192,9 +230,13 @@ function showSettlementModal(settlementId = null) {
 function showDocumentModal(documentId = null) {
     if (documentId) {
         $('#documentModalTitle').text('Edit Document');
+        $('input[name="ajax_action"]').val('update_documentation');
+        $('#documentSubmitBtn').html('Update Document');
         loadDocumentData(documentId);
     } else {
         $('#documentModalTitle').text('Upload Document');
+        $('input[name="ajax_action"]').val('upload_documentation');
+        $('#documentSubmitBtn').html('Upload Document');
         $('#documentForm')[0].reset();
         $('#documentId').val('');
     }
@@ -204,24 +246,24 @@ function showDocumentModal(documentId = null) {
 function showSurveyModal(surveyId = null) {
     if (surveyId) {
         $('#surveyModalTitle').text('Edit Survey');
+        $('input[name="ajax_action"]').val('update_survey');
+        $('#surveySubmitBtn').html('Update Survey');
         loadSurveyData(surveyId);
     } else {
         $('#surveyModalTitle').text('Create Post-Exit Survey');
+        $('input[name="ajax_action"]').val('create_survey');
+        $('#surveySubmitBtn').html('Create Survey');
         $('#surveyForm')[0].reset();
         $('#surveyId').val('');
         $('#surveyQuestionsContainer').html(getSurveyQuestionTemplate(0));
     }
     $('#surveyModal').modal('show');
-}
+}}
 
 // Form submission functions
 function submitResignationForm() {
     const formData = new FormData($('#resignationForm')[0]);
-    const resignationId = $('#resignationId').val();
-    
-    // Add action and controller parameters
-    formData.append('ajax_action', resignationId ? 'update_resignation' : 'submit_resignation');
-    formData.append('controller', 'resignation');
+    const isEditMode = $('input[name="ajax_action"]').val() === 'update_resignation';
 
     $('#resignationSubmitBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
 
@@ -231,14 +273,16 @@ function submitResignationForm() {
         data: formData,
         processData: false,
         contentType: false,
+        dataType: 'json',
         success: function(response) {
             if (response.success) {
                 $('#resignationModal').modal('hide');
-                showToast('success', response.message);
+                const successMsg = isEditMode ? 'Updated successfully' : 'Created successfully';
+                showToast('success', successMsg);
                 loadResignationsTable();
                 loadDashboardData();
             } else {
-                showToast('error', response.message);
+                showToast('error', response.message || 'Error saving resignation');
             }
         },
         error: function() {
@@ -252,10 +296,6 @@ function submitResignationForm() {
 
 function submitInterviewForm() {
     const formData = new FormData($('#interviewForm')[0]);
-    const interviewId = $('#interviewId').val();
-    
-    formData.append('ajax_action', interviewId ? 'update_interview' : 'submit_interview');
-    formData.append('controller', 'interview');
 
     $('#interviewSubmitBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
 
@@ -265,14 +305,15 @@ function submitInterviewForm() {
         data: formData,
         processData: false,
         contentType: false,
+        dataType: 'json',
         success: function(response) {
             if (response.success) {
                 $('#interviewModal').modal('hide');
-                showToast('success', response.message);
+                showToast('success', 'Created successfully');
                 loadInterviewsTable();
                 loadDashboardData();
             } else {
-                showToast('error', response.message);
+                showToast('error', response.message || 'Error creating interview');
             }
         },
         error: function() {
@@ -286,10 +327,7 @@ function submitInterviewForm() {
 
 function submitTransferForm() {
     const formData = new FormData($('#transferForm')[0]);
-    const transferPlanId = $('#transferPlanId').val();
-    
-    formData.append('ajax_action', transferPlanId ? 'update_transfer_plan' : 'submit_transfer_plan');
-    formData.append('controller', 'transfer');
+    const isEditMode = $('input[name="ajax_action"]').val() === 'update_transfer_plan';
 
     $('#transferSubmitBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
 
@@ -299,14 +337,16 @@ function submitTransferForm() {
         data: formData,
         processData: false,
         contentType: false,
+        dataType: 'json',
         success: function(response) {
             if (response.success) {
                 $('#transferModal').modal('hide');
-                showToast('success', response.message);
+                const successMsg = isEditMode ? 'Updated successfully' : 'Created successfully';
+                showToast('success', successMsg);
                 loadTransfersTable();
                 loadDashboardData();
             } else {
-                showToast('error', response.message);
+                showToast('error', response.message || 'Error saving transfer plan');
             }
         },
         error: function() {
@@ -320,10 +360,7 @@ function submitTransferForm() {
 
 function submitSettlementForm() {
     const formData = new FormData($('#settlementForm')[0]);
-    const settlementId = $('#settlementId').val();
-    
-    formData.append('ajax_action', settlementId ? 'update_settlement' : 'submit_settlement');
-    formData.append('controller', 'settlement');
+    const isEditMode = $('input[name="ajax_action"]').val() === 'update_settlement';
 
     $('#settlementSubmitBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
 
@@ -333,14 +370,16 @@ function submitSettlementForm() {
         data: formData,
         processData: false,
         contentType: false,
+        dataType: 'json',
         success: function(response) {
             if (response.success) {
                 $('#settlementModal').modal('hide');
-                showToast('success', response.message);
+                const successMsg = isEditMode ? 'Updated successfully' : 'Created successfully';
+                showToast('success', successMsg);
                 loadSettlementsTable();
                 loadDashboardData();
             } else {
-                showToast('error', response.message);
+                showToast('error', response.message || 'Error saving settlement');
             }
         },
         error: function() {
@@ -354,10 +393,7 @@ function submitSettlementForm() {
 
 function submitDocumentForm() {
     const formData = new FormData($('#documentForm')[0]);
-    const documentId = $('#documentId').val();
-    
-    formData.append('ajax_action', documentId ? 'update_document' : 'submit_document');
-    formData.append('controller', 'documentation');
+    const isEditMode = $('input[name="ajax_action"]').val() === 'update_documentation';
 
     $('#documentSubmitBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Uploading...');
 
@@ -367,13 +403,15 @@ function submitDocumentForm() {
         data: formData,
         processData: false,
         contentType: false,
+        dataType: 'json',
         success: function(response) {
             if (response.success) {
                 $('#documentModal').modal('hide');
-                showToast('success', response.message);
+                const successMsg = isEditMode ? 'Updated successfully' : 'Created successfully';
+                showToast('success', successMsg);
                 loadDocumentsTable();
             } else {
-                showToast('error', response.message);
+                showToast('error', response.message || 'Error uploading document');
             }
         },
         error: function() {
@@ -387,10 +425,7 @@ function submitDocumentForm() {
 
 function submitSurveyForm() {
     const formData = new FormData($('#surveyForm')[0]);
-    const surveyId = $('#surveyId').val();
-    
-    formData.append('ajax_action', surveyId ? 'update_survey' : 'submit_survey');
-    formData.append('controller', 'survey');
+    const isEditMode = $('input[name="ajax_action"]').val() === 'update_survey';
 
     $('#surveySubmitBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
 
@@ -400,13 +435,15 @@ function submitSurveyForm() {
         data: formData,
         processData: false,
         contentType: false,
+        dataType: 'json',
         success: function(response) {
             if (response.success) {
                 $('#surveyModal').modal('hide');
-                showToast('success', response.message);
+                const successMsg = isEditMode ? 'Updated successfully' : 'Created successfully';
+                showToast('success', successMsg);
                 loadSurveysTable();
             } else {
-                showToast('error', response.message);
+                showToast('error', response.message || 'Error saving survey');
             }
         },
         error: function() {
@@ -668,11 +705,10 @@ function loadTransfersTable() {
         ajax_action: 'get_transfer_plans',
         controller: 'transfer'
     }, function(response) {
-        console.log('Transfer plans response:', response);
         const tbody = $('#transfers-tbody');
         tbody.empty();
 
-        if (response && Array.isArray(response) && response.length > 0) {
+        if (response && response.length > 0) {
             response.forEach(function(plan) {
                 const statusBadge = getStatusBadge(plan.status);
                 const actions = `
@@ -698,8 +734,6 @@ function loadTransfersTable() {
         } else {
             tbody.append('<tr><td colspan="6" class="text-center">No transfer plans found</td></tr>');
         }
-    }, 'json').fail(function(err) {
-        console.error('Error loading transfers:', err);
     });
 }
 
@@ -881,6 +915,24 @@ function loadSectionData(sectionName) {
         default:
             loadDashboardData();
     }
+}
+
+// Show section function
+function showSection(sectionName) {
+    console.log('showSection called with:', sectionName);
+    
+    // Hide all sections
+    $('.section').hide();
+    
+    // Show the selected section
+    $('#' + sectionName + '-section').show();
+    
+    // Update active nav link
+    $('.nav-link').removeClass('active');
+    $('a[href="#' + sectionName + '"]').addClass('active');
+    
+    // Load data for the section
+    loadSectionData(sectionName);
 }
 
 // Action functions

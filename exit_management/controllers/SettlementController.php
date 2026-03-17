@@ -31,6 +31,9 @@ class SettlementController extends ExitManagementController
                 $data['net_payable'] = $this->settlementModel->calculateTotalSettlement($data);
             }
 
+            // Add created_by from session
+            $data['created_by'] = $_SESSION['user']['id'] ?? 0;
+
             $settlementId = $this->settlementModel->createSettlement($data);
 
             return [
@@ -159,6 +162,8 @@ class SettlementController extends ExitManagementController
     public function handleAjaxRequest(string $action, array $data = []): array
     {
         switch ($action) {
+            case 'submit_settlement':
+            case 'update_settlement':
             case 'create_settlement':
                 return $this->createSettlement($data);
 

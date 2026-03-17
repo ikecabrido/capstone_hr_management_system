@@ -129,10 +129,12 @@ class ExitInterviewController extends ExitManagementController
     public function handleAjaxRequest(string $action, array $data = []): array
     {
         switch ($action) {
-            case 'schedule_interview':
+            case 'submit_interview':
+            case 'update_interview':
                 return $this->scheduleInterview($data);
 
             case 'submit_feedback':
+            case 'update_feedback':
                 return $this->submitFeedback(
                     $data['interview_id'] ?? 0,
                     $data['feedback'] ?? []

@@ -26,6 +26,9 @@ class KnowledgeTransferController extends ExitManagementController
                 }
             }
 
+            // Add created_by from session
+            $data['created_by'] = $_SESSION['user']['id'] ?? 0;
+
             $planId = $this->transferModel->createTransferPlan($data);
 
             return [
@@ -149,6 +152,8 @@ class KnowledgeTransferController extends ExitManagementController
     public function handleAjaxRequest(string $action, array $data = []): array
     {
         switch ($action) {
+            case 'submit_transfer_plan':
+            case 'update_transfer_plan':
             case 'create_transfer_plan':
                 return $this->createTransferPlan($data);
 

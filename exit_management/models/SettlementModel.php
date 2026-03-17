@@ -41,15 +41,49 @@ class SettlementModel extends ExitManagementModel
     }
 
     /**
+     * Update a settlement record
+     */
+    public function updateSettlement(int $settlementId, array $data): bool
+    {
+        $stmt = $this->db->prepare("
+            UPDATE employee_settlements
+            SET employee_id = ?, basic_salary = ?, hra = ?, conveyance = ?,
+                lta = ?, medical_allowance = ?, other_allowances = ?,
+                provident_fund = ?, gratuity = ?, notice_pay = ?,
+                outstanding_loans = ?, other_deductions = ?, net_payable = ?,
+                settlement_date = ?, updated_at = NOW()
+            WHERE id = ?
+        ");
+
+        return $stmt->execute([
+            $data['employee_id'],
+            $data['basic_salary'],
+            $data['hra'] ?? 0,
+            $data['conveyance'] ?? 0,
+            $data['lta'] ?? 0,
+            $data['medical_allowance'] ?? 0,
+            $data['other_allowances'] ?? 0,
+            $data['provident_fund'] ?? 0,
+            $data['gratuity'] ?? 0,
+            $data['notice_pay'] ?? 0,
+            $data['outstanding_loans'] ?? 0,
+            $data['other_deductions'] ?? 0,
+            $data['net_payable'],
+            $data['settlement_date'],
+            $settlementId
+        ]);
+    }
+
+    /**
      * Get settlement by ID
      */
     public function getSettlementById(int $settlementId): ?array
     {
         $stmt = $this->db->prepare("
-            SELECT s.*, u.full_name, u.username as emp_id,
+            SELECT s.*, e.full_name, e.employee_id as emp_id,
                    r.resignation_type, r.last_working_date
             FROM employee_settlements s
-            JOIN users u ON s.employee_id = u.id
+            JOIN employees e ON s.employee_id = e.employee_id
             LEFT JOIN resignations r ON s.resignation_id = r.id
             WHERE s.id = ?
         ");
@@ -60,7 +94,7 @@ class SettlementModel extends ExitManagementModel
     /**
      * Get settlements by employee
      */
-    public function getSettlementsByEmployee(int $employeeId): array
+    public function getSettlementsByEmployee(string $employeeId): array
     {
         $stmt = $this->db->prepare("
             SELECT * FROM employee_settlements
@@ -117,11 +151,44 @@ class SettlementModel extends ExitManagementModel
     public function getPendingSettlements(): array
     {
         $stmt = $this->db->query("
-            SELECT s.*, u.full_name, u.username as emp_id
+            SELECT s.*, e.full_name, e.employee_id as emp_id
             FROM employee_settlements s
-            JOIN users u ON s.employee_id = u.id
+            JOIN employees e ON s.employee_id = e.employee_id
             WHERE s.status IN ('draft', 'pending_approval')
             ORDER BY s.settlement_date ASC
+        ");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Get all settlements
+     */
+    public function getAllSettlements(): array
+    {
+        $stmt = $this->db->query("
+            SELECT 
+                s.id,
+                s.employee_id,
+                s.settlement_date,
+                s.basic_salary,
+                s.hra,
+                s.conveyance,
+                s.lta,
+                s.medical_allowance,
+                s.other_allowances,
+                s.provident_fund,
+                s.gratuity,
+                s.notice_pay,
+                s.outstanding_loans,
+                s.other_deductions,
+                s.net_payable,
+                s.status,
+                s.created_at,
+                s.updated_at,
+                e.full_name as employee_name
+            FROM employee_settlements s
+            JOIN employees e ON s.employee_id = e.employee_id
+            ORDER BY s.created_at DESC
         ");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

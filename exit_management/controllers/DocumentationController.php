@@ -26,6 +26,11 @@ class DocumentationController extends ExitManagementController
                 }
             }
 
+            // Set uploaded_by from session if available
+            if (!isset($data['uploaded_by'])) {
+                $data['uploaded_by'] = $_SESSION['user']['id'] ?? null;
+            }
+
             $documentId = $this->documentationModel->createDocument($data);
 
             return [
@@ -33,6 +38,39 @@ class DocumentationController extends ExitManagementController
                 'message' => 'Document uploaded successfully',
                 'document_id' => $documentId
             ];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Update document
+     */
+    public function updateDocument(array $data): array
+    {
+        try {
+            if (empty($data['document_id'])) {
+                return ['success' => false, 'message' => 'Document ID is required'];
+            }
+
+            // Validate required fields
+            $required = ['employee_id', 'document_type', 'title'];
+            foreach ($required as $field) {
+                if (empty($data[$field])) {
+                    return ['success' => false, 'message' => "Field '$field' is required"];
+                }
+            }
+
+            $success = $this->documentationModel->updateDocument($data['document_id'], $data);
+
+            if ($success) {
+                return [
+                    'success' => true,
+                    'message' => 'Document updated successfully'
+                ];
+            } else {
+                return ['success' => false, 'message' => 'Failed to update document'];
+            }
         } catch (Exception $e) {
             return ['success' => false, 'message' => $e->getMessage()];
         }
@@ -121,6 +159,18 @@ class DocumentationController extends ExitManagementController
     }
 
     /**
+     * Get single document by ID
+     */
+    public function getDocument(int $documentId): array
+    {
+        $document = $this->documentationModel->getDocumentById($documentId);
+        if (!$document) {
+            return ['error' => 'Document not found'];
+        }
+        return $document;
+    }
+
+    /**
      * View document (placeholder for file viewing)
      */
     public function viewDocument(int $documentId): array
@@ -151,7 +201,12 @@ class DocumentationController extends ExitManagementController
     {
         switch ($action) {
             case 'upload_document':
+            case 'upload_documentation':
                 return $this->uploadDocument($data);
+
+            case 'update_document':
+            case 'update_documentation':
+                return $this->updateDocument($data);
 
             case 'get_employee_documents':
                 return $this->getEmployeeDocuments($data['employee_id'] ?? 0);
@@ -171,6 +226,9 @@ class DocumentationController extends ExitManagementController
 
             case 'delete_document':
                 return $this->deleteDocument($data['document_id'] ?? 0);
+
+            case 'get_document':
+                return $this->getDocument($data['document_id'] ?? 0);
 
             case 'get_document_types':
                 return $this->getDocumentTypes();

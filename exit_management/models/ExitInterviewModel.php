@@ -28,16 +28,39 @@ class ExitInterviewModel extends ExitManagementModel
     }
 
     /**
+     * Update an exit interview
+     */
+    public function updateInterview(int $interviewId, array $data): bool
+    {
+        $stmt = $this->db->prepare("
+            UPDATE exit_interviews
+            SET employee_id = ?, interviewer_id = ?, scheduled_date = ?,
+                scheduled_time = ?, location = ?, notes = ?, updated_at = NOW()
+            WHERE id = ?
+        ");
+
+        return $stmt->execute([
+            $data['employee_id'],
+            $data['interviewer_id'],
+            $data['scheduled_date'],
+            $data['scheduled_time'],
+            $data['location'] ?? 'Virtual',
+            $data['notes'] ?? null,
+            $interviewId
+        ]);
+    }
+
+    /**
      * Get exit interview by ID
      */
     public function getInterviewById(int $interviewId): ?array
     {
         $stmt = $this->db->prepare("
-            SELECT ei.*, u.full_name, u.username as emp_id,
-                   i.full_name as interviewer_first
+            SELECT ei.*, e.full_name, e.employee_id as emp_id,
+                   u.full_name as interviewer_name
             FROM exit_interviews ei
-            JOIN users u ON ei.employee_id = u.id
-            LEFT JOIN users i ON ei.interviewer_id = i.id
+            JOIN employees e ON ei.employee_id = e.employee_id
+            LEFT JOIN users u ON ei.interviewer_id = u.id
             WHERE ei.id = ?
         ");
         $stmt->execute([$interviewId]);
@@ -47,16 +70,43 @@ class ExitInterviewModel extends ExitManagementModel
     /**
      * Get interviews by employee ID
      */
-    public function getInterviewsByEmployee(int $employeeId): array
+    public function getInterviewsByEmployee(string $employeeId): array
     {
         $stmt = $this->db->prepare("
-            SELECT ei.*, i.full_name as interviewer_first
+            SELECT ei.*, i.full_name as interviewer_name
             FROM exit_interviews ei
             LEFT JOIN users i ON ei.interviewer_id = i.id
             WHERE ei.employee_id = ?
             ORDER BY ei.scheduled_date DESC
         ");
         $stmt->execute([$employeeId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Get all interviews
+     */
+    public function getAllInterviews(): array
+    {
+        $stmt = $this->db->query("
+            SELECT 
+                ei.id,
+                ei.employee_id,
+                ei.interviewer_id,
+                ei.scheduled_date,
+                ei.scheduled_time,
+                ei.location,
+                ei.notes,
+                ei.status,
+                ei.created_at,
+                ei.updated_at,
+                e.full_name as employee_name,
+                u.full_name as interviewer_name
+            FROM exit_interviews ei
+            JOIN employees e ON ei.employee_id = e.employee_id
+            LEFT JOIN users u ON ei.interviewer_id = u.id
+            ORDER BY ei.scheduled_date DESC
+        ");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -126,14 +176,27 @@ class ExitInterviewModel extends ExitManagementModel
     public function getScheduledInterviews(): array
     {
         $stmt = $this->db->query("
-            SELECT ei.*, e.first_name, e.last_name, e.employee_id as emp_id,
-                   i.first_name as interviewer_first, i.last_name as interviewer_last
+            SELECT ei.*, e.full_name, e.employee_id as emp_id,
+                   CONCAT(u.first_name, ' ', u.last_name) as interviewer_name
             FROM exit_interviews ei
-            JOIN employees e ON ei.employee_id = e.id
-            LEFT JOIN employees i ON ei.interviewer_id = i.id
+            JOIN employees e ON ei.employee_id = e.employee_id
+            LEFT JOIN users u ON ei.interviewer_id = u.id
             WHERE ei.status = 'scheduled'
             ORDER BY ei.scheduled_date ASC
         ");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Update interview status
+     */
+    public function updateInterviewStatus(int $interviewId, string $status): bool
+    {
+        $stmt = $this->db->prepare("
+            UPDATE exit_interviews
+            SET status = ?, updated_at = NOW()
+            WHERE id = ?
+        ");
+        return $stmt->execute([$status, $interviewId]);
     }
 }

@@ -26,6 +26,9 @@ class SurveyController extends ExitManagementController
                 }
             }
 
+            // Add created_by from session
+            $data['created_by'] = $_SESSION['user']['id'] ?? 0;
+
             $surveyId = $this->surveyModel->createSurvey($data);
 
             return [
@@ -145,6 +148,8 @@ class SurveyController extends ExitManagementController
     public function handleAjaxRequest(string $action, array $data = []): array
     {
         switch ($action) {
+            case 'submit_survey':
+            case 'update_survey':
             case 'create_survey':
                 return $this->createSurvey($data);
 

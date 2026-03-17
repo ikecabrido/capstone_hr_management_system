@@ -9,23 +9,31 @@ class ResignationModel extends ExitManagementModel
      */
     public function submitResignation(array $data): int
     {
-        $stmt = $this->db->prepare("
-            INSERT INTO resignations (employee_id, resignation_type, reason, notice_date,
-                                    last_working_date, comments, submitted_by, status, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
-        ");
+        try {
+            $stmt = $this->db->prepare("
+                INSERT INTO resignations (employee_id, resignation_type, reason, notice_date,
+                                        last_working_date, comments, submitted_by, status, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
+            ");
 
-        $stmt->execute([
-            $data['employee_id'],
-            $data['resignation_type'],
-            $data['reason'],
-            $data['notice_date'],
-            $data['last_working_date'],
-            $data['comments'] ?? null,
-            $data['submitted_by']
-        ]);
+            $result = $stmt->execute([
+                $data['employee_id'],
+                $data['resignation_type'],
+                $data['reason'],
+                $data['notice_date'],
+                $data['last_working_date'],
+                $data['comments'] ?? null,
+                $data['submitted_by'] ?? 0
+            ]);
 
-        return (int)$this->db->lastInsertId();
+            if (!$result) {
+                throw new Exception('Failed to insert resignation');
+            }
+
+            return (int)$this->db->lastInsertId();
+        } catch (Exception $e) {
+            throw new Exception('Database error: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -34,10 +42,10 @@ class ResignationModel extends ExitManagementModel
     public function getResignationById(int $resignationId): ?array
     {
         $stmt = $this->db->prepare("
-            SELECT r.*, u.full_name, u.username as emp_id,
-                   u.email, u.department
+            SELECT r.*, e.full_name, e.employee_id as emp_id,
+                   e.email, e.department
             FROM resignations r
-            JOIN users u ON r.employee_id = u.id
+            JOIN employees e ON r.employee_id = e.employee_id
             WHERE r.id = ?
         ");
         $stmt->execute([$resignationId]);
@@ -50,10 +58,22 @@ class ResignationModel extends ExitManagementModel
     public function getResignations(string $status = null): array
     {
         $sql = "
-            SELECT r.*, u.full_name, u.username as emp_id,
-                   u.email, u.department
+            SELECT 
+                r.id,
+                r.employee_id,
+                r.resignation_type,
+                r.reason,
+                r.notice_date,
+                r.last_working_date,
+                r.comments,
+                r.status,
+                r.created_at,
+                r.updated_at,
+                e.full_name as employee_name,
+                e.email,
+                e.department
             FROM resignations r
-            JOIN users u ON r.employee_id = u.id
+            JOIN employees e ON r.employee_id = e.employee_id
         ";
 
         if ($status) {
@@ -65,6 +85,28 @@ class ResignationModel extends ExitManagementModel
         }
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Update resignation
+     */
+    public function updateResignation(int $resignationId, array $data): bool
+    {
+        $stmt = $this->db->prepare("
+            UPDATE resignations
+            SET employee_id = ?, resignation_type = ?, reason = ?, notice_date = ?,
+                last_working_date = ?, comments = ?, updated_at = NOW()
+            WHERE id = ?
+        ");
+        return $stmt->execute([
+            $data['employee_id'],
+            $data['resignation_type'],
+            $data['reason'],
+            $data['notice_date'],
+            $data['last_working_date'],
+            $data['comments'] ?? null,
+            $resignationId
+        ]);
     }
 
     /**

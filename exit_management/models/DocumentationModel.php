@@ -27,6 +27,25 @@ class DocumentationModel extends ExitManagementModel
     }
 
     /**
+     * Update a document record
+     */
+    public function updateDocument(int $documentId, array $data): bool
+    {
+        $stmt = $this->db->prepare("
+            UPDATE exit_documents
+            SET employee_id = ?, document_type = ?, title = ?, updated_at = NOW()
+            WHERE id = ?
+        ");
+
+        return $stmt->execute([
+            $data['employee_id'],
+            $data['document_type'],
+            $data['title'],
+            $documentId
+        ]);
+    }
+
+    /**
      * Get documents by employee
      */
     public function getDocumentsByEmployee(int $employeeId): array
@@ -46,9 +65,9 @@ class DocumentationModel extends ExitManagementModel
     public function getDocumentById(int $documentId): ?array
     {
         $stmt = $this->db->prepare("
-            SELECT d.*, u.full_name, u.username as emp_id
+            SELECT d.*, e.full_name, e.employee_id as emp_id
             FROM exit_documents d
-            JOIN users u ON d.employee_id = u.id
+            JOIN employees e ON d.employee_id = e.employee_id
             WHERE d.id = ? AND d.status = 'active'
         ");
         $stmt->execute([$documentId]);
@@ -77,21 +96,30 @@ class DocumentationModel extends ExitManagementModel
     }
 
     /**
-     * Get document types
+     * Get all documents
      */
-    public function getDocumentTypes(): array
+    public function getAllDocuments(): array
     {
-        return [
-            'resignation_letter' => 'Resignation Letter',
-            'exit_interview_form' => 'Exit Interview Form',
-            'settlement_letter' => 'Settlement Letter',
-            'experience_letter' => 'Experience Letter',
-            'clearance_form' => 'Clearance Form',
-            'handover_document' => 'Handover Document',
-            'asset_return_form' => 'Asset Return Form',
-            'nda_agreement' => 'NDA Agreement',
-            'other' => 'Other'
-        ];
+        $stmt = $this->db->query("
+            SELECT 
+                d.id,
+                d.employee_id,
+                d.document_type,
+                d.title,
+                d.file_name,
+                d.file_path,
+                d.file_size,
+                d.uploaded_by,
+                d.status,
+                d.created_at,
+                d.updated_at,
+                e.full_name as employee_name
+            FROM exit_documents d
+            JOIN employees e ON d.employee_id = e.employee_id
+            WHERE d.status = 'active'
+            ORDER BY d.created_at DESC
+        ");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /**
@@ -195,5 +223,19 @@ class DocumentationModel extends ExitManagementModel
             ON DUPLICATE KEY UPDATE completed_at = NOW(), completed_by = ?
         ");
         return $stmt->execute([$employeeId, $department, $completedBy, $completedBy]);
+    }
+
+    /**
+     * Get document types
+     */
+    public function getDocumentTypes(): array
+    {
+        return [
+            'resignation_letter' => 'Resignation Letter',
+            'clearance_form' => 'Clearance Form',
+            'handover_document' => 'Handover Document',
+            'certificate' => 'Experience Certificate',
+            'other' => 'Other Documents'
+        ];
     }
 }

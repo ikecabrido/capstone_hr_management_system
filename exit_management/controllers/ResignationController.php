@@ -26,6 +26,9 @@ class ResignationController extends ExitManagementController
                 }
             }
 
+            // Add submitted_by from session
+            $data['submitted_by'] = $_SESSION['user']['id'] ?? 0;
+
             $resignationId = $this->resignationModel->submitResignation($data);
 
             return [
@@ -118,6 +121,7 @@ class ResignationController extends ExitManagementController
     {
         switch ($action) {
             case 'submit_resignation':
+            case 'update_resignation':
                 return $this->submitResignation($data);
 
             case 'get_resignation':
