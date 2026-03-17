@@ -9,3 +9,15 @@
 -Reject reason
 
 (Yung start date ng leave request dapat 30 days after ng current date)
+
+
+id
+name
+type_of_leave
+start_date
+date_approved_rejected (it turns into updated_at)
+end_date
+date_submitted (in controller)
+details
+supporting_document
+reject_reason
