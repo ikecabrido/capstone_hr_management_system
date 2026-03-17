@@ -12,17 +12,37 @@ class ExitManagementModel
     }
 
     /**
+     * Get database connection
+     */
+    public function getConnection(): PDO
+    {
+        return $this->db;
+    }
+
+    /**
      * Get all employees eligible for exit management
      */
     public function getEligibleEmployees(): array
     {
+        // Prefer the employees table for exit management so values match foreign keys
+        // used by resignations, interviews, settlements, documents, surveys, etc.
         $stmt = $this->db->query("
-            SELECT u.id, u.username as employee_id, u.full_name, u.email, u.position,
-                   u.department, u.status
-            FROM users u
-            WHERE u.role IN ('employee', 'manager', 'trainer') AND u.status = 'active'
-            ORDER BY u.full_name
+            SELECT
+                e.employee_id AS id,
+                e.employee_id AS username,
+                e.full_name,
+                e.email,
+                e.position,
+                e.department,
+                'active' AS status
+            FROM employees e
+            -- use the employment_status column present in the employees table
+            WHERE e.employment_status = 'Active'
+            ORDER BY e.full_name
         ");
+
+        // Return array shaped like the previous users-based result so the frontend
+        // `loadEmployees()` and other callers continue to work without change.
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 

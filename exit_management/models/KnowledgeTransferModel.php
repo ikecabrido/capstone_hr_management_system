@@ -9,28 +9,57 @@ class KnowledgeTransferModel extends ExitManagementModel
      */
     public function createTransferPlan(array $data): int
     {
+        try {
+            $stmt = $this->db->prepare("
+                INSERT INTO knowledge_transfer_plans (employee_id, successor_id, start_date,
+                                                    end_date, status, created_by, created_at)
+                VALUES (?, ?, ?, ?, 'active', ?, NOW())
+            ");
+
+            $result = $stmt->execute([
+                $data['employee_id'],
+                $data['successor_id'],
+                $data['start_date'],
+                $data['end_date'],
+                $data['created_by'] ?? 0
+            ]);
+
+            if (!$result) {
+                throw new Exception('Failed to insert knowledge transfer plan');
+            }
+
+            $planId = (int)$this->db->lastInsertId();
+
+            // Insert transfer items if provided
+            if (isset($data['items']) && is_array($data['items'])) {
+                $this->addTransferItems($planId, $data['items']);
+            }
+
+            return $planId;
+        } catch (Exception $e) {
+            throw new Exception('Database error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update a knowledge transfer plan
+     */
+    public function updateTransferPlan(int $planId, array $data): bool
+    {
         $stmt = $this->db->prepare("
-            INSERT INTO knowledge_transfer_plans (employee_id, successor_id, start_date,
-                                                end_date, status, created_by, created_at)
-            VALUES (?, ?, ?, ?, 'active', ?, NOW())
+            UPDATE knowledge_transfer_plans
+            SET employee_id = ?, successor_id = ?, start_date = ?,
+                end_date = ?, updated_at = NOW()
+            WHERE id = ?
         ");
 
-        $stmt->execute([
+        return $stmt->execute([
             $data['employee_id'],
             $data['successor_id'],
             $data['start_date'],
             $data['end_date'],
-            $data['created_by']
+            $planId
         ]);
-
-        $planId = (int)$this->db->lastInsertId();
-
-        // Insert transfer items if provided
-        if (isset($data['items']) && is_array($data['items'])) {
-            $this->addTransferItems($planId, $data['items']);
-        }
-
-        return $planId;
     }
 
     /**
@@ -63,11 +92,21 @@ class KnowledgeTransferModel extends ExitManagementModel
     public function getTransferPlanById(int $planId): ?array
     {
         $stmt = $this->db->prepare("
-            SELECT ktp.*, u.full_name, u.username as emp_id,
-                   s.full_name as successor_first
+            SELECT 
+                ktp.id,
+                ktp.employee_id,
+                ktp.successor_id,
+                ktp.start_date,
+                ktp.end_date,
+                ktp.status,
+                ktp.created_at,
+                ktp.updated_at,
+                e.full_name as employee_name,
+                e.employee_id as emp_id,
+                s.full_name as successor_name
             FROM knowledge_transfer_plans ktp
-            JOIN users u ON ktp.employee_id = u.id
-            LEFT JOIN users s ON ktp.successor_id = s.id
+            JOIN employees e ON ktp.employee_id = e.employee_id
+            LEFT JOIN employees s ON ktp.successor_id = s.employee_id
             WHERE ktp.id = ?
         ");
         $stmt->execute([$planId]);
@@ -77,12 +116,21 @@ class KnowledgeTransferModel extends ExitManagementModel
     /**
      * Get transfer plans by employee
      */
-    public function getTransferPlansByEmployee(int $employeeId): array
+    public function getTransferPlansByEmployee(string $employeeId): array
     {
         $stmt = $this->db->prepare("
-            SELECT ktp.*, s.full_name as successor_first
+            SELECT 
+                ktp.id,
+                ktp.employee_id,
+                ktp.successor_id,
+                ktp.start_date,
+                ktp.end_date,
+                ktp.status,
+                ktp.created_at,
+                ktp.updated_at,
+                s.full_name as successor_name
             FROM knowledge_transfer_plans ktp
-            LEFT JOIN users s ON ktp.successor_id = s.id
+            LEFT JOIN employees s ON ktp.successor_id = s.employee_id
             WHERE ktp.employee_id = ?
             ORDER BY ktp.created_at DESC
         ");
@@ -139,13 +187,48 @@ class KnowledgeTransferModel extends ExitManagementModel
     public function getActiveTransferPlans(): array
     {
         $stmt = $this->db->query("
-            SELECT ktp.*, u.full_name, u.username as emp_id,
-                   s.full_name as successor_first
+            SELECT 
+                ktp.id,
+                ktp.employee_id,
+                ktp.successor_id,
+                ktp.start_date,
+                ktp.end_date,
+                ktp.status,
+                ktp.created_at,
+                ktp.updated_at,
+                e.full_name as employee_name,
+                s.full_name as successor_name
             FROM knowledge_transfer_plans ktp
-            JOIN users u ON ktp.employee_id = u.id
-            LEFT JOIN users s ON ktp.successor_id = s.id
+            JOIN employees e ON ktp.employee_id = e.employee_id
+            LEFT JOIN employees s ON ktp.successor_id = s.employee_id
             WHERE ktp.status = 'active'
             ORDER BY ktp.end_date ASC
+        ");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Get all transfer plans
+     */
+    public function getAllTransferPlans(): array
+    {
+        $stmt = $this->db->query("
+            SELECT 
+                ktp.id,
+                ktp.employee_id,
+                ktp.successor_id,
+                ktp.start_date,
+                ktp.end_date,
+                ktp.details,
+                ktp.status,
+                ktp.created_at,
+                ktp.updated_at,
+                e.full_name as employee_name,
+                s.full_name as successor_name
+            FROM knowledge_transfer_plans ktp
+            JOIN employees e ON ktp.employee_id = e.employee_id
+            LEFT JOIN employees s ON ktp.successor_id = s.employee_id
+            ORDER BY ktp.created_at DESC
         ");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

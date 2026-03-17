@@ -214,6 +214,26 @@ class SurveyModel extends ExitManagementModel
     }
 
     /**
+     * Get all surveys
+     */
+    public function getAllSurveys(): array
+    {
+        $stmt = $this->db->prepare("
+            SELECT 
+                id,
+                title,
+                description,
+                status,
+                created_at,
+                updated_at
+            FROM exit_surveys
+            ORDER BY created_at DESC
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Generate survey report
      */
     public function generateSurveyReport(int $surveyId): array
