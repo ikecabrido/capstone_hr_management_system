@@ -20,6 +20,7 @@ $content = $content ?? __DIR__ . '/main-content.php';
     <link rel="stylesheet" href="<?= $base ?>/assets/plugins/fontawesome-free/css/all.min.css">
     <link rel="stylesheet" href="<?= $base ?>/assets/dist/css/adminlte.css">
     <link rel="stylesheet" href="<?= $base ?>/employee_portal/views/partials/custom.css">
+    <link rel="stylesheet" href="<?= $base ?>/employee_portal/public/assets/css/employee-portal.css">
 </head>
 
 <body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed">
