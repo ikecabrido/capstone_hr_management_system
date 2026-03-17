@@ -1,27 +1,9 @@
 <?php
 session_start();
-
-// Aggressive cache prevention - prevent ALL caching
-header('Cache-Control: no-cache, no-store, must-revalidate, private, max-age=0, must-revalidate, post-check=0, pre-check=0');
-header('Pragma: no-cache');
-header('Expires: 0');
-header('Date: ' . date('r'));
-header('ETag: "' . time() . mt_rand() . '"');
-header('Vary: *');
-header('X-UA-Compatible: IE=edge');
-header('X-Frame-Options: SAMEORIGIN');
-
-// Start output buffering to prevent any cached content
-ob_start();
-
-// CRITICAL: Check authentication FIRST before any output
-if (!isset($_SESSION['user']) || empty($_SESSION['user']) || isset($_SESSION['logged_out'])) {
-    ob_end_clean();
-    header('Location: login.php');
-    exit;
-}
-
-$user = $_SESSION['user'];
+// require_once "auth.php";
+require_once "../auth/database.php";
+require_once "../auth/auth_check.php";
+$theme = $_SESSION['user']['theme'] ?? 'light';
 // Data is loaded by JS from API endpoints
 $recognitions = [];
 $rewards = [];
@@ -269,68 +251,13 @@ $rewards = [];
 
         <!-- RECOGNITION TAB -->
         <div id="recognition" class="tab-content active">
-            <?php if (empty($recognitions)): ?>
-                <div class="empty-state">
-                    <p>No recognitions yet</p>
-                </div>
-            <?php else: ?>
-                <?php foreach ($recognitions as $rec): ?>
-                    <div class="recognition-card">
-                        <div class="recognition-badge">⭐ Recognition</div>
-                        <div class="recipient-name">
-                            To Employee ID: <?= htmlspecialchars($rec['to_employee_id'] ?? 'Unknown') ?>
-                        </div>
-                        <div class="recognition-reason">
-                            <?= htmlspecialchars($rec['message'] ?? '') ?>
-                        </div>
-                        <div class="recognition-meta">
-                            <div class="meta-item">
-                                <div class="meta-label">From Employee</div>
-                                <div class="meta-value"><?= htmlspecialchars($rec['from_employee_id'] ?? 'Admin') ?></div>
-                            </div>
-                            <div class="meta-item">
-                                <div class="meta-label">Type</div>
-                                <div class="meta-value"><?= htmlspecialchars($rec['type'] ?? 'General') ?></div>
-                            </div>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            <?php endif; ?>
+            <div id="recognitions-container" style="min-height:160px; padding:20px; color:#666;">Loading recognitions...</div>
         </div>
 
         <!-- REWARDS TAB -->
         <div id="rewards" class="tab-content">
-            <?php if (empty($rewards)): ?>
-                <div class="empty-state">
-                    <p>No rewards configured yet</p>
-                </div>
-            <?php else: ?>
-                <?php foreach ($rewards as $reward): ?>
-                    <div class="reward-card">
-                        <div class="reward-header">
-                            <div class="reward-name">
-                                <?= htmlspecialchars($reward['name'] ?? 'Reward') ?>
-                            </div>
-                            <div class="reward-points">
-                                <?= intval($reward['points'] ?? 0) ?> pts
-                            </div>
-                        </div>
-                        <?php if (!empty($reward['description'])): ?>
-                            <div class="reward-description">
-                                <?= htmlspecialchars($reward['description']) ?>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                <?php endforeach; ?>
-            <?php endif; ?>
-          </div>
-          <div id="recognition" class="tab-content active">
-            <div id="recognitions-container" style="min-height:160px; padding:20px; color:#666;">Loading recognitions...</div>
-          </div>
-
-          <div id="rewards" class="tab-content">
             <div id="rewards-container" style="min-height:160px; padding:20px; color:#666;">Loading rewards...</div>
-          </div>
+        </div>
         </div>
     </main>
 </div>

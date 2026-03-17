@@ -1,39 +1,10 @@
 <?php
 session_start();
+// require_once "auth.php";
+require_once "../auth/database.php";
+require_once "../auth/auth_check.php";
+$theme = $_SESSION['user']['theme'] ?? 'light';
 
-// Aggressive cache prevention - prevent ALL caching
-header('Cache-Control: no-cache, no-store, must-revalidate, private, max-age=0, must-revalidate, post-check=0, pre-check=0');
-header('Pragma: no-cache');
-header('Expires: 0');
-header('Date: ' . date('r'));
-header('ETag: "' . time() . mt_rand() . '"');
-header('Vary: *');
-header('X-UA-Compatible: IE=edge');
-header('X-Frame-Options: SAMEORIGIN');
-
-// Start output buffering to prevent any cached content
-ob_start();
-
-// CRITICAL: Check authentication FIRST before any output
-if (!isset($_SESSION['user']) || empty($_SESSION['user']) || isset($_SESSION['logged_out'])) {
-    ob_end_clean();
-    header('Location: login.php');
-    exit;
-}
-
-$user = $_SESSION['user'];
-$logs = [];
-
-// Prepare DB connection for fallback role lookups
-require_once __DIR__ . '/config/db.php';
-try {
-    $roleStmt = $pdo->prepare('SELECT role, name FROM employees WHERE id = ? LIMIT 1');
-    $logsStmt = $pdo->query('SELECT * FROM audit_logs ORDER BY performed_at DESC LIMIT 200');
-    $logs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (Exception $e) {
-    $roleStmt = null;
-    $logs = [];
-}
 ?>
 <!doctype html>
 <html lang="en">
@@ -269,97 +240,10 @@ try {
           <!-- /.row -->
         </div>
        <div id="content">
-            <?php if (empty($logs)): ?>
-                <div style="background: white; padding: 40px; border-radius: 10px; text-align: center; color: #888;">
-                    <p style="font-size: 1.1em;">No audit logs found</p>
-                </div>
-            <?php else: ?>
-            <div class="logs-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th>Action</th>
-                            <th>Entity</th>
-                            <th>Changes</th>
-                            <th>Timestamp</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($logs as $log): ?>
-                            <tr>
-                                <?php
-                                    $performedBy = $log['performed_by'] ?? null;
-                                    $userLabel = 'Unknown';
-                                    if ($performedBy !== null && $performedBy !== '') {
-                                        $userLabel = htmlspecialchars($performedBy);
-                                        if (isset($roleStmt) && $roleStmt) {
-                                            try {
-                                                $roleStmt->execute([$performedBy]);
-                                                $empRow = $roleStmt->fetch();
-                                                if ($empRow && !empty($empRow['name'])) {
-                                                    $userLabel = htmlspecialchars($empRow['name'] . ' (' . $performedBy . ')');
-                                                }
-                                            } catch (Exception $e) {
-                                                // ignore and fallback to ID
-                                            }
-                                        }
-                                    }
-                                ?>
-                                <td><?= $userLabel ?></td>
-                                <td>
-                                    <span class="action-badge action-<?= strtolower($log['action'] ?? 'read') ?>">
-                                        <?= strtoupper($log['action'] ?? 'READ') ?>
-                                    </span>
-                                </td>
-                                <?php
-                                    $tt = $log['target_type'] ?? null;
-                                    $roleLabels = [
-                                        'employee' => 'Employee',
-                                        'manager' => 'Manager',
-                                        'hr' => 'HR',
-                                        'admin' => 'Admin'
-                                    ];
+            <div id="auditlogs-container" style="min-height: 160px; padding:20px; color:#666;">Loading audit logs...</div>
+        </div>
 
-                                    // If this is a LOGIN and target_type is generic 'employees' (legacy),
-                                    // try to fetch the actual role from DB using performed_by
-                                    if (isset($log['action']) && strtoupper($log['action']) === 'LOGIN' && ($tt === null || in_array(strtolower($tt), ['employees','employee']))) {
-                                        $fetchedRole = null;
-                                        if ($roleStmt && !empty($log['performed_by'])) {
-                                            try {
-                                                $roleStmt->execute([$log['performed_by']]);
-                                                $emp = $roleStmt->fetch();
-                                                if ($emp && !empty($emp['role'])) {
-                                                    $fetchedRole = $emp['role'];
-                                                }
-                                            } catch (Exception $e) {
-                                                $fetchedRole = null;
-                                            }
-                                        }
-                                        if ($fetchedRole) {
-                                            $tt = $fetchedRole;
-                                        }
-                                    }
 
-                                    if ($tt === null) {
-                                        $entityLabel = 'N/A';
-                                    } elseif (isset($roleLabels[strtolower($tt)])) {
-                                        $entityLabel = $roleLabels[strtolower($tt)];
-                                    } else {
-                                        $entityLabel = ucwords(str_replace('_', ' ', rtrim($tt, 's')));
-                                    }
-                                ?>
-                                <td><?= htmlspecialchars($entityLabel) ?></td>
-                                <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                    ID: <?= htmlspecialchars($log['target_id'] ?? '-') ?>
-                                </td>
-                                <td><?= htmlspecialchars(substr($log['details'] ?? '-', 0, 50)) ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            <?php endif; ?>
         </div>
       </div>
     </div>
@@ -405,6 +289,5 @@ try {
   <script src="../assets/dist/js/global_modal.js"></script>
   <script src="../assets/dist/js/profile.js"></script>
 
-<script src="js/main.js?v=<?= time(); ?>"></script>
-</body>
+<script src="js/main.js?v=<?= time(); ?>"></script>  <script src="js/auditlogs.js?v=<?= time(); ?>"></script></body>
 </html>

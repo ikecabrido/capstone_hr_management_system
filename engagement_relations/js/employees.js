@@ -24,10 +24,10 @@ document.addEventListener('DOMContentLoaded', function () {
           const status = emp.status ? emp.status.toLowerCase() : 'active';
           return `
             <tr>
-              <td>${emp.name || 'N/A'}</td>
+              <td>${emp.name || emp.full_name || 'N/A'}</td>
               <td>${emp.email || 'N/A'}</td>
-              <td>${(emp.role || 'employee').charAt(0).toUpperCase() + (emp.role || 'employee').slice(1)}</td>
-              <td><span class="employee-status status-${status}">${emp.status || 'Active'}</span></td>
+              <td>${((emp.role || emp.position || 'employee').charAt(0).toUpperCase() + (emp.role || emp.position || 'employee').slice(1))}</td>
+              <td><span class="employee-status status-${status}">${emp.status || emp.employment_status || 'Active'}</span></td>
             </tr>
           `;
         })

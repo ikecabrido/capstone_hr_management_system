@@ -74,7 +74,49 @@ function renderDashboard(dashboard, role) {
     // If employee, show Personal Performance
     if (role === 'employee') {
         const performance = dashboard.personal_performance || {};
-        
+    } else if (dashboard.dashboard_type === 'DEFAULT') {
+        // Default route for non-specified roles (e.g., engagement_relations)
+        const overview = dashboard.system_overview || {
+            total_employees: dashboard.total_employees || 0,
+            active_users_today: dashboard.active_users_today || 0,
+            total_departments: dashboard.total_departments || 0,
+        };
+
+        html += `
+            <h2 class="section-title">System Overview</h2>
+            <div class="dashboard-grid">
+                <div class="card employees">
+                    <div class="card-title">Total Employees</div>
+                    <div class="card-value">${overview.total_employees || 0}</div>
+                    <div class="card-subtitle">Active staff members</div>
+                </div>
+                <div class="card active-users">
+                    <div class="card-title">Active Users Today</div>
+                    <div class="card-value">${overview.active_users_today || 0}</div>
+                    <div class="card-subtitle">Users online</div>
+                </div>
+                <div class="card departments">
+                    <div class="card-title">Total Departments</div>
+                    <div class="card-value">${overview.total_departments || 0}</div>
+                    <div class="card-subtitle">Organization units</div>
+                </div>
+            </div>
+        `;
+
+        // Add critical KPI block for default roles
+        const critical = dashboard.critical_metrics || {};
+        html += `
+            <h2 class="section-title">Critical Metrics (Default)</h2>
+            <div class="metrics-grid">
+                <div class="metric-card"><div class="metric-label">Pending Grievances</div><div class="metric-value">${critical.pending_grievances || 0}</div></div>
+                <div class="metric-card"><div class="metric-label">Open Grievances</div><div class="metric-value">${critical.open_grievances || 0}</div></div>
+                <div class="metric-card"><div class="metric-label">Under Investigation</div><div class="metric-value">${critical.under_investigation || 0}</div></div>
+                <div class="metric-card"><div class="metric-label">Pending Feedback</div><div class="metric-value">${critical.pending_feedback || 0}</div></div>
+            </div>
+        `;
+    } else {
+        // System Overview for Admin and HR Manager
+        const overview = dashboard.system_overview || {};        
         html += `
             <h2 class="section-title">Personal Performance</h2>
             <div class="dashboard-grid">

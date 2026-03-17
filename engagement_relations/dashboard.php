@@ -1,30 +1,9 @@
 <?php
 session_start();
+// require_once "auth.php";
+require_once "../auth/database.php";
 require_once "../auth/auth_check.php";
 $theme = $_SESSION['user']['theme'] ?? 'light';
-?>
-<?php
-session_start();
-
-// Aggressive cache prevention - prevent ALL caching
-header('Cache-Control: no-cache, no-store, must-revalidate, private, max-age=0, must-revalidate, post-check=0, pre-check=0');
-header('Pragma: no-cache');
-header('Expires: 0');
-header('Date: ' . date('r'));
-header('ETag: "' . time() . mt_rand() . '"');
-header('Vary: *');
-header('X-UA-Compatible: IE=edge');
-header('X-Frame-Options: SAMEORIGIN');
-
-// Start output buffering to prevent any cached content
-ob_start();
-
-// CRITICAL: Check authentication FIRST before any output
-if (!isset($_SESSION['user']) || empty($_SESSION['user']) || isset($_SESSION['logged_out'])) {
-    ob_end_clean();
-    header('Location: login.php');
-    exit;
-}
 
 $user = $_SESSION['user'];
 $token = $_SESSION['token'] ?? null;

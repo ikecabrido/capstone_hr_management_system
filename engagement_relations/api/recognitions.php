@@ -59,18 +59,15 @@ try {
 function logAuditAction($user_id, $action, $module, $record_id = null, $details = null) {
     global $pdo;
     try {
-        $stmt = $pdo->prepare("
-            INSERT INTO audit_logs 
-            (user_id, action, module, record_id, details, ip_address, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, NOW())
-        ");
+        $stmt = $pdo->prepare(
+            "INSERT INTO audit_logs (action, performed_by, target_type, target_id, details, performed_at) VALUES (?, ?, ?, ?, ?, NOW())"
+        );
         $stmt->execute([
-            $user_id,
             $action,
+            $user_id,
             $module,
             $record_id,
             $details,
-            $_SERVER['REMOTE_ADDR'] ?? 'unknown'
         ]);
     } catch (Exception $e) {
         // Silently fail

@@ -5,17 +5,21 @@
 
 // Validate user session
 function validateSession() {
-    fetch('/EER/api/session-check.php')
+    const rootPath = window.location.pathname.replace(/\/engagement_relations\/.*/, '');
+    const apiUrl = `${window.location.origin}${rootPath}/engagement_relations/api/session-check.php`;
+    const loginUrl = `${window.location.origin}${rootPath}/login.php`;
+
+    fetch(apiUrl)
         .then(response => {
             if (response.status === 401) {
-                window.location.href = '/EER/login.php';
+                window.location.href = loginUrl;
                 return;
             }
             return response.json();
         })
         .then(data => {
             if (data && !data.authenticated) {
-                window.location.href = '/EER/login.php';
+                window.location.href = loginUrl;
             }
         })
         .catch(error => {

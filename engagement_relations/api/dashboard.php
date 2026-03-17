@@ -518,12 +518,26 @@ function calculateUserParticipationRate($pdo, $userId) {
  */
 function getDefaultDashboard($pdo, $user) {
     try {
+        $system_overview = [
+            'total_employees' => getCount($pdo, 'employees'),
+            'active_users_today' => getActiveUsersToday($pdo),
+            'total_departments' => getCount($pdo, 'departments'),
+        ];
+
+        $critical_metrics = [
+            'pending_grievances' => getCount($pdo, 'grievances', 'status', 'pending'),
+            'open_grievances' => getCount($pdo, 'grievances', 'status', 'open'),
+            'under_investigation' => getCount($pdo, 'grievances', 'status', 'under_investigation'),
+            'pending_feedback' => getCount($pdo, 'feedback', 'status', 'submitted'),
+        ];
+
         return [
             'dashboard_type' => 'DEFAULT',
             'dashboard_name' => 'Engagement Dashboard',
             'welcome' => 'Welcome, ' . ($user['name'] ?? 'User'),
+            'system_overview' => $system_overview,
+            'critical_metrics' => $critical_metrics,
             'active_surveys' => getCount($pdo, 'engagement_surveys'),
-            'open_grievances' => getCount($pdo, 'grievances', 'status', 'open'),
             'total_events' => getCount($pdo, 'events'),
             'my_reports' => getCount($pdo, 'audit_logs', 'performed_by', $user['id']),
         ];
