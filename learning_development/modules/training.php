@@ -1,9 +1,7 @@
 <?php require_once __DIR__ . '/config.php';
 // start output buffering so we can safely redirect after POST (PRG)
 if (!headers_sent()) { ob_start(); }
-if (!defined('NO_HEADER')) {
-require_once __DIR__ . '/header.php';
-}
+// NO HEADER - Parent learning_development.php handles the layout
 
 require_once __DIR__ . '/toast.php';
 require_once __DIR__ . '/search_filter.php';

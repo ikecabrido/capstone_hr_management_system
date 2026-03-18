@@ -14,6 +14,7 @@ $currentUsername = $_SESSION['username'] ?? null;
 $isAuthorized = can_manage();
 $message = '';
 $messageType = 'info';
+$placeholderImg = '../img/placeholder.gif';
 
 // Handle POST actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -153,22 +154,36 @@ $paginatedPrograms = paginateItems($filteredPrograms, $pageNum, $itemsPerPage);
                 data-program-id="<?php echo intval($program['id']); ?>"
                 data-name="<?php echo htmlspecialchars($program['name']); ?>"
                 data-description="<?php echo htmlspecialchars($program['description']); ?>"
+                data-cover-photo="<?php echo htmlspecialchars(getImageUrl($program['cover_photo'] ?? null, $placeholderImg)); ?>"
+                data-duration="<?php echo htmlspecialchars($program['duration'] ?? 'N/A'); ?>"
+                data-instructor="<?php echo htmlspecialchars($program['instructor'] ?? 'N/A'); ?>"
+                data-status="<?php echo htmlspecialchars($program['status'] ?? 'N/A'); ?>"
+                data-start-date="<?php echo htmlspecialchars($program['start_date'] ?? 'N/A'); ?>"
                 data-enrolled="<?php echo $enrollmentDetails[$program['id']] ?? 0; ?>">
-                <img src="<?php echo htmlspecialchars(getImageUrl($program['cover_photo'] ?? null, 'modules/img/placeholder.gif')); ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?php echo htmlspecialchars($program['name']); ?>">
+                <img src="<?php echo htmlspecialchars(getImageUrl($program['cover_photo'] ?? null, $placeholderImg)); ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?php echo htmlspecialchars($program['name']); ?>">
                 <div class="card-body d-flex flex-column">
                   <h5 class="card-title"><?php echo htmlspecialchars($program['name']); ?></h5>
-                  <p class="card-text text-muted" style="font-size: 0.9rem; margin-bottom: 8px;"><?php echo htmlspecialchars(substr($program['description'], 0, 80)) . '...'; ?></p>
-                  
-                  <div class="small text-muted" style="margin-bottom: 10px;">
-                    <div><strong>Enrolled:</strong> <?php echo $enrollmentDetails[$program['id']] ?? 0; ?> users</div>
+                  <p class="card-text text-muted mb-2"><?php echo htmlspecialchars(substr($program['description'], 0, 100)); ?></p>
+                  <p class="text-center mb-2" style="font-size: 0.9rem;">
+                    <small class="badge bg-info">Training</small>
+                  </p>
+                  <!-- Card meta grid: status | date | remaining -->
+                  <div class="card-meta-grid mb-2">
+                    <div class="d-flex justify-content-between gap-1">
+                      <small class="meta-label">Active</small>
+                      <small class="meta-label">—</small>
+                      <small class="meta-label">Enrolled: <?php echo $enrollmentDetails[$program['id']] ?? 0; ?></small>
+                    </div>
                   </div>
-                  
-                  <div class="mt-auto">
-                    <form method="post" style="display: inline;" onclick="event.stopPropagation();">
-                      <input type="hidden" name="action" value="unenroll">
-                      <input type="hidden" name="id" value="<?php echo intval($program['id']); ?>">
-                      <button class="btn btn-sm btn-outline-warning w-100">Unenroll</button>
-                    </form>
+                  <div class="mt-auto d-flex justify-content-between align-items-center">
+                    <small class="text-muted">Total: <?php echo $enrollmentDetails[$program['id']] ?? 0; ?></small>
+                    <div class="card-action-set">
+                      <form method="post" style="display:inline;" onclick="event.stopPropagation();">
+                        <input type="hidden" name="action" value="unenroll">
+                        <input type="hidden" name="id" value="<?php echo intval($program['id']); ?>">
+                        <button type="submit" class="btn btn-sm btn-outline-warning">Unenroll</button>
+                      </form>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -195,44 +210,57 @@ $paginatedPrograms = paginateItems($filteredPrograms, $pageNum, $itemsPerPage);
       <i class="fas fa-star"></i> Featured Trainings
     </h3>
     <div class="row g-3">
-      <?php foreach ($featuredPrograms as $program): ?>
+      <?php foreach ($featuredPrograms as $program): 
+        $isEnrolled = false;
+        if ($currentUserId) {
+            foreach ($userEnrollments as $enrolled) {
+                if ($enrolled['id'] == $program['id']) {
+                    $isEnrolled = true;
+                    break;
+                }
+            }
+        }
+      ?>
         <div class="col-md-4">
           <div class="card h-100 training-card clickable-card" style="cursor: pointer;"
             data-program-id="<?php echo intval($program['id']); ?>"
             data-name="<?php echo htmlspecialchars($program['name']); ?>"
             data-description="<?php echo htmlspecialchars($program['description']); ?>"
+            data-cover-photo="<?php echo htmlspecialchars(getImageUrl($program['cover_photo'] ?? null, 'modules/img/placeholder.gif')); ?>"
+            data-duration="<?php echo htmlspecialchars($program['duration'] ?? 'N/A'); ?>"
+            data-instructor="<?php echo htmlspecialchars($program['instructor'] ?? 'N/A'); ?>"
+            data-status="<?php echo htmlspecialchars($program['status'] ?? 'N/A'); ?>"
+            data-start-date="<?php echo htmlspecialchars($program['start_date'] ?? 'N/A'); ?>"
             data-enrolled="<?php echo $enrollmentDetails[$program['id']] ?? 0; ?>">
             <div style="position: relative;">
-              <img src="<?php echo htmlspecialchars(getImageUrl($program['cover_photo'] ?? null, 'modules/img/placeholder.gif')); ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?php echo htmlspecialchars($program['name']); ?>">
+                <img src="<?php echo htmlspecialchars(getImageUrl($program['cover_photo'] ?? null)); ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?php echo htmlspecialchars($program['name']); ?>">
               <span class="badge bg-warning" style="position: absolute; top: 10px; right: 10px;">Featured</span>
             </div>
             <div class="card-body d-flex flex-column">
               <h5 class="card-title"><?php echo htmlspecialchars($program['name']); ?></h5>
-              <p class="card-text text-muted" style="font-size: 0.9rem; margin-bottom: 8px;"><?php echo htmlspecialchars(substr($program['description'], 0, 80)) . '...'; ?></p>
-              
-              <div class="small text-muted" style="margin-bottom: 10px;">
-                <div><strong>Enrolled:</strong> <?php echo $enrollmentDetails[$program['id']] ?? 0; ?> users</div>
+              <p class="card-text text-muted mb-2"><?php echo htmlspecialchars(substr($program['description'], 0, 100)); ?></p>
+              <p class="text-center mb-2" style="font-size: 0.9rem;">
+                <small class="badge bg-info">Training</small>
+              </p>
+              <!-- Card meta grid: status | date | remaining -->
+              <div class="card-meta-grid mb-2">
+                <div class="d-flex justify-content-between gap-1">
+                  <small class="meta-label">Active</small>
+                  <small class="meta-label">—</small>
+                  <small class="meta-label">Enrolled: <?php echo $enrollmentDetails[$program['id']] ?? 0; ?></small>
+                </div>
               </div>
-              
-              <div class="mt-auto">
-                <?php 
-                $isEnrolled = false;
-                if ($currentUserId) {
-                    foreach ($userEnrollments as $enrolled) {
-                        if ($enrolled['id'] == $program['id']) {
-                            $isEnrolled = true;
-                            break;
-                        }
-                    }
-                }
-                ?>
-                <form method="post" style="display: inline;" onclick="event.stopPropagation();">
-                  <input type="hidden" name="action" value="<?php echo $isEnrolled ? 'unenroll' : 'enroll'; ?>">
-                  <input type="hidden" name="id" value="<?php echo intval($program['id']); ?>">
-                  <button class="btn btn-sm <?php echo $isEnrolled ? 'btn-outline-warning' : 'btn-primary'; ?> w-100">
-                    <?php echo $isEnrolled ? 'Unenroll' : 'Enroll'; ?>
-                  </button>
-                </form>
+              <div class="mt-auto d-flex justify-content-between align-items-center">
+                <small class="text-muted">Total: <?php echo $enrollmentDetails[$program['id']] ?? 0; ?></small>
+                <div class="card-action-set">
+                  <form method="post" style="display:inline;" onclick="event.stopPropagation();">
+                    <input type="hidden" name="action" value="<?php echo $isEnrolled ? 'unenroll' : 'enroll'; ?>">
+                    <input type="hidden" name="id" value="<?php echo intval($program['id']); ?>">
+                    <button type="submit" class="btn btn-sm <?php echo $isEnrolled ? 'btn-outline-warning' : 'btn-primary'; ?>">
+                      <?php echo $isEnrolled ? 'Unenroll' : 'Enroll'; ?>
+                    </button>
+                  </form>
+                </div>
               </div>
             </div>
           </div>
@@ -254,35 +282,49 @@ $paginatedPrograms = paginateItems($filteredPrograms, $pageNum, $itemsPerPage);
               data-program-id="<?php echo intval($program['id']); ?>"
               data-name="<?php echo htmlspecialchars($program['name']); ?>"
               data-description="<?php echo htmlspecialchars($program['description']); ?>"
+                data-cover-photo="<?php echo htmlspecialchars(getImageUrl($program['cover_photo'] ?? null)); ?>"
+              data-duration="<?php echo htmlspecialchars($program['duration'] ?? 'N/A'); ?>"
+              data-instructor="<?php echo htmlspecialchars($program['instructor'] ?? 'N/A'); ?>"
+              data-status="<?php echo htmlspecialchars($program['status'] ?? 'N/A'); ?>"
+              data-start-date="<?php echo htmlspecialchars($program['start_date'] ?? 'N/A'); ?>"
               data-enrolled="<?php echo $enrollmentDetails[$program['id']] ?? 0; ?>">
               <img src="<?php echo htmlspecialchars(getImageUrl($program['cover_photo'] ?? null, 'modules/img/placeholder.gif')); ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?php echo htmlspecialchars($program['name']); ?>">
               <div class="card-body d-flex flex-column">
                 <h5 class="card-title"><?php echo htmlspecialchars($program['name']); ?></h5>
-                <p class="card-text text-muted" style="font-size: 0.9rem; margin-bottom: 8px;"><?php echo htmlspecialchars(substr($program['description'], 0, 80)) . '...'; ?></p>
-                
-                <div class="small text-muted" style="margin-bottom: 10px;">
-                  <div><strong>Enrolled:</strong> <?php echo $enrollmentDetails[$program['id']] ?? 0; ?> users</div>
+                <p class="card-text text-muted mb-2"><?php echo htmlspecialchars(substr($program['description'], 0, 100)); ?></p>
+                <p class="text-center mb-2" style="font-size: 0.9rem;">
+                  <small class="badge bg-info">Training</small>
+                </p>
+                <!-- Card meta grid: status | date | remaining -->
+                <div class="card-meta-grid mb-2">
+                  <div class="d-flex justify-content-between gap-1">
+                    <small class="meta-label">Active</small>
+                    <small class="meta-label">—</small>
+                    <small class="meta-label">Enrolled: <?php echo $enrollmentDetails[$program['id']] ?? 0; ?></small>
+                  </div>
                 </div>
-                
-                <div class="mt-auto">
-                  <?php 
-                  $isEnrolled = false;
-                  if ($currentUserId) {
-                      foreach ($userEnrollments as $enrolled) {
-                          if ($enrolled['id'] == $program['id']) {
-                              $isEnrolled = true;
-                              break;
-                          }
-                      }
-                  }
-                  ?>
-                  <form method="post" style="display: inline;" onclick="event.stopPropagation();">
-                    <input type="hidden" name="action" value="<?php echo $isEnrolled ? 'unenroll' : 'enroll'; ?>">
-                    <input type="hidden" name="id" value="<?php echo intval($program['id']); ?>">
-                    <button class="btn btn-sm <?php echo $isEnrolled ? 'btn-outline-warning' : 'btn-primary'; ?> w-100">
-                      <?php echo $isEnrolled ? 'Unenroll' : 'Enroll'; ?>
-                    </button>
-                  </form>
+                <div class="mt-auto d-flex justify-content-between align-items-center">
+                  <small class="text-muted">Total: <?php echo $enrollmentDetails[$program['id']] ?? 0; ?></small>
+                  <div class="card-action-set">
+                    <?php 
+                    $isEnrolled = false;
+                    if ($currentUserId) {
+                        foreach ($userEnrollments as $enrolled) {
+                            if ($enrolled['id'] == $program['id']) {
+                                $isEnrolled = true;
+                                break;
+                            }
+                        }
+                    }
+                    ?>
+                    <form method="post" style="display:inline;" onclick="event.stopPropagation();">
+                      <input type="hidden" name="action" value="<?php echo $isEnrolled ? 'unenroll' : 'enroll'; ?>">
+                      <input type="hidden" name="id" value="<?php echo intval($program['id']); ?>">
+                      <button type="submit" class="btn btn-sm <?php echo $isEnrolled ? 'btn-outline-warning' : 'btn-primary'; ?>">
+                        <?php echo $isEnrolled ? 'Unenroll' : 'Enroll'; ?>
+                      </button>
+                    </form>
+                  </div>
                 </div>
               </div>
             </div>
@@ -342,10 +384,55 @@ $paginatedPrograms = paginateItems($filteredPrograms, $pageNum, $itemsPerPage);
         </button>
       </div>
       <div class="modal-body">
-        <h4 id="modalProgramName"></h4>
-        <p id="modalProgramDescription"></p>
+        <!-- Cover Photo -->
+        <div class="mb-3">
+          <img id="modalCoverPhoto" src="" class="img-fluid rounded" style="width: 100%; max-height: 300px; object-fit: cover;" alt="Program Cover">
+        </div>
+
+        <!-- Title -->
+        <h4 id="modalProgramName" class="mb-3"></h4>
+
+        <!-- Description -->
+        <div class="mb-3">
+          <h6 class="text-muted">Description</h6>
+          <p id="modalProgramDescription"></p>
+        </div>
+
         <hr>
-        <p><strong>Enrolled Users:</strong> <span id="modalEnrolled"></span></p>
+
+        <!-- Program Details Grid -->
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <h6 class="text-muted">Instructor</h6>
+              <p id="modalInstructor" class="mb-0"><strong></strong></p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <h6 class="text-muted">Duration</h6>
+              <p id="modalDuration" class="mb-0"><strong></strong></p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <h6 class="text-muted">Start Date</h6>
+              <p id="modalStartDate" class="mb-0"><strong></strong></p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <h6 class="text-muted">Status</h6>
+              <p id="modalStatus" class="mb-0"><strong></strong></p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <h6 class="text-muted">Total Enrolled</h6>
+              <p id="modalEnrolled" class="mb-0"><strong></strong></p>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -370,11 +457,21 @@ document.addEventListener('DOMContentLoaded', function(){
         card.addEventListener('click', function() {
           var name = this.getAttribute('data-name');
           var description = this.getAttribute('data-description');
+          var coverPhoto = this.getAttribute('data-cover-photo');
+          var duration = this.getAttribute('data-duration');
+          var instructor = this.getAttribute('data-instructor');
+          var status = this.getAttribute('data-status');
+          var startDate = this.getAttribute('data-start-date');
           var enrolled = this.getAttribute('data-enrolled');
 
+          document.getElementById('modalCoverPhoto').src = coverPhoto;
           document.getElementById('modalProgramName').textContent = name;
           document.getElementById('modalProgramDescription').textContent = description;
-          document.getElementById('modalEnrolled').textContent = enrolled;
+          document.getElementById('modalDuration').querySelector('strong').textContent = duration;
+          document.getElementById('modalInstructor').querySelector('strong').textContent = instructor;
+          document.getElementById('modalStatus').querySelector('strong').textContent = status;
+          document.getElementById('modalStartDate').querySelector('strong').textContent = startDate;
+          document.getElementById('modalEnrolled').querySelector('strong').textContent = enrolled + ' users';
 
           programModal.show();
         });

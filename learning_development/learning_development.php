@@ -2,6 +2,7 @@
 session_start();
 require_once "../auth/auth_check.php";
 $theme = $_SESSION['user']['theme'] ?? 'light';
+$role = $_SESSION['user']['role'] ?? 'employee';
 
 // determine which module page to show
 $page = $_GET['page'] ?? 'analytics';
@@ -121,48 +122,134 @@ $page = $_GET['page'] ?? 'analytics';
             data-accordion="false">
             <!-- Add icons to the links using the .nav-icon class
                with font-awesome or any other icon font library -->
-            <li class="nav-item">
-              <a href="?page=analytics" class="nav-link <?= in_array($page, ['analytics','dashboard']) ? 'active' : '' ?>">
-                <i class="nav-icon fas fa-tachometer-alt"></i>
-                <p>Analytics / Dashboard</p>
+            <li class="nav-item has-treeview <?= in_array($page, ['analytics', 'dashboard']) ? 'menu-open' : '' ?>">
+              <a href="#" class="nav-link <?= in_array($page, ['analytics', 'dashboard']) ? 'active' : '' ?>">
+                <i class="nav-icon fas fa-home"></i>
+                <p>
+                  Home
+                  <i class="right fas fa-angle-left"></i>
+                </p>
               </a>
+              <ul class="nav nav-treeview">
+                <li class="nav-item">
+                  <a href="?page=dashboard" class="nav-link <?= $page === 'dashboard' ? 'active' : '' ?>">
+                    <i class="nav-icon fas fa-globe"></i>
+                    <p>Homepage</p>
+                  </a>
+                </li>
+                <?php if (in_array($role, ['admin', 'learning'])): ?>
+                <li class="nav-item">
+                  <a href="?page=analytics" class="nav-link <?= $page === 'analytics' ? 'active' : '' ?>">
+                    <i class="nav-icon fas fa-chart-bar"></i>
+                    <p>Analytics Dashboard</p>
+                  </a>
+                </li>
+                <?php endif; ?>
+              </ul>
             </li>
-            <li class="nav-item">
-              <a href="?page=training" class="nav-link <?= $page === 'training' ? 'active' : '' ?>">
+            
+            <!-- MAIN MODULES SECTION -->
+            <li class="nav-header">LEARNING MODULES</li>
+            
+            <li class="nav-item has-treeview <?= in_array($page, ['training', 'training-browse', 'training-create']) ? 'menu-open' : '' ?>">
+              <a href="#" class="nav-link <?= in_array($page, ['training', 'training-browse', 'training-create']) ? 'active' : '' ?>">
                 <i class="nav-icon fas fa-book"></i>
-                <p>Training</p>
+                <p>
+                  Training
+                  <i class="right fas fa-angle-left"></i>
+                </p>
               </a>
+              <ul class="nav nav-treeview">
+                <li class="nav-item">
+                  <a href="?page=training-browse" class="nav-link <?= $page === 'training-browse' ? 'active' : '' ?>">
+                    <i class="nav-icon fas fa-eye"></i>
+                    <p>Browse Training</p>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a href="?page=training-create" class="nav-link <?= $page === 'training-create' ? 'active' : '' ?>">
+                    <i class="nav-icon fas fa-plus"></i>
+                    <p>Create Training</p>
+                  </a>
+                </li>
+              </ul>
             </li>
-            <li class="nav-item">
-              <a href="?page=career" class="nav-link <?= $page === 'career' ? 'active' : '' ?>">
+            
+            <li class="nav-item has-treeview <?= in_array($page, ['career', 'career-browse', 'career-create']) ? 'menu-open' : '' ?>">
+              <a href="#" class="nav-link <?= in_array($page, ['career', 'career-browse', 'career-create']) ? 'active' : '' ?>">
                 <i class="nav-icon fas fa-rocket"></i>
-                <p>Career</p>
+                <p>
+                  Career
+                  <i class="right fas fa-angle-left"></i>
+                </p>
               </a>
+              <ul class="nav nav-treeview">
+                <li class="nav-item">
+                  <a href="?page=career-browse" class="nav-link <?= $page === 'career-browse' ? 'active' : '' ?>">
+                    <i class="nav-icon fas fa-eye"></i>
+                    <p>Browse Career</p>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a href="?page=career-create" class="nav-link <?= $page === 'career-create' ? 'active' : '' ?>">
+                    <i class="nav-icon fas fa-plus"></i>
+                    <p>Create Career</p>
+                  </a>
+                </li>
+              </ul>
             </li>
-            <li class="nav-item">
-              <a href="?page=leadership" class="nav-link <?= $page === 'leadership' ? 'active' : '' ?>">
+            
+            <li class="nav-item has-treeview <?= in_array($page, ['leadership', 'leadership-browse', 'leadership-create']) ? 'menu-open' : '' ?>">
+              <a href="#" class="nav-link <?= in_array($page, ['leadership', 'leadership-browse', 'leadership-create']) ? 'active' : '' ?>">
                 <i class="nav-icon fas fa-users"></i>
-                <p>Leadership</p>
+                <p>
+                  Leadership
+                  <i class="right fas fa-angle-left"></i>
+                </p>
               </a>
+              <ul class="nav nav-treeview">
+                <li class="nav-item">
+                  <a href="?page=leadership-browse" class="nav-link <?= $page === 'leadership-browse' ? 'active' : '' ?>">
+                    <i class="nav-icon fas fa-eye"></i>
+                    <p>Browse Leadership</p>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a href="?page=leadership-create" class="nav-link <?= $page === 'leadership-create' ? 'active' : '' ?>">
+                    <i class="nav-icon fas fa-plus"></i>
+                    <p>Create Leadership</p>
+                  </a>
+                </li>
+              </ul>
             </li>
-            <li class="nav-item">
-              <a href="?page=performance" class="nav-link <?= $page === 'performance' ? 'active' : '' ?>">
-                <i class="nav-icon fas fa-chart-line"></i>
-                <p>Performance</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="?page=compliance" class="nav-link <?= $page === 'compliance' ? 'active' : '' ?>">
-                <i class="nav-icon fas fa-check-circle"></i>
-                <p>Compliance</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="?page=orgdev" class="nav-link <?= $page === 'orgdev' ? 'active' : '' ?>">
+            
+            <li class="nav-item has-treeview <?= in_array($page, ['orgdev', 'orgdev-browse', 'orgdev-create']) ? 'menu-open' : '' ?>">
+              <a href="#" class="nav-link <?= in_array($page, ['orgdev', 'orgdev-browse', 'orgdev-create']) ? 'active' : '' ?>">
                 <i class="nav-icon fas fa-sitemap"></i>
-                <p>Organizational Development</p>
+                <p>
+                  Organizational Development
+                  <i class="right fas fa-angle-left"></i>
+                </p>
               </a>
+              <ul class="nav nav-treeview">
+                <li class="nav-item">
+                  <a href="?page=orgdev-browse" class="nav-link <?= $page === 'orgdev-browse' ? 'active' : '' ?>">
+                    <i class="nav-icon fas fa-eye"></i>
+                    <p>Browse Activities</p>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a href="?page=orgdev" class="nav-link <?= $page === 'orgdev' ? 'active' : '' ?>">
+                    <i class="nav-icon fas fa-plus"></i>
+                    <p>Create Activity</p>
+                  </a>
+                </li>
+              </ul>
             </li>
+            
+            <!-- UTILITY SECTION -->
+            <li class="nav-header">UTILITIES</li>
+            
             <li class="nav-item">
               <a href="../logout.php" class="nav-link">
                 <i class="nav-icon fas fa-sign-out-alt"></i>
@@ -190,37 +277,60 @@ $page = $_GET['page'] ?? 'analytics';
       <section class="content">
         <?php
         switch ($page) {
-            case 'analytics':
             case 'dashboard':
-                // analytics dashboard content from David Z
+            case '':
+                // Homepage showing user's programs and personalized recommendations
+                define('NO_HEADER', true);
+                define('NO_FOOTER', true);
+                include __DIR__ . '/modules/dashboard.php';
+                break;
+            case 'analytics':
+                // Admin analytics dashboard - restricted to admin/learning role
+                if (!in_array($role, ['admin', 'learning'])) {
+                    header('Location: ?page=dashboard');
+                    exit;
+                }
                 define('NO_HEADER', true);
                 define('NO_FOOTER', true);
                 include __DIR__ . '/modules/analytics.php';
                 break;
             case 'training':
+            case 'training-browse':
+                define('NO_HEADER', true);
+                define('NO_FOOTER', true);
+                include __DIR__ . '/modules/training_browse.php';
+                break;
+            case 'training-create':
                 define('NO_HEADER', true);
                 define('NO_FOOTER', true);
                 include __DIR__ . '/modules/training.php';
                 break;
             case 'career':
+            case 'career-browse':
+                define('NO_HEADER', true);
+                define('NO_FOOTER', true);
+                include __DIR__ . '/modules/career_browse.php';
+                break;
+            case 'career-create':
                 define('NO_HEADER', true);
                 define('NO_FOOTER', true);
                 include __DIR__ . '/modules/career.php';
                 break;
             case 'leadership':
+            case 'leadership-browse':
+                define('NO_HEADER', true);
+                define('NO_FOOTER', true);
+                include __DIR__ . '/modules/leadership_browse.php';
+                break;
+            case 'leadership-create':
                 define('NO_HEADER', true);
                 define('NO_FOOTER', true);
                 include __DIR__ . '/modules/leadership.php';
                 break;
-            case 'performance':
+            case 'orgdev-browse':
                 define('NO_HEADER', true);
                 define('NO_FOOTER', true);
-                include __DIR__ . '/modules/performance.php';
-                break;
-            case 'compliance':
-                define('NO_HEADER', true);
-                define('NO_FOOTER', true);
-                include __DIR__ . '/modules/compliance.php';
+                include __DIR__ . '/modules/orgdev_browse.php';
                 break;
             case 'orgdev':
                 define('NO_HEADER', true);

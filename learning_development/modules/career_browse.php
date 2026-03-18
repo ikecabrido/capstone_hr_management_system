@@ -13,6 +13,7 @@ $currentUserId = get_current_user_id();
 $currentUsername = $_SESSION['username'] ?? null;
 $message = '';
 $messageType = 'info';
+$placeholderImg = '../img/placeholder.gif';
 
 // Handle POST actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -140,8 +141,13 @@ $paginatedCareers = paginateItems($filteredCareers, $pageNum, $itemsPerPage);
               <div class="card h-100 career-card clickable-card" style="cursor: pointer;"
                 data-career-id="<?php echo intval($career['id']); ?>"
                 data-name="<?php echo htmlspecialchars($career['name']); ?>"
-                data-description="<?php echo htmlspecialchars($career['description']); ?>">
-                <img src="<?php echo htmlspecialchars(getImageUrl($career['cover_photo'] ?? null, 'modules/img/placeholder.gif')); ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?php echo htmlspecialchars($career['name']); ?>">
+                data-description="<?php echo htmlspecialchars($career['description']); ?>"
+                data-cover-photo="<?php echo htmlspecialchars(getImageUrl($career['cover_photo'] ?? null)); ?>"
+                data-target-position="<?php echo htmlspecialchars($career['target_position'] ?? 'N/A'); ?>"
+                data-duration="<?php echo htmlspecialchars($career['duration_months'] ?? 'N/A'); ?>"
+                data-enrolled="<?php echo $enrollmentDetails[$career['id']] ?? 0; ?>"
+                data-skills="<?php echo htmlspecialchars($career['required_skills'] ?? 'N/A'); ?>">>
+                <img src="<?php echo htmlspecialchars(getImageUrl($career['cover_photo'] ?? null)); ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?php echo htmlspecialchars($career['name']); ?>">
                 <div class="card-body d-flex flex-column">
                   <h5 class="card-title"><?php echo htmlspecialchars($career['name']); ?></h5>
                   <p class="card-text text-muted mb-2" style="font-size: 0.9rem;"><?php echo htmlspecialchars(substr($career['description'], 0, 80)) . '...'; ?></p>
@@ -183,7 +189,12 @@ $paginatedCareers = paginateItems($filteredCareers, $pageNum, $itemsPerPage);
           <div class="card h-100 career-card clickable-card" style="cursor: pointer;"
             data-career-id="<?php echo intval($career['id']); ?>"
             data-name="<?php echo htmlspecialchars($career['name']); ?>"
-            data-description="<?php echo htmlspecialchars($career['description']); ?>">
+            data-description="<?php echo htmlspecialchars($career['description']); ?>"
+            data-cover-photo="<?php echo htmlspecialchars(getImageUrl($career['cover_photo'] ?? null, 'modules/img/placeholder.gif')); ?>"
+            data-target-position="<?php echo htmlspecialchars($career['target_position'] ?? 'N/A'); ?>"
+            data-duration="<?php echo htmlspecialchars($career['duration_months'] ?? 'N/A'); ?>"
+            data-enrolled="<?php echo $enrollmentDetails[$career['id']] ?? 0; ?>"
+            data-skills="<?php echo htmlspecialchars($career['required_skills'] ?? 'N/A'); ?>">>
             <div style="position: relative;">
               <img src="<?php echo htmlspecialchars(getImageUrl($career['cover_photo'] ?? null, 'modules/img/placeholder.gif')); ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?php echo htmlspecialchars($career['name']); ?>">
               <span class="badge bg-warning" style="position: absolute; top: 10px; right: 10px;">Featured</span>
@@ -247,7 +258,11 @@ $paginatedCareers = paginateItems($filteredCareers, $pageNum, $itemsPerPage);
               data-career-id="<?php echo intval($career['id']); ?>"
               data-name="<?php echo htmlspecialchars($career['name']); ?>"
               data-description="<?php echo htmlspecialchars($career['description']); ?>"
-              data-enrolled="<?php echo $enrollmentDetails[$career['id']] ?? 0; ?>">
+              data-cover-photo="<?php echo htmlspecialchars(getImageUrl($career['cover_photo'] ?? null, $placeholderImg)); ?>"
+              data-target-position="<?php echo htmlspecialchars($career['target_position'] ?? 'N/A'); ?>"
+              data-duration="<?php echo htmlspecialchars($career['duration_months'] ?? 'N/A'); ?>"
+              data-enrolled="<?php echo $enrollmentDetails[$career['id']] ?? 0; ?>"
+              data-skills="<?php echo htmlspecialchars($career['required_skills'] ?? 'N/A'); ?>">
               <img src="<?php echo htmlspecialchars(getImageUrl($career['cover_photo'] ?? null, 'modules/img/placeholder.gif')); ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?php echo htmlspecialchars($career['name']); ?>">
               <div class="card-body d-flex flex-column">
                 <h5 class="card-title"><?php echo htmlspecialchars($career['name']); ?></h5>
@@ -332,7 +347,7 @@ $paginatedCareers = paginateItems($filteredCareers, $pageNum, $itemsPerPage);
       </div>
     <?php endif; ?>
   </div>
-!-- Career Details Modal -->
+<!-- Career Details Modal -->
 <div class="modal fade" id="careerModal" tabindex="-1" role="dialog" aria-labelledby="careerModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
@@ -343,8 +358,49 @@ $paginatedCareers = paginateItems($filteredCareers, $pageNum, $itemsPerPage);
         </button>
       </div>
       <div class="modal-body">
-        <h4 id="modalCareerName"></h4>
-        <p id="modalCareerDescription"></p>
+        <!-- Cover Photo -->
+        <div class="mb-3">
+          <img id="modalCoverPhoto" src="" class="img-fluid rounded" style="width: 100%; max-height: 300px; object-fit: cover;" alt="Career Cover">
+        </div>
+
+        <!-- Title -->
+        <h4 id="modalCareerName" class="mb-3"></h4>
+
+        <!-- Description -->
+        <div class="mb-3">
+          <h6 class="text-muted">Description</h6>
+          <p id="modalCareerDescription"></p>
+        </div>
+
+        <hr>
+
+        <!-- Career Details Grid -->
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <h6 class="text-muted">Target Position</h6>
+              <p id="modalTargetPosition" class="mb-0"><strong></strong></p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <h6 class="text-muted">Duration</h6>
+              <p id="modalDuration" class="mb-0"><strong></strong></p>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="mb-3">
+              <h6 class="text-muted">Required Skills</h6>
+              <p id="modalSkills" class="mb-0"><strong></strong></p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <h6 class="text-muted">Active Development Plans</h6>
+              <p id="modalEnrolled" class="mb-0"><strong></strong></p>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -366,8 +422,22 @@ document.addEventListener('DOMContentLoaded', function(){
       
       clickableCards.forEach(function(card) {
         card.addEventListener('click', function() {
-          document.getElementById('modalCareerName').textContent = this.getAttribute('data-name');
-          document.getElementById('modalCareerDescription').textContent = this.getAttribute('data-description');
+          var name = this.getAttribute('data-name');
+          var description = this.getAttribute('data-description');
+          var coverPhoto = this.getAttribute('data-cover-photo');
+          var targetPosition = this.getAttribute('data-target-position');
+          var duration = this.getAttribute('data-duration');
+          var skills = this.getAttribute('data-skills');
+          var enrolled = this.getAttribute('data-enrolled');
+
+          document.getElementById('modalCoverPhoto').src = coverPhoto;
+          document.getElementById('modalCareerName').textContent = name;
+          document.getElementById('modalCareerDescription').textContent = description;
+          document.getElementById('modalTargetPosition').querySelector('strong').textContent = targetPosition;
+          document.getElementById('modalDuration').querySelector('strong').textContent = duration + ' months';
+          document.getElementById('modalSkills').querySelector('strong').textContent = skills;
+          document.getElementById('modalEnrolled').querySelector('strong').textContent = enrolled + ' users';
+
           careerModal.show();
         });
       });
@@ -377,22 +447,3 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 });
 </script>
-
-<style>
-.career-card {
-  transition: transform 0.3s, box-shadow 0.3s;
-  border: 1px solid #ecf0f1;
-}
-
-.career-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.clickable-card:hover {
-  background-color: #f8f9fa
-.career-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-</style>
