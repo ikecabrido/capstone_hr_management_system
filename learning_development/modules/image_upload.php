@@ -74,9 +74,12 @@ function deleteImage($imagePath) {
  * @param string $placeholder The fallback placeholder image path
  * @return string The image URL
  */
-function getImageUrl($imagePath, $placeholder = 'img/placeholder.gif') {
-    if (!empty($imagePath) && file_exists(__DIR__ . '/../' . $imagePath)) {
-        return $imagePath;
+function getImageUrl($imagePath, $placeholder = '../img/placeholder.gif') {
+    if (!empty($imagePath)) {
+        $fullPath = __DIR__ . '/../' . $imagePath;
+        if (file_exists($fullPath)) {
+            return $imagePath;
+        }
     }
     return $placeholder;
 }

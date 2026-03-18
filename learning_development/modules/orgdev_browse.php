@@ -13,6 +13,7 @@ $currentUserId = get_current_user_id();
 $currentUsername = $_SESSION['username'] ?? null;
 $message = '';
 $messageType = 'info';
+$placeholderImg = '../img/placeholder.gif';
 
 // Handle POST actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -158,31 +159,37 @@ $paginatedInitiatives = paginateItems($filteredInitiatives, $pageNum, $itemsPerP
               <div class="card h-100 orgdev-card clickable-card" style="cursor: pointer;"
                 data-activity-id="<?php echo intval($initiative['id']); ?>"
                 data-name="<?php echo htmlspecialchars($initiative['name']); ?>"
-                data-description="<?php echo htmlspecialchars($initiative['description']); ?>">
-                <img src="<?php echo htmlspecialchars(getImageUrl($initiative['cover_photo'] ?? null, 'modules/img/placeholder.gif')); ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?php echo htmlspecialchars($initiative['name']); ?>">
+                data-description="<?php echo htmlspecialchars($initiative['description']); ?>"
+                data-cover-photo="<?php echo htmlspecialchars(getImageUrl($initiative['cover_photo'] ?? null)); ?>"
+                data-department="<?php echo htmlspecialchars($initiative['department'] ?? 'N/A'); ?>"
+                data-activity-date="<?php echo htmlspecialchars($initiative['activity_date'] ?? 'N/A'); ?>"
+                data-location="<?php echo htmlspecialchars($initiative['location'] ?? 'N/A'); ?>"
+                data-enrolled="<?php echo intval($initiative['participant_count'] ?? 0); ?>">
+                <img src="<?php echo htmlspecialchars(getImageUrl($initiative['cover_photo'] ?? null)); ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?php echo htmlspecialchars($initiative['name']); ?>">
                 <div class="card-body d-flex flex-column">
                   <h5 class="card-title"><?php echo htmlspecialchars($initiative['name']); ?></h5>
-                  <p class="card-text text-muted mb-2" style="font-size: 0.9rem;"><?php echo htmlspecialchars(substr($initiative['description'], 0, 80)) . '...'; ?></p>
+                  <p class="card-text text-muted mb-2"><?php echo htmlspecialchars(substr($initiative['description'], 0, 100)); ?></p>
                   <p class="text-center mb-2" style="font-size: 0.9rem;">
-                    <small class="badge bg-primary">Activity</small>
+                    <small class="trainer-badge">Activity</small>
                     <?php if (!empty($initiative['activity_date'])): ?>
-                      <small class="badge bg-secondary ms-2"><?php echo date('M d, Y', strtotime($initiative['activity_date'])); ?></small>
+                      <small class="sessions-badge ms-2"><?php echo date('M d', strtotime($initiative['activity_date'])); ?></small>
                     <?php endif; ?>
                   </p>
+                  <!-- Card meta grid: status | date | remaining -->
                   <div class="card-meta-grid mb-2">
                     <div class="d-flex justify-content-between gap-1">
-                      <small class="meta-label" style="font-size: 0.85rem; color: #666;"><?php echo htmlspecialchars($initiative['department'] ?? 'N/A'); ?></small>
-                      <small class="meta-label" style="font-size: 0.85rem; color: #666;">—</small>
-                      <small class="meta-label" style="font-size: 0.85rem; color: #666;">Rem: <?php echo intval($initiative['participant_count'] ?? 0); ?></small>
+                      <small class="meta-label"><?php echo htmlspecialchars($initiative['department'] ?? 'N/A'); ?></small>
+                      <small class="meta-label">—</small>
+                      <small class="meta-label">Rem: 0</small>
                     </div>
                   </div>
                   <div class="mt-auto d-flex justify-content-between align-items-center">
                     <small class="text-muted">Joined: 0</small>
                     <div class="card-action-set">
-                      <form method="post" style="display: inline;" onclick="event.stopPropagation();">
+                      <form method="post" style="display:inline;" onclick="event.stopPropagation();">
                         <input type="hidden" name="action" value="leave">
                         <input type="hidden" name="id" value="<?php echo intval($initiative['id']); ?>">
-                        <button class="btn btn-sm btn-outline-warning">Leave</button>
+                        <button type="submit" class="btn btn-sm btn-outline-warning">Leave</button>
                       </form>
                     </div>
                   </div>
@@ -209,9 +216,13 @@ $paginatedInitiatives = paginateItems($filteredInitiatives, $pageNum, $itemsPerP
             data-activity-id="<?php echo intval($initiative['id']); ?>"
             data-name="<?php echo htmlspecialchars($initiative['name']); ?>"
             data-description="<?php echo htmlspecialchars($initiative['description']); ?>"
-            data-participants="<?php echo $participationCounts[$initiative['id']] ?? 0; ?>">
+            data-cover-photo="<?php echo htmlspecialchars(getImageUrl($initiative['cover_photo'] ?? null, 'modules/img/placeholder.gif')); ?>"
+            data-department="<?php echo htmlspecialchars($initiative['department'] ?? 'N/A'); ?>"
+            data-activity-date="<?php echo htmlspecialchars($initiative['activity_date'] ?? 'N/A'); ?>"
+            data-location="<?php echo htmlspecialchars($initiative['location'] ?? 'N/A'); ?>"
+            data-enrolled="<?php echo intval($initiative['participant_count'] ?? 0); ?>">
             <div style="position: relative;">
-              <img src="<?php echo htmlspecialchars(getImageUrl($initiative['cover_photo'] ?? null, 'modules/img/placeholder.gif')); ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?php echo htmlspecialchars($initiative['name']); ?>">
+                <img src="<?php echo htmlspecialchars(getImageUrl($initiative['cover_photo'] ?? null, $placeholderImg)); ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?php echo htmlspecialchars($initiative['name']); ?>">
               <span class="badge bg-warning" style="position: absolute; top: 10px; right: 10px;">Featured</span>
             </div>
             <div class="card-body d-flex flex-column">
@@ -273,7 +284,11 @@ $paginatedInitiatives = paginateItems($filteredInitiatives, $pageNum, $itemsPerP
               data-activity-id="<?php echo intval($initiative['id']); ?>"
               data-name="<?php echo htmlspecialchars($initiative['name']); ?>"
               data-description="<?php echo htmlspecialchars($initiative['description']); ?>"
-              data-participants="<?php echo $participationCounts[$initiative['id']] ?? 0; ?>">
+                data-cover-photo="<?php echo htmlspecialchars(getImageUrl($initiative['cover_photo'] ?? null, $placeholderImg)); ?>"
+              data-department="<?php echo htmlspecialchars($initiative['department'] ?? 'N/A'); ?>"
+              data-activity-date="<?php echo htmlspecialchars($initiative['activity_date'] ?? 'N/A'); ?>"
+              data-location="<?php echo htmlspecialchars($initiative['location'] ?? 'N/A'); ?>"
+              data-enrolled="<?php echo intval($initiative['participant_count'] ?? 0); ?>">
               <img src="<?php echo htmlspecialchars(getImageUrl($initiative['cover_photo'] ?? null, 'modules/img/placeholder.gif')); ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?php echo htmlspecialchars($initiative['name']); ?>">
               <div class="card-body d-flex flex-column">
                 <h5 class="card-title"><?php echo htmlspecialchars($initiative['name']); ?></h5>
@@ -367,10 +382,49 @@ $paginatedInitiatives = paginateItems($filteredInitiatives, $pageNum, $itemsPerP
         </button>
       </div>
       <div class="modal-body">
-        <h4 id="modalActivityName"></h4>
-        <p id="modalActivityDescription"></p>
+        <!-- Cover Photo -->
+        <div class="mb-3">
+          <img id="modalCoverPhoto" src="" class="img-fluid rounded" style="width: 100%; max-height: 300px; object-fit: cover;" alt="Activity Cover">
+        </div>
+
+        <!-- Title -->
+        <h4 id="modalActivityName" class="mb-3"></h4>
+
+        <!-- Description -->
+        <div class="mb-3">
+          <h6 class="text-muted">Description</h6>
+          <p id="modalActivityDescription"></p>
+        </div>
+
         <hr>
-        <p><strong>Participants:</strong> <span id="modalActivityParticipants"></span></p>
+
+        <!-- Activity Details Grid -->
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <h6 class="text-muted">Department</h6>
+              <p id="modalDepartment" class="mb-0"><strong></strong></p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <h6 class="text-muted">Activity Date</h6>
+              <p id="modalActivityDate" class="mb-0"><strong></strong></p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <h6 class="text-muted">Location</h6>
+              <p id="modalLocation" class="mb-0"><strong></strong></p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <h6 class="text-muted">Participants</h6>
+              <p id="modalActivityParticipants" class="mb-0"><strong></strong></p>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -394,11 +448,19 @@ document.addEventListener('DOMContentLoaded', function(){
         card.addEventListener('click', function() {
           var name = this.getAttribute('data-name');
           var description = this.getAttribute('data-description');
-          var participants = this.getAttribute('data-participants');
+          var coverPhoto = this.getAttribute('data-cover-photo');
+          var department = this.getAttribute('data-department');
+          var activityDate = this.getAttribute('data-activity-date');
+          var location = this.getAttribute('data-location');
+          var participants = this.getAttribute('data-enrolled');
 
+          document.getElementById('modalCoverPhoto').src = coverPhoto;
           document.getElementById('modalActivityName').textContent = name;
           document.getElementById('modalActivityDescription').textContent = description;
-          document.getElementById('modalActivityParticipants').textContent = participants;
+          document.getElementById('modalDepartment').querySelector('strong').textContent = department;
+          document.getElementById('modalActivityDate').querySelector('strong').textContent = activityDate;
+          document.getElementById('modalLocation').querySelector('strong').textContent = location;
+          document.getElementById('modalActivityParticipants').querySelector('strong').textContent = participants + ' participants';
 
           activityModal.show();
         });

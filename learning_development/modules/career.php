@@ -1,12 +1,9 @@
 <?php require_once __DIR__ . '/config.php';
 if (!headers_sent()) { ob_start(); }
-if (!defined('NO_HEADER')) {
-require_once __DIR__ . '/header.php';
-}
+// NO HEADER - Parent learning_development.php handles the layout
 
 require_once __DIR__ . '/toast.php';
 require_once __DIR__ . '/search_filter.php';
-require_once __DIR__ . '/validation.php';
 require_once __DIR__ . '/image_upload.php';
 
 $role = current_role();
