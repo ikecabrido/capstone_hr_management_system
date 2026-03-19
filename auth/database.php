@@ -3,12 +3,12 @@
 class Database
 {
     private static $instance = null;
-    private PDO $conn;
+    private $conn;
 
-    private string $host = "localhost";
-    private string $db   = "hr_management";
-    private string $user = "root";
-    private string $pass = "";
+    private $host = "localhost";
+    private $db   = "hr_management";
+    private $user = "root";
+    private $pass = "";
 
     private function __construct()
     {
@@ -26,13 +26,13 @@ class Database
     private function connect()
     {
         try {
-            $this->pdo = new PDO(
-                "mysql:host={$this->host};dbname={$this->dbname}",
-                $this->username,
-                $this->password
+            $this->conn = new PDO(
+                "mysql:host={$this->host};dbname={$this->db}",
+                $this->user,
+                $this->pass
             );
 
-            $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         } catch (PDOException $e) {
             die("Database Connection Failed: " . $e->getMessage());
         }
@@ -40,6 +40,6 @@ class Database
 
     public function getConnection()
     {
-        return $this->pdo;
+        return $this->conn;
     }
 }

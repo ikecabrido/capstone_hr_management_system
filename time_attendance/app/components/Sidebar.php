@@ -11,7 +11,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Get current page and role
 $current_page = $current_page ?? basename($_SERVER['PHP_SELF']);
-$current_role = $_SESSION['role'] ?? 'EMPLOYEE';
+$current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
 ?>
 
 <style>
@@ -475,7 +475,7 @@ $current_role = $_SESSION['role'] ?? 'EMPLOYEE';
             <ul class="nav-sidebar">
                 <!-- Dashboard Section -->
                 <li class="nav-item">
-                    <?php if ($current_role === 'HR_ADMIN' || $current_role === 'SYSTEM_ADMIN'): ?>
+                    <?php if ($current_role === 'time'): ?>
                         <a href="dashboard.php" class="nav-link <?php echo $current_page === 'dashboard.php' ? 'active' : ''; ?>">
                             <i class="nav-icon fas fa-tachometer-alt animation__wobble"></i>
                             <p>Dashboard</p>
@@ -489,7 +489,7 @@ $current_role = $_SESSION['role'] ?? 'EMPLOYEE';
                 </li>
 
                 <!-- QR & Attendance Section (HR Only) -->
-                <?php if ($current_role === 'HR_ADMIN' || $current_role === 'SYSTEM_ADMIN'): ?>
+                <?php if ($current_role === 'time'): ?>
                     <li class="nav-item">
                         <a href="qr_display_kiosk.php" class="nav-link <?php echo $current_page === 'qr_display_kiosk.php' ? 'active' : ''; ?>">
                             <i class="nav-icon fas fa-qrcode animation__wobble"></i>
@@ -505,7 +505,7 @@ $current_role = $_SESSION['role'] ?? 'EMPLOYEE';
                 <?php endif; ?>
 
                 <!-- Calendar/Attendance -->
-                <?php if (!($current_role === 'HR_ADMIN' || $current_role === 'SYSTEM_ADMIN')): ?>
+                <?php if (!($current_role === 'time')): ?>
                     <li class="nav-item">
                         <a href="calendar.php" class="nav-link <?php echo $current_page === 'calendar.php' ? 'active' : ''; ?>">
                             <i class="nav-icon fas fa-calendar-alt animation__wobble"></i>
@@ -515,7 +515,7 @@ $current_role = $_SESSION['role'] ?? 'EMPLOYEE';
                 <?php endif; ?>
 
                 <!-- Shift Management (HR Only) -->
-                <?php if ($current_role === 'HR_ADMIN' || $current_role === 'SYSTEM_ADMIN'): ?>
+                <?php if ($current_role === 'time'): ?>
                     <li class="nav-item">
                         <a href="shifts.php" class="nav-link <?php echo $current_page === 'shifts.php' ? 'active' : ''; ?>">
                             <i class="nav-icon fas fa-clock animation__wobble"></i>
@@ -531,7 +531,7 @@ $current_role = $_SESSION['role'] ?? 'EMPLOYEE';
                 <?php endif; ?>
 
                 <!-- Leave Management Section -->
-                <?php if ($current_role === 'HR_ADMIN' || $current_role === 'SYSTEM_ADMIN'): ?>
+                <?php if ($current_role === 'time'): ?>
                     <li class="nav-item">
                         <a href="leave_approvals.php" class="nav-link <?php echo $current_page === 'leave_approvals.php' ? 'active' : ''; ?>">
                             <i class="nav-icon fas fa-file-alt animation__wobble"></i>

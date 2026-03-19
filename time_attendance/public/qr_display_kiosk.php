@@ -16,7 +16,7 @@ require_once "../app/core/Session.php";
 Session::start();
 
 // Check authentication (must be HR Admin to access this)
-if (!AuthController::isAuthenticated() || !AuthController::hasRole('HR_ADMIN')) {
+if (!AuthController::isAuthenticated() || !AuthController::hasRole('time')) {
     header("Location: ../../login_form.php");
     exit;
 }

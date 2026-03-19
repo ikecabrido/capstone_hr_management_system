@@ -12,19 +12,34 @@ require_once "../app/core/Session.php";
 Session::start();
 
 // Check if user is authenticated
-if (!AuthController::isAuthenticated()) {
+// Try global session first, then time_attendance session
+$authenticated = false;
+$role = null;
+$user_id = null;
+
+// Check global login session
+if (isset($_SESSION['user']) && is_array($_SESSION['user']) && isset($_SESSION['user']['id'])) {
+    $authenticated = true;
+    $role = $_SESSION['user']['role'];
+    $user_id = $_SESSION['user']['id'];
+} else if (AuthController::isAuthenticated()) {
+    // Fallback to time_attendance auth check
+    $authenticated = true;
+    $role = AuthController::getCurrentRole();
+    $user_id = AuthController::getCurrentUserId();
+}
+
+if (!$authenticated) {
     header("Location: ../../login_form.php");
     exit;
 }
 
-// Only HR Admin and Department Head can access
-$role = AuthController::getCurrentRole();
-if ($role !== 'HR_ADMIN' && $role !== 'DEPARTMENT_HEAD') {
+// Only 'time' role can access this page
+if ($role !== 'time') {
     header("Location: employee_dashboard.php");
     exit;
 }
 
-$user_id = AuthController::getCurrentUserId();
 $leaveModel = new Leave();
 
 $message = "";
@@ -35,7 +50,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $action = trim($_POST['action'] ?? '');
     $leave_request_id = (int)($_POST['leave_request_id'] ?? 0);
     $remarks = Helper::sanitize($_POST['remarks'] ?? '');
-    $is_hr = ($role === 'HR_ADMIN');
+    $is_hr = ($role === 'time');
 
     if ($action === 'approve' && $leave_request_id) {
         $new_status = $is_hr ? 'APPROVED_BY_HR' : 'APPROVED_BY_HEAD';
@@ -61,16 +76,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 }
 
 // Get pending requests based on role
-if ($role === 'DEPARTMENT_HEAD') {
-    // Get pending requests from own department
-    $pendingRequests = $leaveModel->getPendingByDepartmentHead($user_id);
-} else {
-    // HR sees all pending and head-approved requests
-    $pendingRequests = $leaveModel->getForHRApproval();
-}
+// All 'time' role users see all pending and head-approved requests
+$pendingRequests = $leaveModel->getForHRApproval();
 
 $current_page = 'leave_approvals.php';
-$current_role = $_SESSION['role'] ?? 'HR_ADMIN';
+$current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
 ?>
 
 <!DOCTYPE html>
@@ -343,7 +353,7 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
     <div class="main-content">
         <div class="content-wrapper">
             <h1>Leave Request Approvals</h1>
-            <p><?php echo $role === 'HR_ADMIN' ? 'Review and approve leave requests as HR Admin.' : 'Review and approve leave requests from your department.'; ?></p>
+            <p>Review and approve leave requests.</p>
 
             <?php if (!empty($message)): ?>
                 <div class="alert alert-<?php echo $messageType; ?>">

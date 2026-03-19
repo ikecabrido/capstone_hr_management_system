@@ -18,7 +18,7 @@ if (!AuthController::isAuthenticated()) {
 }
 
 // Only HR can access this page
-if (!AuthController::hasRole('HR_ADMIN')) {
+if (!AuthController::hasRole('time')) {
     header("Location: employee_dashboard.php");
     exit;
 }

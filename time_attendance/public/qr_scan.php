@@ -33,7 +33,7 @@ if (!$tokenData) {
         exit;
     } else {
         // User is authenticated, send to dashboard with error
-        if (AuthController::hasRole('HR_ADMIN')) {
+        if (AuthController::hasRole('time')) {
             header("Location: dashboard.php");
         } else {
             header("Location: employee_dashboard.php");
@@ -75,7 +75,7 @@ try {
     if (!$employee) {
         $_SESSION['qr_error'] = 'Employee record not found';
         
-        if (AuthController::hasRole('HR_ADMIN')) {
+        if (AuthController::hasRole('time')) {
             header("Location: dashboard.php");
         } else {
             header("Location: employee_dashboard.php");
@@ -114,7 +114,7 @@ try {
             // Attendance already complete for today
             $_SESSION['qr_error'] = 'Attendance already recorded for today';
             
-            if (AuthController::hasRole('HR_ADMIN')) {
+            if (AuthController::hasRole('time')) {
                 header("Location: dashboard.php");
             } else {
                 header("Location: employee_dashboard.php");
@@ -143,7 +143,7 @@ try {
         // Store success message in session and redirect to dashboard
         $_SESSION['qr_success'] = $message . ' for ' . $employee['full_name'];
         
-        if (AuthController::hasRole('HR_ADMIN')) {
+        if (AuthController::hasRole('time')) {
             header("Location: dashboard.php");
         } else {
             header("Location: employee_dashboard.php");
@@ -153,7 +153,7 @@ try {
         http_response_code(500);
         $_SESSION['qr_error'] = 'Failed to record attendance';
         
-        if (AuthController::hasRole('HR_ADMIN')) {
+        if (AuthController::hasRole('time')) {
             header("Location: dashboard.php");
         } else {
             header("Location: employee_dashboard.php");
@@ -165,7 +165,7 @@ try {
     $_SESSION['qr_error'] = 'Error: ' . $e->getMessage();
     
     if (AuthController::isAuthenticated()) {
-        if (AuthController::hasRole('HR_ADMIN')) {
+        if (AuthController::hasRole('time')) {
             header("Location: dashboard.php");
         } else {
             header("Location: employee_dashboard.php");

@@ -19,8 +19,8 @@ if (!AuthController::isAuthenticated()) {
     exit;
 }
 
-// Only HR can access this page
-if (!AuthController::hasRole('HR_ADMIN')) {
+// Only HR/Time module staff can access this page
+if (!AuthController::hasRole('time')) {
     header("Location: employee_dashboard.php");
     exit;
 }
@@ -42,7 +42,7 @@ if ($allEmployees > 0 && $todayStats) {
 }
 
 $current_page = 'dashboard.php';
-$current_role = $_SESSION['role'] ?? 'HR_ADMIN';
+$current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
 ?>
 
 <!DOCTYPE html>
@@ -51,14 +51,19 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HR Dashboard - Time & Attendance System</title>
-    <link rel="icon" href="../Bestlink College of the Philippines.jpeg" type="image/jpeg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../../assets/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="../../assets/plugins/toastr/toastr.min.css">
     <link rel="stylesheet" href="../assets/style.css">
     <link rel="stylesheet" href="../assets/dashboard.css">
     <link rel="stylesheet" href="../assets/realtime-dashboard.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="../assets/mobile-responsive.js" defer></script>
     <script src="../assets/realtime-dashboard.js" defer></script>
+    <script src="../../assets/plugins/jquery/jquery.min.js"></script>
+    <script src="../../assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="../../assets/plugins/toastr/toastr.min.js"></script>
+    <script src="../../assets/dist/js/adminlte.js"></script>
     
 </head>
 <body>
@@ -66,7 +71,7 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
       class="preloader flex-column justify-content-center align-items-center">
       <img
         class="animation__wobble"
-        src="../assets/pics/bcpLogo.png"
+        src="../../assets/pics/bcpLogo.png"
         alt="AdminLTELogo"
         height="60"
         width="60" />
@@ -75,7 +80,10 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
 
     <div class="main-content">
         <div class="content-wrapper">
-            <h1>Time & Attendance Dashboard</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h1>Time & Attendance Dashboard</h1>
+                <div class="live-clock" id="liveClock">00:00:00</div>
+            </div>
             <!-- Quick Stats -->
             <div class="dashboard-grid">
                 <div class="card employees">
@@ -288,11 +296,14 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
 
         // Live Clock
         function updateClock() {
-            const now = new Date();
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const seconds = String(now.getSeconds()).padStart(2, '0');
-            document.getElementById('liveClock').textContent = `${hours}:${minutes}:${seconds}`;
+            const clockElement = document.getElementById('liveClock');
+            if (clockElement) {
+                const now = new Date();
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const seconds = String(now.getSeconds()).padStart(2, '0');
+                clockElement.textContent = `${hours}:${minutes}:${seconds}`;
+            }
         }
 
         updateClock();
@@ -310,7 +321,7 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
                 if (preloader) {
                     preloader.style.display = 'none';
                 }
-            }, 800); // Show for 800ms
+            }, 3000); // Show for 3 seconds (allows animation to loop multiple times)
 
             // Show preloader on navigation links
             document.querySelectorAll('.nav-link').forEach(link => {
@@ -323,21 +334,13 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
                             // Auto-hide after navigation loads
                             setTimeout(() => {
                                 preloader.style.display = 'none';
-                            }, 800);
+                            }, 3000); // Allow animation to loop
                         }
                     }
                 });
             });
         });
     </script>
-
-    <script src="../assets/plugins/jquery/jquery.min.js"></script>
-  <!-- Bootstrap -->
-  <script src="../assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <!-- overlayScrollbars -->
-  <script src="../assets/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
-  <!-- AdminLTE App -->
-  <script src="../assets/dist/js/adminlte.js"></script>
 
 </body>
 </html>
