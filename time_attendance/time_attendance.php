@@ -512,6 +512,16 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
   <script src="app/js/calendar_schedule.js"></script>
 
   <script>
+    // Hide preloader after page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      const preloader = document.querySelector('.preloader');
+      setTimeout(() => {
+        if (preloader) {
+          preloader.style.display = 'none';
+        }
+      }, 3000); // Allow animation to loop multiple times
+    });
+
     // Activate correct tab based on URL parameter
     (function() {
       const urlParams = new URLSearchParams(window.location.search);

@@ -20,7 +20,7 @@ if (empty($_SESSION['user_id']) || !isset($_SESSION['role'])) {
 // Check if user has time & attendance permissions
 $user_role = $_SESSION['role'] ?? '';
 if ($user_role !== 'time' && $user_role !== 'HR_ADMIN' && $user_role !== 'payroll') {
-    header('Location: dashboard.php');
+    header('Location: shifts.php');
     exit();
 }
 

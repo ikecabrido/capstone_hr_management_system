@@ -568,10 +568,21 @@ document.addEventListener('DOMContentLoaded', function() {
             const y2 = endHour * hourHeight;
             const blockHeight = Math.max(y2 - y1, 20);
 
-            // Determine color based on status
+            // Determine color based on shift name or status
             let color, textColor;
-            if (startTime.getHours() > 9) {
-                color = '#ffc107'; // Yellow for late
+            const shiftName = (event.shift_name || event.shift_type || '').toLowerCase();
+            
+            if (shiftName.includes('morning')) {
+                color = '#28a745'; // Green for morning shift
+                textColor = '#fff';
+            } else if (shiftName.includes('afternoon') || shiftName.includes('evening')) {
+                color = '#ffc107'; // Yellow for afternoon/evening shift
+                textColor = '#333';
+            } else if (shiftName.includes('night')) {
+                color = '#6c757d'; // Gray for night shift
+                textColor = '#fff';
+            } else if (startTime.getHours() > 9 && startTime.getHours() < 17) {
+                color = '#ffc107'; // Yellow for late morning/afternoon
                 textColor = '#333';
             } else {
                 color = '#28a745'; // Green for on-time
@@ -794,60 +805,63 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // ============ Save Timeline ============
-    document.getElementById('save-timeline').addEventListener('click', function() {
-        if (!selectedEmployee || !selectedDate) {
-            showError('Invalid data');
-            return;
-        }
-
-        // Prepare shift data to save
-        const shiftsToSave = [];
-        
-        // For now, we'll save the current shift
-        // In a more advanced implementation, you could allow editing the shifts directly on the timeline
-        if (timelineData.shifts && timelineData.shifts.length > 0) {
-            timelineData.shifts.forEach(shift => {
-                shiftsToSave.push({
-                    start_time: shift.start_time,
-                    end_time: shift.end_time
-                });
-            });
-        }
-
-        const saveData = {
-            employee_id: selectedEmployee.id,
-            date: selectedDate,
-            shifts: shiftsToSave
-        };
-
-        fetch('../app/api/save_employee_schedule.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(saveData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showSuccess('Schedule saved successfully');
-                
-                // Close modal after 1.5 seconds
-                setTimeout(() => {
-                    const modal = new (window.bootstrap ? window.bootstrap.Modal : $.fn.modal.Constructor)(
-                        document.getElementById('dayTimelineModal')
-                    );
-                    modal.hide();
-                }, 1500);
-            } else {
-                showError(data.error);
+    const saveTimelineBtn = document.getElementById('save-timeline');
+    if (saveTimelineBtn) {
+        saveTimelineBtn.addEventListener('click', function() {
+            if (!selectedEmployee || !selectedDate) {
+                showError('Invalid data');
+                return;
             }
-        })
-        .catch(error => {
-            console.error('Save error:', error);
-            showError('Failed to save schedule');
+
+            // Prepare shift data to save
+            const shiftsToSave = [];
+            
+            // For now, we'll save the current shift
+            // In a more advanced implementation, you could allow editing the shifts directly on the timeline
+            if (timelineData.shifts && timelineData.shifts.length > 0) {
+                timelineData.shifts.forEach(shift => {
+                    shiftsToSave.push({
+                        start_time: shift.start_time,
+                        end_time: shift.end_time
+                    });
+                });
+            }
+
+            const saveData = {
+                employee_id: selectedEmployee.id,
+                date: selectedDate,
+                shifts: shiftsToSave
+            };
+
+            fetch('../app/api/save_employee_schedule.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(saveData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccess('Schedule saved successfully');
+                    
+                    // Close modal after 1.5 seconds
+                    setTimeout(() => {
+                        const modal = new (window.bootstrap ? window.bootstrap.Modal : $.fn.modal.Constructor)(
+                            document.getElementById('dayTimelineModal')
+                        );
+                        modal.hide();
+                    }, 1500);
+                } else {
+                    showError(data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Save error:', error);
+                showError('Failed to save schedule');
+            });
         });
-    });
+    }
 
     // ============ Utility Functions ============
     function formatDate(date) {

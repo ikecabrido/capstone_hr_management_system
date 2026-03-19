@@ -11,7 +11,7 @@ Session::start();
 
 // If user is authenticated, redirect to appropriate dashboard
 if (AuthController::isAuthenticated()) {
-    if (AuthController::hasRole('HR_ADMIN')) {
+    if (AuthController::hasRole('time')) {
         header("Location: dashboard.php");
     } else {
         header("Location: employee_dashboard.php");
