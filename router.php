@@ -9,10 +9,30 @@ if (!$auth->check()) {
     exit;
 }
 
+$user = $_SESSION['user'] ?? null;
 $role = $auth->role();
 
+// Check if this is an employee-based login with department redirect
+if ($user && isset($user['is_employee_auth']) && $user['is_employee_auth'] === true) {
+    // Employee-based login - use department-specific redirect if available
+    if (!empty($user['redirect_page'])) {
+        header("Location: " . $user['redirect_page']);
+        exit;
+    }
+}
+
+// Fall back to role-based routing for traditional users
 switch ($role) {
 
+    case 'admin':
+    case 'hr_admin':
+    case 'compliance':
+        header("Location: legal_compliance/legal_compliance.php");
+        break;
+    case 'it_admin':
+        // IT Admin - redirect to Time & Attendance (as specified in task)
+        header("Location: time_attendance/time_attendance.php");
+        break;
     case 'recruitment':
         header("Location: recruitment/recruitment.php");
         break;
@@ -22,9 +42,6 @@ switch ($role) {
     case 'time':
         header("Location: time_attendance/time_attendance.php");
         break;
-    case 'compliance':
-        header("Location: compliance_legal/compliance.php");
-        break;
     case 'clinic':
         header("Location: clinic/clinic.php");
         break;
@@ -32,7 +49,13 @@ switch ($role) {
         header("Location: workforce/workforce.php");
         break;
     case 'employee':
-        header("Location: employee/employee.php");
+    case 'employee_portal':
+        // Try employee portal first, fallback to employee
+        if (file_exists("employee_portal/employee_portal.php")) {
+            header("Location: employee_portal/employee_portal.php");
+        } else {
+            header("Location: employee/employee.php");
+        }
         break;
     case 'learning':
         header("Location: learning_development/learning_development.php");
@@ -48,5 +71,10 @@ switch ($role) {
         break;
 
     default:
-        echo "No module assigned.";
+        // Default to employee portal for unknown roles
+        if (file_exists("employee_portal/employee_portal.php")) {
+            header("Location: employee_portal/employee_portal.php");
+        } else {
+            echo "No module assigned for this role.";
+        }
 }

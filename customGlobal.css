@@ -8,6 +8,11 @@ body {
   font-weight: 400;
   font-display: fallback;
 }
+
+/* REMOVE MODAL BACKDROP SHADOW - No gray overlay when modal opens */
+.modal-backdrop {
+    display: none !important;
+}
 .page-header {
   text-align: center;
   font-size: 32px;
