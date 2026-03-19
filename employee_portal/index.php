@@ -5,7 +5,6 @@ require 'controllers/RequestTypeController.php';
 require 'controllers/EmployeePortalController.php';
 require 'controllers/RequestController.php';
 require 'controllers/LeaveRequestController.php';
-require 'controllers/EmployeeController.php';
 
 $url = $_GET['url'] ?? 'dashboard';
 
@@ -75,9 +74,6 @@ switch ($url) {
         (new LeaveRequestController)->delete();
         break;
 
-    case 'employee-update':
-        (new EmployeeController)->update();
-        break;
 
     default:
         $title = "Page Not Found";
