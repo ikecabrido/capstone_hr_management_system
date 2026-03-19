@@ -1,12 +1,76 @@
-﻿<?php
+<?php
 session_start();
 // require_once "auth.php";
 require_once "../auth/database.php";
 require_once "../auth/auth_check.php";
 $theme = $_SESSION['user']['theme'] ?? 'light';
-
-$user = $_SESSION['user'];
 $token = $_SESSION['token'] ?? null;
+$sessionId = session_id();
+
+// Data is loaded by JS from API endpoints
+$surveys = [];
+$survey_questions = [];
+$survey_responses = [];
+$survey_answers = [];
+
+function fetchFromApi($path, $sessionId, $token = null)
+{
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']);
+    $url = $baseUrl . '/api/' . $path . '?t=' . time();
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'Cache-Control: no-cache, no-store, must-revalidate',
+        'Cookie: ' . session_name() . '=' . $sessionId,
+    ]);
+    if ($token) {
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array_merge(
+            ['Authorization: Bearer ' . $token],
+            [
+                'Content-Type: application/json',
+                'Cache-Control: no-cache, no-store, must-revalidate',
+                'Cookie: ' . session_name() . '=' . $sessionId,
+            ]
+        ));
+    }
+
+    $response = curl_exec($ch);
+    $error = curl_error($ch);
+    curl_close($ch);
+
+    if ($response === false) {
+        error_log('Survey API cURL error: ' . $error);
+        return null;
+    }
+    return json_decode($response, true);
+}
+
+$curlToken = $token;
+if (!$curlToken && isset($_COOKIE[session_name()])) {
+    $curlToken = $_COOKIE[session_name()];
+}
+
+$surveyData = fetchFromApi('surveys.php', $sessionId, $token);
+if (is_array($surveyData)) {
+    $surveys = $surveyData['surveys'] ?? $surveyData['data'] ?? [];
+}
+
+$questionData = fetchFromApi('survey-questions.php', $sessionId, $token);
+if (is_array($questionData)) {
+    $survey_questions = $questionData['survey_questions'] ?? $questionData['questions'] ?? [];
+}
+
+$responseData = fetchFromApi('survey-responses.php', $sessionId, $token);
+if (is_array($responseData)) {
+    $survey_responses = $responseData['survey_responses'] ?? $responseData['responses'] ?? [];
+}
+
+$answerData = fetchFromApi('survey-answers.php', $sessionId, $token);
+if (is_array($answerData)) {
+    $survey_answers = $answerData['survey_answers'] ?? $answerData['answers'] ?? [];
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -30,9 +94,9 @@ $token = $_SESSION['token'] ?? null;
     href="../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css" />
   <!-- Theme style -->
   <link rel="stylesheet" href="../assets/dist/css/adminlte.min.css" />
-
+  <link rel="stylesheet" href="/custom.css" />
   <link rel="stylesheet" href="../layout/toast.css" />
-  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="stylesheet" href="css/survey-management.css" />
     
 </head>
 
@@ -125,7 +189,7 @@ $token = $_SESSION['token'] ?? null;
             <!-- Add icons to the links using the .nav-icon class
                with font-awesome or any other icon font library -->
             <li class="nav-item">
-              <a href="dashboard.php" class="nav-link active">
+              <a href="dashboard.php" class="nav-link">
                 <i class="nav-icon fas fa-tachometer-alt"></i>
                 <p>Dashboard</p>
               </a>
@@ -137,7 +201,7 @@ $token = $_SESSION['token'] ?? null;
               </a>
             </li>
             <li class="nav-item">
-              <a href="survey-management.php" class="nav-link">
+              <a href="survey-management.php" class="nav-link active">
                 <i class="nav-icon fas fa-tree"></i>
                 <p>Surveys</p>
               </a>
@@ -233,7 +297,7 @@ $token = $_SESSION['token'] ?? null;
         <div class="container-fluid">
           <div class="row mb-2">
             <div class="col-sm-6">
-              <h1 class="m-0">Employee Engagement and Relations Management System</h1>
+              <h1 class="m-0">Surveys</h1>
             </div>
             <!-- /.col -->
 
@@ -241,18 +305,32 @@ $token = $_SESSION['token'] ?? null;
           </div>
           <!-- /.row -->
         </div>
-            <div id="content">
-                <div class="loading">
-                    <div class="loading-spinner"></div>
-                    <p>Loading dashboard data...</p>
-                </div>
-            </div>
-      </div>
-    </div>
-  <!-- CONTENT -->
+       <div class="tab-buttons">
+            <button class="tab-btn active" onclick="switchTab('surveys')">Surveys</button>
+            <button class="tab-btn" onclick="switchTab('questions')">Questions</button>
+            <button class="tab-btn" onclick="switchTab('responses')">Responses</button>
+            <button class="tab-btn" onclick="switchTab('answers')">Answers</button>
+        </div>
 
+        <div id="surveys" class="tab-content active">
+            <div id="surveys-container" style="min-height:160px; padding:20px; color:#666;">Loading surveys...</div>
+        </div>
+
+        <div id="questions" class="tab-content">
+            <div id="questions-container" style="min-height:160px; padding:20px; color:#666;">Loading questions...</div>
+        </div>
+
+        <div id="responses" class="tab-content">
+            <div id="responses-container" style="min-height:160px; padding:20px; color:#666;">Loading responses...</div>
+        </div>
+
+        <div id="answers" class="tab-content">
+            <div id="answers-container" style="min-height:160px; padding:20px; color:#666;">Loading answers...</div>
+        </div>
     </div>
-        <?php include "../layout/global_modal.php"; ?>
+ 
+        </div>    
+  <?php include "../layout/global_modal.php"; ?>
     <!-- Control Sidebar -->
     <aside class="control-sidebar control-sidebar-dark">
       <!-- Control sidebar content goes here -->
@@ -291,8 +369,9 @@ $token = $_SESSION['token'] ?? null;
   <script src="../assets/dist/js/time.js"></script>
   <script src="../assets/dist/js/global_modal.js"></script>
   <script src="../assets/dist/js/profile.js"></script>
-
-
 <script src="js/session.js"></script>
 <script src="js/main.js?v=<?= time(); ?>"></script>
-<script src="js/dashboard.js"></script>
+<script src="js/tabs.js"></script>
+<script src="js/survey-management.js?v=<?= time(); ?>"></script>
+</body>
+</html>
