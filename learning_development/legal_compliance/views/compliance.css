@@ -1,0 +1,474 @@
+/* Compliance Dashboard Styles */
+
+/* CRITICAL: Override AdminLTE fixed layout to allow scrolling */
+body.layout-fixed .wrapper {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+}
+
+body.layout-fixed .content-wrapper {
+    height: auto !important;
+    min-height: 100vh;
+    overflow-y: auto !important;
+    position: relative !important;
+}
+
+body.layout-fixed .main-sidebar {
+    position: fixed !important;
+    height: 100vh;
+    pointer-events: auto !important;
+    z-index: 1000;
+}
+
+/* Ensure sidebar navigation is clickable */
+.main-sidebar .nav-item,
+.main-sidebar .nav-link,
+.main-sidebar a,
+.main-sidebar li a {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+/* Ensure nav menu items are clickable */
+.sidebar .nav-sidebar,
+.sidebar .nav-item,
+.sidebar .nav-link,
+.sidebar-menu > .nav-item,
+.sidebar-menu > .nav-item > .nav-link {
+    pointer-events: auto !important;
+}
+
+body.layout-fixed .content {
+    overflow-y: visible !important;
+    overflow-x: visible !important;
+}
+
+/* Enable scrolling on html and body */
+html, body {
+    overflow-y: auto !important;
+    height: auto !important;
+}
+
+/* Info Box Clickable */
+.info-box.clickable {
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    pointer-events: auto;
+}
+
+.info-box.clickable:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.info-box.clickable:active {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure preloader doesn't block clicks or scroll */
+.preloader {
+    pointer-events: none !important;
+    z-index: 9999;
+}
+
+.preloader.hidden,
+.preloader[style*="display: none"] {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/* Scrollable container for card bodies */
+.card-body.scrollable,
+.scroll-container {
+    overflow-y: auto;
+    max-height: 250px;
+}
+
+/* Table responsive container */
+.table-responsive.p-0 {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Scrollable table container */
+.table-scroll-container {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Modal backdrop handling */
+.modal-backdrop {
+    pointer-events: auto;
+}
+
+body.modal-open {
+    overflow: auto !important;
+}
+
+/* Compliance Status Badges */
+.status-compliant {
+    background-color: #28a745 !important;
+    color: white !important;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-at-risk {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-non-compliant {
+    background-color: #dc3545 !important;
+    color: white !important;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* Compliance Table */
+.table-compliance {
+    font-size: 0.875rem;
+}
+
+.table-compliance th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+    white-space: nowrap;
+}
+
+.table-compliance td {
+    vertical-align: middle;
+}
+
+.employee-compliance-row:hover {
+    background-color: #f8f9fa;
+}
+
+/* Category Progress Bars */
+.category-progress {
+    height: 8px;
+    border-radius: 4px;
+    background-color: #e9ecef;
+}
+
+.progress-group {
+    margin-bottom: 0.75rem;
+}
+
+.progress-group .font-weight-bold {
+    font-size: 0.85rem;
+    color: #495057;
+}
+
+/* Card Hover Effects */
+.card.clickable {
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card.clickable:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Risk Flag Table */
+.risk-flag-critical {
+    border-left: 3px solid #dc3545;
+}
+
+.risk-flag-high {
+    border-left: 3px solid #fd7e14;
+}
+
+.risk-flag-medium {
+    border-left: 3px solid #ffc107;
+}
+
+.risk-flag-low {
+    border-left: 3px solid #17a2b8;
+}
+
+/* Stats Cards */
+.stats-card {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.stats-card .card-body {
+    padding: 1.25rem;
+}
+
+.stats-value {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.stats-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+    margin-top: 0.5rem;
+}
+
+/* Alert Badges */
+.badge-lg {
+    padding: 0.5em 1em;
+    font-size: 0.9rem;
+}
+
+/* Modal Enhancements */
+.modal-header.bg-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.modal-header.bg-danger {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.modal-header.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Scrollable Table Container */
+.table-responsive.p-0 {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Ensure table doesn't overflow horizontally */
+.table-compliance {
+    width: 100%;
+    table-layout: fixed;
+    word-wrap: break-word;
+}
+
+/* Filter Buttons */
+.filter-btn {
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+.filter-btn.active {
+    background-color: #667eea;
+    border-color: #667eea;
+    color: white;
+}
+
+/* Score Colors */
+.score-excellent {
+    color: #28a745;
+    font-weight: 700;
+}
+
+.score-good {
+    color: #17a2b8;
+    font-weight: 700;
+}
+
+.score-warning {
+    color: #ffc107;
+    font-weight: 700;
+}
+
+.score-danger {
+    color: #dc3545;
+    font-weight: 700;
+}
+
+/* Legend */
+.compliance-legend {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    padding: 10px 0;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.8rem;
+}
+
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.legend-dot.compliant {
+    background-color: #28a745;
+}
+
+.legend-dot.at-risk {
+    background-color: #ffc107;
+}
+
+.legend-dot.non-compliant {
+    background-color: #dc3545;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+}
+
+.loading-spinner .fa-spinner {
+    color: #667eea;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .info-box.clickable {
+        margin-bottom: 1rem;
+    }
+    
+    .table-compliance {
+        font-size: 0.8rem;
+    }
+    
+    .stats-value {
+        font-size: 1.5rem;
+    }
+}
+
+/* Card Details Icon in Modal */
+#cardDetailsIcon {
+    width: 80px !important;
+    height: 80px !important;
+    font-size: 2rem !important;
+}
+
+/* Severity Colors */
+.badge.critical {
+    background-color: #dc3545;
+    color: white;
+}
+
+.badge.high {
+    background-color: #fd7e14;
+    color: white;
+}
+
+.badge.medium {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.badge.low {
+    background-color: #17a2b8;
+    color: white;
+}
+
+/* Background classes for severity */
+.bg-critical {
+    background-color: #dc3545 !important;
+    color: white;
+}
+
+.bg-high {
+    background-color: #fd7e14 !important;
+    color: white;
+}
+
+.bg-medium {
+    background-color: #ffc107 !important;
+    color: #212529;
+}
+
+.bg-low {
+    background-color: #17a2b8 !important;
+    color: white;
+}
+
+/* Employee Details Modal */
+.emp-compliance-modal .modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.emp-compliance-detail-section {
+    margin-bottom: 20px;
+}
+
+.emp-compliance-detail-section h6 {
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+    color: #495057;
+    font-weight: 600;
+}
+
+.compliance-score-circle {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 auto;
+}
+
+.compliance-score-circle.excellent {
+    background-color: #d4edda;
+    color: #155724;
+    border: 4px solid #28a745;
+}
+
+.compliance-score-circle.good {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 4px solid #17a2b8;
+}
+
+.compliance-score-circle.warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 4px solid #ffc107;
+}
+
+.compliance-score-circle.danger {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 4px solid #dc3545;
+}

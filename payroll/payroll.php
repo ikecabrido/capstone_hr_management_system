@@ -55,135 +55,10 @@ $stats = $controller->getStats();
     </div>
 
     <!-- Navbar -->
-    <nav class="main-header navbar navbar-expand navbar-dark">
-      <!-- Left navbar links -->
-      <ul class="navbar-nav">
-        <li class="nav-item">
-          <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
-        </li>
-        <li class="nav-item d-none d-sm-inline-block">
-          <a href="payroll.php" class="nav-link">Home</a>
-        </li>
-      </ul>
-
-      <!-- Right navbar links -->
-      <ul class="navbar-nav ml-auto">
-        <!-- Navbar Search -->
-        <li class="nav-item">
-          <div class="nav-link" id="clock">--:--:--</div>
-        </li>
-
-        <li class="nav-item">
-          <a class="nav-link" data-widget="fullscreen" href="#" role="button">
-            <i class="fas fa-expand-arrows-alt"></i>
-          </a>
-        </li>
-
-        <li class="nav-item">
-          <a
-            class="nav-link"
-            href="#"
-            id="darkToggle"
-            role="button"
-            title="Toggle Dark Mode">
-            <i class="fas fa-moon" id="themeIcon"></i>
-          </a>
-        </li>
-      </ul>
-    </nav>
-    <!-- /.navbar -->
+    <?php include '../legal_compliance/components/header.php'; ?>
 
     <!-- Main Sidebar Container -->
-    <aside class="main-sidebar sidebar-dark-primary elevation-4">
-      <!-- Brand Logo -->
-      <a href="payroll.php" class="brand-link">
-        <img
-          src="../assets/pics/bcpLogo.png"
-          alt="AdminLTE Logo"
-          class="brand-image elevation-3"
-          style="opacity: 0.9" />
-        <span class="brand-text font-weight-light">BCP Bulacan </span>
-      </a>
-
-      <!-- Sidebar -->
-      <div class="sidebar">
-        <!-- Sidebar user panel (optional) -->
-        <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-          <div class="image">
-          </div>
-          <div class="info">
-            <a href="#" onclick="openGlobalModal('Profile Settings ','../user_profile/profile_form.php')" class="d-block">
-              Admin <?= htmlspecialchars($_SESSION['user']['name']) ?>
-            </a>
-          </div>
-        </div>
-
-        <!-- Sidebar Menu -->
-        <nav class="mt-2">
-          <ul
-            class="nav nav-pills nav-sidebar flex-column"
-            data-widget="treeview"
-            role="menu"
-            data-accordion="false">
-            <!-- Add icons to the links using the .nav-icon class
-               with font-awesome or any other icon font library -->
-            <li class="nav-item">
-              <a href="/payroll.php" class="nav-link active">
-                <i class="nav-icon fas fa-tachometer-alt"></i>
-                <p>Dashboard</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="views/salaryOverview.php" class="nav-link">
-                <i class="nav-icon fas fa-money-check-alt"></i>
-                <p>Salary Overview</p>
-              </a>
-            <li class="nav-item">
-              <a href="views/periodManager.php" class="nav-link">
-                <i class="nav-icon fas fa-calendar-alt"></i>
-                <p>Payroll Periods</p>
-              </a>
-            </li>
-            </li>
-            <li class="nav-item">
-              <a href="views/payrollProcess.php" class="nav-link">
-                <i class="nav-icon fas fa-calculator"></i>
-                <p>Payroll Processing</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="views/payslip.php" class="nav-link">
-                <i class="nav-icon fas fa-receipt"></i>
-                <p>Payslips</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="views/allowance.php" class="nav-link">
-                <i class="nav-icon fas fa-file-invoice-dollar"></i>
-                <p>Allowance & Deductions</p>
-              </a>
-            </li>
-
-            <li class="nav-item">
-              <a href="views/reports.php" class="nav-link">
-                <i class="nav-icon fas fa-balance-scale"></i>
-                <p>
-                  Reports
-                </p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="../logout.php" class="nav-link">
-                <i class="nav-icon fas fa-sign-out-alt"></i>
-                <p>Logout</p>
-              </a>
-            </li>
-          </ul>
-        </nav>
-        <!-- /.sidebar-menu -->
-      </div>
-      <!-- /.sidebar -->
-    </aside>
+    <?php include '../legal_compliance/components/sidebar.php'; ?>
 
     <!-- Content Wrapper. Contains page content -->
     <div class="content-wrapper">
@@ -447,7 +322,7 @@ $stats = $controller->getStats();
     <!-- /.control-sidebar -->
 
     <!-- Main Footer -->
-
+    <?php include '../legal_compliance/components/footer.php'; ?>
   </div>
   <!-- ./wrapper -->
 

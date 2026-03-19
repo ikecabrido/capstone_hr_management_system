@@ -41,14 +41,23 @@ form {
 }
 .header {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  margin-bottom: 15px;
 }
 .header img {
-  width: 50px;
-  height: 50px;
-
+  width: 80px;
+  height: 80px;
   display: flex;
+  margin-bottom: 10px;
+}
+.header h1 {
+  font-size: 18px;
+  margin: 0 0 10px 0;
+  font-weight: 200;
+  color: #333;
+  margin-top: 20px;
 }
 .label {
   display: flex;
@@ -60,12 +69,13 @@ form {
   flex-direction: column;
   margin-bottom: 10px;
 }
-input {
+input[type="text"],
+input[type="password"] {
   padding: 8px;
   margin-top: 5px;
   border: 1px solid #ccc;
   border-radius: 4px;
-  width: 300px;
+  width: 318px;
 }
 select {
   padding: 8px;
@@ -73,6 +83,57 @@ select {
   border: 1px solid #ccc;
   border-radius: 4px;
   width: 318px;
+}
+/* Password input group with eye icon inside */
+.password-input-group {
+  display: flex;
+  align-items: center;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  width: 318px;
+  margin-top: 5px;
+}
+.password-input-group:focus-within {
+  border-color: #3628f1;
+  box-shadow: 0 0 0 0.2rem rgba(54, 40, 241, 0.25);
+}
+.password-input-group input {
+  border: none;
+  outline: none;
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 4px 0 0 4px;
+  width: auto;
+  margin-top: 0;
+}
+.password-input-group input:focus {
+  box-shadow: none;
+}
+.password-input-group .toggle-password {
+  background: none;
+  border: none;
+  border-left: 1px solid #ccc;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: #6c757d;
+  transition: color 0.3s, background-color 0.3s;
+  border-radius: 0 4px 4px 0;
+}
+.password-input-group .toggle-password:hover {
+  color: #3628f1;
+  background-color: #f8f9fa;
+}
+/* Role select styling */
+.role-select {
+  margin-bottom: 15px;
+}
+.role-select label {
+  font-weight: 600;
+  color: #333;
+}
+.role-select select {
+  border-radius: 5px;
 }
 /* a {
   padding: 10px;

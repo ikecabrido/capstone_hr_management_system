@@ -126,9 +126,9 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
               </a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-chart-pie"></i>
-                <p>Module 1</p>
+              <a href="../leave_management/leave_management.php" class="nav-link">
+                <i class="nav-icon fas fa-calendar-alt"></i>
+                <p>Leave Management</p>
               </a>
             </li>
             <li class="nav-item">

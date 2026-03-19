@@ -1,0 +1,649 @@
+/* BLUE SIDEBAR FOR LEGAL & COMPLIANCE */
+
+/* Modal Backdrop - Semi-transparent overlay when modal opens */
+.modal-backdrop {
+    opacity: 0.5 !important;
+    background-color: #000 !important;
+}
+
+.modal-backdrop.show {
+    opacity: 0.5 !important;
+}
+
+.main-sidebar {
+  background-color: #0d47a1 !important;
+}
+
+/* Sidebar brand */
+.brand-link {
+  background-color: #0b3c91 !important;
+  color: #fff !important;
+}
+
+/* Sidebar links */
+.nav-sidebar .nav-link {
+  color: #ffffff !important;
+}
+
+/* Active & hover */
+.nav-sidebar .nav-link.active,
+.nav-sidebar .nav-link:hover {
+  background-color: #1565c0 !important;
+  color: #fff !important;
+}
+
+/* MAIN CONTENT WHITE */
+.content-wrapper {
+  background-color: #ffffff !important;
+}
+
+.main-header.navbar {
+  background-color: #1976d2 !important;
+}
+
+/* DARK MODE CUSTOMIZATION */
+body.dark-mode .main-sidebar {
+  background-color: #0b1f3a !important;
+}
+
+body.dark-mode .content-wrapper {
+  background-color: #313030 !important;
+}
+
+body.dark-mode .main-header.navbar {
+  background-color: #0d47a1 !important;
+}
+
+body:not(.dark-mode) .content-wrapper {
+  background-color: #f4f6f9 !important;
+}
+
+/* Clickable Info Boxes */
+.info-box.clickable {
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    border: 2px solid transparent;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+
+.info-box.clickable::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.info-box.clickable:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    border-color: #3498db;
+}
+
+.info-box.clickable:hover::before {
+    opacity: 1;
+}
+
+.info-box.clickable:active {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+.info-box.clickable:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.3);
+}
+
+.info-box.clickable.filter-active {
+    border: 2px solid #3498db;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+/* Ripple effect for clickable boxes */
+.info-box.clickable .ripple {
+    position: absolute;
+    border-radius: 50%;
+    transform: scale(0);
+    animation: ripple 0.6s linear;
+    background-color: rgba(255, 255, 255, 0.4);
+}
+
+@keyframes ripple {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+/* Card click animation */
+.info-box.clickable.clicked {
+    animation: cardClick 0.3s ease;
+}
+
+@keyframes cardClick {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.98); }
+    100% { transform: scale(1); }
+}
+
+.wrapper .preloader {
+  background-color: #0b3c91 !important;
+}
+
+.main-footer {
+  background-color: #1976d2;
+  color: #d6d3d3;
+}
+
+body.dark-mode .main-footer {
+  background-color: #0d47a1 !important;
+}
+
+/* Animate the Font Awesome icon */
+#themeIcon {
+  display: inline-block;
+  transition:
+    transform 0.35s ease,
+    opacity 0.25s ease;
+}
+
+#themeIcon.animate {
+  transform: rotate(180deg) scale(0.5);
+  opacity: 0;
+}
+
+/* Compliance Card Styles */
+.compliance-card {
+  border-left: 4px solid #1976d2;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.compliance-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.compliance-card.compliant {
+  border-left-color: #28a745;
+}
+
+.compliance-card.at-risk {
+  border-left-color: #ffc107;
+}
+
+.compliance-card.non-compliant {
+  border-left-color: #dc3545;
+}
+
+/* Score display */
+.score-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: bold;
+}
+
+.score-circle.excellent {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  color: white;
+}
+
+.score-circle.good {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.score-circle.warning {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.score-circle.danger {
+  background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%);
+  color: white;
+}
+
+/* Law badges */
+.law-badge {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+/* Status badges */
+.status-badge {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-badge.active {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-badge.pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-badge.resolved {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.status-badge.closed {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+
+/* Risk severity */
+.risk-critical {
+  background-color: #dc3545;
+  color: white;
+}
+
+.risk-high {
+  background-color: #fd7e14;
+  color: white;
+}
+
+.risk-medium {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.risk-low {
+  background-color: #28a745;
+  color: white;
+}
+
+/* Quick action buttons */
+.quick-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 15px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background: white;
+  border: 1px solid #e0e0e0;
+  text-decoration: none;
+  color: #333;
+}
+
+.quick-action-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  border-color: #1976d2;
+  color: #1976d2;
+}
+
+.quick-action-btn i {
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+.quick-action-btn span {
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Table enhancements */
+.table-compliance th {
+  background-color: #f8f9fa;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #495057;
+  border-top: none;
+}
+
+.table-compliance td {
+  vertical-align: middle;
+  font-size: 13px;
+}
+
+/* Policy card */
+.policy-card {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 10px;
+  transition: all 0.2s ease;
+}
+
+.policy-card:hover {
+  border-color: #1976d2;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.policy-card .policy-version {
+  font-size: 11px;
+  color: #6c757d;
+}
+
+/* Incident type badges */
+.incident-harassment {
+  background-color: #dc3545;
+}
+
+.incident-bullying {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.incident-discrimination {
+  background-color: #007bff;
+}
+
+.incident-conflict {
+  background-color: #6c757d;
+}
+
+/* Confidential indicator */
+.confidential-indicator {
+  color: #dc3545;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Alert boxes */
+.alert-compliance {
+  border-left: 4px solid;
+}
+
+.alert-compliance.info {
+  border-left-color: #17a2b8;
+}
+
+.alert-compliance.success {
+  border-left-color: #28a745;
+}
+
+.alert-compliance.warning {
+  border-left-color: #ffc107;
+}
+
+.alert-compliance.danger {
+  border-left-color: #dc3545;
+}
+
+/* Progress bar */
+.progress-compliance {
+  height: 10px;
+  border-radius: 5px;
+  background-color: #e9ecef;
+}
+
+.progress-compliance .progress-bar {
+  border-radius: 5px;
+  transition: width 0.6s ease;
+}
+
+/* Modal header */
+.modal-header-compliance {
+  background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+  color: white;
+}
+
+.modal-header-compliance .close {
+  color: white;
+}
+
+/* Card Details Modal Styles */
+#cardDetailsModal .modal-body,
+#clickableCardModal .modal-body {
+    padding: 25px;
+}
+
+#cardDetailsModal .info-box-icon,
+#clickableCardModal .info-box-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+#cardDetailsModal .info-box-icon i,
+#clickableCardModal .info-box-icon i {
+    font-size: 36px;
+}
+
+/* Smooth modal transitions */
+.modal.fade .modal-dialog {
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+.modal.show .modal-dialog {
+    transform: translate(0, 0);
+}
+
+/* Modal overlay backdrop - restored for proper modal behavior */
+.modal-backdrop {
+    opacity: 0.5 !important;
+    background-color: #000 !important;
+    display: block !important;
+}
+
+/* Card details animation */
+#cardDetailsModal .modal-content,
+#clickableCardModal .modal-content {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+/* Click indicator for cards */
+.info-box.clickable .click-indicator {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    color: #3498db;
+    font-size: 14px;
+}
+
+.info-box.clickable:hover .click-indicator {
+    opacity: 1;
+}
+
+/* Loading spinner for modal */
+.card-modal-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+}
+
+.card-modal-loading i {
+    color: #3498db;
+}
+
+/* Modal Stacking Order - Fix z-index for nested modals */
+/* Risk Flag Details Modal */
+#riskFlagDetailsModal {
+    z-index: 1060;
+}
+
+#riskFlagDetailsModal .modal-dialog {
+    z-index: 1061;
+}
+
+/* Send Reminder Modal - Force visibility and high z-index */
+#sendReminderModal {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 99999 !important;
+}
+
+#sendReminderModal .modal-dialog {
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 100000 !important;
+}
+
+#sendReminderModal .modal-content {
+    z-index: 100001 !important;
+}
+
+/* Employee Details Modal */
+#employeeDetailsModal {
+    z-index: 1050;
+}
+
+#employeeDetailsModal .modal-dialog {
+    z-index: 1051;
+}
+
+/* ============================================
+   MODAL FIXES - Ensure modals are clickable
+   ============================================ */
+
+/* Force modal to show above backdrop */
+.modal {
+    z-index: 1050 !important;
+}
+
+.modal.show {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Make sure modal dialog is above backdrop */
+.modal-dialog {
+    z-index: 1051 !important;
+    pointer-events: auto;
+}
+
+/* Ensure modal content is interactive */
+.modal-content {
+    pointer-events: auto;
+    position: relative;
+    z-index: 1052 !important;
+}
+
+/* Fix backdrop - allow clicking through to close */
+.modal-backdrop {
+    pointer-events: auto;
+    z-index: 1040;
+}
+
+/* Remove any fixed overlays that might block modals */
+.control-sidebar {
+    z-index: 1040 !important;
+}
+
+.wrapper .preloader {
+    z-index: 1040 !important;
+}
+
+/* Ensure navbar doesn't block modals */
+.main-header {
+    z-index: 1030 !important;
+}
+
+/* Ensure sidebar doesn't block modals */
+.main-sidebar {
+    z-index: 1030 !important;
+}
+
+/* Make sure the modal is fully visible */
+body.modal-open {
+    overflow: auto !important;
+    padding-right: 0 !important;
+}
+
+/* Ensure all form elements in modal are clickable */
+.modal input,
+.modal textarea,
+.modal select,
+.modal button,
+.modal a {
+    pointer-events: auto !important;
+}
+
+/* Modal animation fix */
+.modal.fade .modal-dialog {
+    transform: translate(0, 0) !important;
+    transition: none !important;
+}
+
+.modal.show .modal-dialog {
+    transform: translate(0, 0) !important;
+}
+
+/* Law Details Modal */
+#lawDetailsModal {
+    z-index: 1040;
+}
+
+#lawDetailsModal .modal-dialog {
+    z-index: 1041;
+}
+
+/* Card Details Modal */
+#cardDetailsModal {
+    z-index: 1030;
+}
+
+#cardDetailsModal .modal-dialog {
+    z-index: 1031;
+}
+
+/* Clickable Card Modal */
+#clickableCardModal {
+    z-index: 1020;
+}
+
+#clickableCardModal .modal-dialog {
+    z-index: 1021;
+}
+
+/* Ensure modal-backdrop is handled properly for nested modals */
+.modal-backdrop.show {
+    opacity: 0.5;
+}
+
+/* Force send reminder backdrop to be below modal */
+body:has(#sendReminderModal.show) .modal-backdrop {
+    z-index: 99998 !important;
+}
+
+/* Auto-hide Overall Compliance Score Animation */
+#overallComplianceScoreContainer {
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+
+#overallComplianceScoreContainer.fade-out {
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+}
