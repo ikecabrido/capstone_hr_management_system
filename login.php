@@ -1,59 +1,24 @@
 <?php
+session_start();
+require_once "auth/auth.php";
 
-// Set headers FIRST before any output
-header('Content-Type: application/json');
-header('Cache-Control: no-cache, no-store, must-revalidate');
+$auth = new Auth();
 
-error_reporting(E_ALL);
-ini_set('display_errors', 0);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-// Create a simple response function
-function sendResponse($success, $message, $statusCode = 200, $redirect = null) {
-    http_response_code($statusCode);
-    $response = [
-        'success' => $success,
-        'message' => $message
-    ];
-    if ($redirect) {
-        $response['redirect'] = $redirect;
-    }
-    echo json_encode($response);
-    exit;
-}
-
-// Handle non-POST requests early
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    sendResponse(false, 'Method not allowed', 405);
-}
-
-try {
-    // Require after headers are set
-    require_once "auth/auth.php";
-    
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
+    // Validation: Check if credentials are provided
     if (empty($username) || empty($password)) {
-        sendResponse(false, 'Username and password are required', 400);
+        $_SESSION['login_error'] = "Username and password are required";
+        header("Location: login_form.php");
+        exit;
     }
 
-    // Initialize Auth - this might throw an exception
-    $auth = new Auth();
-    
-    // Try to login
-    $loginResult = $auth->login($username, $password);
-    
-    if ($loginResult) {
-        // Check if there's a QR token to process
-        $qrToken = trim($_POST['qr_token'] ?? '');
-        
-        if (!empty($qrToken)) {
-            // Redirect to QR scan handler with token
-            sendResponse(true, 'Login successful', 200, 'time_attendance/public/qr_scan.php?token=' . urlencode($qrToken));
-        } else {
-            // Normal login redirect
-            sendResponse(true, 'Login successful', 200, 'router.php');
-        }
+    if ($auth->login($username, $password)) {
+        header("Location: router.php");
+        exit;
     } else {
         sendResponse(false, 'Invalid username or password', 401);
     }
