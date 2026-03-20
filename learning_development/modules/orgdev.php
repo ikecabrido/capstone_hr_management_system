@@ -1,4 +1,4 @@
-<?php
+********************************<?php
 require_once __DIR__ . '/config.php';
 // NO HEADER - Parent learning_development.php handles the layout
 

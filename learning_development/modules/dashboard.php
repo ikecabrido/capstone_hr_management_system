@@ -7,6 +7,54 @@ $currentUserId = get_current_user_id();
 $user_dept = $_SESSION['user']['department'] ?? null;
 $user_role = $_SESSION['user']['role'] ?? null;
 
+// Handle POST actions for enroll/unenroll
+$message = '';
+$messageType = 'info';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if ($currentUserId) {
+        $action = $_POST['action'] ?? '';
+        
+        try {
+            // Enroll user
+            if ($action === 'enroll') {
+                $programId = intval($_POST['id'] ?? 0);
+                
+                $stmt = $pdo->prepare('SELECT id FROM training_enrollments WHERE user_id = ? AND program_id = ?');
+                $stmt->execute([$currentUserId, $programId]);
+                $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($existing) {
+                    $message = 'Already enrolled.';
+                    $messageType = 'warning';
+                } else {
+                    $stmt = $pdo->prepare('
+                        INSERT INTO training_enrollments (user_id, program_id, status)
+                        VALUES (?, ?, ?)
+                    ');
+                    $stmt->execute([$currentUserId, $programId, 'pending']);
+                    $message = 'Enrolled successfully.';
+                    $messageType = 'success';
+                }
+            }
+            
+            // Unenroll user
+            if ($action === 'unenroll') {
+                $programId = intval($_POST['id'] ?? 0);
+                
+                $stmt = $pdo->prepare('DELETE FROM training_enrollments WHERE user_id = ? AND program_id = ?');
+                $stmt->execute([$currentUserId, $programId]);
+                $message = 'Unenrolled successfully.';
+                $messageType = 'success';
+            }
+        } catch (Exception $e) {
+            error_log('Dashboard enrollment error: ' . $e->getMessage());
+            $message = 'An error occurred. Please try again.';
+            $messageType = 'danger';
+        }
+    }
+}
+
 // Fetch my upcoming programs (user's enrollments)
 $myPrograms = [];
 try {
@@ -106,6 +154,17 @@ try {
         <p style="margin: 0; color: #666; font-size: 0.9rem;">Track your training progress and discover new learning opportunities</p>
     </div>
 
+    <!-- Message Alert -->
+    <?php if ($message): ?>
+        <div class="alert alert-<?= htmlspecialchars($messageType) ?> alert-dismissible fade show" role="alert">
+            <i class="fas fa-<?= $messageType === 'success' ? 'check-circle' : ($messageType === 'danger' ? 'exclamation-circle' : 'info-circle') ?>"></i>
+            <?= htmlspecialchars($message) ?>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    <?php endif; ?>
+
     <!-- My Upcoming Programs Section -->
     <div class="row mb-4">
         <div class="col-12">
@@ -183,7 +242,7 @@ try {
                             <small class="text-muted d-block mb-2">
                                 <i class="far fa-calendar"></i> <?= date('M d, Y', strtotime($program['created_at'])) ?>
                             </small>
-                            <a href="?page=training-browse" class="btn btn-sm btn-outline-info w-100">View Details</a>
+                            <button type="button" class="btn btn-sm btn-outline-info w-100" onclick="openGlobalModal('<?= htmlspecialchars(addslashes($program['name']), ENT_QUOTES) ?>', 'modules/program_details_modal.php?id=<?= intval($program['id']) ?>')">View Details</button>
                         </div>
                     </div>
                 </div>
@@ -220,7 +279,7 @@ try {
                             <small class="text-muted d-block mb-2">
                                 <i class="fas fa-users"></i> <?= intval($program['enrollment_count']) ?> learners enrolled
                             </small>
-                            <a href="?page=training-browse" class="btn btn-sm btn-outline-success w-100">View Details</a>
+                            <button type="button" class="btn btn-sm btn-outline-success w-100" onclick="openGlobalModal('<?= htmlspecialchars(addslashes($program['name']), ENT_QUOTES) ?>', 'modules/program_details_modal.php?id=<?= intval($program['id']) ?>')">View Details</button>
                         </div>
                     </div>
                 </div>
