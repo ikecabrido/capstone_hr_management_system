@@ -1,12 +1,14 @@
-﻿<?php
+<?php
 session_start();
 // require_once "auth.php";
 require_once "../auth/database.php";
 require_once "../auth/auth_check.php";
 $theme = $_SESSION['user']['theme'] ?? 'light';
 
-$user = $_SESSION['user'];
-$token = $_SESSION['token'] ?? null;
+// Static data now loaded by JS from api/grievances_data.php
+$grievances = [];
+$grievanceActions = [];
+
 ?>
 <!doctype html>
 <html lang="en">
@@ -30,9 +32,9 @@ $token = $_SESSION['token'] ?? null;
     href="../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css" />
   <!-- Theme style -->
   <link rel="stylesheet" href="../assets/dist/css/adminlte.min.css" />
-
+  <link rel="stylesheet" href="/custom.css" />
   <link rel="stylesheet" href="../layout/toast.css" />
-  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="stylesheet" href="css/grievances.css" />
     
 </head>
 
@@ -125,7 +127,7 @@ $token = $_SESSION['token'] ?? null;
             <!-- Add icons to the links using the .nav-icon class
                with font-awesome or any other icon font library -->
             <li class="nav-item">
-              <a href="dashboard.php" class="nav-link active">
+              <a href="dashboard.php" class="nav-link">
                 <i class="nav-icon fas fa-tachometer-alt"></i>
                 <p>Dashboard</p>
               </a>
@@ -149,7 +151,7 @@ $token = $_SESSION['token'] ?? null;
               </a>
             </li>
             <li class="nav-item">
-              <a href="grievances.php" class="nav-link">
+              <a href="grievances.php" class="nav-link active">
                 <i class="nav-icon fas fa-table"></i>
                 <p> Grievances</p>
               </a>
@@ -233,26 +235,20 @@ $token = $_SESSION['token'] ?? null;
         <div class="container-fluid">
           <div class="row mb-2">
             <div class="col-sm-6">
-              <h1 class="m-0">Employee Engagement and Relations Management System</h1>
+              <h1 class="m-0">Grievances</h1>
             </div>
-            <!-- /.col -->
-
-            <!-- /.col -->
           </div>
-          <!-- /.row -->
         </div>
-            <div id="content">
-                <div class="loading">
-                    <div class="loading-spinner"></div>
-                    <p>Loading dashboard data...</p>
-                </div>
-            </div>
+      </div>
+      <div id="content">
+          <div id="grievances-container" style="min-height: 160px;">
+            <div style="padding:20px; color:#666;">Loading grievances...</div>
+          </div>
       </div>
     </div>
-  <!-- CONTENT -->
-
-    </div>
-        <?php include "../layout/global_modal.php"; ?>
+    </main>
+</div>
+  <?php include "../layout/global_modal.php"; ?>
     <!-- Control Sidebar -->
     <aside class="control-sidebar control-sidebar-dark">
       <!-- Control sidebar content goes here -->
@@ -292,7 +288,7 @@ $token = $_SESSION['token'] ?? null;
   <script src="../assets/dist/js/global_modal.js"></script>
   <script src="../assets/dist/js/profile.js"></script>
 
-
-<script src="js/session.js"></script>
 <script src="js/main.js?v=<?= time(); ?>"></script>
-<script src="js/dashboard.js"></script>
+<script src="js/grievances.js"></script>
+</body>
+</html>
