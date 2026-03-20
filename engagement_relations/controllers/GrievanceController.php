@@ -1,82 +1,42 @@
 <?php
-require_once __DIR__ . '/../models/Grievance.php';
-require_once __DIR__ . '/../config/db.php';
+namespace App\Controllers;
 
+use App\Models\Grievance;
+use App\Models\GrievanceUpdate;
 
-require_once __DIR__ . '/../middleware/Auth.php';
-require_once __DIR__ . '/../middleware/Validator.php';
-class GrievanceController {
-    private $model;
-    private $user;
-    
-    public function __construct($pdo, $user = null) {
-        $this->model = new Grievance($pdo);
-        $this->user = $user;
+class GrievanceController
+{
+    private $grievance;
+    private $update;
+
+    public function __construct()
+    {
+        $this->grievance = new Grievance();
+        $this->update = new GrievanceUpdate();
     }
-    
-    public function handleRequest() {
-        $method = $_SERVER['REQUEST_METHOD'];
-        switch ($method) {
-            case 'GET':
-                $role = $this->user['role'] ?? null;
-                $userId = $this->user['id'] ?? null;
-                $employeeId = $this->user['employee_id'] ?? null;
 
-                if (isset($_GET['id'])) {
-                    $result = $this->model->getById($_GET['id'], $role, $userId, $employeeId);
-                    echo json_encode($result);
-                } elseif (isset($_GET['employee_id'])) {
-                    // Employees can only view their own grievances
-                    if ($role === 'employee' && $_GET['employee_id'] != ($employeeId ?? $userId)) {
-                        echo json_encode(['error' => 'Unauthorized']);
-                    } else {
-                        $result = $this->model->getByEmployee($_GET['employee_id']);
-                        echo json_encode($result);
-                    }
-                } else {
-                    return $this->model->getAll($role, $userId, $employeeId);
-                }
-                break;
-            case 'POST':
-                Auth::check();
-                $data = json_decode(file_get_contents('php://input'), true);
-                Validator::validate($data, [
-                    'employee_id' => 'required',
-                    'subject' => 'required|min:5|max:255',
-                    'description' => 'required|min:10',
-                    'status' => 'enum:open,in-progress,resolved,closed',
-                ]);
-                $ok = $this->model->create($data['employee_id'], $data['subject'], $data['description'], $data['status'], $data['assigned_to']);
-                echo json_encode(['success' => $ok]);
-                break;
-            case 'PUT':
-                Auth::check();
-                $data = json_decode(file_get_contents('php://input'), true);
-                Validator::validate($data, [
-                    'id' => 'required',
-                    // status and assigned_to are validated in their respective branches
-                ]);
-                if (isset($data['status'])) {
-                    $ok = $this->model->updateStatus($data['id'], $data['status']);
-                } elseif (isset($data['assigned_to'])) {
-                    $ok = $this->model->assign($data['id'], $data['assigned_to']);
-                } else {
-                    $ok = false;
-                }
-                echo json_encode(['success' => $ok]);
-                break;
-            case 'DELETE':
-                Auth::check();
-                parse_str(file_get_contents('php://input'), $data);
-                Validator::validate($data, [
-                    'id' => 'required',
-                ]);
-                $ok = $this->model->delete($data['id']);
-                echo json_encode(['success' => $ok]);
-                break;
-            default:
-                http_response_code(405);
-                echo json_encode(['error' => 'Method Not Allowed']);
-        }
+    public function getGrievances()
+    {
+        return $this->grievance->getGrievances();
+    }
+
+    public function fileGrievance($employee_id, $subject, $description)
+    {
+        return $this->grievance->fileGrievance($employee_id, $subject, $description);
+    }
+
+    public function updateStatus($id, $status)
+    {
+        return $this->grievance->updateStatus($id, $status);
+    }
+
+    public function addUpdate($grievance_id, $update_text, $updated_by)
+    {
+        return $this->update->create(['grievance_id' => $grievance_id, 'update_text' => $update_text, 'updated_by' => $updated_by]);
+    }
+
+    public function history($id)
+    {
+        return $this->update->getByGrievance($id);
     }
 }

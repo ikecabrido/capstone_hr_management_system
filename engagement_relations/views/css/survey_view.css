@@ -1,0 +1,129 @@
+.survey-view-module {
+    background: linear-gradient(120deg, #ffffff 0%, #f8fbff 100%);
+    border-radius: 0.85rem;
+    border: 1px solid #d0d9e6;
+    padding: 1.4rem;
+    box-shadow: 0 14px 28px rgba(26, 67, 116, 0.12);
+    margin: 1.4rem auto;
+    max-width: 900px;
+}
+
+.survey-view-module .card-header {
+    background-color: #e9f3ff;
+    border-bottom: 1px solid #bfdbf1;
+    padding: 0.9rem 1.2rem;
+}
+
+.survey-view-module .card-title {
+    font-size: 1.25rem;
+    margin: 0;
+}
+
+.survey-view-module .card-body {
+    padding: 1rem;
+}
+
+.survey-view-module form {
+    width: 100%;
+}
+
+.survey-view-module .form-group {
+    margin-bottom: 1.15rem;
+}
+
+.survey-view-module label {
+    font-weight: 650;
+    margin: 0 0 0.45rem;
+    font-size: 0.98rem;
+    color: #1f4a80;
+    display: block;
+}
+
+.survey-view-module input[type="text"],
+.survey-view-module textarea,
+.survey-view-module select {
+    width: 100%;
+    border: 1px solid #b8c9db;
+    border-radius: 0.5rem;
+    padding: 0.65rem 0.85rem;
+    background: #fbfdff;
+    box-shadow: inset 0 0.8px 1.8px rgba(0, 0, 0, 0.06);
+    transition: all 0.18s ease-in-out;
+}
+
+.survey-view-module input[type="text"]:focus,
+.survey-view-module textarea:focus,
+.survey-view-module select:focus {
+    border-color: #4787df;
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(71, 135, 223, 0.28);
+}
+
+.survey-view-module input[type="text"]:focus,
+.survey-view-module textarea:focus {
+    outline: none;
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+.survey-view-module .btn-primary {
+    min-width: 170px;
+    border-radius: 0.75rem;
+    background: linear-gradient(130deg, #3b8df2, #2d6fc0);
+    border-color: #2f76c1;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.survey-view-module .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 7px 16px rgba(45, 103, 189, 0.34);
+}
+
+.survey-view-module .alert {
+    margin-bottom: 1rem;
+}
+
+.survey-response-card {
+    border: 1px solid #cfe1f5;
+    border-radius: 0.7rem;
+    background: #f8fbff;
+    padding: 0.92rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(41, 78, 123, 0.07);
+}
+
+.survey-response-card .card-title {
+    font-size: 0.88rem;
+    margin-bottom: 0.45rem;
+    color: #16549f;
+}
+
+.survey-response-card .response-item {
+    border-bottom: 1px solid #e6eff8;
+    padding: 0.55rem 0;
+}
+
+.survey-response-card .response-item:last-child {
+    border-bottom: none;
+}
+
+.survey-response-card .response-item strong {
+    display: block;
+    font-weight: 700;
+    color: #154b83;
+}
+
+.survey-response-card .response-item small {
+    color: #4a637f;
+}
+
+@media (max-width: 767px) {
+    .survey-view-module {
+        margin: 0.75rem;
+        padding: 0.85rem;
+    }
+    .survey-view-module .card-title {
+        font-size: 1.05rem;
+    }
+}

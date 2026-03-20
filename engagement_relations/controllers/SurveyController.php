@@ -1,62 +1,64 @@
 <?php
-require_once __DIR__ . '/../models/Survey.php';
-require_once __DIR__ . '/../config/db.php';
-require_once __DIR__ . '/../middleware/Auth.php';
-require_once __DIR__ . '/../middleware/Validator.php';
+namespace App\Controllers;
 
-class SurveyController {
-    private $model;
-    private $user;
+use App\Models\Survey;
+use App\Models\SurveyQuestion;
+use App\Models\SurveyResponse;
 
-    public function __construct($pdo, $user = null) {
-        $this->model = new Survey($pdo);
-        $this->user = $user;
+class SurveyController
+{
+    private $survey;
+    private $surveyResponse;
+
+    public function __construct()
+    {
+        $this->survey = new Survey();
+        $this->surveyResponse = new SurveyResponse();
     }
 
-    public function handleRequest() {
-        $method = $_SERVER['REQUEST_METHOD'];
+    public function create()
+    {
+        // Return data required for form (if any) to create survey
+        return [
+            'title' => '',
+            'questions' => [],
+        ];
+    }
 
-        switch ($method) {
-            case 'GET':
-                return $this->model->getAll();
+    public function store($title, $created_by, $questions = [])
+    {
+        $surveyId = $this->survey->createSurvey($title, $created_by);
 
-            case 'POST':
-                Auth::check();
-                $data = json_decode(file_get_contents('php://input'), true);
-                Validator::validate($data, [
-                    'title' => 'required|min:3|max:255',
-                    'description' => 'required|min:5',
-                ]);
-
-                $ok = $this->model->create($data['title'], $data['description'], $this->user['id'] ?? '1');
-                echo json_encode(['success' => $ok]);
-                break;
-
-            case 'PUT':
-                Auth::check();
-                parse_str(file_get_contents('php://input'), $data);
-                Validator::validate($data, [
-                    'id' => 'required',
-                    'title' => 'required|min:3|max:255',
-                    'description' => 'required|min:5',
-                ]);
-
-                $ok = $this->model->update($data['id'], $data['title'], $data['description']);
-                echo json_encode(['success' => $ok]);
-                break;
-
-            case 'DELETE':
-                Auth::check();
-                parse_str(file_get_contents('php://input'), $data);
-                Validator::validate($data, ['id' => 'required']);
-                $ok = $this->model->delete($data['id']);
-                echo json_encode(['success' => $ok]);
-                break;
-
-            default:
-                http_response_code(405);
-                echo json_encode(['error' => 'Method Not Allowed']);
+        foreach ($questions as $q) {
+            $this->survey->addQuestion($surveyId, $q['question_text'], $q['type'] ?? 'text');
         }
+
+        return $surveyId;
+    }
+
+    public function index()
+    {
+        return $this->survey->getSurveys();
+    }
+
+    public function show($id)
+    {
+        return $this->survey->getWithQuestions($id);
+    }
+
+    public function delete($id)
+    {
+        return $this->survey->deleteSurvey($id);
+    }
+
+    public function getResponses($survey_id)
+    {
+        return $this->surveyResponse->getBySurvey($survey_id);
+    }
+
+    public function submit($survey_id, $employee_id, $answers)
+    {
+        return $this->survey->submitResponse($survey_id, $employee_id, $answers);
     }
 }
-?>
+

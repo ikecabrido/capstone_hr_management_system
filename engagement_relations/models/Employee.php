@@ -1,61 +1,28 @@
 <?php
+namespace App\Models;
 
-class Employee {
-    private $pdo;
-
-    public function __construct($pdo) {
-        $this->pdo = $pdo;
+class Employee extends BaseModel
+{
+    public function all()
+    {
+        return $this->execute('SELECT * FROM employees')->fetchAll();
     }
 
-    // Create a new employee
-    public function create($name, $department_id, $email, $role = 'employee', $status = 'active') {
-        $sql = "INSERT INTO employees (name, department_id, email, role, status) VALUES (?, ?, ?, ?, ?)";
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute([$name, $department_id, $email, $role, $status]);
+    public function find($id)
+    {
+        return $this->execute('SELECT * FROM employees WHERE id = :id', ['id' => $id])->fetch();
     }
 
-    // Get all employees (with optional role-based filtering)
-    public function getAll($userRole = null, $userId = null) {
-        if ($userRole === 'employee') {
-            // Employees only see their own record
-            $stmt = $this->pdo->prepare('SELECT id, name, email, department_id, role, status FROM employees WHERE id = ?');
-            $stmt->execute([$userId]);
-            return [$stmt->fetch()];
-        }
-        // Admins and managers see all employees
-        $stmt = $this->pdo->query('SELECT id, name, email, department_id, role, status FROM employees');
-        return $stmt->fetchAll();
+    public function findByNameOrEmail($name, $email)
+    {
+        $sql = 'SELECT * FROM employees WHERE name = :name OR email = :email LIMIT 1';
+        return $this->execute($sql, ['name' => $name, 'email' => $email])->fetch();
     }
 
-    // Get employee by ID (with role-based access control)
-    public function getById($id, $userRole = null, $userId = null) {
-        // Employees can only access their own record
-        if ($userRole === 'employee' && $userId != $id) {
-            return null; // Access denied
-        }
-        $stmt = $this->pdo->prepare('SELECT id, name, email, department_id, role, status FROM employees WHERE id = ?');
-        $stmt->execute([$id]);
-        return $stmt->fetch();
-    }
-
-    // Update employee
-    public function update($id, $name, $department_id, $email, $role, $status) {
-        $sql = "UPDATE employees SET name = ?, department_id = ?, email = ?, role = ?, status = ? WHERE id = ?";
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute([$name, $department_id, $email, $role, $status, $id]);
-    }
-
-    // Delete employee
-    public function delete($id) {
-        $sql = "DELETE FROM employees WHERE id = ?";
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute([$id]);
-    }
-
-    // Get employees by department
-    public function getByDepartment($department_id) {
-        $stmt = $this->pdo->prepare('SELECT * FROM employees WHERE department_id = ?');
-        $stmt->execute([$department_id]);
-        return $stmt->fetchAll();
+    public function create($data)
+    {
+        $sql = 'INSERT INTO employees (name, department, position, email, phone, created_at) VALUES (:name, :department, :position, :email, :phone, NOW())';
+        $this->execute($sql, $data);
+        return $this->db->lastInsertId();
     }
 }

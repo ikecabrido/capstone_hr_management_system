@@ -1,43 +1,25 @@
 <?php
+namespace App\Models;
 
-class Recognition {
-    private $pdo;
-
-    public function __construct($pdo) {
-        $this->pdo = $pdo;
+class Recognition extends BaseModel
+{
+    public function getRecognitions()
+    {
+        $sql = 'SELECT r.*, s.name AS sender_name, t.name AS receiver_name FROM recognitions r JOIN employees s ON r.sender_id = s.id JOIN employees t ON r.receiver_id = t.id ORDER BY r.created_at DESC';
+        return $this->execute($sql)->fetchAll();
     }
 
-    // Create recognition
-    public function create($from_employee_id, $to_employee_id, $type, $message, $reward_id = null) {
-        $sql = "INSERT INTO recognitions (from_employee_id, to_employee_id, type, message, reward_id) VALUES (?, ?, ?, ?, ?)";
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute([$from_employee_id, $to_employee_id, $type, $message, $reward_id]);
-    }
+    public function sendRecognition($sender_id, $receiver_id, $message, $points)
+    {
+        $sql = 'INSERT INTO recognitions (sender_id, receiver_id, message, points, created_at) VALUES (:sender_id, :receiver_id, :message, :points, NOW())';
+        $params = [
+            'sender_id' => $sender_id,
+            'receiver_id' => $receiver_id,
+            'message' => $message,
+            'points' => $points,
+        ];
 
-    // Get all recognitions
-    public function getAll() {
-        $stmt = $this->pdo->query('SELECT * FROM recognitions');
-        return $stmt->fetchAll();
-    }
-
-    // Get recognition by ID
-    public function getById($id) {
-        $stmt = $this->pdo->prepare('SELECT * FROM recognitions WHERE id = ?');
-        $stmt->execute([$id]);
-        return $stmt->fetch();
-    }
-
-    // Delete recognition
-    public function delete($id) {
-        $sql = "DELETE FROM recognitions WHERE id = ?";
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute([$id]);
-    }
-
-    // Get recognitions for an employee
-    public function getForEmployee($employee_id) {
-        $stmt = $this->pdo->prepare('SELECT * FROM recognitions WHERE to_employee_id = ?');
-        $stmt->execute([$employee_id]);
-        return $stmt->fetchAll();
+        $this->execute($sql, $params);
+        return $this->db->lastInsertId();
     }
 }

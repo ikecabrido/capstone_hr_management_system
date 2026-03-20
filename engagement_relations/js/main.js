@@ -1,65 +1,39 @@
-// ============================================
-// MAIN JAVASCRIPT FILE
-// Common functions used across all pages
-// ============================================
-
-// Hamburger menu toggle function
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) {
-        sidebar.classList.toggle('hidden');
-    }
-}
-
-// Close sidebar function
-function closeSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) {
-        sidebar.classList.add('hidden');
-    }
-}
-
-// Update time function
-function updateTime() {
-    const timeElement = document.getElementById('updateTime');
-    if (timeElement) {
-        const now = new Date();
-        let hours = now.getHours();
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const seconds = String(now.getSeconds()).padStart(2, '0');
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        hours = hours % 12;
-        hours = hours ? hours : 12;
-        hours = String(hours).padStart(2, '0');
-        const timeString = `${hours}:${minutes}:${seconds} ${ampm}`;
-        timeElement.textContent = timeString;
-    }
-}
-
-// Initialize menu toggle on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize and start updating the time immediately
-    updateTime();
-    setInterval(updateTime, 1000);
-    
-    const menuToggle = document.getElementById('menuToggle');
-    
-    if (menuToggle) {
-        menuToggle.addEventListener('click', function(e) {
-            e.preventDefault();
-            toggleSidebar();
-        });
-    }
-    
-    // Close sidebar when clicking on a link (only on mobile)
-    if (window.innerWidth <= 768) {
-        document.querySelectorAll('.sidebar-nav a').forEach(link => {
-            link.addEventListener('click', closeSidebar);
-        });
-    }
-});
+  const navLinks = document.querySelectorAll('.sidebar a');
+  const currentUrl = new URL(window.location.href);
 
-window.addEventListener('load', function() {
-    // Ensure time is updated on full page load as well
-    updateTime();
+  navLinks.forEach(function(link) {
+    if (link.href === currentUrl.href || link.href === currentUrl.origin + currentUrl.pathname + currentUrl.search) {
+      link.classList.add('active');
+    }
+  });
+
+  const darkToggle = document.getElementById('darkToggle');
+  const body = document.body;
+  const themeIcon = document.getElementById('themeIcon');
+
+  if (darkToggle && themeIcon) {
+    darkToggle.addEventListener('click', function(e) {
+      e.preventDefault();
+      body.classList.toggle('dark-mode');
+      const isDark = body.classList.contains('dark-mode');
+      themeIcon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+      localStorage.setItem('engagementTheme', isDark ? 'dark' : 'light');
+    });
+
+    const savedTheme = localStorage.getItem('engagementTheme');
+    if (savedTheme === 'dark') {
+      body.classList.add('dark-mode');
+      themeIcon.className = 'fas fa-sun';
+    }
+  }
+
+  const clockEl = document.getElementById('clock');
+  if (clockEl) {
+    setInterval(() => {
+      const now = new Date();
+      const formatted = now.toLocaleTimeString();
+      clockEl.textContent = formatted;
+    }, 1000);
+  }
 });

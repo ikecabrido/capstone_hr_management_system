@@ -1,8 +1,9 @@
-﻿<?php
+<?php
 session_start();
-require_once "../auth/auth_check.php";
-require_once __DIR__ . '/autoload.php';
-
+// require_once "auth.php";
+require_once "../../auth/database.php";
+require_once "../../auth/auth_check.php";
+require_once __DIR__ . '/../autoload.php';
 
 use App\Controllers\SurveyController;
 use App\Controllers\RecognitionController;
@@ -24,7 +25,6 @@ $payload['recognitions'] = $recognitionCtrl->getRecognitions();
 $payload['grievances'] = $grievanceCtrl->getGrievances();
 $payload['announcements'] = $communicationCtrl->getAnnouncements();
 $payload['feed'] = $socialCtrl->getPosts();
-
 ?>
 <!doctype html>
 <html lang="en">
@@ -41,17 +41,19 @@ $payload['feed'] = $socialCtrl->getPosts();
   <!-- Font Awesome Icons -->
   <link
     rel="stylesheet"
-    href="../assets/plugins/fontawesome-free/css/all.min.css" />
+    href="../../assets/plugins/fontawesome-free/css/all.min.css" />
   <!-- overlayScrollbars -->
   <link
     rel="stylesheet"
-    href="../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css" />
+    href="../../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css" />
   <!-- Theme style -->
-  <link rel="stylesheet" href="../assets/dist/css/adminlte.min.css" />
+  <link rel="stylesheet" href="../../assets/dist/css/adminlte.min.css" />
 
-  <link rel="stylesheet" href="../layout/toast.css" />
-  <link rel="stylesheet" href="custom.css" />    
+  <link rel="stylesheet" href="../../layout/toast.css" />
+  <link rel="stylesheet" href="css/communication.css" />
+  <link rel="stylesheet" href="../custom.css" /> 
 </head>
+
 
 <body
   class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed <?= $theme === 'dark' ? 'dark-mode' : '' ?>">
@@ -61,7 +63,7 @@ $payload['feed'] = $socialCtrl->getPosts();
       class="preloader flex-column justify-content-center align-items-center">
       <img
         class="animation__wobble"
-        src="../assets/pics/bcpLogo.png"
+        src="../../assets/pics/bcpLogo.png"
         alt="AdminLTELogo"
         height="60"
         width="60" />
@@ -75,7 +77,7 @@ $payload['feed'] = $socialCtrl->getPosts();
           <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
         </li>
         <li class="nav-item d-none d-sm-inline-block">
-          <a href="engagement_relations.php" class="nav-link">Home</a>
+          <a href="../engagement_relations.php" class="nav-link">Home</a>        
         </li>
       </ul>
 
@@ -91,7 +93,6 @@ $payload['feed'] = $socialCtrl->getPosts();
             <i class="fas fa-expand-arrows-alt"></i>
           </a>
         </li>
-
         <li class="nav-item">
           <a
             class="nav-link"
@@ -109,10 +110,10 @@ $payload['feed'] = $socialCtrl->getPosts();
     <!-- Main Sidebar Container -->
     <aside class="main-sidebar sidebar-dark-primary elevation-4">
       <!-- Brand Logo -->
-      <a href="engagement_relations.php" class="brand-link">
+      <a href="../engagement_relations.php" class="brand-link">
 
         <img
-          src="../assets/pics/bcpLogo.png"
+          src="../../assets/pics/bcpLogo.png"
           alt="AdminLTE Logo"
           class="brand-image elevation-3"
           style="opacity: 0.9" />
@@ -126,7 +127,7 @@ $payload['feed'] = $socialCtrl->getPosts();
           <div class="image">
           </div>
           <div class="info">
-            <a href="#" onclick="openGlobalModal('Profile Settings ','../user_profile/profile_form.php')" class="d-block">
+            <a href="#" onclick="openGlobalModal('Profile Settings ','../../user_profile/profile_form.php')" class="d-block">
               Admin <?= htmlspecialchars($_SESSION['user']['name']) ?>
             </a>
           </div>
@@ -142,43 +143,43 @@ $payload['feed'] = $socialCtrl->getPosts();
             <!-- Add icons to the links using the .nav-icon class
                with font-awesome or any other icon font library -->
             <li class="nav-item">
-              <a href="views/dashboard.php" class="nav-link active">
+              <a href="dashboard.php" class="nav-link active">
                 <i class="nav-icon fas fa-tachometer-alt"></i>
                 <p>Dashboard</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="views/communication.php" class="nav-link">
+              <a href="communication.php" class="nav-link">
                 <i class="nav-icon fas fa-chart-pie"></i>
                 <p>Communication</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="views/survey.php" class="nav-link">
-                <i class="nav-icon fas fa-tree"></i>
+              <a href="survey.php" class="nav-link">
+                <i class="nav-icon fas fa-poll"></i>
                 <p>Survey</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="views/recognition.php" class="nav-link">
-                <i class="nav-icon fas fa-edit"></i>
+              <a href="recognition.php" class="nav-link">
+                <i class="nav-icon fas fa-award"></i>
                 <p>Recognition</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="views/grievance.php" class="nav-link">
-                <i class="nav-icon fas fa-table"></i>
+              <a href="grievance.php" class="nav-link">
+                <i class="nav-icon fas fa-exclamation-triangle"></i>
                 <p> Grievances</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="views/social.php" class="nav-link">
-                <i class="nav-icon fas fa-table"></i>
+              <a href="social.php" class="nav-link">
+                <i class="nav-icon fas fa-users"></i>
                 <p> Social</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="../logout.php" class="nav-link">
+              <a href="../../logout.php" class="nav-link">
                 <i class="nav-icon fas fa-sign-out-alt"></i>
                 <p>Logout</p>
               </a>
@@ -191,15 +192,14 @@ $payload['feed'] = $socialCtrl->getPosts();
     </aside>
 
 
-        <!-- MAIN CONTENT --
-            <!-- HEADER -->
+        <!-- MAIN CONTENT -->
     <div class="content-wrapper">
       <!-- Content Header (Page header) -->
       <div class="content-header">
         <div class="container-fluid">
           <div class="row mb-2">
             <div class="col-sm-6">
-               <h1 class="m-0">Dashboard</h1>
+              <h1 class="m-0">Dashboard</h1>
               <p class="text-muted">Use the sidebar to manage surveys, recognitions, grievances, announcements, messages, and social posts.</p>
             </div>
           </div>
@@ -263,7 +263,7 @@ $payload['feed'] = $socialCtrl->getPosts();
   <!-- CONTENT -->
 
     </div>
-    <?php include "../layout/global_modal.php"; ?>
+    <?php include "../../layout/global_modal.php"; ?>
     <!-- Control Sidebar -->
     <aside class="control-sidebar control-sidebar-dark">
       <!-- Control sidebar content goes here -->
@@ -277,13 +277,13 @@ $payload['feed'] = $socialCtrl->getPosts();
 
   <!-- REQUIRED SCRIPTS -->
   <!-- jQuery -->
-  <script src="../assets/plugins/jquery/jquery.min.js"></script>
+  <script src="../../assets/plugins/jquery/jquery.min.js"></script>
   <!-- Bootstrap -->
-  <script src="../assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="../../assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
   <!-- overlayScrollbars -->
-  <script src="../assets/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
+  <script src="../../assets/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
   <!-- AdminLTE App -->
-  <script src="../assets/dist/js/adminlte.js"></script>
+  <script src="../../assets/dist/js/adminlte.js"></script>
 
   <!-- PAGE PLUGINS -->
   <!-- jQuery Mapael -->
@@ -304,6 +304,7 @@ $payload['feed'] = $socialCtrl->getPosts();
   <script src="../assets/dist/js/profile.js"></script>
 
   <script></script>
+  <script src="views/js/dashboard.js"></script>
 </body>
 
 </html>

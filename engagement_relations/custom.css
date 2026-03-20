@@ -52,6 +52,7 @@ body:not(.dark-mode) .content-wrapper {
 body.dark-mode .main-footer {
   background-color: #0d47a1 !important;
 }
+/* Animate the Font Awesome icon */
 #themeIcon {
   display: inline-block;
   transition:
