@@ -20,8 +20,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header("Location: router.php");
         exit;
     } else {
-        $_SESSION['login_error'] = "Invalid username or password";
-        header("Location: login_form.php");
-        exit;
+        sendResponse(false, 'Invalid username or password', 401);
     }
+
+} catch (Exception $e) {
+    error_log('Login Exception: ' . $e->getMessage() . ' - ' . $e->getTraceAsString());
+    sendResponse(false, 'Server error: ' . $e->getMessage(), 500);
+} catch (Throwable $t) {
+    error_log('Login Throwable: ' . $t->getMessage() . ' - ' . $t->getTraceAsString());
+    sendResponse(false, 'Server error: ' . $t->getMessage(), 500);
 }
+
+?>

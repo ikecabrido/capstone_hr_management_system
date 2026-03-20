@@ -1,6 +1,6 @@
 <?php
 
-require_once "auth/Auth.php";
+require_once "auth/auth.php";
 
 $auth = new Auth();
 
@@ -23,7 +23,7 @@ switch ($role) {
         header("Location: payroll/payroll.php");
         break;
     case 'time':
-        header("Location: time_attendance/time_attendance.php");
+        header("Location: time_attendance/public/dashboard.php");
         break;
     case 'compliance':
         header("Location: compliance_legal/compliance.php");
@@ -48,5 +48,10 @@ switch ($role) {
         break;
 
     default:
-        echo "No module assigned.";
+        echo "Debug: No module assigned for role: " . ($role ? "'{$role}'" : "NULL") . "<br>";
+        echo "Session data: ";
+        echo "<pre>";
+        var_dump($_SESSION['user'] ?? "No session");
+        echo "</pre>";
+        die("Please check your user role in the database.");
 }
