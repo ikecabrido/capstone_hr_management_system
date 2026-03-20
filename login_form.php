@@ -38,17 +38,19 @@ unset($_SESSION['login_error']);
           <div></div>
         </div>
         <div class="label">
-          <label for="">Username</label>
+          <label for="username">Username</label>
           <input
             type="text"
+            id="username"
             name="username"
             placeholder="Your Username..."
             required />
         </div>
         <div class="label">
-          <label for="">Password</label>
+          <label for="password">Password</label>
           <input
             type="password"
+            id="password"
             name="password"
             placeholder="Your Password.."
             required />
