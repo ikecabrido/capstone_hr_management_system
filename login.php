@@ -26,9 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 } catch (Exception $e) {
     error_log('Login Exception: ' . $e->getMessage() . ' - ' . $e->getTraceAsString());
     sendResponse(false, 'Server error: ' . $e->getMessage(), 500);
-} catch (Throwable $t) {
-    error_log('Login Throwable: ' . $t->getMessage() . ' - ' . $t->getTraceAsString());
-    sendResponse(false, 'Server error: ' . $t->getMessage(), 500);
+
 }
 
 ?>
