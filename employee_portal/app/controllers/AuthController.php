@@ -74,7 +74,7 @@ class AuthController
 
             Session::set('success', "Login successful!");
 
-            Helper::redirect('index.php?url=dashboard'); 
+            Helper::redirect('index.php?url=dashboard');
         } catch (Exception $e) {
 
             Session::set('error', $e->getMessage());
@@ -88,15 +88,35 @@ class AuthController
      */
     public function logout()
     {
-        Session::start();
+        if (session_status() === PHP_SESSION_NONE) {
+            Session::start();
+        }
+
         $user_id = Session::get('user_id');
 
-        if ($user_id) {
+        if (!empty($user_id)) {
             $this->auditLog->log('LOGOUT', $user_id, null, null, [], 'SUCCESS');
         }
 
-        Session::destroy();
+        $_SESSION = [];
+
+        if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+            setcookie(
+                session_name(),
+                '',
+                time() - 42000,
+                $params['path'],
+                $params['domain'],
+                $params['secure'],
+                $params['httponly']
+            );
+        }
+
+        session_destroy();
+
         Helper::redirect('index.php');
+        exit;
     }
 
     /**

@@ -50,26 +50,22 @@ class Database
         return 'localhost';
     }
 
-    public function getConnection()
+    public function getConnection(): PDO
     {
-        $this->conn = null;
-
         try {
             $this->conn = new PDO(
-                "mysql:host=" . $this->host . ";dbname=" . $this->db_name . ";charset=utf8",
+                "mysql:host={$this->host};dbname={$this->db_name};charset=utf8",
                 $this->username,
                 $this->password
             );
 
             $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            
-            // Set MySQL connection timezone to Philippines (UTC+8)
             $this->conn->exec("SET SESSION time_zone = '+08:00'");
+
+            return $this->conn;
 
         } catch (PDOException $exception) {
             throw new Exception("Database connection error: " . $exception->getMessage());
         }
-
-        return $this->conn;
     }
 }
