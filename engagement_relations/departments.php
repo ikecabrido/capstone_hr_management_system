@@ -1,39 +1,33 @@
-﻿<?php
+<?php
 session_start();
 // require_once "auth.php";
 require_once "../auth/database.php";
 require_once "../auth/auth_check.php";
 $theme = $_SESSION['user']['theme'] ?? 'light';
 
-$user = $_SESSION['user'];
-$token = $_SESSION['token'] ?? null;
+// `departments` data now loaded by frontend JS via `api/departments_data.php`
+$departments = [];
 ?>
+<!DOCTYPE html>
 <!doctype html>
 <html lang="en">
 
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Employee Engagement and Relations Management</title>
+  <title>Departments - EER</title>
 
   <!-- Google Font: Source Sans Pro -->
-  <link
-    rel="stylesheet"
-    href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback" />
   <!-- Font Awesome Icons -->
-  <link
-    rel="stylesheet"
-    href="../assets/plugins/fontawesome-free/css/all.min.css" />
+  <link rel="stylesheet" href="../assets/plugins/fontawesome-free/css/all.min.css" />
   <!-- overlayScrollbars -->
-  <link
-    rel="stylesheet"
-    href="../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css" />
+  <link rel="stylesheet" href="../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css" />
   <!-- Theme style -->
   <link rel="stylesheet" href="../assets/dist/css/adminlte.min.css" />
-
+  <link rel="stylesheet" href="/custom.css" />
   <link rel="stylesheet" href="../layout/toast.css" />
-  <link rel="stylesheet" href="css/dashboard.css" />
-    
+  <link rel="stylesheet" href="css/departments.css" />
 </head>
 
 <body
@@ -125,7 +119,7 @@ $token = $_SESSION['token'] ?? null;
             <!-- Add icons to the links using the .nav-icon class
                with font-awesome or any other icon font library -->
             <li class="nav-item">
-              <a href="dashboard.php" class="nav-link active">
+              <a href="dashboard.php" class="nav-link">
                 <i class="nav-icon fas fa-tachometer-alt"></i>
                 <p>Dashboard</p>
               </a>
@@ -173,7 +167,7 @@ $token = $_SESSION['token'] ?? null;
               </a>
             </li>
             <li class="nav-item">
-              <a href="departments.php" class="nav-link">
+              <a href="departments.php" class="nav-link active">
                 <i class="nav-icon fas fa-table"></i>
                 <p>Departments</p>
               </a>
@@ -233,7 +227,7 @@ $token = $_SESSION['token'] ?? null;
         <div class="container-fluid">
           <div class="row mb-2">
             <div class="col-sm-6">
-              <h1 class="m-0">Employee Engagement and Relations Management System</h1>
+              <h1 class="m-0">Department</h1>
             </div>
             <!-- /.col -->
 
@@ -241,18 +235,20 @@ $token = $_SESSION['token'] ?? null;
           </div>
           <!-- /.row -->
         </div>
-            <div id="content">
-                <div class="loading">
-                    <div class="loading-spinner"></div>
-                    <p>Loading dashboard data...</p>
-                </div>
+
+        <div id="content">
+            <div id="departments-container" style="min-height: 160px;">
+                <div style="padding:20px; color:#666;">Loading departments...</div>
             </div>
+        </div>
+</div>
       </div>
     </div>
-  <!-- CONTENT -->
 
-    </div>
-        <?php include "../layout/global_modal.php"; ?>
+
+
+
+ <?php include "../layout/global_modal.php"; ?>
     <!-- Control Sidebar -->
     <aside class="control-sidebar control-sidebar-dark">
       <!-- Control sidebar content goes here -->
@@ -273,6 +269,12 @@ $token = $_SESSION['token'] ?? null;
   <script src="../assets/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
   <!-- AdminLTE App -->
   <script src="../assets/dist/js/adminlte.js"></script>
+  <script src="../assets/dist/js/theme.js"></script>
+  <script src="../assets/dist/js/time.js"></script>
+  <script src="../assets/dist/js/global_modal.js"></script>
+  <script src="../assets/dist/js/profile.js"></script>
+
+  <script src="js/departments.js?v=<?= time(); ?>"></script>
 
   <!-- PAGE PLUGINS -->
   <!-- jQuery Mapael -->
@@ -292,7 +294,6 @@ $token = $_SESSION['token'] ?? null;
   <script src="../assets/dist/js/global_modal.js"></script>
   <script src="../assets/dist/js/profile.js"></script>
 
-
-<script src="js/session.js"></script>
 <script src="js/main.js?v=<?= time(); ?>"></script>
-<script src="js/dashboard.js"></script>
+</body>
+</html>

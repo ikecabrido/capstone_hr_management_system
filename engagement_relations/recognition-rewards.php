@@ -1,12 +1,12 @@
-﻿<?php
+<?php
 session_start();
 // require_once "auth.php";
 require_once "../auth/database.php";
 require_once "../auth/auth_check.php";
 $theme = $_SESSION['user']['theme'] ?? 'light';
-
-$user = $_SESSION['user'];
-$token = $_SESSION['token'] ?? null;
+// Data is loaded by JS from API endpoints
+$recognitions = [];
+$rewards = [];
 ?>
 <!doctype html>
 <html lang="en">
@@ -30,9 +30,9 @@ $token = $_SESSION['token'] ?? null;
     href="../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css" />
   <!-- Theme style -->
   <link rel="stylesheet" href="../assets/dist/css/adminlte.min.css" />
-
+  <link rel="stylesheet" href="/custom.css" />
   <link rel="stylesheet" href="../layout/toast.css" />
-  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="stylesheet" href="css/recognition-rewards.css" />
     
 </head>
 
@@ -125,7 +125,7 @@ $token = $_SESSION['token'] ?? null;
             <!-- Add icons to the links using the .nav-icon class
                with font-awesome or any other icon font library -->
             <li class="nav-item">
-              <a href="dashboard.php" class="nav-link active">
+              <a href="dashboard.php" class="nav-link">
                 <i class="nav-icon fas fa-tachometer-alt"></i>
                 <p>Dashboard</p>
               </a>
@@ -161,7 +161,7 @@ $token = $_SESSION['token'] ?? null;
               </a>
             </li>
             <li class="nav-item">
-              <a href="recognition-rewards.php" class="nav-link">
+              <a href="recognition-rewards.php" class="nav-link active">
                 <i class="nav-icon fas fa-table"></i>
                 <p>Recognition & Rewards</p>
               </a>
@@ -233,7 +233,7 @@ $token = $_SESSION['token'] ?? null;
         <div class="container-fluid">
           <div class="row mb-2">
             <div class="col-sm-6">
-              <h1 class="m-0">Employee Engagement and Relations Management System</h1>
+              <h1 class="m-0">Recognition & Rewards</h1>
             </div>
             <!-- /.col -->
 
@@ -241,18 +241,27 @@ $token = $_SESSION['token'] ?? null;
           </div>
           <!-- /.row -->
         </div>
-            <div id="content">
-                <div class="loading">
-                    <div class="loading-spinner"></div>
-                    <p>Loading dashboard data...</p>
-                </div>
-            </div>
+        <!-- /.container-fluid -->
       </div>
-    </div>
-  <!-- CONTENT -->
+        <div id="content">
+          <div class="tab-buttons">
+            <button class="tab-btn active" onclick="switchTab('recognition')">Recognition</button>
+            <button class="tab-btn" onclick="switchTab('rewards')">Rewards</button>
+        </div>
 
-    </div>
-        <?php include "../layout/global_modal.php"; ?>
+        <!-- RECOGNITION TAB -->
+        <div id="recognition" class="tab-content active">
+            <div id="recognitions-container" style="min-height:160px; padding:20px; color:#666;">Loading recognitions...</div>
+        </div>
+
+        <!-- REWARDS TAB -->
+        <div id="rewards" class="tab-content">
+            <div id="rewards-container" style="min-height:160px; padding:20px; color:#666;">Loading rewards...</div>
+        </div>
+        </div>
+    </main>
+</div>
+  <?php include "../layout/global_modal.php"; ?>
     <!-- Control Sidebar -->
     <aside class="control-sidebar control-sidebar-dark">
       <!-- Control sidebar content goes here -->
@@ -292,7 +301,8 @@ $token = $_SESSION['token'] ?? null;
   <script src="../assets/dist/js/global_modal.js"></script>
   <script src="../assets/dist/js/profile.js"></script>
 
-
-<script src="js/session.js"></script>
 <script src="js/main.js?v=<?= time(); ?>"></script>
-<script src="js/dashboard.js"></script>
+<script src="js/tabs.js"></script>
+<script src="js/recognition-rewards.js?v=<?= time(); ?>"></script>
+</body>
+</html>
