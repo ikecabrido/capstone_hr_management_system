@@ -12,11 +12,25 @@ class User
         $this->conn = $database->getConnection();
     }
 
-    public function login($username)
+    public function login($employee_id)
     {
-        $query = "SELECT * FROM " . $this->table . " WHERE username = :username LIMIT 1";
+        $query = "
+        SELECT 
+            e.employee_id,
+            e.full_name,
+            e.user_id,
+            u.id AS user_id_ref,
+            u.username,
+            u.password,
+            u.role
+        FROM employees e
+        LEFT JOIN users u ON e.user_id = u.id
+        WHERE e.employee_id = :employee_id
+        LIMIT 1
+    ";
+
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':username', $username);
+        $stmt->bindParam(':employee_id', $employee_id);
         $stmt->execute();
 
         return $stmt->fetch(PDO::FETCH_ASSOC);

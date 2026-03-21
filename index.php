@@ -15,7 +15,7 @@
       <h1>BESTLINK COLLEGE OF THE PHILIPPINES</h1>
       <div class="buttons">
         <a href="login_form.php">Admin Login</a>
-        <a href="./engagement_relations/engagement_relations.php">Portal Login</a>
+        <a href="employee_portal/">Portal Login</a>
       </div>
     </div>
   </div>

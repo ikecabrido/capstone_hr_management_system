@@ -237,7 +237,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
 <body>
     <!-- Mobile Menu Toggle -->
     <button class="menu-toggle" id="menuToggle" style="display: none;">☰</button>
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>message
     
     <?php require_once "../app/components/Sidebar.php"; ?>
 
