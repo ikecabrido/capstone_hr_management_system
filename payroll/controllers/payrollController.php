@@ -41,7 +41,7 @@ class PayrollController
         $results = [];
 
         foreach ($employees as $emp) {
-            $payroll = $this->payrollModel->calculateEmployeePayroll($emp['id'], $periodId);
+            $payroll = $this->payrollModel->calculateEmployeePayroll($emp['employee_id'], $periodId);
             $results[] = array_merge($emp, $payroll);
         }
         // $this->payrollModel->createPayrollRun($periodId);
@@ -66,8 +66,8 @@ class PayrollController
         $employees = $this->payrollModel->getEmployeesForPayroll($periodId);
 
         foreach ($employees as $emp) {
-            $payroll = $this->payrollModel->calculateEmployeePayroll($emp['id'], $periodId);
-            $this->payrollModel->generatePayslip($runId, $emp['id'], $payroll);
+            $payroll = $this->payrollModel->calculateEmployeePayroll($emp['employee_id'], $periodId);
+            $this->payrollModel->generatePayslip($runId, $emp['employee_id'], $payroll);
         }
 
         $this->payrollModel->closePayrollPeriod($periodId);

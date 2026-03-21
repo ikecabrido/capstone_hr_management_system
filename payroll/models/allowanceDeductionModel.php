@@ -13,10 +13,10 @@ class AllowanceDeductionModel
     public function getEmployees(): array
     {
         $stmt = $this->db->query("
-            SELECT id, CONCAT(first_name,' ',last_name) AS name
+            SELECT employee_id as id, full_name AS name
             FROM employees
-            WHERE status='active'
-            ORDER BY last_name
+            WHERE employment_status='Active'
+            ORDER BY full_name
         ");
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -28,12 +28,12 @@ class AllowanceDeductionModel
         $sql = "
             SELECT 
                 ea.*,
-                CONCAT(e.first_name,' ',e.last_name) AS employee_name,
+                CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
                 pp.period_name,
                 pp.status AS period_status
-            FROM employee_adjustments ea
-            JOIN employees e ON ea.employee_id = e.id
-            JOIN payroll_periods pp ON ea.payroll_period_id = pp.id
+            FROM pr_employee_adjustments ea
+            JOIN employees e ON ea.employee_id = e.employee_id
+            JOIN pr_periods pp ON ea.payroll_period_id = pp.period_id
             WHERE 1=1
         ";
 
@@ -62,7 +62,7 @@ class AllowanceDeductionModel
             SELECT 
                 SUM(CASE WHEN type='allowance' THEN amount ELSE 0 END) AS total_allowance,
                 SUM(CASE WHEN type='deduction' THEN amount ELSE 0 END) AS total_deduction
-            FROM employee_adjustments
+            FROM pr_employee_adjustments
             WHERE 1=1
         ";
 
@@ -91,7 +91,7 @@ class AllowanceDeductionModel
     public function store(array $data): bool
     {
         $stmt = $this->db->prepare("
-            INSERT INTO employee_adjustments
+            INSERT INTO pr_employee_adjustments
             (employee_id, payroll_period_id, type, description, amount)
             VALUES (?,?,?,?,?)
         ");
@@ -107,7 +107,7 @@ class AllowanceDeductionModel
     public function addAdjustment($emp, $type, $desc, $amt, $period)
     {
         $stmt = $this->db->prepare("
-        INSERT INTO employee_adjustments
+        INSERT INTO pr_employee_adjustments
         (employee_id,type,description,amount,payroll_period_id)
         VALUES (?,?,?,?,?)
     ");
@@ -123,9 +123,9 @@ class AllowanceDeductionModel
     public function updateAdjustment($id, $desc, $amt)
     {
         $stmt = $this->db->prepare("
-        UPDATE employee_adjustments
+        UPDATE pr_employee_adjustments
         SET description=?, amount=?
-        WHERE id=?
+        WHERE adjustment_id=?
     ");
 
         return $stmt->execute([$desc, $amt, $id]);
@@ -133,8 +133,8 @@ class AllowanceDeductionModel
     public function deleteAdjustment($id)
     {
         $stmt = $this->db->prepare("
-        DELETE FROM employee_adjustments
-        WHERE id=?
+        DELETE FROM pr_employee_adjustments
+        WHERE adjustment_id=?
     ");
 
         return $stmt->execute([$id]);
@@ -142,7 +142,7 @@ class AllowanceDeductionModel
     public function isPeriodClosed(int $periodId): bool
     {
         $stmt = $this->db->prepare("
-        SELECT status FROM payroll_periods WHERE id = ?
+        SELECT status FROM pr_periods WHERE period_id = ?
     ");
         $stmt->execute([$periodId]);
 
