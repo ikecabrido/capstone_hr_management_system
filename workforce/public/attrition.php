@@ -1,53 +1,173 @@
 <!-- TAB 2: ATTRITION & TURNOVER -->
-    <div class="filter-section">
-        <label>Select Year:</label>
-        <select id="attrition-year" onchange="loadAttritionData()">
-            <option value="2024">2024</option>
-            <option value="2025">2025</option>
-            <option value="2026" selected>2026</option>
-        </select>
+<div class="wfa-container" id="attritionContainer">
+    <div class="wfa-loading">
+        <i class="fas fa-spinner fa-spin"></i> Loading Attrition Data...
     </div>
+</div>
 
-    <div class="metrics-grid">
-        <div class="metric-card">
-            <div class="metric-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-                    <polyline points="17 6 23 6 23 12"></polyline>
-                </svg>
+<script>
+async function loadAttritionTab() {
+    const container = document.getElementById('attritionContainer');
+    
+    try {
+        const basePath = '/capstone_hr_management_system';
+        const response = await fetch(`${basePath}/api/wfa/attrition_metrics.php`);
+        const data = await response.json();
+        
+        const monthly = data.data?.monthly_summary || [];
+        const byType = data.data?.by_separation_type || [];
+        
+        let html = `
+            <!-- Attrition Metrics -->
+            <div class="wfa-metrics-grid">
+                <div class="wfa-metric-card danger">
+                    <div class="wfa-metric-label">Total Separations (YTD)</div>
+                    <div class="wfa-metric-value">${monthly.reduce((sum, m) => sum + (m.total_separations || 0), 0)}</div>
+                    <div class="wfa-metric-change">This year</div>
+                </div>
+                
+                <div class="wfa-metric-card warning">
+                    <div class="wfa-metric-label">Voluntary Separations</div>
+                    <div class="wfa-metric-value">${monthly.reduce((sum, m) => sum + (m.voluntary_separations || 0), 0)}</div>
+                    <div class="wfa-metric-change">Resignations</div>
+                </div>
+                
+                <div class="wfa-metric-card">
+                    <div class="wfa-metric-label">Involuntary Separations</div>
+                    <div class="wfa-metric-value">${monthly.reduce((sum, m) => sum + (m.involuntary_separations || 0), 0)}</div>
+                    <div class="wfa-metric-change">Terminations</div>
+                </div>
+                
+                <div class="wfa-metric-card info">
+                    <div class="wfa-metric-label">Avg Attrition Rate</div>
+                    <div class="wfa-metric-value">${monthly.length > 0 ? (monthly.reduce((sum, m) => sum + (m.attrition_rate_percent || 0), 0) / monthly.length).toFixed(1) : 0}%</div>
+                    <div class="wfa-metric-change">Monthly average</div>
+                </div>
             </div>
-            <div class="metric-content">
-                <h3>Attrition Rate</h3>
-                <p class="metric-value" id="attrition-rate">-</p>
+            
+            <!-- Charts -->
+            <div class="wfa-charts-grid">
+                <div class="wfa-chart-container">
+                    <div class="wfa-chart-title">Monthly Attrition Rate</div>
+                    <canvas id="attritionTrendChart"></canvas>
+                </div>
+                
+                <div class="wfa-chart-container">
+                    <div class="wfa-chart-title">Separation Types</div>
+                    <canvas id="separationTypeChart"></canvas>
+                </div>
             </div>
-        </div>
-    </div>
+            
+            <!-- Attrition Summary Table -->
+            <div class="wfa-table-container">
+                <h3 style="margin-bottom: 15px;">Monthly Attrition Summary</h3>
+                <table class="wfa-table">
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th>Total Separations</th>
+                            <th>Voluntary</th>
+                            <th>Involuntary</th>
+                            <th>Attrition Rate (%)</th>
+                            <th>Avg Tenure (Years)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        if (monthly.length > 0) {
+            monthly.slice(0, 12).forEach(m => {
+                html += `
+                    <tr>
+                        <td>${m.year_month || 'N/A'}</td>
+                        <td>${m.total_separations || 0}</td>
+                        <td>${m.voluntary_separations || 0}</td>
+                        <td>${m.involuntary_separations || 0}</td>
+                        <td>${(m.attrition_rate_percent || 0).toFixed(2)}%</td>
+                        <td>${(m.average_tenure_departing || 0).toFixed(1)}</td>
+                    </tr>
+                `;
+            });
+        } else {
+            html += '<tr><td colspan="6" style="text-align: center; padding: 20px;">No attrition data available</td></tr>';
+        }
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        container.innerHTML = html;
+        
+        // Initialize charts
+        initAttritionCharts(monthly, byType);
+        
+    } catch (error) {
+        console.error('Error loading attrition data:', error);
+        container.innerHTML = '<div class="wfa-error">Error loading attrition data</div>';
+    }
+}
 
-    <div class="charts-section">
-        <div class="chart-container">
-            <h3>Monthly Attrition Trends</h3>
-            <canvas id="attritionChart"></canvas>
-        </div>
+function initAttritionCharts(monthly, byType) {
+    // Attrition Trend Chart
+    if (monthly.length > 0) {
+        const trendCtx = document.getElementById('attritionTrendChart')?.getContext('2d');
+        if (trendCtx) {
+            new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: monthly.map(m => m.year_month),
+                    datasets: [{
+                        label: 'Attrition Rate (%)',
+                        data: monthly.map(m => m.attrition_rate_percent || 0),
+                        borderColor: '#dc3545',
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: true } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+    }
+    
+    // Separation Type Chart
+    if (byType.length > 0) {
+        const typeCtx = document.getElementById('separationTypeChart')?.getContext('2d');
+        if (typeCtx) {
+            new Chart(typeCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: byType.map(t => t.separation_type),
+                    datasets: [{
+                        data: byType.map(t => t.count),
+                        backgroundColor: ['#28a745', '#ffc107', '#dc3545']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+    }
+}
 
-        <div class="chart-container">
-            <h3>Performance Distribution</h3>
-            <canvas id="performanceChart"></canvas>
-        </div>
-    </div>
-
-    <div class="table-section">
-        <h3>Recently Separated Employees</h3>
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Position</th>
-                    <th>Department</th>
-                    <th>Status</th>
-                    <th>Separation Date</th>
-                </tr>
-            </thead>
-            <tbody id="separated-employees-table">
+// Load on tab click
+document.addEventListener('DOMContentLoaded', function() {
+    const attritionTab = document.querySelector('a[href="#attrition"]');
+    if (attritionTab) {
+        attritionTab.addEventListener('click', function() {
+            loadAttritionTab();
+        });
+    }
+});
+</script>
                 <tr>
                     <td colspan="5" class="text-center">Loading...</td>
                 </tr>
