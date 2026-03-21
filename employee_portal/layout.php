@@ -1,5 +1,5 @@
 <?php
-$partials = __DIR__ . '/views/partials/';
+$partials = __DIR__ . '/app/views/partials/';
 $base = "/capstone_hr_management_system";
 $content = $content ?? __DIR__ . '/error-content.php';
 ?>
