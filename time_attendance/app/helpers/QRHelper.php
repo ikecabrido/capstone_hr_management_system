@@ -43,7 +43,7 @@ class QRHelper
         // Detect the server's actual IP address
         $ip_address = $this->getServerIP();
 
-        $query = "INSERT INTO attendance_tokens (token, generated_by, generated_for_date, expires_at, ip_address)
+        $query = "INSERT INTO ta_attendance_tokens (token, generated_by, generated_for_date, expires_at, ip_address)
                   VALUES (:token, :generated_by, :generated_for_date, :expires_at, :ip_address)";
 
         $stmt = $this->conn->prepare($query);
@@ -116,7 +116,7 @@ class QRHelper
         // Simply trim whitespace, don't use htmlspecialchars (it can alter hex values)
         $token = trim($token);
 
-        $query = "SELECT * FROM attendance_tokens
+        $query = "SELECT * FROM ta_attendance_tokens
                   WHERE token = :token
                   AND used = 0
                   AND expires_at >= NOW()
@@ -132,7 +132,7 @@ class QRHelper
         error_log("QRHelper::validateToken() - Token: " . substr($token, 0, 16) . "... | Found: " . ($result ? "YES" : "NO"));
         if (!$result) {
             // Try to find out why it failed
-            $debug_query = "SELECT token_id, used, expires_at, NOW() as check_time FROM attendance_tokens WHERE token = :token";
+            $debug_query = "SELECT token_id, used, expires_at, NOW() as check_time FROM ta_attendance_tokens WHERE token = :token";
             $debug_stmt = $this->conn->prepare($debug_query);
             $debug_stmt->bindParam(':token', $token);
             $debug_stmt->execute();
@@ -168,7 +168,7 @@ class QRHelper
      */
     public function getTokenDetails($token)
     {
-        $query = "SELECT * FROM attendance_tokens WHERE token = :token LIMIT 1";
+        $query = "SELECT * FROM ta_attendance_tokens WHERE token = :token LIMIT 1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':token', $token);
         $stmt->execute();
@@ -181,7 +181,7 @@ class QRHelper
      */
     public function cleanupExpiredTokens()
     {
-        $query = "DELETE FROM attendance_tokens 
+        $query = "DELETE FROM ta_attendance_tokens 
                   WHERE used = 0 AND expires_at < NOW()";
         $stmt = $this->conn->prepare($query);
 
@@ -197,7 +197,7 @@ class QRHelper
             $date = date("Y-m-d");
         }
 
-        $query = "SELECT COUNT(*) as count FROM attendance_tokens
+        $query = "SELECT COUNT(*) as count FROM ta_attendance_tokens
                   WHERE generated_for_date = :date
                   AND used = 0
                   AND expires_at >= NOW()";

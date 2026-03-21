@@ -55,20 +55,31 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Calendar Schedule CSS -->
+    <link rel="stylesheet" href="../app/css/calendar_schedule.css">
     <style>
         body {
-            display: flex;
-            min-height: 100vh;
             background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            transition: margin-left 0.3s ease;
         }
+
+        body.sidebar-collapsed {
+            margin-left: 0;
+        }
+
         .main-content {
+            width: calc(100% - 250px);
             margin-left: 250px;
             margin-top: 60px;
-            flex: 1;
+            min-height: calc(100vh - 60px);
             padding: 30px 20px;
-            transition: margin-left 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+            transition: width 0.3s ease, margin-left 0.3s ease;
         }
-        .main-content.sidebar-collapsed {
+
+        body.sidebar-collapsed .main-content {
+            width: 100%;
             margin-left: 0;
         }
         .content-wrapper {
@@ -203,6 +214,29 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
             border-color: transparent;
             box-shadow: 0 6px 20px rgba(0, 61, 130, 0.3);
             transform: translateY(-2px);
+        }
+        /* Ensure Day View displays at full width */
+        #calendar-section {
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+        }
+        #day-timeline-container {
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+        }
+        #day-timeline-canvas {
+            max-width: 100% !important;
+            width: auto !important;
+        }
+        .tab-pane {
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+        .tab-content {
+            width: 100% !important;
+            box-sizing: border-box !important;
         }
     </style>
 </head>

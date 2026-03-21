@@ -32,7 +32,7 @@ if (!$token) {
 }
 
 // Get token IP from database for QR generation
-$query = "SELECT ip_address FROM attendance_tokens WHERE token = :token LIMIT 1";
+$query = "SELECT ip_address FROM ta_attendance_tokens WHERE token = :token LIMIT 1";
 $stmt = $GLOBALS['conn'] ?? null;
 
 // Fallback to getting IP directly

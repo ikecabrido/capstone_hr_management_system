@@ -9,7 +9,7 @@ require_once __DIR__ . '/../config/Database.php';
 class Attendance
 {
     private $conn;
-    private $table = "attendance";
+    private $table = "ta_attendance";
 
     public function __construct()
     {
@@ -236,7 +236,7 @@ class Attendance
      */
     public function isHoliday($date)
     {
-        $query = "SELECT is_working_day FROM holidays 
+        $query = "SELECT is_working_day FROM ta_holidays 
                   WHERE holiday_date = :date 
                   AND year = YEAR(:date) 
                   AND is_working_day = 0";
@@ -254,7 +254,7 @@ class Attendance
     public function getHolidayInfo($date)
     {
         $query = "SELECT holiday_id, holiday_name, description, is_working_day 
-                  FROM holidays 
+                  FROM ta_holidays 
                   WHERE holiday_date = :date 
                   AND year = YEAR(:date)";
 
@@ -273,7 +273,7 @@ class Attendance
         $year = $year ?: date('Y');
         
         $query = "SELECT holiday_date, holiday_name, description, is_working_day 
-                  FROM holidays 
+                  FROM ta_holidays 
                   WHERE year = :year 
                   ORDER BY holiday_date ASC";
 

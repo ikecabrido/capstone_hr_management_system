@@ -18,6 +18,8 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
     /* AdminLTE Sidebar Styling - Clean and Professional */
     * {
         box-sizing: border-box;
+        margin: 0;
+        padding: 0;
     }
 
     body {
@@ -34,12 +36,41 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
         top: 0;
         left: 250px;
         right: 0;
-        z-index: 1030;
+        z-index: 990;
         height: 60px;
-        padding: 0.5rem 0;
+        padding: 0 20px;
         display: flex;
         align-items: center;
-        padding-left: 20px;
+        box-sizing: border-box;
+        width: calc(100% - 250px);
+        transition: left 0.3s ease, width 0.3s ease;
+    }
+
+    body.sidebar-collapsed .main-header.navbar {
+        left: 0;
+        width: 100%;
+    }
+
+    .main-sidebar {
+        width: 250px;
+        background: linear-gradient(135deg, #1e5ba8 0%, #2575d0 100%);
+        color: white;
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+        margin: 0;
+        padding: 0;
+        transition: transform 0.3s ease;
+    }
+
+    .main-sidebar.collapsed {
+        transform: translateX(-250px);
     }
 
     .navbar-nav {
@@ -76,32 +107,20 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
         padding-right: 20px;
     }
 
-    .main-sidebar {
-        width: 250px;
-        background: linear-gradient(135deg, #1e5ba8 0%, #2575d0 100%);
-        color: white;
-        position: fixed;
-        left: 0;
-        top: 0;
-        height: 100vh;
-        overflow-y: auto;
-        z-index: 900;
-        display: flex;
-        flex-direction: column;
-        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
-    }
-
     .brand-link {
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 25px 15px;
+        padding: 0 15px;
+        height: 60px;
         background: rgba(0, 0, 0, 0.15);
         border-bottom: 3px solid rgba(255, 255, 255, 0.2);
         text-decoration: none;
         color: white;
         transition: all 0.3s ease;
         gap: 12px;
+        flex-shrink: 0;
+        width: 100%;
     }
 
     .brand-link:hover {
@@ -109,14 +128,14 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
     }
 
     .brand-image {
-        width: 50px;
-        height: 50px;
+        width: 40px;
+        height: 40px;
         object-fit: contain;
         border-radius: 4px;
     }
 
     .brand-text {
-        font-size: 16px;
+        font-size: 14px;
         font-weight: 600;
         color: #ecf0f1;
         line-height: 1.2;
@@ -301,15 +320,6 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
         color: white;
     }
 
-    .main-content {
-        margin-left: 250px;
-        margin-top: 60px;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        min-height: calc(100vh - 60px);
-    }
-
     /* Dark Mode Styles */
     body.dark-mode {
         background-color: #1a1a1a;
@@ -368,12 +378,13 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
 
     /* Sidebar collapse animation */
     .main-sidebar {
-        transition: width 0.3s ease, margin-left 0.3s ease;
+        transition: width 0.3s ease, margin-left 0.3s ease, z-index 0.3s ease;
     }
 
     .main-sidebar.collapsed {
         width: 0;
         overflow: hidden;
+        z-index: 0;
     }
 
     .main-header.navbar {
@@ -382,14 +393,6 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
 
     .main-header.navbar.sidebar-collapsed {
         left: 0;
-    }
-
-    .main-content {
-        transition: margin-left 0.3s ease, margin-top 0.3s ease;
-    }
-
-    .main-content.sidebar-collapsed {
-        margin-left: 0;
     }
 
     @media (max-width: 768px) {
@@ -488,6 +491,16 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
                     <?php endif; ?>
                 </li>
 
+                <!-- Absence & Late Appeals (Employee Only) -->
+                <?php if ($current_role !== 'time'): ?>
+                    <li class="nav-item">
+                        <a href="my_absence_appeals.php" class="nav-link <?php echo $current_page === 'my_absence_appeals.php' ? 'active' : ''; ?>">
+                            <i class="nav-icon fas fa-calendar-times animation__wobble"></i>
+                            <p>My Absence & Late Appeals</p>
+                        </a>
+                    </li>
+                <?php endif; ?>
+
                 <!-- QR & Attendance Section (HR Only) -->
                 <?php if ($current_role === 'time'): ?>
                     <li class="nav-item">
@@ -528,6 +541,12 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
                             <p>Schedule Calendar</p>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="holidays.php" class="nav-link <?php echo $current_page === 'holidays.php' ? 'active' : ''; ?>">
+                            <i class="nav-icon fas fa-calendar-alt animation__wobble"></i>
+                            <p>Holidays</p>
+                        </a>
+                    </li>
                 <?php endif; ?>
 
                 <!-- Leave Management Section -->
@@ -536,6 +555,12 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
                         <a href="leave_approvals.php" class="nav-link <?php echo $current_page === 'leave_approvals.php' ? 'active' : ''; ?>">
                             <i class="nav-icon fas fa-file-alt animation__wobble"></i>
                             <p>Approve Leave Requests</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="absence_late_management.php" class="nav-link <?php echo $current_page === 'absence_late_management.php' ? 'active' : ''; ?>">
+                            <i class="nav-icon fas fa-calendar-times animation__wobble"></i>
+                            <p>Absence & Late Management</p>
                         </a>
                     </li>
                 <?php else: ?>
@@ -575,6 +600,7 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
         const sidebar = document.getElementById('mainSidebar');
         const navbar = document.querySelector('.main-header.navbar');
         const mainContent = document.querySelector('.main-content');
+        const body = document.body;
         
         // For mobile
         if (window.innerWidth <= 768) {
@@ -584,6 +610,7 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
             sidebar.classList.toggle('collapsed');
             navbar.classList.toggle('sidebar-collapsed');
             mainContent.classList.toggle('sidebar-collapsed');
+            body.classList.toggle('sidebar-collapsed');
         }
     }
 

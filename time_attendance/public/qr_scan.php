@@ -88,7 +88,7 @@ try {
     $now = date('Y-m-d H:i:s');
 
     // Check if there's already a record for today
-    $checkQuery = "SELECT attendance_id, time_in, time_out FROM attendance 
+    $checkQuery = "SELECT attendance_id, time_in, time_out FROM ta_attendance 
                    WHERE employee_id = :emp_id AND attendance_date = :date";
     $checkStmt = $conn->prepare($checkQuery);
     $checkStmt->execute([':emp_id' => $employee['employee_id'], ':date' => $today]);
@@ -123,7 +123,7 @@ try {
         }
     } else {
         // Create new attendance record
-        $insertQuery = "INSERT INTO attendance (employee_id, attendance_date, time_in, status) 
+        $insertQuery = "INSERT INTO ta_attendance (employee_id, attendance_date, time_in, status) 
                        VALUES (:emp_id, :date, :time_in, 'PRESENT')";
         $insertStmt = $conn->prepare($insertQuery);
         $result = $insertStmt->execute([

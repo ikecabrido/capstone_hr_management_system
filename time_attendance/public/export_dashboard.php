@@ -8,6 +8,11 @@ require_once "../app/controllers/AuthController.php";
 require_once "../app/models/Employee.php";
 require_once "../app/core/Session.php";
 
+// Include metrics calculator with namespace handling
+if (!class_exists('MetricsCalculator', false)) {
+    require_once "../app/helpers/MetricsCalculator.php";
+}
+
 Session::start();
 
 if (!AuthController::isAuthenticated()) {
@@ -34,7 +39,7 @@ $db = new Database();
 $conn = $db->getConnection();
 
 // Get monthly attendance
-$query = "SELECT * FROM attendance 
+$query = "SELECT * FROM ta_attendance 
           WHERE employee_id = ? AND DATE(time_in) BETWEEN ? AND ?
           ORDER BY time_in DESC";
 $stmt = $conn->prepare($query);
@@ -43,8 +48,8 @@ $monthly_attendance = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get leave requests
 $query_leave = "SELECT lr.*, lt.leave_type_name 
-                FROM leave_requests lr
-                JOIN leave_types lt ON lr.leave_type_id = lt.leave_type_id
+                FROM ta_leave_requests lr
+                JOIN ta_leave_types lt ON lr.leave_type_id = lt.leave_type_id
                 WHERE lr.employee_id = ? AND YEAR(start_date) = ?
                 ORDER BY start_date DESC";
 $stmt_leave = $conn->prepare($query_leave);
@@ -53,8 +58,8 @@ $leave_requests = $stmt_leave->fetchAll(PDO::FETCH_ASSOC);
 
 // Get leave balance
 $query_balance = "SELECT lb.*, lt.leave_type_name 
-                  FROM leave_balances lb
-                  JOIN leave_types lt ON lb.leave_type_id = lt.leave_type_id
+                  FROM ta_leave_balances lb
+                  JOIN ta_leave_types lt ON lb.leave_type_id = lt.leave_type_id
                   WHERE lb.employee_id = ? AND lb.year = ?";
 $stmt_balance = $conn->prepare($query_balance);
 $stmt_balance->execute([$employee_id, date('Y')]);
@@ -85,6 +90,17 @@ $emp_pos = htmlspecialchars($employee['position'] ?? 'N/A');
 $month_year = date('F Y');
 $current_date = date('F d, Y H:i:s');
 
+// Calculate metrics
+$calculator = new MetricsCalculator($conn);
+$monthYear = date('Y-m');
+$metricsResult = $calculator->calculateAttendanceMetrics($employee_id, $monthYear);
+$punctualityResult = $calculator->calculatePunctualityScore($employee_id, $monthYear);
+$overtimeResult = $calculator->calculateOvertimeFrequency($employee_id, $monthYear);
+
+$metrics = $metricsResult['success'] ? $metricsResult : [];
+$punctuality = $punctualityResult['success'] ? $punctualityResult : [];
+$overtime = $overtimeResult['success'] ? $overtimeResult : [];
+
 // If preview mode, return JSON data
 if ($is_preview) {
     error_log('Preview mode - returning JSON');
@@ -103,7 +119,11 @@ if ($is_preview) {
         'attendance_count' => count($monthly_attendance),
         'leave_count' => count($leave_requests),
         'balance_count' => count($leave_balances),
-        'file_size_estimate' => ceil((count($monthly_attendance) * 0.15 + count($leave_requests) * 0.10 + count($leave_balances) * 0.05) * 1.2) ?: 50
+        'file_size_estimate' => ceil((count($monthly_attendance) * 0.15 + count($leave_requests) * 0.10 + count($leave_balances) * 0.05) * 1.2) ?: 50,
+        // New metrics
+        'metrics' => $metrics,
+        'punctuality' => $punctuality,
+        'overtime' => $overtime
     ];
     
     header('Content-Type: application/json; charset=utf-8');

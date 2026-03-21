@@ -9,7 +9,7 @@
 
 class EmployeeShift {
     private $conn;
-    private $table = 'employee_shifts';
+    private $table = 'ta_employee_shifts';
 
     public $employee_shift_id;
     public $employee_id;
@@ -78,7 +78,7 @@ class EmployeeShift {
         $query = "SELECT es.*, s.shift_name, s.start_time, s.end_time, 
                          e.full_name
                   FROM " . $this->table . " es
-                  INNER JOIN shifts s ON es.shift_id = s.shift_id
+                  INNER JOIN ta_shifts s ON es.shift_id = s.shift_id
                   INNER JOIN employees e ON es.employee_id = e.employee_id
                   WHERE es.employee_id = ?";
 
@@ -103,7 +103,7 @@ class EmployeeShift {
     public function getCurrentShift($employee_id) {
         $query = "SELECT es.*, s.shift_name, s.start_time, s.end_time, s.break_duration
                   FROM " . $this->table . " es
-                  INNER JOIN shifts s ON es.shift_id = s.shift_id
+                  INNER JOIN ta_shifts s ON es.shift_id = s.shift_id
                   WHERE es.employee_id = ? AND es.is_active = 1 
                   AND es.effective_from <= CURDATE()
                   AND (es.effective_to IS NULL OR es.effective_to >= CURDATE())
@@ -125,7 +125,7 @@ class EmployeeShift {
         $query = "SELECT es.*, s.shift_name, s.start_time, s.end_time,
                          e.full_name, e.department
                   FROM " . $this->table . " es
-                  INNER JOIN shifts s ON es.shift_id = s.shift_id
+                  INNER JOIN ta_shifts s ON es.shift_id = s.shift_id
                   INNER JOIN employees e ON es.employee_id = e.employee_id
                   WHERE es.is_active = 1";
 

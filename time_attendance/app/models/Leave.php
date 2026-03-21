@@ -37,9 +37,9 @@ class Leave
     public function getPendingByDepartmentHead($deptHeadUserId)
     {
         $query = "SELECT lr.*, e.full_name, e.department, lt.leave_type_name
-                  FROM leave_requests lr
+                  FROM ta_leave_requests lr
                   INNER JOIN employees e ON lr.employee_id = e.employee_id
-                  INNER JOIN leave_types lt ON lr.leave_type_id = lt.leave_type_id
+                  INNER JOIN ta_leave_types lt ON lr.leave_type_id = lt.leave_type_id
                   INNER JOIN department_heads dh ON dh.department = e.department
                   WHERE dh.user_id = :user_id AND lr.status = 'Pending'
                   ORDER BY lr.date_submitted DESC";
@@ -57,9 +57,9 @@ class Leave
     public function getForHRApproval()
     {
         $query = "SELECT lr.*, e.full_name, e.department, lt.leave_type_name
-                  FROM leave_requests lr
+                  FROM ta_leave_requests lr
                   INNER JOIN employees e ON lr.employee_id = e.employee_id
-                  INNER JOIN leave_types lt ON lr.leave_type_id = lt.leave_type_id
+                  INNER JOIN ta_leave_types lt ON lr.leave_type_id = lt.leave_type_id
                   WHERE lr.status IN ('Pending', 'Approved')
                   ORDER BY lr.date_submitted DESC";
 
@@ -93,7 +93,7 @@ class Leave
      */
     public function getById($leave_request_id)
     {
-        $query = "SELECT * FROM leave_requests WHERE id = :id";
+        $query = "SELECT * FROM ta_leave_requests WHERE id = :id";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $leave_request_id, PDO::PARAM_INT);
         $stmt->execute();
@@ -105,7 +105,7 @@ class Leave
      */
     public function checkLeaveBalance($employee_id, $leave_type_id, $requested_days)
     {
-        $query = "SELECT remaining_days FROM leave_balances 
+        $query = "SELECT remaining_days FROM ta_leave_balances 
                   WHERE employee_id = :employee_id 
                   AND leave_type_id = :leave_type_id 
                   AND year = YEAR(CURDATE())";
@@ -158,8 +158,8 @@ class Leave
     public function getLeaveBalance($employee_id, $leave_type_id = null)
     {
         $query = "SELECT lb.*, lt.leave_type_name, lt.days_per_year
-                  FROM leave_balances lb
-                  JOIN leave_types lt ON lb.leave_type_id = lt.leave_type_id
+                  FROM ta_leave_balances lb
+                  JOIN ta_leave_types lt ON lb.leave_type_id = lt.leave_type_id
                   WHERE lb.employee_id = :employee_id 
                   AND lb.year = YEAR(CURDATE())";
 

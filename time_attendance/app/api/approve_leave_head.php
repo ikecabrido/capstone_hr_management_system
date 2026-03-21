@@ -91,7 +91,7 @@ if ($user_role === 'DEPARTMENT_HEAD') {
     
     // Check if department head is assigned to this department
     $query = "SELECT dept_head_id 
-              FROM department_heads 
+              FROM ta_department_heads 
               WHERE user_id = :user_id 
               AND department = :department 
               AND is_active = 1";

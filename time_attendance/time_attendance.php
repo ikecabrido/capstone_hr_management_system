@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once "../auth/auth_check.php";
+require_once "../auth/database.php";
 $theme = $_SESSION['user']['theme'] ?? 'light';
 
 ?>
@@ -510,6 +511,8 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
   <!-- Calendar Schedule JS -->
   <script src="app/js/calendar_schedule.js"></script>
+  <!-- Holiday Calendar JS -->
+  <script src="app/js/holiday_calendar.js"></script>
 
   <script>
     // Hide preloader after page loads

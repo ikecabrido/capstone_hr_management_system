@@ -268,6 +268,20 @@
     box-shadow: 0 2px 8px rgba(40, 167, 69, 0.4);
 }
 
+/* FullCalendar v6 shift event background */
+.fc .fc-event.shift-event .fc-event-bg {
+    background-color: #28a745 !important;
+}
+
+.fc .fc-event.shift-event {
+    background-color: #28a745 !important;
+    border-color: #1e7e34 !important;
+}
+
+.fc-event.shift-event .fc-event-bg {
+    background-color: #28a745 !important;
+}
+
 .attendance-event {
     background-color: #17a2b8 !important;
     border-color: #0c5460 !important;
@@ -286,6 +300,20 @@
     box-shadow: 0 2px 8px rgba(23, 162, 184, 0.4);
 }
 
+/* FullCalendar v6 attendance event background */
+.fc .fc-event.attendance-event .fc-event-bg {
+    background-color: #17a2b8 !important;
+}
+
+.fc .fc-event.attendance-event {
+    background-color: #17a2b8 !important;
+    border-color: #0c5460 !important;
+}
+
+.fc-event.attendance-event .fc-event-bg {
+    background-color: #17a2b8 !important;
+}
+
 .late-event {
     background-color: #ffc107 !important;
     border-color: #e0a800 !important;
@@ -298,6 +326,20 @@
     font-weight: 600;
 }
 
+/* FullCalendar v6 late event background */
+.fc .fc-event.late-event .fc-event-bg {
+    background-color: #ffc107 !important;
+}
+
+.fc .fc-event.late-event {
+    background-color: #ffc107 !important;
+    border-color: #e0a800 !important;
+}
+
+.fc-event.late-event .fc-event-bg {
+    background-color: #ffc107 !important;
+}
+
 .absent-event {
     background-color: #dc3545 !important;
     border-color: #a02622 !important;
@@ -308,6 +350,64 @@
 .absent-event .fc-event-title {
     color: white !important;
     font-weight: 600;
+}
+
+/* FullCalendar v6 absent event background */
+.fc .fc-event.absent-event .fc-event-bg {
+    background-color: #dc3545 !important;
+}
+
+.fc .fc-event.absent-event {
+    background-color: #dc3545 !important;
+    border-color: #a02622 !important;
+}
+
+.fc-event.absent-event .fc-event-bg {
+    background-color: #dc3545 !important;
+}
+
+.flex-event {
+    background-color: #9c27b0 !important;
+    border-color: #7b1fa2 !important;
+    color: white !important;
+    opacity: 0.95;
+}
+
+.flexible-event {
+    background-color: #9c27b0 !important;
+    border-color: #7b1fa2 !important;
+    color: white !important;
+    opacity: 0.95;
+}
+
+.flexible-event .fc-event-title {
+    color: white !important;
+    font-weight: 600;
+}
+
+.flexible-event:hover {
+    background-color: #7b1fa2 !important;
+    opacity: 1;
+    box-shadow: 0 2px 8px rgba(156, 39, 176, 0.4);
+}
+
+/* FullCalendar v6 event background color overrides */
+.fc .fc-event.flexible-event .fc-event-bg {
+    background-color: #9c27b0 !important;
+}
+
+.fc .fc-event.flexible-event {
+    background-color: #9c27b0 !important;
+    border-color: #7b1fa2 !important;
+}
+
+.fc-event.flex-event .fc-event-bg {
+    background-color: #9c27b0 !important;
+}
+
+.fc-event.flex-event {
+    background-color: #9c27b0 !important;
+    border-color: #7b1fa2 !important;
 }
 
 /* Week View */

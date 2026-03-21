@@ -108,9 +108,9 @@ document.addEventListener('DOMContentLoaded', function() {
         let html = '';
         employees.forEach(emp => {
             html += `
-                <div class="dropdown-item employee-option" data-id="${emp.employee_id}" data-name="${emp.first_name} ${emp.last_name}">
-                    <div class="employee-option-name">${emp.first_name} ${emp.last_name}</div>
-                    <div class="employee-option-id">ID: ${emp.employee_number}</div>
+                <div class="dropdown-item employee-option" data-id="${emp.employee_id}" data-name="${emp.full_name}">
+                    <div class="employee-option-name">${emp.full_name}</div>
+                    <div class="employee-option-id">ID: ${emp.employee_id}</div>
                 </div>
             `;
         });
@@ -173,12 +173,14 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('✓ Switching to', view, 'view');
             const calendarContainer = document.getElementById('calendar-container');
             const dayViewPane = document.getElementById('day-view');
+            const controlsGrid = document.getElementById('controls-grid');
             
             if (view === 'month') {
                 if (calendarContainer) calendarContainer.style.display = 'block';
                 if (dayViewPane) {
                     dayViewPane.classList.remove('show', 'active');
                 }
+                if (controlsGrid) controlsGrid.style.display = 'grid';
                 if (currentCalendar) {
                     currentCalendar.changeView('dayGridMonth');
                 }
@@ -187,6 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (dayViewPane) {
                     dayViewPane.classList.remove('show', 'active');
                 }
+                if (controlsGrid) controlsGrid.style.display = 'grid';
                 if (currentCalendar) {
                     currentCalendar.changeView('dayGridWeek');
                 }
@@ -195,6 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (dayViewPane) {
                     dayViewPane.classList.add('show', 'active');
                 }
+                if (controlsGrid) controlsGrid.style.display = 'none';
             }
         }
         
@@ -269,8 +273,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const today = new Date();
+        // Fetch data for the current month through the end of next year to cover contract end dates
         const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        const lastDay = new Date(today.getFullYear() + 1, today.getMonth() + 1, 0);
 
         const startDate = formatDate(firstDay);
         const endDate = formatDate(lastDay);
@@ -290,7 +295,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('All schedules data received:', data);
                 if (data.success || Array.isArray(data)) {
                     const scheduleData = data.success ? data.data : data;
-                    initializeCalendar(calendarEl, scheduleData);
+                    // Wrap in schedule property for initializeCalendar
+                    initializeCalendar(calendarEl, { schedule: scheduleData });
                 } else {
                     console.error('API returned error:', data.error);
                     showError(data.error || 'Failed to load schedules');
@@ -319,8 +325,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const today = new Date();
+        // Fetch data for the current month through the end of next year to cover contract end dates
         const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        const lastDay = new Date(today.getFullYear() + 1, today.getMonth() + 1, 0);
 
         // Fetch schedule data
         const startDate = formatDate(firstDay);
@@ -413,18 +420,27 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Build calendar events
+    // Helper function to check if a date is Sunday
+    function isSunday(dateStr) {
+        const date = new Date(dateStr + 'T00:00:00');
+        return date.getDay() === 0; // 0 = Sunday
+    }
+
     function buildCalendarEvents(schedule) {
         const events = [];
 
         // Handle both formats - array of events or array of day objects
         if (Array.isArray(schedule) && schedule.length > 0) {
             if (schedule[0].title !== undefined) {
-                // Direct events format from API
+                // Direct events format from API - already has title, start, end, className
+                console.log('✓ Processing direct events format:', schedule.length, 'events');
                 return schedule;
-            } else {
-                // Day-by-day format
+            } else if (schedule[0].date !== undefined) {
+                // Day-by-day format with date/shift/attendance structure
+                console.log('✓ Processing day-by-day format:', schedule.length, 'days');
                 schedule.forEach(day => {
-                    if (day.shift) {
+                    // Skip Sunday shifts
+                    if (day.shift && !isSunday(day.date)) {
                         events.push({
                             title: `${day.shift.shift_name}`,
                             start: day.date,
@@ -450,10 +466,27 @@ document.addEventListener('DOMContentLoaded', function() {
                             }
                         });
                     }
+
+                    if (day.flexible) {
+                        const startTime = day.flexible.start_time ? day.flexible.start_time.substring(0, 5) : 'N/A';
+                        const endTime = day.flexible.end_time ? day.flexible.end_time.substring(0, 5) : 'N/A';
+                        
+                        events.push({
+                            title: `Flexible: ${startTime} - ${endTime}`,
+                            start: day.date + 'T' + day.flexible.start_time,
+                            end: day.date + 'T' + day.flexible.end_time,
+                            className: 'flexible-event',
+                            extendedProps: {
+                                type: 'flexible',
+                                flexible: day.flexible
+                            }
+                        });
+                    }
                 });
             }
         }
 
+        console.log('✓ Built', events.length, 'calendar events');
         return events;
     }
 
@@ -497,8 +530,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         console.log('✓ Canvas and container found, setting up timeline');
-        canvas.width = container.offsetWidth - 40;
+        // Set canvas dimensions with better sizing
+        const availableWidth = container.clientWidth;
+        const minCanvasWidth = Math.max(availableWidth - 40, 600);
+        
+        canvas.width = minCanvasWidth;
         canvas.height = 700;
+        
+        console.log('Canvas dimensions - Width:', canvas.width, 'Height:', canvas.height, 'Container width:', availableWidth);
         
         const ctx = canvas.getContext('2d');
         const dayHeight = canvas.height;

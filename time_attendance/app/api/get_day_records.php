@@ -45,7 +45,7 @@ try {
                 WHEN time_in IS NOT NULL THEN 'PRESENT'
                 ELSE 'ABSENT'
             END as status
-        FROM attendance
+        FROM ta_attendance
         WHERE employee_id = :employee_id
         AND DATE(time_in) = :date
         ORDER BY time_in DESC

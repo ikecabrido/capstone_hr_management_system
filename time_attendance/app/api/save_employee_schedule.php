@@ -40,7 +40,7 @@ try {
 
     // For this implementation, we're creating custom_shifts table to store day-specific overrides
     // First, check if custom shift entry exists for this date
-    $check_query = "SELECT custom_shift_id FROM custom_shifts 
+    $check_query = "SELECT custom_shift_id FROM ta_custom_shifts 
                    WHERE employee_id = ? AND shift_date = ?";
     $stmt = $conn->prepare($check_query);
     $stmt->execute([$employee_id, $date]);
@@ -48,12 +48,12 @@ try {
 
     if ($existing) {
         // Update existing custom shift
-        $delete_query = "DELETE FROM custom_shift_times WHERE custom_shift_id = ?";
+        $delete_query = "DELETE FROM ta_custom_shift_times WHERE custom_shift_id = ?";
         $stmt = $conn->prepare($delete_query);
         $stmt->execute([$existing['custom_shift_id']]);
     } else {
         // Create new custom shift entry
-        $insert_query = "INSERT INTO custom_shifts (employee_id, shift_date, created_at, updated_at) 
+        $insert_query = "INSERT INTO ta_custom_shifts (employee_id, shift_date, created_at, updated_at) 
                         VALUES (?, ?, NOW(), NOW())";
         $stmt = $conn->prepare($insert_query);
         $stmt->execute([$employee_id, $date]);
@@ -61,7 +61,7 @@ try {
     }
 
     // Get custom shift ID
-    $get_id_query = "SELECT custom_shift_id FROM custom_shifts 
+    $get_id_query = "SELECT custom_shift_id FROM ta_custom_shifts 
                     WHERE employee_id = ? AND shift_date = ?";
     $stmt = $conn->prepare($get_id_query);
     $stmt->execute([$employee_id, $date]);
@@ -70,7 +70,7 @@ try {
 
     // Insert new shift times
     if (!empty($shifts)) {
-        $insert_times_query = "INSERT INTO custom_shift_times (custom_shift_id, start_time, end_time) 
+        $insert_times_query = "INSERT INTO ta_custom_shift_times (custom_shift_id, start_time, end_time) 
                               VALUES (?, ?, ?)";
         $stmt = $conn->prepare($insert_times_query);
 
