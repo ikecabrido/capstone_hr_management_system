@@ -64,7 +64,7 @@ class Notification
      */
     public function getById($notification_id)
     {
-        $query = "SELECT * FROM notifications WHERE notification_id = :id";
+        $query = "SELECT * FROM ta_notifications WHERE notification_id = :id";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $notification_id, PDO::PARAM_INT);
         $stmt->execute();
@@ -76,7 +76,7 @@ class Notification
      */
     public function getUnread($user_id)
     {
-        $query = "SELECT * FROM notifications WHERE user_id = :user_id AND is_read = 0 ORDER BY created_at DESC LIMIT 10";
+        $query = "SELECT * FROM ta_notifications WHERE user_id = :user_id AND is_read = 0 ORDER BY created_at DESC LIMIT 10";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
         $stmt->execute();
@@ -88,7 +88,7 @@ class Notification
      */
     public function getForUser($user_id, $limit = 20)
     {
-        $query = "SELECT * FROM notifications WHERE user_id = :user_id ORDER BY created_at DESC LIMIT :limit";
+        $query = "SELECT * FROM ta_notifications WHERE user_id = :user_id ORDER BY created_at DESC LIMIT :limit";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
         $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
@@ -144,7 +144,7 @@ class Notification
      */
     public function getUnreadCount($user_id)
     {
-        $query = "SELECT COUNT(*) as count FROM notifications WHERE user_id = :user_id AND is_read = 0";
+        $query = "SELECT COUNT(*) as count FROM ta_notifications WHERE user_id = :user_id AND is_read = 0";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
         $stmt->execute();

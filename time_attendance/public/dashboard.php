@@ -65,6 +65,57 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
     <script src="../../assets/plugins/toastr/toastr.min.js"></script>
     <script src="../../assets/dist/js/adminlte.js"></script>
     
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            transition: margin-left 0.3s ease;
+        }
+
+        body.sidebar-collapsed {
+            margin-left: 0;
+        }
+
+        .main-content {
+            width: calc(100% - 250px);
+            margin-left: 250px;
+            margin-top: 60px;
+            min-height: calc(100vh - 60px);
+            overflow-y: auto;
+            transition: width 0.3s ease, margin-left 0.3s ease;
+        }
+
+        body.sidebar-collapsed .main-content {
+            width: 100%;
+            margin-left: 0;
+        }
+
+        .content-wrapper {
+            width: 100%;
+            margin: 0;
+            padding: 30px 20px;
+        }
+
+        /* Override AdminLTE container defaults */
+        .container, .container-fluid {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+    </style>
 </head>
 <body>
     <div
@@ -108,6 +159,93 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
                     <h3>Pending Approvals</h3>
                     <div class="card-value"><?php echo count($pendingApprovals); ?></div>
                     <div class="card-unit">Manual entries</div>
+                </div>
+            </div>
+
+            <!-- Attendance Metrics Overview -->
+            <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #007bff;">
+                <h2 style="color: #2c3e50; margin-bottom: 20px; font-size: 1.5rem;">📊 Monthly Attendance Metrics</h2>
+                
+                <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <!-- Attendance Rate -->
+                    <div class="metric-card" style="background: #e3f2fd; border-left: 4px solid #2196F3; padding: 20px; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase;">Avg Attendance Rate</span>
+                            <i class="fas fa-chart-pie" style="color: #2196F3; font-size: 18px;"></i>
+                        </div>
+                        <div id="avg-attendance-rate" style="font-size: 28px; font-weight: bold; color: #2196F3;">--</div>
+                        <div style="font-size: 11px; color: #999; margin-top: 5px;">Target: 95%+</div>
+                    </div>
+
+                    <!-- Punctuality Score -->
+                    <div class="metric-card" style="background: #e8f5e9; border-left: 4px solid #4CAF50; padding: 20px; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase;">Avg Punctuality</span>
+                            <i class="fas fa-thumbs-up" style="color: #4CAF50; font-size: 18px;"></i>
+                        </div>
+                        <div id="avg-punctuality-score" style="font-size: 28px; font-weight: bold; color: #4CAF50;">--</div>
+                        <div style="font-size: 11px; color: #999; margin-top: 5px;">Grade Scale: A-F</div>
+                    </div>
+
+                    <!-- Absence Rate -->
+                    <div class="metric-card" style="background: #ffebee; border-left: 4px solid #f44336; padding: 20px; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase;">Avg Absence Rate</span>
+                            <i class="fas fa-ban" style="color: #f44336; font-size: 18px;"></i>
+                        </div>
+                        <div id="avg-absence-rate" style="font-size: 28px; font-weight: bold; color: #f44336;">--</div>
+                        <div style="font-size: 11px; color: #999; margin-top: 5px;">Alert if >20%</div>
+                    </div>
+
+                    <!-- Performance Score -->
+                    <div class="metric-card" style="background: #fff3e0; border-left: 4px solid #FF9800; padding: 20px; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase;">Performance Score</span>
+                            <i class="fas fa-star" style="color: #FF9800; font-size: 18px;"></i>
+                        </div>
+                        <div id="avg-performance-score" style="font-size: 28px; font-weight: bold; color: #FF9800;">--</div>
+                        <div style="font-size: 11px; color: #999; margin-top: 5px;">Weighted: 40-35-25</div>
+                    </div>
+
+                    <!-- Late Incidents -->
+                    <div class="metric-card" style="background: #e1f5fe; border-left: 4px solid #03A9F4; padding: 20px; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase;">Late Incidents</span>
+                            <i class="fas fa-hourglass-end" style="color: #03A9F4; font-size: 18px;"></i>
+                        </div>
+                        <div id="total-late-incidents" style="font-size: 28px; font-weight: bold; color: #03A9F4;">--</div>
+                        <div style="font-size: 11px; color: #999; margin-top: 5px;">Current Month</div>
+                    </div>
+
+                    <!-- Overtime Hours -->
+                    <div class="metric-card" style="background: #f3e5f5; border-left: 4px solid #9C27B0; padding: 20px; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase;">Overtime Hours</span>
+                            <i class="fas fa-bolt" style="color: #9C27B0; font-size: 18px;"></i>
+                        </div>
+                        <div id="total-overtime-hours" style="font-size: 28px; font-weight: bold; color: #9C27B0;">--</div>
+                        <div style="font-size: 11px; color: #999; margin-top: 5px;">Total for Month</div>
+                    </div>
+
+                    <!-- Excellent Performers -->
+                    <div class="metric-card" style="background: #e0f2f1; border-left: 4px solid #009688; padding: 20px; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase;">Excellent (A Grade)</span>
+                            <i class="fas fa-check-circle" style="color: #009688; font-size: 18px;"></i>
+                        </div>
+                        <div id="excellent-performers" style="font-size: 28px; font-weight: bold; color: #009688;">--</div>
+                        <div style="font-size: 11px; color: #999; margin-top: 5px;">Score ≥90</div>
+                    </div>
+
+                    <!-- Critical Issues -->
+                    <div class="metric-card" style="background: #ffe0b2; border-left: 4px solid #FF6F00; padding: 20px; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase;">Critical Issues</span>
+                            <i class="fas fa-exclamation-triangle" style="color: #FF6F00; font-size: 18px;"></i>
+                        </div>
+                        <div id="critical-issues" style="font-size: 28px; font-weight: bold; color: #FF6F00;">--</div>
+                        <div style="font-size: 11px; color: #999; margin-top: 5px;">Needs Action</div>
+                    </div>
                 </div>
             </div>
 
@@ -192,6 +330,44 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
     </div>
 
     <script>
+        // Load attendance metrics
+        function loadAttendanceMetrics() {
+            const monthYear = new Date().toISOString().slice(0, 7);
+            $.ajax({
+                url: '../app/api/metrics.php',
+                type: 'GET',
+                data: { action: 'get_attendance_metrics_summary', month_year: monthYear },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success && response.summary) {
+                        $('#avg-attendance-rate').text(Math.round(response.summary.avg_attendance_rate) + '%');
+                        $('#avg-punctuality-score').text(Math.round(response.summary.avg_punctuality_score));
+                        $('#avg-absence-rate').text(Math.round(response.summary.avg_absence_rate) + '%');
+                        $('#avg-performance-score').text(Math.round(response.summary.avg_overall_performance));
+                        $('#total-late-incidents').text(Math.round(response.summary.total_late_incidents));
+                        $('#total-overtime-hours').text(Math.round(response.summary.total_overtime_hours * 10) / 10);
+                        $('#excellent-performers').text(response.summary.excellent_performers);
+                        $('#critical-issues').text(response.summary.critical_issues);
+                    }
+                },
+                error: function(error) {
+                    console.log('Error loading metrics:', error);
+                    // Set default values on error
+                    const defaultElements = ['#avg-attendance-rate', '#avg-punctuality-score', '#avg-absence-rate', 
+                                            '#avg-performance-score', '#total-late-incidents', '#total-overtime-hours',
+                                            '#excellent-performers', '#critical-issues'];
+                    defaultElements.forEach(el => $(el).text('N/A'));
+                }
+            });
+        }
+
+        // Load metrics on page load
+        $(document).ready(function() {
+            loadAttendanceMetrics();
+            // Auto-refresh metrics every 5 minutes
+            setInterval(loadAttendanceMetrics, 5 * 60 * 1000);
+        });
+
         // Attendance data from PHP
         const attendanceData = <?php echo json_encode($todayRecords); ?>;
         

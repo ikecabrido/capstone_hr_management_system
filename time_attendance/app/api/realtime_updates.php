@@ -72,7 +72,7 @@ try {
                 END as event_type,
                 e.full_name as user_name,
                 COALESCE(a.time_out, a.time_in) as event_time
-            FROM attendance a
+            FROM ta_attendance a
             JOIN employees e ON a.employee_id = e.employee_id
             WHERE (a.time_in >= DATE_SUB(NOW(), INTERVAL 1 HOUR) OR a.time_out >= DATE_SUB(NOW(), INTERVAL 1 HOUR))
             ORDER BY event_time DESC

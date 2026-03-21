@@ -20,7 +20,7 @@ try {
 
     // Get all attendance records for the date
     $query = "SELECT a.*, e.full_name
-              FROM attendance a
+              FROM ta_attendance a
               JOIN employees e ON a.employee_id = e.employee_id
               WHERE a.attendance_date = ?
               ORDER BY a.time_in DESC";

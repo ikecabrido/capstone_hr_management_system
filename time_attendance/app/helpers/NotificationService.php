@@ -227,7 +227,7 @@ class NotificationService {
      * Log successful delivery to database
      */
     private function logSuccess($recipient, $content, $channel, $provider, $external_id) {
-        $query = "INSERT INTO notifications (user_phone, content, channel, status, external_id, provider, sent_at)
+        $query = "INSERT INTO ta_notifications (user_phone, content, channel, status, external_id, provider, sent_at)
                   VALUES (?, ?, ?, ?, ?, ?, NOW())";
         $conn = $this->db->getConnection();
         $stmt = $conn->prepare($query);
@@ -238,7 +238,7 @@ class NotificationService {
      * Log failed delivery to database
      */
     private function logFailure($recipient, $content, $channel, $provider, $error) {
-        $query = "INSERT INTO notifications (user_phone, content, channel, status, error_message, provider, sent_at)
+        $query = "INSERT INTO ta_notifications (user_phone, content, channel, status, error_message, provider, sent_at)
                   VALUES (?, ?, ?, ?, ?, ?, NOW())";
         $conn = $this->db->getConnection();
         $stmt = $conn->prepare($query);

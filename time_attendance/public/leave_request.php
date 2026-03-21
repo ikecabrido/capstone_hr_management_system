@@ -82,7 +82,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 require_once "../app/config/Database.php";
 $database = new Database();
 $db = $database->getConnection();
-$query = "SELECT * FROM leave_types WHERE is_deductible = 1 ORDER BY leave_type_name";
+$query = "SELECT * FROM ta_leave_types WHERE is_deductible = 1 ORDER BY leave_type_name";
 $stmt = $db->prepare($query);
 $stmt->execute();
 $leaveTypes = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -99,14 +99,28 @@ $leaveTypes = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <script src="../assets/mobile-responsive.js" defer></script>
     <style>
         body {
-            display: flex;
-            min-height: 100vh;
             background: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            transition: margin-left 0.3s ease;
         }
+
+        body.sidebar-collapsed {
+            margin-left: 0;
+        }
+
         .main-content {
+            width: calc(100% - 250px);
             margin-left: 250px;
-            flex: 1;
+            margin-top: 60px;
+            min-height: calc(100vh - 60px);
             padding: 30px 20px;
+            transition: width 0.3s ease, margin-left 0.3s ease;
+        }
+
+        body.sidebar-collapsed .main-content {
+            width: 100%;
+            margin-left: 0;
         }
         .content-wrapper {
             max-width: 900px;

@@ -9,7 +9,7 @@
 
 class Shift {
     private $conn;
-    private $table = 'shifts';
+    private $table = 'ta_shifts';
 
     public $shift_id;
     public $shift_name;

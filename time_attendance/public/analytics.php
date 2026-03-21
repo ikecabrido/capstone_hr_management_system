@@ -63,7 +63,7 @@ if ($report_type === 'monthly') {
     
     // Get daily attendance data
     $query = "SELECT DATE(a.time_in) as date, a.status, COUNT(*) as count
-              FROM attendance a
+              FROM ta_attendance a
               JOIN employees e ON a.employee_id = e.employee_id
               $where
               GROUP BY DATE(a.time_in)
@@ -92,7 +92,7 @@ else if ($report_type === 'weekly') {
                      COUNT(*) as total_records,
                      SUM(CASE WHEN a.status IN ('PRESENT', 'EARLY_OUT') THEN 1 ELSE 0 END) as on_time_count,
                      SUM(CASE WHEN a.status = 'LATE' THEN 1 ELSE 0 END) as late_count
-              FROM attendance a
+              FROM ta_attendance a
               JOIN employees e ON a.employee_id = e.employee_id
               $where
               GROUP BY YEARWEEK(a.time_in)
@@ -110,7 +110,7 @@ $dept_query = "SELECT e.department,
                       COUNT(*) as total_records,
                       SUM(CASE WHEN a.status IN ('PRESENT', 'EARLY_OUT') THEN 1 ELSE 0 END) as on_time_count,
                       SUM(CASE WHEN a.status = 'LATE' THEN 1 ELSE 0 END) as late_count
-               FROM attendance a
+               FROM ta_attendance a
                JOIN employees e ON a.employee_id = e.employee_id
                WHERE YEAR(a.time_in) = ?
                GROUP BY e.department
@@ -125,7 +125,7 @@ $emp_query = "SELECT e.employee_id, e.full_name, e.department,
                      COUNT(*) as total_days,
                      SUM(CASE WHEN a.status IN ('PRESENT', 'EARLY_OUT') THEN 1 ELSE 0 END) as on_time_days,
                      SUM(CASE WHEN a.status = 'LATE' THEN 1 ELSE 0 END) as late_days
-              FROM attendance a
+              FROM ta_attendance a
               JOIN employees e ON a.employee_id = e.employee_id
               WHERE YEAR(a.time_in) = ?";
 
@@ -157,14 +157,28 @@ $top_employees = $emp_stmt->fetchAll(PDO::FETCH_ASSOC);
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
-            display: flex;
-            min-height: 100vh;
             background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            transition: margin-left 0.3s ease;
         }
+
+        body.sidebar-collapsed {
+            margin-left: 0;
+        }
+
         .main-content {
+            width: calc(100% - 250px);
             margin-left: 250px;
-            flex: 1;
+            margin-top: 60px;
+            min-height: calc(100vh - 60px);
             padding: 20px;
+            transition: width 0.3s ease, margin-left 0.3s ease;
+        }
+
+        body.sidebar-collapsed .main-content {
+            width: 100%;
+            margin-left: 0;
         }
         .content-wrapper {
             max-width: 1400px;

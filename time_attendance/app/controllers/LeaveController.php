@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../models/Leave.php';
 require_once __DIR__ . '/../models/Notification.php';
 require_once __DIR__ . '/../helpers/AuditLog.php';
+require_once __DIR__ . '/../helpers/LeaveAbsenceHelper.php';
 require_once __DIR__ . '/../core/Session.php';
 
 class LeaveController
@@ -81,6 +82,9 @@ class LeaveController
                         $leaveRequest['leave_type_id'],
                         $leaveRequest['total_days']
                     );
+                    
+                    // Mark absences as excused due to approved leave
+                    LeaveAbsenceHelper::onLeaveApproved($leave_request_id);
                 }
 
                 $this->auditLog->log('LEAVE_' . $status, $user_id, null, null, 
@@ -108,6 +112,9 @@ class LeaveController
             $result = $this->leaveModel->updateStatus($leave_request_id, 'REJECTED', $approver_id, $reason);
             
             if ($result) {
+                // Reverse any leave-based excuses
+                LeaveAbsenceHelper::onLeaveRejected($leave_request_id);
+                
                 $this->auditLog->log('LEAVE_REJECTED', $user_id, null, null, 
                     ['leave_request_id' => $leave_request_id, 'reason' => $reason], 'SUCCESS');
                 return ['success' => true, 'message' => 'Leave request rejected'];

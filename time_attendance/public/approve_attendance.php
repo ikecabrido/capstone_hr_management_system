@@ -68,16 +68,30 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
     <script src="../assets/mobile-responsive.js" defer></script>
     <style>
         body {
-            display: flex;
-            min-height: 100vh;
             background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            transition: margin-left 0.3s ease;
         }
+
+        body.sidebar-collapsed {
+            margin-left: 0;
+        }
+
         .main-content {
+            width: calc(100% - 250px);
             margin-left: 250px;
-            flex: 1;
+            margin-top: 60px;
+            min-height: calc(100vh - 60px);
             padding: 20px;
-            transition: margin-left 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+            transition: width 0.3s ease, margin-left 0.3s ease;
         }
+
+        body.sidebar-collapsed .main-content {
+            width: 100%;
+            margin-left: 0;
+        }
+
         .content-wrapper {
             max-width: 1200px;
             margin: 0 auto;
@@ -181,7 +195,7 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
             width: 100%;
             height: 100%;
             background: rgba(0,0,0,0.5);
-            z-index: 1000;
+            z-index: 1500;
             justify-content: center;
             align-items: center;
         }
@@ -282,6 +296,15 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
     </style>
 </head>
 <body>
+    <div
+      class="preloader flex-column justify-content-center align-items-center">
+      <img
+        class="animation__wobble"
+        src="../../assets/pics/bcpLogo.png"
+        alt="AdminLTELogo"
+        height="60"
+        width="60" />
+    </div>
     <?php require_once "../app/components/Sidebar.php"; ?>
 
     <div class="main-content">

@@ -56,7 +56,7 @@ $stmt = $db->prepare("
         SUM(CASE WHEN TIME(time_in) > '08:00:00' THEN 1 ELSE 0 END) as late_count,
         AVG(total_hours_worked) as avg_hours,
         MAX(time_out) as last_time_out
-    FROM attendance
+    FROM ta_attendance
     WHERE employee_id = :employee_id
     AND DATE(time_in) BETWEEN :start_date AND :end_date
     GROUP BY DATE(time_in)

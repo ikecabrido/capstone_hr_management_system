@@ -35,7 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
 ?>
 
 <div id="calendar-schedule-container">
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 28px; margin-bottom: 35px;">
+    <!-- Controls Grid (hidden in Day View) -->
+    <div id="controls-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 28px; margin-bottom: 35px;">
         <!-- Employee Search Card -->
         <div style="background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%); padding: 28px; border-radius: 16px; box-shadow: 0 4px 16px rgba(0, 61, 130, 0.08); border: 2px solid rgba(0, 61, 130, 0.08);">
             <h6 style="font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; color: #003d82;">
@@ -64,20 +65,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
             </h6>
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="display: inline-block; width: 12px; height: 12px; background: #28a745; border-radius: 3px;"></span>
+                    <span style="display: inline-block; width: 16px; height: 16px; background: #28a745; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"></span>
                     <span style="font-weight: 600; color: #333;">Shift Assigned</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="display: inline-block; width: 12px; height: 12px; background: #17a2b8; border-radius: 3px;"></span>
+                    <span style="display: inline-block; width: 16px; height: 16px; background: #17a2b8; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"></span>
                     <span style="font-weight: 600; color: #333;">Present/Checked In</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="display: inline-block; width: 12px; height: 12px; background: #ffc107; border-radius: 3px;"></span>
+                    <span style="display: inline-block; width: 16px; height: 16px; background: #ffc107; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"></span>
                     <span style="font-weight: 600; color: #333;">Late</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="display: inline-block; width: 12px; height: 12px; background: #dc3545; border-radius: 3px;"></span>
+                    <span style="display: inline-block; width: 16px; height: 16px; background: #dc3545; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"></span>
                     <span style="font-weight: 600; color: #333;">Absent</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="display: inline-block; width: 16px; height: 16px; background: #9c27b0; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"></span>
+                    <span style="font-weight: 600; color: #333;">Flexible Schedule</span>
                 </div>
             </div>
         </div>
@@ -101,18 +106,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
         </div>
     </div>
 
-    <!-- Calendar Section -->
-    <div id="calendar-section" style="background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%); padding: 28px; border-radius: 16px; box-shadow: 0 4px 16px rgba(0, 61, 130, 0.08); border: 2px solid rgba(0, 61, 130, 0.08);">
+    <!-- Calendar Section - Full Width -->
+    <div id="calendar-section" style="background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%); padding: 28px; border-radius: 16px; box-shadow: 0 4px 16px rgba(0, 61, 130, 0.08); border: 2px solid rgba(0, 61, 130, 0.08); width: 100%; box-sizing: border-box;">
         <!-- Single Calendar Container (shown for Month and Week views) -->
-        <div id="calendar-container" style="background: white; padding: 12px; border: 1px solid #ddd; border-radius: 4px; min-height: 700px; display: block; width: 100%; overflow-x: hidden;">
+        <div id="calendar-container" style="background: white; padding: 12px; border: 1px solid #ddd; border-radius: 4px; min-height: 700px; display: block; width: 100%; overflow-x: auto; box-sizing: border-box;">
             <div id="calendar"></div>
         </div>
 
         <!-- Day View Tab Content -->
-        <div class="tab-content">
-            <div class="tab-pane fade" id="day-view" role="tabpanel" style="width: 100%;">
-                <div style="width: 100%; margin-bottom: 20px;">
-                    <div style="display: flex; gap: 10px; width: 100%;">
+        <div class="tab-content" style="width: 100%; box-sizing: border-box;">
+            <div class="tab-pane fade" id="day-view" role="tabpanel" style="width: 100%; box-sizing: border-box;">
+                <div style="width: 100%; margin-bottom: 20px; box-sizing: border-box;">
+                    <div style="display: flex; gap: 10px; width: 100%; box-sizing: border-box;">
                         <button type="button" class="btn" id="prev-day" onclick="handlePrevDay()" style="padding: 12px 24px; background: #f8f9fa; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; font-weight: 600; color: #003d82;">
                             <i class="fas fa-chevron-left"></i> Previous Day
                         </button>
@@ -124,8 +129,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
                         </button>
                     </div>
                 </div>
-                <div id="day-timeline-container" style="overflow-x: auto; overflow-y: auto; padding: 20px; background: white; border: 1px solid #ddd; border-radius: 4px; width: 100%; height: auto; min-height: 600px;">
-                    <canvas id="day-timeline-canvas" style="display: block; margin: 0 auto; border: 1px solid #f0f0f0; border-radius: 4px;"></canvas>
+                <div id="day-timeline-container" style="overflow-x: auto; overflow-y: auto; padding: 20px; background: white; border: 1px solid #ddd; border-radius: 4px; width: 100%; height: auto; min-height: 600px; box-sizing: border-box;">
+                    <canvas id="day-timeline-canvas" style="display: block; margin: 0 auto; border: 1px solid #f0f0f0; border-radius: 4px; max-width: 100%;"></canvas>
                 </div>
             </div>
         </div>

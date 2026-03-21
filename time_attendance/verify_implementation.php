@@ -136,19 +136,19 @@ try {
     $conn = $database->getConnection();
     
     // Check if leave_balances table has data
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM leave_balances");
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM ta_leave_balances");
     $stmt->execute();
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
     $balanceCount = $result['count'];
     
     // Check if department_heads table has data
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM department_heads");
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM ta_department_heads");
     $stmt->execute();
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
     $headsCount = $result['count'];
     
     // Check if holidays table has data
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM holidays");
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM ta_holidays");
     $stmt->execute();
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
     $holidaysCount = $result['count'];

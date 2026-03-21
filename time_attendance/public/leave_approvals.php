@@ -94,15 +94,28 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
     <script src="../assets/mobile-responsive.js" defer></script>
     <style>
         body {
-            display: flex;
-            min-height: 100vh;
             background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            transition: margin-left 0.3s ease;
         }
+
+        body.sidebar-collapsed {
+            margin-left: 0;
+        }
+
         .main-content {
+            width: calc(100% - 250px);
             margin-left: 250px;
-            flex: 1;
+            margin-top: 60px;
+            min-height: calc(100vh - 60px);
             padding: 20px;
-            transition: margin-left 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+            transition: width 0.3s ease, margin-left 0.3s ease;
+        }
+
+        body.sidebar-collapsed .main-content {
+            width: 100%;
+            margin-left: 0;
         }
         .content-wrapper {
             max-width: 1200px;

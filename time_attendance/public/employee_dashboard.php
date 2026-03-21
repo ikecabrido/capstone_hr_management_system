@@ -94,19 +94,35 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 }
 
-// Get current month data
+// Get attendance period - from hire date to today (not just current month)
+$query_employee = "SELECT date_hired FROM employees WHERE employee_id = ?";
+$db = new Database();
+$conn = $db->getConnection();
+$stmt_emp = $conn->prepare($query_employee);
+$stmt_emp->execute([$employee_id]);
+$emp_data = $stmt_emp->fetch(PDO::FETCH_ASSOC);
+
+$attendance_start = $emp_data['date_hired'] ?? date('Y-01-01');
+// Use today as end date - allows viewing all attendance up to now
+$attendance_end = date('Y-m-d');
+
+// Get current month data for display purposes
 $current_month_start = date('Y-m-01');
 $current_month_end = date('Y-m-t');
 
-// Get attendance for this month
-$query = "SELECT * FROM attendance 
+// Get attendance for all time (from hire to today)
+$query = "SELECT * FROM ta_attendance 
           WHERE employee_id = ? AND DATE(time_in) BETWEEN ? AND ?
           ORDER BY time_in DESC";
-$db = new Database();
-$conn = $db->getConnection();
 $stmt = $conn->prepare($query);
-$stmt->execute([$employee_id, $current_month_start, $current_month_end]);
+$stmt->execute([$employee_id, $attendance_start, $attendance_end]);
 $monthly_attendance = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Calculate stats for current month only (for monthly statistics)
+$current_month_attendance = array_filter($monthly_attendance, function($record) use ($current_month_start, $current_month_end) {
+    $record_date = date('Y-m-d', strtotime($record['time_in']));
+    return $record_date >= $current_month_start && $record_date <= $current_month_end;
+});
 
 // Calculate monthly stats
 $present_count = 0;
@@ -115,7 +131,7 @@ $absent_count = 0;
 $total_hours = 0;
 $total_overtime = 0;
 
-foreach ($monthly_attendance as $record) {
+foreach ($current_month_attendance as $record) {
     $total_hours += $record['total_hours_worked'] ?? 0;
     $total_overtime += $record['overtime_hours'] ?? 0;
     
@@ -129,7 +145,7 @@ foreach ($monthly_attendance as $record) {
 // Get last 6 months data
 $six_months_ago = date('Y-m-d', strtotime('-6 months'));
 $query_six = "SELECT DATE(time_in) as date, status, total_hours_worked 
-              FROM attendance 
+              FROM ta_attendance 
               WHERE employee_id = ? AND DATE(time_in) >= ?
               ORDER BY time_in DESC";
 $stmt_six = $conn->prepare($query_six);
@@ -139,8 +155,8 @@ $six_months_data = $stmt_six->fetchAll(PDO::FETCH_ASSOC);
 // Get leave balance
 $current_year = date('Y');
 $query_balance = "SELECT lb.*, lt.leave_type_name 
-                  FROM leave_balances lb
-                  JOIN leave_types lt ON lb.leave_type_id = lt.leave_type_id
+                  FROM ta_leave_balances lb
+                  JOIN ta_leave_types lt ON lb.leave_type_id = lt.leave_type_id
                   WHERE lb.employee_id = ? AND lb.year = ?";
 $stmt_balance = $conn->prepare($query_balance);
 $stmt_balance->execute([$employee_id, $current_year]);
@@ -153,8 +169,8 @@ $attendance_percentage = $working_days > 0 ? ($present_count / $working_days) * 
 // Get today's assigned shift
 $today = date('Y-m-d');
 $query_shift = "SELECT es.*, s.shift_name, s.start_time, s.end_time, s.break_duration 
-                FROM employee_shifts es
-                JOIN shifts s ON es.shift_id = s.shift_id
+                FROM ta_employee_shifts es
+                JOIN ta_shifts s ON es.shift_id = s.shift_id
                 WHERE es.employee_id = ? AND es.is_active = 1 AND (es.effective_to IS NULL OR es.effective_to >= ?)
                 AND ? BETWEEN es.effective_from AND COALESCE(es.effective_to, ?)";
 $stmt_shift = $conn->prepare($query_shift);
@@ -163,8 +179,8 @@ $today_shift = $stmt_shift->fetch(PDO::FETCH_ASSOC);
 
 // Get leave requests history
 $query_requests = "SELECT lr.*, lt.leave_type_name 
-                   FROM leave_requests lr
-                   JOIN leave_types lt ON lr.leave_type_id = lt.leave_type_id
+                   FROM ta_leave_requests lr
+                   JOIN ta_leave_types lt ON lr.leave_type_id = lt.leave_type_id
                    WHERE lr.employee_id = ?
                    ORDER BY lr.date_submitted DESC LIMIT 10";
 $stmt_requests = $conn->prepare($query_requests);
@@ -172,7 +188,7 @@ $stmt_requests->execute([$employee_id]);
 $leave_requests = $stmt_requests->fetchAll(PDO::FETCH_ASSOC);
 
 // Get all leave types for form
-$query_types = "SELECT * FROM leave_types WHERE is_active = 1";
+$query_types = "SELECT * FROM ta_leave_types WHERE is_active = 1";
 $stmt_types = $conn->prepare($query_types);
 $stmt_types->execute();
 $leave_types = $stmt_types->fetchAll(PDO::FETCH_ASSOC);
@@ -204,7 +220,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
     }
     
     try {
-        $insert_query = "INSERT INTO leave_requests (employee_id, leave_type_id, start_date, end_date, reason, status, created_at) 
+        $insert_query = "INSERT INTO ta_leave_requests (employee_id, leave_type_id, start_date, end_date, reason, status, created_at) 
                         VALUES (?, ?, ?, ?, ?, 'Pending', NOW())";
         $insert_stmt = $conn->prepare($insert_query);
         $result = $insert_stmt->execute([$employee_id, $leave_type_id, $start_date, $end_date, $reason]);
@@ -816,6 +832,41 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
             html += `<p><strong>⏱ Late:</strong> ${data.late_count} days</p>`;
             html += `<p><strong>⏰ Total Hours:</strong> ${data.total_hours}h</p>`;
             html += `<p><strong>⚡ Overtime:</strong> ${data.total_overtime}h</p>`;
+            html += '</div>';
+            html += '</div>';
+
+            // Enhanced Metrics
+            html += '<div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #ddd;">';
+            html += '<h4 style="margin: 0 0 10px 0; color: #003d82;">📈 Performance Metrics</h4>';
+            html += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">';
+            html += `<div style="background: #f0f4f8; padding: 10px; border-radius: 4px;">`;
+            html += `<p style="margin: 0; font-size: 0.9em; color: #666;">Attendance Rate</p>`;
+            html += `<p style="margin: 5px 0 0 0; font-size: 1.5em; color: #003d82; font-weight: bold;">${data.metrics?.attendance_rate ?? 0}%</p>`;
+            html += `</div>`;
+            html += `<div style="background: #f0f4f8; padding: 10px; border-radius: 4px;">`;
+            html += `<p style="margin: 0; font-size: 0.9em; color: #666;">Absence Rate</p>`;
+            html += `<p style="margin: 5px 0 0 0; font-size: 1.5em; color: #d9534f; font-weight: bold;">${data.metrics?.absence_rate ?? 0}%</p>`;
+            html += `</div>`;
+            html += `<div style="background: #f0f4f8; padding: 10px; border-radius: 4px;">`;
+            html += `<p style="margin: 0; font-size: 0.9em; color: #666;">Punctuality Score</p>`;
+            html += `<p style="margin: 5px 0 0 0; font-size: 1.5em; color: #5cb85c; font-weight: bold;">${data.metrics?.punctuality_score ?? 0}/100</p>`;
+            html += `</div>`;
+            html += `<div style="background: #f0f4f8; padding: 10px; border-radius: 4px;">`;
+            html += `<p style="margin: 0; font-size: 0.9em; color: #666;">Overall Performance</p>`;
+            html += `<p style="margin: 5px 0 0 0; font-size: 1.5em; color: #0275d8; font-weight: bold;">${data.metrics?.overall_performance_score ?? 0}/100</p>`;
+            html += `</div>`;
+            html += '</div>';
+            
+            // Late Minutes and Overtime Frequency
+            html += '<div style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">';
+            html += `<div style="background: #f0f4f8; padding: 10px; border-radius: 4px;">`;
+            html += `<p style="margin: 0; font-size: 0.9em; color: #666;">Late Incidents</p>`;
+            html += `<p style="margin: 5px 0 0 0; font-size: 1.5em; color: #ff9800; font-weight: bold;">${data.punctuality?.total_late_incidents ?? 0}</p>`;
+            html += `</div>`;
+            html += `<div style="background: #f0f4f8; padding: 10px; border-radius: 4px;">`;
+            html += `<p style="margin: 0; font-size: 0.9em; color: #666;">Overtime Frequency</p>`;
+            html += `<p style="margin: 5px 0 0 0; font-size: 1.5em; color: #6f42c1; font-weight: bold;">${data.overtime?.overtime_frequency_rating ?? 'LOW'}</p>`;
+            html += `</div>`;
             html += '</div>';
             html += '</div>';
             
