@@ -1,12 +1,51 @@
-﻿<?php
+<?php
 session_start();
 // require_once "auth.php";
 require_once "../auth/database.php";
 require_once "../auth/auth_check.php";
 $theme = $_SESSION['user']['theme'] ?? 'light';
 
-$user = $_SESSION['user'];
-$token = $_SESSION['token'] ?? null;
+$reports = [];
+
+try {
+    require_once __DIR__ . '/config/db.php';
+
+    // Direct reports data fetching (sa halip na internal API call) 
+    $engagementTotal = $pdo->query('SELECT COUNT(*) AS total_surveys FROM engagement_surveys')->fetch(PDO::FETCH_ASSOC);
+
+    // Since engagement_surveys has no status field in schema, fallback to surveys with responses or all surveys
+    $activeSurveys = $pdo->query('SELECT COUNT(DISTINCT survey_id) AS active_surveys FROM survey_responses')->fetch(PDO::FETCH_ASSOC);
+
+    $complaints = $pdo->query('SELECT status, COUNT(*) AS count FROM grievances GROUP BY status')->fetchAll(PDO::FETCH_ASSOC);
+
+    $reports[] = [
+        'title' => 'Engagement Survey Summary',
+        'report_type' => 'Engagement',
+        'description' => 'A summary of surveys in the system.',
+        'data_points' => $engagementTotal['total_surveys'] ?? 0,
+        'page_count' => 1,
+        'generated_date' => date('Y-m-d H:i:s'),
+        'generated_by' => $user['name'] ?? 'System',
+        'details' => [
+            'total_surveys' => (int)($engagementTotal['total_surveys'] ?? 0),
+            'active_surveys' => (int)($activeSurveys['active_surveys'] ?? 0)
+        ]
+    ];
+
+    $reports[] = [
+        'title' => 'Complaint Trends',
+        'report_type' => 'Complaints',
+        'description' => 'Grievance volume grouped by status.',
+        'data_points' => array_sum(array_column($complaints, 'count')),
+        'page_count' => 1,
+        'generated_date' => date('Y-m-d H:i:s'),
+        'generated_by' => $user['name'] ?? 'System',
+        'details' => $complaints
+    ];
+} catch (Exception $e) {
+    $reportError = $e->getMessage();
+    $reports = [];
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -30,10 +69,11 @@ $token = $_SESSION['token'] ?? null;
     href="../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css" />
   <!-- Theme style -->
   <link rel="stylesheet" href="../assets/dist/css/adminlte.min.css" />
-
+  <link rel="stylesheet" href="/custom.css" />
   <link rel="stylesheet" href="../layout/toast.css" />
-  <link rel="stylesheet" href="css/dashboard.css" />
-    
+  <link rel="stylesheet" href="css/reports.css" />
+
+  <link rel="stylesheet" href="/css/reports.css" />
 </head>
 
 <body
@@ -125,7 +165,7 @@ $token = $_SESSION['token'] ?? null;
             <!-- Add icons to the links using the .nav-icon class
                with font-awesome or any other icon font library -->
             <li class="nav-item">
-              <a href="dashboard.php" class="nav-link active">
+              <a href="dashboard.php" class="nav-link">
                 <i class="nav-icon fas fa-tachometer-alt"></i>
                 <p>Dashboard</p>
               </a>
@@ -185,7 +225,7 @@ $token = $_SESSION['token'] ?? null;
               </a>
             </li>
             <li class="nav-item">
-              <a href="reports.php" class="nav-link">
+              <a href="reports.php" class="nav-link active">
                 <i class="nav-icon fas fa-table"></i>
                 <p>Reports</p>
               </a>
@@ -233,7 +273,7 @@ $token = $_SESSION['token'] ?? null;
         <div class="container-fluid">
           <div class="row mb-2">
             <div class="col-sm-6">
-              <h1 class="m-0">Employee Engagement and Relations Management System</h1>
+              <h1 class="m-0">Reports</h1>
             </div>
             <!-- /.col -->
 
@@ -241,18 +281,64 @@ $token = $_SESSION['token'] ?? null;
           </div>
           <!-- /.row -->
         </div>
-            <div id="content">
-                <div class="loading">
-                    <div class="loading-spinner"></div>
-                    <p>Loading dashboard data...</p>
-                </div>
-            </div>
+        <!-- /.container-fluid -->
       </div>
-    </div>
-  <!-- CONTENT -->
 
+    <!-- MAIN CONTENT -->
+
+        <div id="content">
+
+        <?php if (!empty($reportError)): ?>
+            <div class="empty-state" style="background:#ffe6e6; color:#c0392b;">
+                <p><strong>Error loading reports:</strong> <?= htmlspecialchars($reportError) ?></p>
+                <p class="note">Please check database tables <code>engagement_surveys</code>, <code>survey_responses</code>, <code>grievances</code>.</p>
+            </div>
+        <?php elseif (empty($reports)): ?>
+            <div class="empty-state">
+                <p>No reports yet. Reports are generated from system data.</p>
+                <p class="note">Reports will be available once data is populated in the system.</p>
+                <p class="note">If no rows exist, run the SQL inserts from `schema.sql`.</p>
+            </div>
+        <?php else: ?>
+            <?php foreach ($reports as $report): ?>
+                <div class="report-card">
+                    <div class="report-header">
+                        <div class="report-title">
+                            <?= htmlspecialchars($report['title'] ?? 'Report') ?>
+                        </div>
+                        <span class="report-type">
+                            <?= htmlspecialchars($report['report_type'] ?? 'General') ?>
+                        </span>
+                    </div>
+                    <div class="report-description">
+                        <?= htmlspecialchars($report['description'] ?? '') ?>
+                    </div>
+                    <div class="report-stats">
+                        <div class="stat">
+                            <div class="stat-number"><?= $report['data_points'] ?? '0' ?></div>
+                            <div class="stat-label">Data Points</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-number"><?= $report['page_count'] ?? '1' ?></div>
+                            <div class="stat-label">Pages</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-number"><?= isset($report['generated_date']) ? 'OK' : 'N/A' ?></div>
+                            <div class="stat-label">Status</div>
+                        </div>
+                    </div>
+                    <div class="report-meta">
+                        <strong>Generated:</strong> <?= date('M d, Y H:i', strtotime($report['generated_date'] ?? 'now')) ?>
+                        <br>
+                        <strong>By:</strong> <?= htmlspecialchars($report['generated_by'] ?? 'System') ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
     </div>
-        <?php include "../layout/global_modal.php"; ?>
+    </main>
+</div>
+  <?php include "../layout/global_modal.php"; ?>
     <!-- Control Sidebar -->
     <aside class="control-sidebar control-sidebar-dark">
       <!-- Control sidebar content goes here -->
@@ -292,7 +378,6 @@ $token = $_SESSION['token'] ?? null;
   <script src="../assets/dist/js/global_modal.js"></script>
   <script src="../assets/dist/js/profile.js"></script>
 
-
-<script src="js/session.js"></script>
 <script src="js/main.js?v=<?= time(); ?>"></script>
-<script src="js/dashboard.js"></script>
+</body>
+</html>
