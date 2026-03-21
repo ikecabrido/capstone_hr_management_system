@@ -25,7 +25,7 @@ class DashboardModel
     {
         $sql = "
             SELECT *
-            FROM payroll_periods
+            FROM pr_periods
             ORDER BY start_date DESC
             LIMIT 1
         ";
@@ -40,7 +40,7 @@ class DashboardModel
     {
         $sql = "
             SELECT IFNULL(SUM(net_pay),0)
-            FROM payslips
+            FROM pr_payslips
             WHERE payroll_run_id = ?
         ";
 
@@ -55,8 +55,8 @@ class DashboardModel
     {
         $sql = "
             SELECT COUNT(*)
-            FROM payslips p
-            JOIN payroll_runs r ON p.payroll_run_id = r.id
+            FROM pr_payslips p
+            JOIN pr_runs r ON p.payroll_run_id = r.run_id
             WHERE p.payroll_run_id = ?
             AND r.status = 'draft'
         ";
@@ -72,10 +72,10 @@ class DashboardModel
     {
         $sql = "
             SELECT COUNT(*)
-            FROM payslips p
-            JOIN payroll_runs r ON p.payroll_run_id = r.id
-        WHERE p.payroll_run_id = ?
-        AND r.status = 'finalized'
+            FROM pr_payslips p
+            JOIN pr_runs r ON p.payroll_run_id = r.run_id
+            WHERE p.payroll_run_id = ?
+            AND r.status = 'finalized'
         ";
 
         $stmt = $this->db->prepare($sql);
@@ -93,9 +93,9 @@ class DashboardModel
             SELECT 
                 DATE_FORMAT(pp.start_date,'%Y-%m') AS month,
                 SUM(ps.net_pay) AS total
-            FROM payroll_periods pp
-            JOIN payroll_runs pr ON pr.payroll_period_id = pp.id
-            JOIN payslips ps ON ps.payroll_run_id = pr.id
+            FROM pr_periods pp
+            JOIN pr_runs pr ON pr.payroll_period_id = pp.id
+            JOIN pr_payslips ps ON ps.payroll_run_id = pr.id
             WHERE pr.status != 'draft'
             GROUP BY month
             ORDER BY month ASC
@@ -111,7 +111,7 @@ class DashboardModel
     public function getLifetimePayroll()
     {
         return $this->db
-            ->query("SELECT SUM(net_pay) FROM payslips p JOIN payroll_runs r ON p.payroll_run_id = r.id WHERE r.status='finalized'")
+            ->query("SELECT SUM(net_pay) FROM pr_payslips p JOIN pr_runs r ON p.payroll_run_id = r.run_id WHERE r.status='finalized'")
             ->fetchColumn() ?? 0;
     }
 
@@ -121,7 +121,7 @@ class DashboardModel
     {
         $sql = "
         SELECT *
-        FROM payroll_periods
+        FROM pr_periods
         WHERE status = 'open'
         LIMIT 1
     ";
@@ -132,7 +132,7 @@ class DashboardModel
     {
         $sql = "
         SELECT *
-        FROM payroll_runs
+        FROM pr_runs
         WHERE payroll_period_id = ?
         AND status IN ('draft','finalized')
         ORDER BY id DESC
@@ -151,7 +151,7 @@ class DashboardModel
             COUNT(*) AS total,
             SUM(CASE WHEN p.net_pay > 0 THEN 1 ELSE 0 END) AS processed,
             SUM(CASE WHEN p.net_pay = 0 THEN 1 ELSE 0 END) AS pending
-        FROM payslips p
+        FROM pr_payslips p
         WHERE p.payroll_run_id = ?
     ";
 
@@ -164,7 +164,7 @@ class DashboardModel
     {
         $sql = "
         SELECT COUNT(*) 
-        FROM payroll_runs
+        FROM pr_runs
         WHERE status = 'draft'
     ";
 
@@ -173,14 +173,14 @@ class DashboardModel
     public function getLatestFinalizedRun()
     {
         $sql = "SELECT IFNULL(SUM(ps.net_pay),0) AS total
-        FROM payroll_runs pr
-        JOIN payslips ps ON ps.payroll_run_id = pr.id
+        FROM pr_runs pr
+        JOIN pr_payslips ps ON ps.payroll_run_id = pr.run_id
         WHERE pr.status = 'finalized'
-        AND pr.id = (
-            SELECT id
-            FROM payroll_runs
+        AND pr.run_id = (
+            SELECT run_id
+            FROM pr_runs
             WHERE status = 'finalized'
-            ORDER BY id DESC
+            ORDER BY run_id DESC
             LIMIT 1
         )";
 
@@ -191,26 +191,26 @@ class DashboardModel
     {
         $sql = "
             SELECT
-                pr.id,
+                pr.run_id,
                 pp.period_name,
                 pp.start_date,
                 pp.end_date,
-                COUNT(p.id) as total_employees,
+                COUNT(p.payslip_id) as total_employees,
                 SUM(CASE WHEN p.net_pay > 0 THEN 1 ELSE 0 END) AS processed,
                 SUM(CASE WHEN p.net_pay = 0 THEN 1 ELSE 0 END) AS pending,
                 SUM(p.net_pay) as total_payroll
-            FROM payroll_runs pr
-            JOIN payroll_periods pp ON pr.payroll_period_id = pp.id
-            JOIN payslips p ON p.payroll_run_id = pr.id
+            FROM pr_runs pr
+            JOIN pr_periods pp ON pr.payroll_period_id = pp.period_id
+            JOIN pr_payslips p ON p.payroll_run_id = pr.run_id
             WHERE pr.status = 'finalized'
-            AND pr.id = (
-                SELECT id
-                FROM payroll_runs
+            AND pr.run_id = (
+                SELECT run_id
+                FROM pr_runs
                 WHERE status = 'finalized'
-                ORDER BY id DESC
+                ORDER BY run_id DESC
                 LIMIT 1
             )
-            GROUP BY pr.id, pp.period_name, pp.start_date, pp.end_date
+            GROUP BY pr.run_id, pp.period_name, pp.start_date, pp.end_date
         ";
 
         return $this->db->query($sql)->fetch(PDO::FETCH_ASSOC);
@@ -222,8 +222,8 @@ class DashboardModel
     {
         $sql = "
             SELECT AVG(net_pay)
-            FROM payslips p
-            JOIN payroll_runs r ON p.payroll_run_id = r.id
+            FROM pr_payslips p
+            JOIN pr_runs r ON p.payroll_run_id = r.id
             WHERE r.status = 'finalized'
         ";
 
@@ -234,7 +234,7 @@ class DashboardModel
     {
         $sql = "
             SELECT SUM(amount)
-            FROM employee_adjustments
+            FROM pr_employee_adjustments
             WHERE type = 'allowance'
         ";
 
@@ -255,7 +255,7 @@ class DashboardModel
     {
         $sql = "
             SELECT SUM(amount)
-            FROM employee_adjustments
+            FROM pr_employee_adjustments
             WHERE type = 'deduction'
         ";
 

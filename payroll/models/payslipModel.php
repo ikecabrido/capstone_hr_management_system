@@ -9,26 +9,24 @@ class PayslipModel
         $this->db = $db;
     }
 
-    public function getAll(?int $periodId = null, ?int $employeeId = null): array
+    public function getAll(?int $periodId = null, ?string $employeeId = null): array
     {
         $query = "
         SELECT 
-            p.id,
-            CONCAT(e.first_name,' ',e.last_name) AS employee_name,
-            pos.title AS position,
-            et.name AS employment_type,
+            p.payslip_id as id,
+            e.full_name AS employee_name,
+            e.position,
+            e.employment_status AS employment_type,
             pp.period_name, 
             p.gross_pay, 
             p.total_deductions, 
             p.net_pay,
             prun.status AS payroll_status,
             p.generated_at
-        FROM payslips p
-        JOIN employees e ON p.employee_id = e.id
-        LEFT JOIN positions pos ON e.position_id = pos.id
-        LEFT JOIN employment_types et ON e.employment_type_id = et.id
-        LEFT JOIN payroll_runs prun ON p.payroll_run_id = prun.id
-        LEFT JOIN payroll_periods pp ON prun.payroll_period_id = pp.id
+        FROM pr_payslips p
+        JOIN employees e ON p.employee_id = e.employee_id
+        LEFT JOIN pr_runs prun ON p.payroll_run_id = prun.run_id
+        LEFT JOIN pr_periods pp ON prun.payroll_period_id = pp.period_id
         WHERE 1=1
     ";
 
@@ -40,11 +38,11 @@ class PayslipModel
         }
 
         if ($employeeId) {
-            $query .= " AND e.id = :eid";
+            $query .= " AND e.employee_id = :eid";
             $params[':eid'] = $employeeId;
         }
 
-        $query .= " ORDER BY pp.start_date DESC, e.last_name ASC";
+        $query .= " ORDER BY pp.start_date DESC, e.full_name ASC";
 
         $stmt = $this->db->prepare($query);
         $stmt->execute($params);
@@ -63,7 +61,7 @@ class PayslipModel
                 e.last_name, 
                 pos.title AS position,
                 et.name AS employment_type
-            FROM payslips p
+            FROM pr_payslips p
             JOIN employees e ON p.employee_id = e.id
             LEFT JOIN positions pos ON e.position_id = pos.id
             LEFT JOIN employment_types et ON e.employment_type_id = et.id
@@ -91,11 +89,11 @@ class PayslipModel
         return $payslip;
     }
 
-    public function create(int $runId, int $employeeId, array $data): void
+    public function create(int $runId, string $employeeId, array $data): void
     {
         // Insert main payslip
         $stmt = $this->db->prepare("
-            INSERT INTO payslips (payroll_run_id, employee_id, gross_pay, total_deductions, net_pay)
+            INSERT INTO pr_payslips (payroll_run_id, employee_id, gross_pay, total_deductions, net_pay)
             VALUES (:run, :eid, :gross, :ded, :net)
         ");
         $stmt->execute([
@@ -110,7 +108,7 @@ class PayslipModel
 
         // Insert earnings & deductions
         $stmt2 = $this->db->prepare("
-            INSERT INTO payslip_items (payslip_id, item_type, description, amount)
+            INSERT INTO pr_payslip_items (payslip_id, item_type, description, amount)
             VALUES (:pid, :type, :desc, :amt)
         ");
 
@@ -135,11 +133,11 @@ class PayslipModel
 
     public function getTotalGrossPay(?int $periodId = null): float
     {
-        $query = "SELECT COALESCE(SUM(gross_pay), 0) as total FROM payslips";
+        $query = "SELECT COALESCE(SUM(gross_pay), 0) as total FROM pr_payslips";
 
         if ($periodId) {
             $query .= " WHERE payroll_run_id IN (
-                SELECT id FROM payroll_runs WHERE payroll_period_id = :pid
+                SELECT id FROM pr_runs WHERE payroll_period_id = :pid
             )";
             $stmt = $this->db->prepare($query);
             $stmt->execute([':pid' => $periodId]);
@@ -152,11 +150,11 @@ class PayslipModel
 
     public function getTotalDeductions(?int $periodId = null): float
     {
-        $query = "SELECT COALESCE(SUM(total_deductions), 0) as total FROM payslips";
+        $query = "SELECT COALESCE(SUM(total_deductions), 0) as total FROM pr_payslips";
 
         if ($periodId) {
             $query .= " WHERE payroll_run_id IN (
-                SELECT id FROM payroll_runs WHERE payroll_period_id = :pid
+                SELECT id FROM pr_runs WHERE payroll_period_id = :pid
             )";
             $stmt = $this->db->prepare($query);
             $stmt->execute([':pid' => $periodId]);
@@ -169,11 +167,11 @@ class PayslipModel
 
     public function getTotalNetPay(?int $periodId = null): float
     {
-        $query = "SELECT COALESCE(SUM(net_pay), 0) as total FROM payslips";
+        $query = "SELECT COALESCE(SUM(net_pay), 0) as total FROM pr_payslips";
 
         if ($periodId) {
             $query .= " WHERE payroll_run_id IN (
-                SELECT id FROM payroll_runs WHERE payroll_period_id = :pid
+                SELECT id FROM pr_runs WHERE payroll_period_id = :pid
             )";
             $stmt = $this->db->prepare($query);
             $stmt->execute([':pid' => $periodId]);

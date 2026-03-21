@@ -5,8 +5,8 @@ class Database
     private static $instance = null;
     private PDO $conn;
 
-    private string $host = "localhost";
-    private string $db   = "sample_hr";
+    private string $host = "192.168.68.141";
+    private string $db   = "hr_management";
     private string $user = "root";
     private string $pass = "";
 

@@ -296,14 +296,14 @@ $nextPeriod = $controller->getNextPeriod();
                                             <td>
                                                 <?php if (in_array($period['status'], ['open', 'processing'])): ?>
                                                     <button class="btn btn-sm btn-info" data-toggle="modal"
-                                                        data-target="#editModal<?= $period['id'] ?>">
+                                                        data-target="#editModal<?= $period['period_id'] ?>">
                                                         <i class="fas fa-sync-alt"></i>
 
                                                     </button>
                                                     <form method="POST" class="period-form" action="../public/periodRoute.php" style="display:inline;"
                                                         onsubmit="return confirm('Delete this period?');">
                                                         <input type="hidden" name="action" value="delete">
-                                                        <input type="hidden" name="id" value="<?= $period['id'] ?>">
+                                                        <input type="hidden" name="id" value="<?= $period['period_id'] ?>">
                                                         <button type="submit" class="btn btn-sm btn-danger">
                                                             <i class="fas fa-trash"></i>
                                                         </button>
