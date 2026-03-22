@@ -260,22 +260,6 @@ $stats = $controller->getStats();
               <!-- /.info-box -->
             </div>
             <!-- /.col -->
-            <div class="col-12 col-sm-6 col-md-3">
-              <div class="info-box mb-3">
-                <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-clock"></i></span>
-
-                <div class="info-box-content">
-                  <span class="info-box-text">Pending Employees</span>
-                  <span class="info-box-number">
-                    <?= $stats['pending_runs'] ?>
-                  </span>
-
-                </div>
-                <!-- /.info-box-content -->
-              </div>
-              <!-- /.info-box -->
-            </div>
-            <!-- /.col -->
           </div>
           <!-- /.row -->
 
@@ -427,19 +411,6 @@ $stats = $controller->getStats();
                           <div class="progress-bar bg-success"
                             style="width: <?= $stats['progress']['total'] > 0
                                             ? ($stats['progress']['processed'] / $stats['progress']['total']) * 100
-                                            : 0 ?>%">
-                          </div>
-                        </div>
-                      </div>
-                      <div class="progress-group">
-                        Pending Employees
-                        <span class="float-right">
-                          <b><?= $stats['progress']['pending'] ?></b>
-                        </span>
-                        <div class="progress progress-sm">
-                          <div class="progress-bar bg-warning"
-                            style="width: <?= $stats['progress']['total'] > 0
-                                            ? ($stats['progress']['pending'] / $stats['progress']['total']) * 100
                                             : 0 ?>%">
                           </div>
                         </div>
