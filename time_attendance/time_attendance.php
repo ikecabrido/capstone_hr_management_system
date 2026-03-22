@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once "../auth/auth_check.php";
+require_once "../auth/database.php";
 $theme = $_SESSION['user']['theme'] ?? 'light';
 
 ?>
@@ -27,6 +28,10 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
     href="../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css" />
   <!-- Theme style -->
   <link rel="stylesheet" href="../assets/dist/css/adminlte.min.css" />
+  <!-- FullCalendar CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
+  <!-- Calendar Schedule CSS -->
+  <link rel="stylesheet" href="app/css/calendar_schedule.css" />
   <link rel="stylesheet" href="custom.css" />
   <link rel="stylesheet" href="../layout/toast.css" />
 </head>
@@ -121,38 +126,38 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
                with font-awesome or any other icon font library -->
             <li class="nav-item">
               <a href="#" class="nav-link active">
-                <i class="nav-icon fas fa-tachometer-alt"></i>
+                <i class="nav-icon fas fa-tachometer-alt animation__wobble"></i>
                 <p>Dashboard</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-chart-pie"></i>
+                <i class="nav-icon fas fa-chart-pie animation__wobble"></i>
                 <p>Module 1</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-tree"></i>
+                <i class="nav-icon fas fa-tree animation__wobble"></i>
                 <p>Module 2</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-edit"></i>
+                <i class="nav-icon fas fa-edit animation__wobble"></i>
                 <p>Module 3</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-table"></i>
+                <i class="nav-icon fas fa-table animation__wobble"></i>
                 <p>Module 4</p>
               </a>
             </li>
             <li class="nav-header">OTHER EXAMPLES</li>
             <li class="nav-item">
               <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-calendar-alt"></i>
+                <i class="nav-icon fas fa-calendar-alt animation__wobble"></i>
                 <p>
                   Calendar
                   <span class="badge badge-info right">2</span>
@@ -161,19 +166,19 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
             </li>
             <li class="nav-item">
               <a href="#" class="nav-link">
-                <i class="nav-icon far fa-image"></i>
+                <i class="nav-icon far fa-image animation__wobble"></i>
                 <p>Gallery</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-columns"></i>
+                <i class="nav-icon fas fa-columns animation__wobble"></i>
                 <p>Kanban Board</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="../logout.php" class="nav-link">
-                <i class="nav-icon fas fa-sign-out-alt"></i>
+                <i class="nav-icon fas fa-sign-out-alt animation__wobble"></i>
                 <p>Logout</p>
               </a>
             </li>
@@ -206,23 +211,41 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
       <!-- Main content -->
       <section class="content">
         <div class="container-fluid">
-          <!-- Info boxes -->
-          <div class="row">
-            <div class="col-12 col-sm-6 col-md-3">
-              <div class="info-box">
-                <span class="info-box-icon bg-info elevation-1"><i class="fas fa-cog"></i></span>
+          <!-- Navigation Tabs -->
+          <ul class="nav nav-tabs mb-3" id="mainTabs" role="tablist">
+            <li class="nav-item">
+              <a class="nav-link active" id="dashboard-tab" href="#dashboard" role="tab" data-toggle="tab">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" id="calendar-tab" href="#calendar" role="tab" data-toggle="tab">
+                <i class="fas fa-calendar"></i> Schedule Calendar
+              </a>
+            </li>
+          </ul>
 
-                <div class="info-box-content">
-                  <span class="info-box-text">CPU Traffic</span>
-                  <span class="info-box-number">
-                    10
-                    <small>%</small>
-                  </span>
+          <!-- Tab Content -->
+          <div class="tab-content" id="mainTabContent">
+            <!-- Dashboard Tab -->
+            <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+              <!-- Info boxes -->
+              <div class="row">
+                <div class="col-12 col-sm-6 col-md-3">
+                  <div class="info-box">
+                    <span class="info-box-icon bg-info elevation-1"><i class="fas fa-cog"></i></span>
+
+                    <div class="info-box-content">
+                      <span class="info-box-text">CPU Traffic</span>
+                      <span class="info-box-number">
+                        10
+                        <small>%</small>
+                      </span>
+                    </div>
+                    <!-- /.info-box-content -->
+                  </div>
+                  <!-- /.info-box -->
                 </div>
-                <!-- /.info-box-content -->
-              </div>
-              <!-- /.info-box -->
-            </div>
             <!-- /.col -->
             <div class="col-12 col-sm-6 col-md-3">
               <div class="info-box mb-3">
@@ -427,6 +450,17 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
             <!-- /.col -->
           </div>
           <!-- Main row -->
+            </div>
+            <!-- /.tab-pane dashboard -->
+
+            <!-- Calendar Tab -->
+            <div class="tab-pane fade" id="calendar" role="tabpanel">
+              <?php include 'app/components/calendar_schedule.php'; ?>
+            </div>
+            <!-- /.tab-pane calendar -->
+
+          </div>
+          <!-- /.tab-content -->
         </div>
         <!--/. container-fluid -->
       </section>
@@ -472,6 +506,43 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
   <script src="../assets/dist/js/time.js"></script>
   <script src="../assets/dist/js/global_modal.js"></script>
   <script src="../assets/dist/js/profile.js"></script>
+
+  <!-- FullCalendar JS -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+  <!-- Calendar Schedule JS -->
+  <script src="app/js/calendar_schedule.js"></script>
+  <!-- Holiday Calendar JS -->
+  <script src="app/js/holiday_calendar.js"></script>
+
+  <script>
+    // Hide preloader after page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      const preloader = document.querySelector('.preloader');
+      setTimeout(() => {
+        if (preloader) {
+          preloader.style.display = 'none';
+        }
+      }, 3000); // Allow animation to loop multiple times
+    });
+
+    // Activate correct tab based on URL parameter
+    (function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tab = urlParams.get('tab');
+      if (tab) {
+        const tabLink = document.querySelector('a[href="#' + tab + '"]');
+        if (tabLink) {
+          // Use Bootstrap tab or jQuery fallback
+          if (typeof $.fn.tab === 'function') {
+            $(tabLink).tab('show');
+          } else if (typeof bootstrap !== 'undefined') {
+            const bsTab = new bootstrap.Tab(tabLink);
+            bsTab.show();
+          }
+        }
+      }
+    })();
+  </script>
 
   <script></script>
 </body>
