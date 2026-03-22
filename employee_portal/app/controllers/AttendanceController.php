@@ -36,14 +36,17 @@ class AttendanceController
         $user_id = Session::get('user_id');
         $employee_id = $_POST['employee_id'];
         $method = 'MANUAL';
+        $todayDate = date('Y-m-d');
+        $timeIn = $_POST['time_in'] ?? null;
+        $existingRecord = $this->attendanceModel->getTodayAttendance($employee_id);
 
+        //check if post
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header("Location: " . ($_SERVER['HTTP_REFERER'] ?? "index.php?url=employee-documents-index"));
             exit;
         }
-        $todayDate = date('Y-m-d');
-        $timeIn = $_POST['time_in'] ?? null;
 
+        //check if theres a holiday
         if ($this->attendanceModel->isHoliday($todayDate)) {
 
             $holiday = $this->attendanceModel->getHolidayInfo($todayDate);
@@ -62,8 +65,8 @@ class AttendanceController
                 'holiday_name' => $holiday['holiday_name']
             ];
         }
-        $existingRecord = $this->attendanceModel->getTodayAttendance($employee_id);
 
+        //check existing record
         if ($existingRecord && !empty($existingRecord['time_in'])) {
             $this->auditLog->log(
                 'TIME_IN_FAILED',
@@ -79,6 +82,8 @@ class AttendanceController
                 'message' => 'You have already timed in today at ' . Helper::formatTime($existingRecord['time_in'])
             ];
         }
+
+        //storing data
         try {
             if ($this->attendanceModel->timeIn($employee_id, $method)) {
                 $record = $this->attendanceModel->getTodayAttendance($employee_id);
@@ -129,42 +134,116 @@ class AttendanceController
         $user_id = Session::get('user_id');
         $employee_id = $_POST['employee_id'];
         $method = 'MANUAL';
+        $record = $this->attendanceModel->getTodayAttendance($employee_id);
 
+        //Check Record
+        if (!$record) {
+            $this->auditLog->log(
+                'TIME_OUT_FAILED',
+                $user_id,
+                $employee_id,
+                null,
+                ['reason' => 'No time in record'],
+                'FAILED',
+                'No attendance record found for today'
+            );
+            return [
+                'success' => false,
+                'message' => 'Please record Time In first.'
+            ];
+        }
+
+        //check if already time out
+        if (!empty($record['time_out'])) {
+            $this->auditLog->log(
+                'TIME_OUT_FAILED',
+                $user_id,
+                $employee_id,
+                $record['attendance_id'],
+                ['reason' => 'Already timed out'],
+                'FAILED',
+                'Employee already has time out record'
+            );
+            return [
+                'success' => false,
+                'message' => 'You have already timed out today at ' . Helper::formatTime($record['time_out'])
+            ];
+        }
         try {
-            $record = $this->attendanceModel->getTodayAttendance($employee_id);
+            // Update time out
+            if ($this->attendanceModel->timeOut($record['attendance_id'])) {
+                $updatedRecord = $this->attendanceModel->getTodayAttendance($employee_id);
 
-            if (!$record) {
+                $duration = Helper::calculateDuration($updatedRecord['time_in'], $updatedRecord['time_out']);
+                $hoursData = Helper::calculateHours($updatedRecord['time_in'], $updatedRecord['time_out'], 8);
+
+                $this->attendanceModel->updateHours($record['attendance_id'], $hoursData);
+
+                $employee = $this->employeeModel->getById($employee_id);
+
                 $this->auditLog->log(
-                    'TIME_OUT_FAILED',
+                    'TIME_OUT_SUCCESS',
                     $user_id,
                     $employee_id,
-                    null,
-                    ['reason' => 'No time in record'],
-                    'FAILED',
-                    'No attendance record found for today'
+                    $record['attendance_id'],
+                    ['duration' => $duration, 'hours' => $hoursData],
+                    'SUCCESS'
                 );
-                return [
-                    'success' => false,
-                    'message' => 'Please record Time In first.'
-                ];
-            }
 
-            if (!empty($record['time_out'])) {
+                return [
+                    'success' => true,
+                    'message' => 'Time Out recorded successfully at ' . Helper::formatTime($updatedRecord['time_out']),
+                    'employee_name' => $employee['full_name'],
+                    'time_out' => $updatedRecord['time_out'],
+                    'duration' => $duration,
+                    'total_hours' => $hoursData['total_hours'],
+                    'regular_hours' => $hoursData['regular_hours'],
+                    'overtime_hours' => $hoursData['overtime_hours'],
+                    header("Location: index.php?url=dashboard")
+                ];
+            } else {
                 $this->auditLog->log(
                     'TIME_OUT_FAILED',
                     $user_id,
                     $employee_id,
                     $record['attendance_id'],
-                    ['reason' => 'Already timed out'],
+                    ['reason' => 'Database error'],
                     'FAILED',
-                    'Employee already has time out record'
+                    'Failed to update time out'
                 );
                 return [
                     'success' => false,
-                    'message' => 'You have already timed out today at ' . Helper::formatTime($record['time_out'])
+                    'message' => 'Failed to record time out. Please try again.'
                 ];
             }
+        } catch (Exception $e) {
+            error_log("TimeOut Error: " . $e->getMessage());
+            $this->auditLog->log(
+                'TIME_OUT_ERROR',
+                $user_id,
+                $employee_id,
+                null,
+                ['error' => $e->getMessage()],
+                'FAILED',
+                $e->getMessage()
+            );
+            return [
+                'success' => false,
+                'message' => 'An error occurred. Please contact HR.'
+            ];
+        }
 
+
+
+
+        var_dump($record);
+        die;
+
+
+
+
+
+        try {
             // Update time out
             if ($this->attendanceModel->timeOut($record['attendance_id'])) {
                 // Get updated record
