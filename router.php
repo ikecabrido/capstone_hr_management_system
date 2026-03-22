@@ -26,7 +26,7 @@ switch ($role) {
         header("Location: time_attendance/public/dashboard.php");
         break;
     case 'compliance':
-        header("Location: compliance_legal/compliance.php");
+        header("Location: hr/HR/dashboard.php");
         break;
     case 'workforce':
         header("Location: workforce/workforce.php");
