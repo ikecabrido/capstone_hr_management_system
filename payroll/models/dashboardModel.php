@@ -9,6 +9,26 @@ class DashboardModel
         $this->db = $db;
     }
 
+    private function safeQuery(string $sql)
+    {
+        try {
+            return $this->db->query($sql);
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
+    private function safePrepare(string $sql, array $params = [])
+    {
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            return $stmt;
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
     /* ================= EMPLOYEES ================= */
 
     public function getEmployeeCount()
@@ -30,7 +50,12 @@ class DashboardModel
             LIMIT 1
         ";
 
-        return $this->db->query($sql)->fetch(PDO::FETCH_ASSOC);
+        $result = $this->safeQuery($sql);
+        if ($result === false) {
+            return null;
+        }
+
+        return $result->fetch(PDO::FETCH_ASSOC);
     }
 
 
@@ -102,7 +127,12 @@ class DashboardModel
             LIMIT 12
         ";
 
-        return $this->db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        $result = $this->safeQuery($sql);
+        if ($result === false) {
+            return [];
+        }
+
+        return $result->fetchAll(PDO::FETCH_ASSOC);
     }
 
 
@@ -126,7 +156,12 @@ class DashboardModel
         LIMIT 1
     ";
 
-        return $this->db->query($sql)->fetch(PDO::FETCH_ASSOC);
+        $result = $this->safeQuery($sql);
+        if ($result === false) {
+            return null;
+        }
+
+        return $result->fetch(PDO::FETCH_ASSOC);
     }
     public function getCurrentRun($periodId)
     {
@@ -139,8 +174,10 @@ class DashboardModel
         LIMIT 1
     ";
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$periodId]);
+        $stmt = $this->safePrepare($sql, [$periodId]);
+        if ($stmt === false) {
+            return null;
+        }
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
@@ -155,8 +192,10 @@ class DashboardModel
         WHERE p.payroll_run_id = ?
     ";
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$runId]);
+        $stmt = $this->safePrepare($sql, [$runId]);
+        if ($stmt === false) {
+            return ['total' => 0, 'processed' => 0, 'pending' => 0];
+        }
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
@@ -168,7 +207,12 @@ class DashboardModel
         WHERE status = 'draft'
     ";
 
-        return $this->db->query($sql)->fetchColumn();
+        $result = $this->safeQuery($sql);
+        if ($result === false) {
+            return 0;
+        }
+
+        return (int)$result->fetchColumn();
     }
     public function getLatestFinalizedRun()
     {
@@ -184,7 +228,12 @@ class DashboardModel
             LIMIT 1
         )";
 
-        return $this->db->query($sql)->fetchColumn() ?? 0;
+        $result = $this->safeQuery($sql);
+        if ($result === false) {
+            return 0;
+        }
+
+        return $result->fetchColumn() ?? 0;
     }
 
     public function getLatestFinalizedRunWithDetails()
@@ -213,7 +262,12 @@ class DashboardModel
             GROUP BY pr.run_id, pp.period_name, pp.start_date, pp.end_date
         ";
 
-        return $this->db->query($sql)->fetch(PDO::FETCH_ASSOC);
+        $result = $this->safeQuery($sql);
+        if ($result === false) {
+            return null;
+        }
+
+        return $result->fetch(PDO::FETCH_ASSOC);
     }
 
     /* ================= ADDITIONAL STATS ================= */
@@ -227,7 +281,12 @@ class DashboardModel
             WHERE r.status = 'finalized'
         ";
 
-        return $this->db->query($sql)->fetchColumn() ?? 0;
+        $result = $this->safeQuery($sql);
+        if ($result === false) {
+            return 0;
+        }
+
+        return $result->fetchColumn() ?? 0;
     }
 
     public function getTotalAllowances($periodId = null)
