@@ -20,14 +20,33 @@ class GrievanceController
         return $this->grievance->getGrievances();
     }
 
-    public function fileGrievance($employee_id, $subject, $description)
+    public function fileGrievance($employee_id, $subject, $description, $category = 'Workplace Conflict', $anonymous = 0, $attachment_path = null)
     {
-        return $this->grievance->fileGrievance($employee_id, $subject, $description);
+        try {
+            return $this->grievance->fileGrievance($employee_id, $subject, $description, $category, $anonymous, $attachment_path);
+        } catch (\Exception $e) {
+            throw $e;
+        }
     }
 
     public function updateStatus($id, $status)
     {
         return $this->grievance->updateStatus($id, $status);
+    }
+
+    public function assignTo($id, $assigned_to)
+    {
+        return $this->grievance->assignTo($id, $assigned_to);
+    }
+
+    public function updateResolution($id, $resolution_notes, $action_taken)
+    {
+        return $this->grievance->updateResolution($id, $resolution_notes, $action_taken);
+    }
+
+    public function submitSatisfaction($id, $rating, $comment)
+    {
+        return $this->grievance->submitSatisfaction($id, $rating, $comment);
     }
 
     public function addUpdate($grievance_id, $update_text, $updated_by)

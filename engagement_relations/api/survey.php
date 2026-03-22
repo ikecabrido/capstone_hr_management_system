@@ -11,7 +11,7 @@ if (!isset($_SESSION['user'])) {
 
 $ctrl = new SurveyController();
 $action = $_GET['action'] ?? 'list';
-$data = inputData();
+$data = array_merge($_GET, inputData());
 
 try {
     switch ($action) {
@@ -19,8 +19,9 @@ try {
             jsonResponse($ctrl->index());
             break;
         case 'view':
-            if (empty($data['id'])) jsonResponse(['error' => 'id is required'], 400);
-            jsonResponse($ctrl->show((int)$data['id']));
+            $surveyId = $data['id'] ?? null;
+            if (empty($surveyId)) jsonResponse(['error' => 'id is required'], 400);
+            jsonResponse($ctrl->show((int)$surveyId));
             break;
         case 'create':
             if (empty($data['title'])) jsonResponse(['error' => 'title is required'], 400);

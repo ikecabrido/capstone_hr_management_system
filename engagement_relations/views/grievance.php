@@ -3,35 +3,33 @@ session_start();
 // require_once "auth.php";
 require_once "../../auth/database.php";
 require_once "../../auth/auth_check.php";
+
 require_once __DIR__ . '/../autoload.php';
 
 use App\Controllers\GrievanceController;
+use App\Models\Employee;
 
 $theme = $_SESSION['user']['theme'] ?? 'light';
 
 $ctrl = new GrievanceController();
+$employeeModel = new Employee();
+$employees = $employeeModel->all();
 $payload = $payload ?? [];
 $payload['grievances'] = $ctrl->getGrievances();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!empty($_POST['subject']) && !empty($_POST['description'])) {
-        $employeeId = (int)($_SESSION['user']['employee_id'] ?? 0);
-        if ($employeeId > 0) {
-            $ctrl->fileGrievance($employeeId, $_POST['subject'], $_POST['description']);
-            $_SESSION['flash_success'] = 'Grievance submitted successfully.';
-        } else {
-            $_SESSION['flash_error'] = 'Your account is not linked to an employee record.';
-        }
-        header('Location: ' . $_SERVER['REQUEST_URI']);
-        exit;
-    }
-
     if (!empty($_POST['id']) && !empty($_POST['status']) && isset($_POST['update_status'])) {
         $ctrl->updateStatus((int)$_POST['id'], $_POST['status']);
         $_SESSION['flash_success'] = 'Grievance status updated.';
-        header('Location: ' . $_SERVER['REQUEST_URI']);
-        exit;
+    } elseif (!empty($_POST['id']) && !empty($_POST['assign_to']) && isset($_POST['assign_grievance'])) {
+        $ctrl->assignTo((int)$_POST['id'], (int)$_POST['assign_to']);
+        $_SESSION['flash_success'] = 'Grievance assigned.';
+    } else {
+        $_SESSION['flash_error'] = 'Invalid action or missing fields.';
     }
+
+    header('Location: ' . $_SERVER['REQUEST_URI']);
+    exit;
 }
 
 $flashSuccess = $_SESSION['flash_success'] ?? null;
@@ -231,27 +229,6 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 
     <div class="row">
       <div class="col-12">
-        <div class="card card-danger card-outline">
-          <div class="card-header"><h3 class="card-title">Submit Complaint</h3></div>
-          <div class="card-body">
-            <form method="post" class="grievance-form">
-              <div class="form-group">
-                <label for="grievance-subject">Subject</label>
-                <input id="grievance-subject" class="form-control" type="text" name="subject" placeholder="Grievance subject" required>
-              </div>
-              <div class="form-group">
-                <label for="grievance-desc">Description</label>
-                <textarea id="grievance-desc" class="form-control" name="description" rows="4" placeholder="Describe your issue" required></textarea>
-              </div>
-              <button class="btn btn-danger" type="submit">Submit Complaint</button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col-12">
         <div class="card card-warning card-outline">
           <div class="card-header"><h3 class="card-title">All Grievances</h3></div>
           <div class="card-body">
@@ -264,20 +241,40 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                           <h5 class="card-title mb-0"><?=htmlspecialchars($g['subject'])?></h5>
-                          <span class="badge badge-pill badge-<?= $g['status']=='resolved' ? 'success' : ($g['status']=='in progress' ? 'warning' : 'secondary') ?>"><?=htmlspecialchars($g['status'])?></span>
+                          <?php $status = strtolower($g['status']); ?>
+                          <?php $badgeClass = $status==='resolved' ? 'success' : ($status==='for investigation' ? 'warning' : ($status==='under review' ? 'info' : ($status==='closed' ? 'dark' : 'secondary'))); ?>
+                          <span class="badge badge-pill badge-<?= $badgeClass ?>"><?=htmlspecialchars($g['status'])?></span>
                         </div>
                         <p class="card-text mt-2 text-clamp-3"><?=nl2br(htmlspecialchars($g['description']))?></p>
                         <small class="text-muted">Filed by <?=htmlspecialchars($g['employee_name'])?> on <?=htmlspecialchars($g['created_at'])?></small>
+                        <?php if (!empty($g['attachment_path'])): ?>
+                          <div class="mt-2"><a href="../../<?=htmlspecialchars($g['attachment_path'])?>" target="_blank" class="badge badge-primary"><i class="fas fa-download"></i> Download Attachment</a></div>
+                        <?php endif; ?>
                         <form method="post" class="form-inline">
-                            <input type="hidden" name="id" value="<?=htmlspecialchars($g['id'])?>">
+                            <input type="hidden" name="id" value="<?=htmlspecialchars($g['eer_grievance_id'])?>">
                             <div class="form-group mr-2">
                                 <select class="form-control form-control-sm" name="status">
-                                    <option value="pending" <?= $g['status']=='pending' ? 'selected' : '' ?>>Pending</option>
-                                    <option value="in progress" <?= $g['status']=='in progress' ? 'selected' : '' ?>>In Progress</option>
-                                    <option value="resolved" <?= $g['status']=='resolved' ? 'selected' : '' ?>>Resolved</option>
+                                    <?php $status = strtolower($g['status']); ?>
+                                    <option value="Submitted" <?= $status==='submitted' ? 'selected' : '' ?>>Submitted</option>
+                                    <option value="Under Review" <?= $status==='under review' ? 'selected' : '' ?>>Under Review</option>
+                                    <option value="For Investigation" <?= $status==='for investigation' ? 'selected' : '' ?>>For Investigation</option>
+                                    <option value="Resolved" <?= $status==='resolved' ? 'selected' : '' ?>>Resolved</option>
+                                    <option value="Closed" <?= $status==='closed' ? 'selected' : '' ?>>Closed</option>
                                 </select>
                             </div>
                             <button class="btn btn-sm btn-primary" type="submit" name="update_status">Update</button>
+                        </form>
+                        <form method="post" class="form-inline mt-2">
+                            <input type="hidden" name="id" value="<?=htmlspecialchars($g['eer_grievance_id'])?>">
+                            <div class="form-group mr-2">
+                                <select class="form-control form-control-sm" name="assign_to" required>
+                                    <option value="">Assign to...</option>
+                                    <?php foreach ($employees as $emp): ?>
+                                        <option value="<?= (int)$emp['eer_employee_id'] ?>" <?= $g['assigned_to'] == $emp['eer_employee_id'] ? 'selected' : '' ?>><?= htmlspecialchars($emp['name']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <button class="btn btn-sm btn-outline-success" type="submit" name="assign_grievance">Assign</button>
                         </form>
                     </div>
                 </div>

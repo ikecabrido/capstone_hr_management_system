@@ -13,6 +13,11 @@ $ctrl = new CommunicationController();
 $action = $_GET['action'] ?? 'announcements';
 $data = inputData();
 
+// For messages action, employee_id should come from GET params
+if ($action === 'messages' && empty($data['employee_id'])) {
+    $data['employee_id'] = $_GET['employee_id'] ?? null;
+}
+
 try {
     switch ($action) {
         case 'announcements':
@@ -22,7 +27,7 @@ try {
             foreach (['title','content'] as $f) {
                 if (empty($data[$f])) jsonResponse(['error' => "$f is required"], 400);
             }
-            $employeeId = (int)($_SESSION['user']['employee_id'] ?? 0);
+            $employeeId = (int)($_SESSION['user']['id'] ?? 0);
             if (!$employeeId) {
                 jsonResponse(['error' => 'Current user is not linked to an employee record'], 400);
             }
@@ -30,14 +35,18 @@ try {
             jsonResponse(['id' => $id], 201);
             break;
         case 'messages':
-            if (empty($data['employee_id'])) jsonResponse(['error' => 'employee_id required'], 400);
-            jsonResponse($ctrl->messageThreads((int)$data['employee_id']));
+            $empId = (int)($data['employee_id'] ?? 0);
+            if ($empId <= 0) {
+                jsonResponse(['error' => 'employee_id required and must be positive'], 400);
+            }
+            $messages = $ctrl->messageThreads($empId);
+            jsonResponse($messages);
             break;
         case 'send-message':
             foreach (['receiver_id','message'] as $f) {
                 if (empty($data[$f])) jsonResponse(['error' => "$f is required"], 400);
             }
-            $employeeId = (int)($_SESSION['user']['employee_id'] ?? 0);
+            $employeeId = (int)($_SESSION['user']['id'] ?? 0);
             if (!$employeeId) {
                 jsonResponse(['error' => 'Current user is not linked to an employee record'], 400);
             }

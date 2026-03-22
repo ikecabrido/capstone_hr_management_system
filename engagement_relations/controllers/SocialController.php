@@ -19,7 +19,7 @@ class SocialController
     {
         $posts = $this->post->getPosts();
         foreach ($posts as &$p) {
-            $p['comments'] = $this->comment->getComments($p['id']);
+            $p['comments'] = $this->comment->getComments($p['eer_social_post_id']);
         }
         return $posts;
     }

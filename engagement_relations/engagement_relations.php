@@ -1,6 +1,7 @@
 ﻿<?php
 session_start();
 require_once "../auth/auth_check.php";
+
 require_once __DIR__ . '/autoload.php';
 
 
@@ -9,6 +10,7 @@ use App\Controllers\RecognitionController;
 use App\Controllers\GrievanceController;
 use App\Controllers\CommunicationController;
 use App\Controllers\SocialController;
+use App\Controllers\FeedbackController;
 
 $theme = $_SESSION['user']['theme'] ?? 'light';
 
@@ -17,6 +19,7 @@ $recognitionCtrl = new RecognitionController();
 $grievanceCtrl = new GrievanceController();
 $communicationCtrl = new CommunicationController();
 $socialCtrl = new SocialController();
+$feedbackCtrl = new FeedbackController();
 
 $payload = $payload ?? [];
 $payload['surveys'] = $surveyCtrl->index();
@@ -24,6 +27,7 @@ $payload['recognitions'] = $recognitionCtrl->getRecognitions();
 $payload['grievances'] = $grievanceCtrl->getGrievances();
 $payload['announcements'] = $communicationCtrl->getAnnouncements();
 $payload['feed'] = $socialCtrl->getPosts();
+$payload['feedback'] = $feedbackCtrl->index();
 
 ?>
 <!doctype html>
@@ -245,10 +249,17 @@ $payload['feed'] = $socialCtrl->getPosts();
           <div class="icon"><i class="fas fa-bullhorn"></i></div>
         </div>
       </div>
-      <div class="col-lg-3 col-6">
+           <div class="col-lg-3 col-6">
         <div class="small-box bg-danger">
-          <div class="inner">
-            <h3><?=count($payload['feed'] ?? [])?></h3>
+          <div class="inner">            <h3><?=count($payload['feedback'] ?? [])?></h3>
+            <p>Feedback</p>
+          </div>
+          <div class="icon"><i class="fas fa-comments"></i></div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-secondary">
+          <div class="inner">            <h3><?=count($payload['feed'] ?? [])?></h3>
             <p>Social posts</p>
           </div>
           <div class="icon"><i class="fas fa-users"></i></div>

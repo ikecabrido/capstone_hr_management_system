@@ -3,15 +3,19 @@ session_start();
 // require_once "auth.php";
 require_once "../../auth/database.php";
 require_once "../../auth/auth_check.php";
+
 require_once __DIR__ . '/../autoload.php';
 
 use App\Controllers\SurveyController;
+use App\Controllers\FeedbackController;
 
 $theme = $_SESSION['user']['theme'] ?? 'light';
 
 $surveyCtrl = new SurveyController();
+$feedbackCtrl = new FeedbackController();
 $payload = $payload ?? [];
 $payload['surveys'] = $surveyCtrl->index();
+$payload['feedback'] = $feedbackCtrl->index();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $flashSuccess = '';
@@ -36,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             return ['question_text' => $q];
         }, array_filter($questions));
 
-        $employeeId = (int)($_SESSION['user']['employee_id'] ?? 0);
+        $employeeId = (int)($_SESSION['user']['id'] ?? 0);
         if ($employeeId > 0) {
             $surveyCtrl->store($_POST['title'], $employeeId, $formatted);
             $_SESSION['flash_success'] = 'Survey created successfully.';
@@ -283,12 +287,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                       <small><?=htmlspecialchars($survey['date_created'])?></small>
                     </div>
                     <div class="btn-group" role="group" aria-label="Survey actions">
-                      <a class="btn btn-sm btn-primary" href="survey_view.php?module=survey&action=view&id=<?=$survey['id']?>">Answer</a>
-                      <form method="post" class="d-inline-block" onsubmit="return confirm('Are you sure you want to delete this survey?');">
-                        <input type="hidden" name="action" value="delete" />
-                        <input type="hidden" name="survey_id" value="<?= (int) $survey['id'] ?>" />
-                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                      </form>
+                      <a class="btn btn-sm btn-info" href="survey_view.php?module=survey&action=view&id=<?=$survey['eer_survey_id']?>">View</a>
                     </div>
                   </li>
                 <?php endforeach; ?>
@@ -300,6 +299,34 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
         </div>
       </div>
     </div>
+
+    <div class="row">
+      <div class="col-12">
+        <div class="card card-warning card-outline">
+          <div class="card-header"><h3 class="card-title">Survey Feedback</h3></div>
+          <div class="card-body">
+            <?php if (!empty($payload['feedback'])): ?>
+              <ul class="list-group">
+                <?php foreach ($payload['feedback'] as $feedback): ?>
+                  <li class="list-group-item">
+                    <strong><?=htmlspecialchars($feedback['employee_name'] ?? 'Anonymous')?></strong>
+                    <span class="text-muted">(survey #<?= (int) $feedback['survey_id']?>)</span>
+                    <p><?=nl2br(htmlspecialchars($feedback['comment']))?></p>
+                    <small>
+                      Rating: <?= $feedback['rating'] !== null ? (int)$feedback['rating'] . '/5' : 'n/a' ?>
+                      &bull; <?=htmlspecialchars($feedback['created_at'])?> 
+                    </small>
+                  </li>
+                <?php endforeach; ?>
+              </ul>
+            <?php else: ?>
+              <p class="text-muted">No feedback submitted yet.</p>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+    </div>
+
         </div>
     </div>
   <!-- CONTENT -->

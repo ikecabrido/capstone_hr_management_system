@@ -11,7 +11,7 @@
 .form-control { width: 100%; max-width: 560px; border: 1px solid #d0d8e6; border-radius: 6px; padding: 8px 10px; }
 .form-control:focus { border-color: #4987dc; box-shadow: 0 0 0 0.15rem rgba(73, 135, 220, 0.25); }
 button.btn { min-width: 140px; }
-.timeline-item { border-left: 2px solid #c2d8f2; margin-left: 0; padding-left: 12px; margin-bottom: 15px; }
+.timeline-item { margin-left: 0; padding-left: 0; margin-bottom: 15px; }
 .timeline-item .timeline-header { font-size: 0.95rem; font-weight: 600; color: #123f7a; }
 .timeline-item .timeline-body { margin-top: 8px; color: #333; }
 .timeline-item .time { font-size: 0.78rem; color: #77869b; }

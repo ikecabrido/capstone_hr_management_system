@@ -2,6 +2,7 @@
 session_start();
 require_once __DIR__ . '/../../auth/database.php';
 require_once __DIR__ . '/../../auth/auth_check.php';
+
 require_once __DIR__ . '/../autoload.php';
 
 use App\Controllers\SurveyController;
@@ -21,37 +22,9 @@ function submitSurveyResponses($surveyId, $employeeId, $answers) {
 $surveyCtrl = new SurveyController();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Survey submission disabled on this view page. Redirect back to the same survey page.
     $surveyId = (int) ($_POST['survey_id'] ?? 0);
-    $answers = $_POST['answers'] ?? [];
-    $employeeId = (int) ($_SESSION['user']['employee_id'] ?? $_SESSION['user']['id'] ?? 0);
-
-    if ($surveyId <= 0 || $employeeId <= 0) {
-        $_SESSION['flash_error'] = 'Unable to submit survey. Missing survey or user details.';
-    } elseif (!is_array($answers) || empty($answers)) {
-        $_SESSION['flash_error'] = 'Please answer all survey questions before submitting.';
-    } else {
-        $cleanAnswers = [];
-        foreach ($answers as $questionId => $answer) {
-            $answerText = trim((string)$answer);
-            if ($answerText === '') {
-                $cleanAnswers = null;
-                break;
-            }
-            $cleanAnswers[$questionId] = $answerText;
-        }
-
-        if ($cleanAnswers === null) {
-            $_SESSION['flash_error'] = 'All questions are required. Please complete the form.';
-        } else {
-            try {
-                submitSurveyResponses($surveyId, $employeeId, $cleanAnswers);
-                $_SESSION['flash_success'] = 'Thank you! Survey submitted successfully.';
-            } catch (Exception $e) {
-                $_SESSION['flash_error'] = 'Error submitting survey: ' . $e->getMessage();
-            }
-        }
-    }
-
+    $_SESSION['flash_error'] = 'Survey response submission is disabled on this page.';
     $redirectUrl = 'survey_view.php?module=survey&action=view&id=' . $surveyId;
     header('Location: ' . $redirectUrl);
     exit;
@@ -119,49 +92,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
     <?php if (empty($payload['survey'])): ?>
         <div class="alert alert-warning">Survey not found. Please go back to the list and try again.</div>
     <?php else: ?>
-        <form method="post" action="">
-            <input type="hidden" name="survey_id" value="<?=htmlspecialchars($payload['survey']['id'])?>">
-            <?php foreach ($payload['survey']['questions'] as $q): ?>
-                <div class="form-group">
-                    <label for="answer-<?=$q['id']?>"><?=htmlspecialchars($q['question_text'])?></label>
-                    <?php $type = strtolower(trim($q['type'] ?? 'text')); ?>
-                    <?php $defaultValue = $q['default'] ?? ''; ?>
-                    <?php if ($isAdmin): ?>
-                        <?php if ($type === 'textarea'): ?>
-                            <textarea id="answer-<?=$q['id']?>" class="form-control" rows="4" readonly><?=htmlspecialchars($defaultValue)?></textarea>
-                        <?php elseif ($type === 'rating'): ?>
-                            <input type="text" class="form-control" readonly value="<?=htmlspecialchars($defaultValue ?: 'N/A')?>">
-                        <?php else: ?>
-                            <input type="text" class="form-control" readonly value="<?=htmlspecialchars($defaultValue)?>">
-                        <?php endif; ?>
-                    <?php else: ?>
-                        <?php if ($type === 'textarea'): ?>
-                            <textarea id="answer-<?=$q['id']?>" name="answers[<?=$q['id']?>]" class="form-control" rows="4" placeholder="Enter your response" required><?=htmlspecialchars($defaultValue)?></textarea>
-                        <?php elseif ($type === 'rating'): ?>
-                            <select id="answer-<?=$q['id']?>" name="answers[<?=$q['id']?>]" class="form-control" required>
-                                <option value="">Choose a rating</option>
-                                <?php for ($i = 1; $i <= 5; $i++): ?>
-                                    <option value="<?=$i?>" <?=($i == ($defaultValue ?: 3)) ? 'selected' : ''?>><?=$i?> / 5</option>
-                                <?php endfor; ?>
-                            </select>
-                        <?php else: ?>
-                            <input type="text" id="answer-<?=$q['id']?>" name="answers[<?=$q['id']?>]" class="form-control" value="<?=htmlspecialchars($defaultValue)?>" placeholder="Type your answer" required>
-                        <?php endif; ?>
-                    <?php endif; ?>
-                </div>
-            <?php endforeach; ?>
-
-            <?php if (!$isAdmin): ?>
-                <div class="form-group mt-4 d-flex justify-content-between align-items-center">
-                    <a href="survey.php" class="btn btn-outline-secondary">Cancel</a>
-                    <button type="submit" class="btn btn-primary">Submit Responses</button>
-                </div>
-            <?php else: ?>
-                <div class="alert alert-info">
-                    <strong>Admin view:</strong> questions are read-only. This page shows submitted responses below.
-                </div>
-            <?php endif; ?>
-        </form>
+        <div class="alert alert-info">Survey response submission is disabled on this page. Showing responses only.</div>
 
         <?php if (!empty($surveyResponses)): ?>
             <div class="mt-4">
@@ -181,7 +112,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                                 <?php foreach ($payload['survey']['questions'] as $q): ?>
                                     <div class="response-item">
                                         <strong><?=htmlspecialchars($q['question_text'])?></strong>
-                                        <small><?=nl2br(htmlspecialchars($answers[$q['id']] ?? '(not answered)'))?></small>
+                                        <small><?=nl2br(htmlspecialchars($answers[$q['eer_survey_question_id']] ?? '(not answered)'))?></small>
                                     </div>
                                 <?php endforeach; ?>
                             <?php endif; ?>

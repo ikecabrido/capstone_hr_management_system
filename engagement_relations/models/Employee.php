@@ -10,7 +10,7 @@ class Employee extends BaseModel
 
     public function find($id)
     {
-        return $this->execute('SELECT * FROM employees WHERE id = :id', ['id' => $id])->fetch();
+        return $this->execute('SELECT * FROM employees WHERE eer_employee_id = :id', ['id' => $id])->fetch();
     }
 
     public function findByNameOrEmail($name, $email)

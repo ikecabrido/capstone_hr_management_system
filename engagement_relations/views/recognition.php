@@ -3,6 +3,7 @@ session_start();
 // require_once "auth.php";
 require_once "../../auth/database.php";
 require_once "../../auth/auth_check.php";
+
 require_once __DIR__ . '/../autoload.php';
 
 use App\Controllers\RecognitionController;
@@ -14,7 +15,7 @@ $payload = $payload ?? [];
 $payload['recognitions'] = $ctrl->getRecognitions();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['receiver_id']) && !empty($_POST['message'])) {
-    $employeeId = (int)($_SESSION['user']['employee_id'] ?? 0);
+    $employeeId = (int)($_SESSION['user']['id'] ?? 0);
     if ($employeeId > 0) {
         $ctrl->sendRecognition($employeeId, (int)$_POST['receiver_id'], $_POST['message'], (int)($_POST['points'] ?? 10));
         $_SESSION['flash_success'] = 'Recognition sent successfully.';

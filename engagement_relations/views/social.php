@@ -14,7 +14,7 @@ $payload = $payload ?? [];
 $payload['feed'] = $ctrl->getPosts();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $employeeId = (int)($_SESSION['user']['employee_id'] ?? 0);
+    $employeeId = (int)($_SESSION['user']['id'] ?? 0);
 
     if ($employeeId <= 0) {
         $_SESSION['flash_error'] = 'Your account is not linked to an employee record.';
@@ -23,7 +23,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ctrl->createPost($employeeId, $_POST['content']);
             $_SESSION['flash_success'] = 'Post published successfully.';
         } elseif (!empty($_POST['comment']) && !empty($_POST['post_id'])) {
-            $ctrl->addComment((int)$_POST['post_id'], $employeeId, $_POST['comment']);
+            $commentText = trim($_POST['comment']);
+            $replyTo = (int)($_POST['reply_to'] ?? 0);
+            if ($replyTo > 0) {
+                $commentText = '(Reply to #' . $replyTo . ') ' . $commentText;
+            }
+            $ctrl->addComment((int)$_POST['post_id'], $employeeId, $commentText);
             $_SESSION['flash_success'] = 'Comment added successfully.';
         } else {
             $_SESSION['flash_error'] = 'Post or comment content is required.';
@@ -246,42 +251,62 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
       <div class="card-header"><h3 class="card-title">Activity Feed</h3></div>
       <div class="card-body">
         <?php if (empty($payload['feed'])): ?>
-            <p class="text-muted">No posts yet. Be the first to post!</p>
+          <p class="text-muted">No posts yet. Be the first to post!</p>
         <?php endif; ?>
 
         <?php foreach ($payload['feed'] as $p): ?>
-            <article class="card mb-3">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <strong><?=htmlspecialchars($p['employee_name'])?></strong>
-                    <small class="text-muted"><?=htmlspecialchars($p['created_at'])?></small>
+          <article class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <strong><?= htmlspecialchars($p['employee_name']) ?></strong>
+              <small class="text-muted"><?= htmlspecialchars($p['created_at']) ?></small>
+            </div>
+            <div class="card-body">
+              <p><?= nl2br(htmlspecialchars($p['content'])) ?></p>
+              <div class="mb-3">
+                <?php foreach ($p['comments'] as $c): ?>
+                  <div class="pl-3 py-1 border-bottom">
+                    <small>
+                      <strong><?= htmlspecialchars($c['employee_name']) ?></strong>: <?= htmlspecialchars($c['comment']) ?>
+                      <span class="text-muted"><?= htmlspecialchars($c['created_at'] ?? '') ?></span>
+                    </small>
+                    <button type="button" class="btn btn-link btn-sm reply-trigger" data-post-id="<?= (int)$p['eer_social_post_id'] ?>" data-reply-to="<?= (int)$c['eer_comment_id'] ?>" data-reply-to-name="<?= htmlspecialchars($c['employee_name']) ?>">Reply</button>
+                  </div>
+                <?php endforeach; ?>
+              </div>
+              <form method="post" class="reply-form">
+                <input type="hidden" name="post_id" value="<?= (int)$p['eer_social_post_id'] ?>" />
+                <input type="hidden" name="reply_to" class="reply_to_input" value="0" />
+                <div class="form-group">
+                  <input type="text" name="comment" class="form-control" placeholder="Reply to this post..." required />
                 </div>
-                <div class="card-body">
-                    <p class="text-clamp-3"><?=nl2br(htmlspecialchars($p['content']))?></p>
-
-                    <div class="mb-3">
-                        <strong>Comments (<?=count($p['comments'])?>)</strong>
-                        <?php foreach ($p['comments'] as $c): ?>
-                            <div class="pl-3 py-1 border-bottom text-clamp-3">
-                                <small><strong><?=htmlspecialchars($c['employee_name'])?></strong>: <?=htmlspecialchars($c['comment'])?> <span class="text-muted"><?=htmlspecialchars($c['created_at'] ?? '')?></span></small>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-
-                    <form method="post" class="form-inline">
-                        <input type="hidden" name="post_id" value="<?=htmlspecialchars($p['id'])?>">
-                        <div class="input-group input-group-sm w-100">
-                            <input class="form-control" type="text" name="comment" placeholder="Add a comment..." required>
-                            <div class="input-group-append">
-                                <button class="btn btn-secondary" type="submit">Comment</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </article>
+                <button type="submit" class="btn btn-secondary btn-sm">Reply</button>
+              </form>
+            </div>
+          </article>
         <?php endforeach; ?>
-    </div>
       </div>
     </div>
+
+    <script>
+      document.querySelectorAll('.reply-trigger').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var postId = btn.getAttribute('data-post-id');
+          var replyTo = btn.getAttribute('data-reply-to');
+          var replyName = btn.getAttribute('data-reply-to-name');
+          var postCard = btn.closest('article');
+          var replyInput = postCard.querySelector('.reply_to_input');
+          if (replyInput) {
+            replyInput.value = replyTo;
+          }
+          var textInput = postCard.querySelector('input[name="comment"]');
+          if (textInput) {
+            textInput.value = '@' + replyName + ' ';
+            textInput.focus();
+          }
+        });
+      });
+    </script>
+  </div>
   <!-- CONTENT -->
 
     </div>

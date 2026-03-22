@@ -3,6 +3,7 @@ session_start();
 // require_once "auth.php";
 require_once "../../auth/database.php";
 require_once "../../auth/auth_check.php";
+
 require_once __DIR__ . '/../autoload.php';
 
 use App\Controllers\CommunicationController;
@@ -13,7 +14,7 @@ $communicationCtrl = new CommunicationController();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $formType = $_POST['form_type'] ?? '';
-    $currentEmployeeId = (int)($_SESSION['user']['employee_id'] ?? 0);
+    $currentEmployeeId = (int)($_SESSION['user']['id'] ?? 0);
 
     if (!$currentEmployeeId) {
         $_SESSION['flash_error'] = 'Your account is not linked to an employee record; action is blocked.';
@@ -50,9 +51,10 @@ $flashError = $_SESSION['flash_error'] ?? null;
 unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 
 $payload = $payload ?? [];
-$userEmployeeId = (int)($_SESSION['user']['employee_id'] ?? 0);
+$userEmployeeId = (int)($_SESSION['user']['id'] ?? 0);
+// Load data from database
 $payload['announcements'] = $communicationCtrl->getAnnouncements();
-$payload['threads'] = $userEmployeeId ? $communicationCtrl->messageThreads($userEmployeeId) : [];
+$payload['threads'] = $communicationCtrl->messageThreads(0);
 
 ?>
 <!doctype html>
@@ -84,7 +86,8 @@ $payload['threads'] = $userEmployeeId ? $communicationCtrl->messageThreads($user
 </head>
 
 <body
-  class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed <?= $theme === 'dark' ? 'dark-mode' : '' ?>">
+  class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed <?= $theme === 'dark' ? 'dark-mode' : '' ?>"
+  data-employee-id="<?= (int)$userEmployeeId ?>">
   <div class="wrapper">
     <!-- Preloader -->
     <div
@@ -177,7 +180,7 @@ $payload['threads'] = $userEmployeeId ? $communicationCtrl->messageThreads($user
               </a>
             </li>
             <li class="nav-item">
-              <a href="views/" class="nav-link active">
+              <a href="communication.php" class="nav-link active">
                 <i class="nav-icon fas fa-chart-pie"></i>
                 <p>Communication</p>
               </a>
@@ -273,7 +276,7 @@ $payload['threads'] = $userEmployeeId ? $communicationCtrl->messageThreads($user
         </div>
         <div class="card-body">
           <?php if (!empty($payload['announcements'])): ?>
-            <div class="list-group">
+            <div class="list-group" id="announcementsList">
               <?php foreach ($payload['announcements'] as $a): ?>
                 <a href="#" class="list-group-item list-group-item-action flex-column align-items-start">
                   <div class="d-flex w-100 justify-content-between">
@@ -285,7 +288,9 @@ $payload['threads'] = $userEmployeeId ? $communicationCtrl->messageThreads($user
               <?php endforeach; ?>
             </div>
           <?php else: ?>
-            <p class="text-muted">No announcements yet.</p>
+            <div class="list-group" id="announcementsList">
+              <div class="list-group-item text-muted">Loading announcements...</div>
+            </div>
           <?php endif; ?>
         </div>
       </div>
@@ -318,7 +323,7 @@ $payload['threads'] = $userEmployeeId ? $communicationCtrl->messageThreads($user
         </div>
         <div class="card-body">
           <?php if (!empty($payload['threads'])): ?>
-            <div class="timeline">
+            <div class="timeline" id="messagesList">
               <?php foreach ($payload['threads'] as $t): ?>
                 <div class="timeline-item">
                   <span class="time"><i class="far fa-clock"></i> <?=htmlspecialchars($t['timestamp'] ?? '')?></span>
@@ -328,7 +333,9 @@ $payload['threads'] = $userEmployeeId ? $communicationCtrl->messageThreads($user
               <?php endforeach; ?>
             </div>
           <?php else: ?>
-            <p class="text-muted">No messages yet.</p>
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle"></i> No messages yet.
+            </div>
           <?php endif; ?>
         </div>
       </div>

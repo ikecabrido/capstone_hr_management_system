@@ -1,15 +1,17 @@
 <?php
 session_start();
-// require_once "auth.php";
 require_once "../../auth/database.php";
 require_once "../../auth/auth_check.php";
+
 require_once __DIR__ . '/../autoload.php';
+
 
 use App\Controllers\SurveyController;
 use App\Controllers\RecognitionController;
 use App\Controllers\GrievanceController;
 use App\Controllers\CommunicationController;
 use App\Controllers\SocialController;
+use App\Controllers\FeedbackController;
 
 $theme = $_SESSION['user']['theme'] ?? 'light';
 
@@ -18,6 +20,7 @@ $recognitionCtrl = new RecognitionController();
 $grievanceCtrl = new GrievanceController();
 $communicationCtrl = new CommunicationController();
 $socialCtrl = new SocialController();
+$feedbackCtrl = new FeedbackController();
 
 $payload = $payload ?? [];
 $payload['surveys'] = $surveyCtrl->index();
@@ -25,6 +28,8 @@ $payload['recognitions'] = $recognitionCtrl->getRecognitions();
 $payload['grievances'] = $grievanceCtrl->getGrievances();
 $payload['announcements'] = $communicationCtrl->getAnnouncements();
 $payload['feed'] = $socialCtrl->getPosts();
+$payload['feedback'] = $feedbackCtrl->index();
+
 ?>
 <!doctype html>
 <html lang="en">
@@ -50,10 +55,8 @@ $payload['feed'] = $socialCtrl->getPosts();
   <link rel="stylesheet" href="../../assets/dist/css/adminlte.min.css" />
 
   <link rel="stylesheet" href="../../layout/toast.css" />
-  <link rel="stylesheet" href="css/communication.css" />
-  <link rel="stylesheet" href="../custom.css" /> 
+  <link rel="stylesheet" href="../custom.css" />    
 </head>
-
 
 <body
   class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed <?= $theme === 'dark' ? 'dark-mode' : '' ?>">
@@ -77,7 +80,7 @@ $payload['feed'] = $socialCtrl->getPosts();
           <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
         </li>
         <li class="nav-item d-none d-sm-inline-block">
-          <a href="../engagement_relations.php" class="nav-link">Home</a>        
+          <a href="../engagement_relations.php" class="nav-link">Home</a>
         </li>
       </ul>
 
@@ -93,6 +96,7 @@ $payload['feed'] = $socialCtrl->getPosts();
             <i class="fas fa-expand-arrows-alt"></i>
           </a>
         </li>
+
         <li class="nav-item">
           <a
             class="nav-link"
@@ -156,25 +160,25 @@ $payload['feed'] = $socialCtrl->getPosts();
             </li>
             <li class="nav-item">
               <a href="survey.php" class="nav-link">
-                <i class="nav-icon fas fa-poll"></i>
+                <i class="nav-icon fas fa-tree"></i>
                 <p>Survey</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="recognition.php" class="nav-link">
-                <i class="nav-icon fas fa-award"></i>
+                <i class="nav-icon fas fa-edit"></i>
                 <p>Recognition</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="grievance.php" class="nav-link">
-                <i class="nav-icon fas fa-exclamation-triangle"></i>
+                <i class="nav-icon fas fa-table"></i>
                 <p> Grievances</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="social.php" class="nav-link">
-                <i class="nav-icon fas fa-users"></i>
+                <i class="nav-icon fas fa-table"></i>
                 <p> Social</p>
               </a>
             </li>
@@ -192,14 +196,15 @@ $payload['feed'] = $socialCtrl->getPosts();
     </aside>
 
 
-        <!-- MAIN CONTENT -->
+        <!-- MAIN CONTENT --
+            <!-- HEADER -->
     <div class="content-wrapper">
       <!-- Content Header (Page header) -->
       <div class="content-header">
         <div class="container-fluid">
           <div class="row mb-2">
             <div class="col-sm-6">
-              <h1 class="m-0">Dashboard</h1>
+               <h1 class="m-0">Dashboard</h1>
               <p class="text-muted">Use the sidebar to manage surveys, recognitions, grievances, announcements, messages, and social posts.</p>
             </div>
           </div>
@@ -245,13 +250,157 @@ $payload['feed'] = $socialCtrl->getPosts();
           <div class="icon"><i class="fas fa-bullhorn"></i></div>
         </div>
       </div>
-      <div class="col-lg-3 col-6">
+           <div class="col-lg-3 col-6">
         <div class="small-box bg-danger">
-          <div class="inner">
-            <h3><?=count($payload['feed'] ?? [])?></h3>
+          <div class="inner">            <h3><?=count($payload['feedback'] ?? [])?></h3>
+            <p>Feedback</p>
+          </div>
+          <div class="icon"><i class="fas fa-comments"></i></div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-secondary">
+          <div class="inner">            <h3><?=count($payload['feed'] ?? [])?></h3>
             <p>Social posts</p>
           </div>
           <div class="icon"><i class="fas fa-users"></i></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Overviews -->
+    <div class="row mt-4">
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title">Latest Grievances</h5>
+          </div>
+          <div class="card-body">
+            <?php if (!empty($payload['grievances'])): ?>
+              <ul class="list-group list-group-flush">
+                <?php foreach (array_slice($payload['grievances'], 0, 3) as $g): ?>
+                  <li class="list-group-item">
+                    <strong><?php echo htmlspecialchars($g['subject']); ?></strong><br>
+                    <small>Status: <?php echo htmlspecialchars($g['status']); ?> | Filed by: <?php echo htmlspecialchars($g['employee_name'] ?? 'Unknown'); ?></small>
+                  </li>
+                <?php endforeach; ?>
+              </ul>
+            <?php else: ?>
+              <p class="text-muted">No grievances yet.</p>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title">Latest Social Posts</h5>
+          </div>
+          <div class="card-body">
+            <?php if (!empty($payload['feed'])): ?>
+              <ul class="list-group list-group-flush">
+                <?php foreach (array_slice($payload['feed'], 0, 3) as $post): ?>
+                  <li class="list-group-item">
+                    <strong><?php echo htmlspecialchars($post['title'] ?? 'Post'); ?></strong><br>
+                    <small>By: <?php echo htmlspecialchars($post['owner_name'] ?? 'Unknown'); ?> | <?php echo htmlspecialchars($post['created_at']); ?></small>
+                  </li>
+                <?php endforeach; ?>
+              </ul>
+            <?php else: ?>
+              <p class="text-muted">No social posts yet.</p>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title">Latest Surveys</h5>
+          </div>
+          <div class="card-body">
+            <?php if (!empty($payload['surveys'])): ?>
+              <ul class="list-group list-group-flush">
+                <?php foreach (array_slice($payload['surveys'], 0, 3) as $survey): ?>
+                  <li class="list-group-item">
+                    <strong><?php echo htmlspecialchars($survey['title']); ?></strong><br>
+                    <small>Created: <?php echo htmlspecialchars($survey['date_created'] ?? $survey['created_at']); ?></small>
+                  </li>
+                <?php endforeach; ?>
+              </ul>
+            <?php else: ?>
+              <p class="text-muted">No surveys yet.</p>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mt-4">
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title">Latest Survey Feedback</h5>
+          </div>
+          <div class="card-body">
+            <?php if (!empty($payload['feedback'])): ?>
+              <ul class="list-group list-group-flush">
+                <?php foreach (array_slice($payload['feedback'], 0, 3) as $fb): ?>
+                  <li class="list-group-item">
+                    <strong><?php echo htmlspecialchars($fb['survey_title'] ?? 'Survey'); ?></strong><br>
+                    <small>By: <?php echo htmlspecialchars($fb['employee_name'] ?? 'Unknown'); ?> | <?php echo htmlspecialchars($fb['comment']); ?></small>
+                  </li>
+                <?php endforeach; ?>
+              </ul>
+            <?php else: ?>
+              <p class="text-muted">No feedback yet.</p>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title">Latest Communications</h5>
+          </div>
+          <div class="card-body">
+            <?php if (!empty($payload['announcements'])): ?>
+              <ul class="list-group list-group-flush">
+                <?php foreach (array_slice($payload['announcements'], 0, 3) as $ann): ?>
+                  <li class="list-group-item">
+                    <strong><?php echo htmlspecialchars($ann['title']); ?></strong><br>
+                    <small>By: <?php echo htmlspecialchars($ann['author_name'] ?? 'Unknown'); ?> | <?php echo htmlspecialchars($ann['created_at']); ?></small>
+                  </li>
+                <?php endforeach; ?>
+              </ul>
+            <?php else: ?>
+              <p class="text-muted">No announcements yet.</p>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title">Latest Recognitions</h5>
+          </div>
+          <div class="card-body">
+            <?php if (!empty($payload['recognitions'])): ?>
+              <ul class="list-group list-group-flush">
+                <?php foreach (array_slice($payload['recognitions'], 0, 3) as $rec): ?>
+                  <li class="list-group-item">
+                    <strong><?php echo htmlspecialchars($rec['sender_name'] ?? 'Unknown'); ?> → <?php echo htmlspecialchars($rec['receiver_name'] ?? 'Unknown'); ?></strong><br>
+                    <small><?php echo htmlspecialchars($rec['message']); ?> | Points: <?php echo htmlspecialchars($rec['points']); ?></small>
+                  </li>
+                <?php endforeach; ?>
+              </ul>
+            <?php else: ?>
+              <p class="text-muted">No recognitions yet.</p>
+            <?php endif; ?>
+          </div>
         </div>
       </div>
     </div>
@@ -287,24 +436,23 @@ $payload['feed'] = $socialCtrl->getPosts();
 
   <!-- PAGE PLUGINS -->
   <!-- jQuery Mapael -->
-  <script src="../assets/plugins/jquery-mousewheel/jquery.mousewheel.js"></script>
-  <script src="../assets/plugins/raphael/raphael.min.js"></script>
-  <script src="../assets/plugins/jquery-mapael/jquery.mapael.min.js"></script>
-  <script src="../assets/plugins/jquery-mapael/maps/usa_states.min.js"></script>
+  <script src="../../assets/plugins/jquery-mousewheel/jquery.mousewheel.js"></script>
+  <script src="../../assets/plugins/raphael/raphael.min.js"></script>
+  <script src="../../assets/plugins/jquery-mapael/jquery.mapael.min.js"></script>
+  <script src="../../assets/plugins/jquery-mapael/maps/usa_states.min.js"></script>
   <!-- ChartJS -->
-  <script src="../assets/plugins/chart.js/Chart.min.js"></script>
+  <script src="../../assets/plugins/chart.js/Chart.min.js"></script>
 
   <!-- AdminLTE for demo purposes -->
   <!-- <script src="assets/dist/js/demo.js"></script> -->
   <!-- AdminLTE dashboard demo (This is only for demo purposes) -->
   <!-- <script src="assets/dist/js/pages/dashboard2.js"></script> -->
-  <script src="../assets/dist/js/theme.js"></script>
-  <script src="../assets/dist/js/time.js"></script>
-  <script src="../assets/dist/js/global_modal.js"></script>
-  <script src="../assets/dist/js/profile.js"></script>
+  <script src="../../assets/dist/js/theme.js"></script>
+  <script src="../../assets/dist/js/time.js"></script>
+  <script src="../../assets/dist/js/global_modal.js"></script>
+  <script src="../../assets/dist/js/profile.js"></script>
 
   <script></script>
-  <script src="views/js/dashboard.js"></script>
 </body>
 
 </html>
