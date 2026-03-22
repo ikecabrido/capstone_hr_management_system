@@ -1,5 +1,3 @@
-
-
 <div class="w-full ml-16">
     <div class="content-wrapper w-full">
         <div style="display: flex; align-items: center; margin-bottom: 20px;">
@@ -21,7 +19,7 @@
         <?php endif; ?>
         <!-- Time In/Out Action Section -->
         <div class="time-action-section">
-            
+
             <div class="time-action-header">
                 <h3> Time In/Out</h3>
                 <span><?php echo date('l, F j, Y'); ?></span>
@@ -55,28 +53,30 @@
                 </div>
             </div>
 
-            <form method="POST" class="time-action-buttons">
-                <?php if (empty($statusInfo['time_in'])): ?>
-                    <button type="submit" name="action" value="time_in" class="btn-time-action btn-time-in">
+            <?php if (empty($statusInfo['time_in'])): ?>
+                <form method="POST" class="btn btn-primary" action="index.php?url=employee-time-in">
+                    <input type="hidden" value="<?= $employee_id ?>" name="employee_id">
+                    <input type="hidden" value="time_in" name="time_in">
+                    <button type="submit" name="submit" class="btn-time-action btn-time-in">
                         Time In
                     </button>
-                    <span style="align-self: center; opacity: 0.9;">Waiting for Time in</span>
-
-                <?php elseif (empty($statusInfo['time_out'])): ?>
+                    <span style="align-self: center; opacity: 0.9;" class="ml-2">Waiting for Time in</span>
+                </form>
+            <?php elseif (empty($statusInfo['time_out'])): ?>
+                <form method="POST" class="btn btn-primary">
                     <button type="submit" name="action" value="time_out" class="btn-time-action btn-time-out">
                         Time Out
                     </button>
-                    <span style="align-self: center; opacity: 0.9;">Already timed in</span>
-
-                <?php else: ?>
-                    <button type="submit" class="btn-time-action" disabled>
-                        Time In Completed
-                    </button>
-                    <button type="submit" class="btn-time-action" disabled>
-                        Time Out Completed
-                    </button>
-                <?php endif; ?>
-            </form>
+                    <span style="align-self: center; opacity: 0.9;" class="ml-2">Already timed in</span>
+                </form>
+            <?php else: ?>
+                <button type="submit" class="btn-time-action" disabled>
+                    Time In Completed
+                </button>
+                <button type="submit" class="btn-time-action" disabled>
+                    Time Out Completed
+                </button>
+            <?php endif; ?>
 
             <!-- QR Code Scanner Option -->
             <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
