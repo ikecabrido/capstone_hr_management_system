@@ -1,3 +1,5 @@
+
+
 <div class="w-full ml-16">
     <div class="content-wrapper w-full">
         <div style="display: flex; align-items: center; margin-bottom: 20px;">
@@ -17,7 +19,6 @@
                 <span><?php echo htmlspecialchars($message); ?></span>
             </div>
         <?php endif; ?>
-
         <!-- Time In/Out Action Section -->
         <div class="time-action-section">
             

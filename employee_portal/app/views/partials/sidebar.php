@@ -20,67 +20,196 @@
 
         <!-- Sidebar Menu -->
         <nav class="mt-2">
-            <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-                <!-- Add icons to the links using the .nav-icon class
-               with font-awesome or any other icon font library -->
+            <ul class="text-[14px] nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+
                 <li class="nav-item">
                     <a href="index.php?url=dashboard" class="nav-link active">
-                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                        <i class="nav-icon fas fa-home"></i>
                         <p>Dashboard</p>
                     </a>
                 </li>
-                <li class="nav-item">
+
+                <li class="nav-item has-treeview">
                     <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-chart-pie"></i>
-                        <p></p>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-tree"></i>
-                        <p>Module 2</p>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-edit"></i>
-                        <p>Module 3</p>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-table"></i>
-                        <p>Module 4</p>
-                    </a>
-                </li>
-                <li class="nav-header">OTHER EXAMPLES</li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-calendar-alt"></i>
+                        <i class="nav-icon fas fa-file-invoice-dollar"></i>
                         <p>
-                            Calendar
-                            <span class="badge badge-info right">2</span>
+                            Payroll
+                            <i class="right fas fa-angle-left"></i>
                         </p>
                     </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="payslip.php" class="nav-link">
+                                <i class="far fa-file-alt nav-icon"></i>
+                                <p>Payslip</p>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
-                <li class="nav-item">
+
+                <li class="nav-item has-treeview">
                     <a href="#" class="nav-link">
-                        <i class="nav-icon far fa-image"></i>
-                        <p>Gallery</p>
+                        <i class="nav-icon fas fa-clinic-medical"></i>
+                        <p>
+                            Clinic
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
                     </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fas fa-notes-medical nav-icon"></i>
+                                <p>Records</p>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
-                <li class="nav-item">
+
+                <li class="nav-item has-treeview">
                     <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-columns"></i>
-                        <p>Kanban Board</p>
+                        <i class="nav-icon fas fa-users"></i>
+                        <p>
+                            Engagement Relations
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
                     </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fas fa-comments nav-icon"></i>
+                                <p>Activities</p>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
+
+                <li class="nav-item has-treeview">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon fas fa-graduation-cap"></i>
+                        <p>
+                            Learning Development
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fas fa-book nav-icon"></i>
+                                <p>Courses</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="nav-item has-treeview">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon fas fa-chart-line"></i>
+                        <p>
+                            Performance
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fas fa-chart-bar nav-icon"></i>
+                                <p>Reports</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="nav-item has-treeview">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon fas fa-user-plus"></i>
+                        <p>
+                            Recruitment
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fas fa-briefcase nav-icon"></i>
+                                <p>Applicants</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="nav-item has-treeview">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon fas fa-user-friends"></i>
+                        <p>
+                            Work Force
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fas fa-id-badge nav-icon"></i>
+                                <p>Employees</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="nav-item has-treeview">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon fas fa-inbox"></i>
+                        <p>
+                            Request
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="" class="nav-link">
+                                <i class="fas fa-calendar-alt nav-icon"></i>
+                                <p>Leave Request</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="index.php?url=employee-documents-index" class="nav-link">
+                                <i class="fas fa-file-alt nav-icon"></i>
+                                <p>Employee Documents</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="payslip-request.php" class="nav-link">
+                                <i class="fas fa-file-invoice-dollar nav-icon"></i>
+                                <p>Payslip Request</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="online-training.php" class="nav-link">
+                                <i class="fas fa-chalkboard-teacher nav-icon"></i>
+                                <p>Online Training Request</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fas fa-clock nav-icon"></i>
+                                <p>View Schedule</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fas fa-video nav-icon"></i>
+                                <p>Online Meeting</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
                 <li class="nav-item">
-                    <a href="../index.html" class="nav-link">
+                    <a href="index.php?url=auth-logout" class="nav-link">
                         <i class="nav-icon fas fa-sign-out-alt"></i>
                         <p>Logout</p>
                     </a>
                 </li>
+
             </ul>
         </nav>
         <!-- /.sidebar-menu -->

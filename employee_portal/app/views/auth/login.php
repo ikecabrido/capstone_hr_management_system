@@ -20,8 +20,10 @@
                 Login
             </h1>
         </div>
+        
         <div class="box2">
             <form action="index.php?url=auth-login" method="POST">
+                
                  <?php require __DIR__ . '/../partials/notif.php' ?>
                 <div class="header">
 
