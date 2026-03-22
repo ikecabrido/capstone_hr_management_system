@@ -12,7 +12,7 @@ class PayrollPeriodModel
     public function getAll(): array
     {
         $stmt = $this->db->query("
-            SELECT * FROM payroll_periods 
+            SELECT * FROM pr_periods 
             ORDER BY start_date DESC
         ");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -21,8 +21,8 @@ class PayrollPeriodModel
     public function getById(int $id): ?array
     {
         $stmt = $this->db->prepare("
-            SELECT * FROM payroll_periods 
-            WHERE id = :id
+            SELECT * FROM pr_periods 
+            WHERE period_id = :id
         ");
         $stmt->execute([':id' => $id]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -32,7 +32,7 @@ class PayrollPeriodModel
     public function create(array $data): bool
     {
         $stmt = $this->db->prepare("
-            INSERT INTO payroll_periods (period_name, start_date, end_date, pay_date, status)
+            INSERT INTO pr_periods (period_name, start_date, end_date, pay_date, status)
             VALUES (:name, :start, :end, :paydate, 'open')
         ");
 
@@ -47,12 +47,12 @@ class PayrollPeriodModel
     public function update(int $id, array $data): bool
     {
         $stmt = $this->db->prepare("
-            UPDATE payroll_periods
+            UPDATE pr_periods
             SET period_name = :name,
                 start_date = :start,
                 end_date = :end,
                 pay_date = :paydate
-            WHERE id = :id AND status = 'open'
+            WHERE period_id = :id AND status = 'open'
         ");
 
         return $stmt->execute([
@@ -69,7 +69,7 @@ class PayrollPeriodModel
         // Check if period has payroll runs
         $stmt = $this->db->prepare("
             SELECT COUNT(*) as count
-            FROM payroll_runs
+            FROM pr_runs
             WHERE payroll_period_id = :id
         ");
         $stmt->execute([':id' => $id]);
@@ -79,16 +79,16 @@ class PayrollPeriodModel
             return false; // Can't delete if payroll runs exist
         }
 
-        $stmt = $this->db->prepare("DELETE FROM payroll_periods WHERE id = :id");
+        $stmt = $this->db->prepare("DELETE FROM pr_periods WHERE period_id = :id");
         return $stmt->execute([':id' => $id]);
     }
 
     public function close(int $id): bool
     {
         $stmt = $this->db->prepare("
-            UPDATE payroll_periods 
+            UPDATE pr_periods 
             SET status = 'closed' 
-            WHERE id = :id
+            WHERE period_id = :id
         ");
         return $stmt->execute([':id' => $id]);
     }
@@ -97,7 +97,7 @@ class PayrollPeriodModel
     {
         // Get last period
         $stmt = $this->db->query("
-            SELECT * FROM payroll_periods
+            SELECT * FROM pr_periods
             ORDER BY end_date DESC
             LIMIT 1
         ");
@@ -133,9 +133,9 @@ class PayrollPeriodModel
     public function updateStatus(int $id, string $status): bool
     {
         $stmt = $this->db->prepare("
-        UPDATE payroll_periods
+        UPDATE pr_periods
         SET status = :status
-        WHERE id = :id
+        WHERE period_id = :id
     ");
 
         return $stmt->execute([
