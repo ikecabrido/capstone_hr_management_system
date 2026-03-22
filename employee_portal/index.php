@@ -37,6 +37,10 @@ switch ($url) {
         break;
 
 
+    // Employee Attendance
+    case 'employee-time-in':
+        (new AttendanceController)->timeIn();
+        break;
 
 
 
