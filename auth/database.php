@@ -3,42 +3,39 @@
 class Database
 {
     private static $instance = null;
-    private $conn;
+    private PDO $conn;
 
-    private $host = "localhost";
-    private $db   = "hr_management";
-    private $user = "root";
-    private $pass = "";
+    private  $host = "localhost";
+    private  $db   = "hr_management";
+    private  $user = "root";
+    private  $pass = "";
 
     private function __construct()
     {
-        $this->connect();
+        try {
+            $this->conn = new PDO(
+                "mysql:host={$this->host};dbname={$this->db};charset=utf8mb4",
+                $this->user,
+                $this->pass,
+                [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+                ]
+            );
+        } catch (PDOException $e) {
+            die("DB Connection failed: " . $e->getMessage());
+        }
     }
 
-    public static function getInstance()
+    public static function getInstance(): Database
     {
         if (self::$instance === null) {
-            self::$instance = new self();
+            self::$instance = new Database();
         }
         return self::$instance;
     }
 
-    private function connect()
-    {
-        try {
-            $this->conn = new PDO(
-                "mysql:host={$this->host};dbname={$this->db}",
-                $this->user,
-                $this->pass
-            );
-
-            $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        } catch (PDOException $e) {
-            die("Database Connection Failed: " . $e->getMessage());
-        }
-    }
-
-    public function getConnection()
+    public function getConnection(): PDO
     {
         return $this->conn;
     }

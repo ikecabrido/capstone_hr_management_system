@@ -1,6 +1,0 @@
-2026-03-19 14:49:14 | POST data: {"flex_employee_id":"EMP001","flex_date":"2026-03-19","flex_days":["3"],"flex_start_time":"01:00","flex_end_time":"16:00","flex_notes":"","flex_repeat_end_date":"","create_flexible":""}
-2026-03-19 14:49:47 | POST data: {"flex_employee_id":"EMP001","flex_date":"2026-03-19","flex_days":["2"],"flex_start_time":"08:30","flex_end_time":"17:30","flex_notes":"","flex_repeat_end_date":"","create_flexible":""}
-2026-03-19 14:52:39 | POST data: {"flex_employee_id":"EMP001","flex_date":"2026-03-19","flex_days":["4"],"flex_start_time":"07:00","flex_end_time":"17:00","flex_notes":"","flex_repeat_end_date":"","create_flexible":""}
-2026-03-19 15:39:10 | POST data: {"flex_employee_id":"EMP001","flex_date":"2026-03-19","flex_days":["4"],"flex_start_time":"07:00","flex_end_time":"17:00","flex_notes":"","flex_repeat_end_date":"","create_flexible":""}
-2026-03-19 15:39:26 | POST data: {"flex_employee_id":"EMP001","flex_date":"2026-03-19","flex_days":["2"],"flex_start_time":"07:00","flex_end_time":"16:00","flex_notes":"","flex_repeat_end_date":"","create_flexible":""}
-2026-03-19 17:26:13 | POST data: {"flex_employee_id":"EMP001","flex_date":"2026-03-19","flex_days":["2"],"flex_start_time":"08:30","flex_end_time":"17:30","flex_notes":"","flex_repeat_end_date":"","create_flexible":""}
