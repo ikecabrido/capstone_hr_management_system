@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Employee Model for Time & Attendance System
  * Manages employee data, credentials, and information
@@ -96,16 +97,16 @@ class Employee
     {
         $query = "UPDATE " . $this->table . " SET ";
         $fields = [];
-        
+
         foreach ($data as $key => $value) {
             $fields[] = "$key = :$key";
         }
-        
+
         $query .= implode(", ", $fields) . " WHERE employee_id = :employee_id";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':employee_id', $employee_id);
-        
+
         foreach ($data as $key => $value) {
             $stmt->bindParam(':' . $key, $data[$key]);
         }
@@ -125,5 +126,14 @@ class Employee
 
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return $result['count'] ?? 0;
+    }
+
+    public function all()
+    {
+        $query = "SELECT * FROM " . $this->table . " ORDER BY full_name ASC";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

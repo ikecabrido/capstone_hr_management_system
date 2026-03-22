@@ -46,6 +46,9 @@ switch ($role) {
     case 'exit':
         header("Location: exit_management/exit_management.php");
         break;
+    case 'employee-portal-admin':
+        header("Location: employee_portal/app/views/admin/index.php");
+        break;
 
     default:
         echo "No module assigned.";

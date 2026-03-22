@@ -55,5 +55,9 @@ class EmployeePortalController
         require __DIR__ . '/../views/employee-portal/index.php';
     }
 
-    
+    public function adminIndex()
+    {
+        $content = __DIR__ . '/../views/admin/main-content.php';
+        require __DIR__ . '/../views/admin/index.php';
+    }
 }

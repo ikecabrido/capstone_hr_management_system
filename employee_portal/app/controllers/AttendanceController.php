@@ -10,9 +10,9 @@ date_default_timezone_set('Asia/Manila');
 
 require_once __DIR__ . '/../models/Attendance.php';
 require_once __DIR__ . '/../models/Employee.php';
-require_once __DIR__ . '/../helpers/QRHelper.php';
-require_once __DIR__ . '/../helpers/Helper.php';
-require_once __DIR__ . '/../helpers/AuditLog.php';
+require_once __DIR__ . '/../core/QRHelper.php';
+require_once __DIR__ . '/../core/Helper.php';
+require_once __DIR__ . '/../core/AuditLog.php';
 require_once __DIR__ . '/../core/Session.php';
 
 class AttendanceController
