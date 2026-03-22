@@ -28,7 +28,7 @@ class AllowanceDeductionModel
         $sql = "
             SELECT 
                 ea.*,
-                CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+                e.full_name AS employee_name,
                 pp.period_name,
                 pp.status AS period_status
             FROM pr_employee_adjustments ea

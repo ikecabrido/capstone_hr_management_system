@@ -40,7 +40,7 @@ class DashboardController
 
             $stats['period'] = $period;
 
-            $run = $this->model->getCurrentRun($period['id']);
+            $run = $this->model->getCurrentRun($period['period_id']);
 
             if ($run) {
 
@@ -73,8 +73,8 @@ class DashboardController
             }
 
             // Add allowances and deductions for the period
-            $stats['total_allowances'] = $this->model->getTotalAllowances($period['id']);
-            $stats['total_deductions'] = $this->model->getTotalDeductions($period['id']);
+            $stats['total_allowances'] = $this->model->getTotalAllowances($period['period_id']);
+            $stats['total_deductions'] = $this->model->getTotalDeductions($period['period_id']);
         } else {
             // No active period, show latest finalized run stats
             $latestRun = $this->model->getLatestFinalizedRunWithDetails();
