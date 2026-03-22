@@ -31,6 +31,24 @@
 
                 <li class="nav-item has-treeview">
                     <a href="#" class="nav-link">
+                        <i class="nav-icon fas fa-users"></i>
+                        <p>
+                            Engagement Relations
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="index.php?url=employee-grievance" class="nav-link">
+                                <i class="fas fa-comments nav-icon"></i>
+                                <p>Grievance</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="nav-item has-treeview">
+                    <a href="#" class="nav-link">
                         <i class="nav-icon fas fa-file-invoice-dollar"></i>
                         <p>
                             Payroll
@@ -60,24 +78,6 @@
                             <a href="#" class="nav-link">
                                 <i class="fas fa-notes-medical nav-icon"></i>
                                 <p>Records</p>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-
-                <li class="nav-item has-treeview">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-users"></i>
-                        <p>
-                            Engagement Relations
-                            <i class="right fas fa-angle-left"></i>
-                        </p>
-                    </a>
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="#" class="nav-link">
-                                <i class="fas fa-comments nav-icon"></i>
-                                <p>Activities</p>
                             </a>
                         </li>
                     </ul>
@@ -174,12 +174,6 @@
                             <a href="index.php?url=employee-documents-index" class="nav-link">
                                 <i class="fas fa-file-alt nav-icon"></i>
                                 <p>Employee Documents</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="payslip-request.php" class="nav-link">
-                                <i class="fas fa-file-invoice-dollar nav-icon"></i>
-                                <p>Payslip Request</p>
                             </a>
                         </li>
                         <li class="nav-item">

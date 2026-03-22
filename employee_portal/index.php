@@ -4,6 +4,7 @@ session_start();
 require 'app/controllers/EmployeePortalController.php';
 require 'app/controllers/AuthController.php';
 require 'app/controllers/EmployeeDocumentsController.php';
+require 'app/controllers/EmployeeGrievanceController.php';
 
 
 $url = $_GET['url'] ?? 'auth-index';
@@ -42,10 +43,23 @@ switch ($url) {
         (new AttendanceController)->timeIn();
         break;
 
+    case 'employee-time-out':
+        (new AttendanceController)->timeOut();
+        break;
+
+    // Employee Grievance
+    case 'employee-grievance':
+        (new EmployeeGrievanceController)->index();
+        break;
+
+    case 'employee-grievance-create':
+        (new EmployeeGrievanceController)->create();
+        break;
 
 
 
 
+    // Employee Dashboard
     case 'dashboard':
         (new EmployeePortalController)->index();
         break;

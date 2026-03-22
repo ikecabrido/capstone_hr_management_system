@@ -50,7 +50,7 @@
                         <button type="submit" class="btn btn-primary w-100 rounded-3">
                             Submit
                         </button>
-                        <a href="index.php?url=employee-documents-index" class="btn btn-outline-secondary w-100 rounded-3">
+                        <a href="index.php?url=dashboard" class="btn btn-outline-secondary w-100 rounded-3">
                             Cancel
                         </a>
                     </div>

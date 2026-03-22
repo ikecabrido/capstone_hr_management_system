@@ -63,8 +63,10 @@
                     <span style="align-self: center; opacity: 0.9;" class="ml-2">Waiting for Time in</span>
                 </form>
             <?php elseif (empty($statusInfo['time_out'])): ?>
-                <form method="POST" class="btn btn-primary">
-                    <button type="submit" name="action" value="time_out" class="btn-time-action btn-time-out">
+                <form method="POST" class="btn btn-primary" action="index.php?url=employee-time-out">
+                    <input type="hidden" value="<?= $employee_id ?>" name="employee_id">
+                    <input type="hidden" value="time_out" name="time_out">
+                    <button type="submit" name="submit" class="btn-time-action btn-time-out">
                         Time Out
                     </button>
                     <span style="align-self: center; opacity: 0.9;" class="ml-2">Already timed in</span>
@@ -73,23 +75,7 @@
                 <button type="submit" class="btn-time-action" disabled>
                     Time In Completed
                 </button>
-                <button type="submit" class="btn-time-action" disabled>
-                    Time Out Completed
-                </button>
             <?php endif; ?>
-
-            <!-- QR Code Scanner Option -->
-            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                <a href="qr_scanner.php" class="btn-time-action" style="background: #667eea; color: white; text-decoration: none; display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-qrcode"></i> Scan QR Code
-                </a>
-
-                <?php if (class_exists('AuthController') && AuthController::hasRole('time')): ?>
-                    <a href="qr_display_kiosk.php" class="btn-time-action" style="background: #27ae60; color: white; text-decoration: none; display: flex; align-items: center; gap: 8px;">
-                        <i class="fas fa-tv"></i> Display Kiosk
-                    </a>
-                <?php endif; ?>
-            </div>
         </div>
 
         <!-- Quick Stats -->
