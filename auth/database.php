@@ -6,7 +6,7 @@ class Database
     private PDO $conn;
 
     private string $host = "localhost";
-    private string $db   = "sample_hr";
+    private string $db   = "hr_management";
     private string $user = "root";
     private string $pass = "";
 
