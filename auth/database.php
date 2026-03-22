@@ -5,10 +5,10 @@ class Database
     private static $instance = null;
     private PDO $conn;
 
-    private string $host = "localhost";
-    private string $db   = "hr_management";
-    private string $user = "root";
-    private string $pass = "";
+    private  $host = "localhost";
+    private  $db   = "hr_management";
+    private  $user = "root";
+    private  $pass = "";
 
     private function __construct()
     {
