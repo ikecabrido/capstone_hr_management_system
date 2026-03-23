@@ -57,15 +57,12 @@ class PayslipModel
         $stmt = $this->db->prepare("
             SELECT 
                 p.*, 
-                e.first_name, 
-                e.last_name, 
-                pos.title AS position,
-                et.name AS employment_type
+                e.full_name AS employee_name,
+                e.position,
+                e.employment_status AS employment_type
             FROM pr_payslips p
-            JOIN employees e ON p.employee_id = e.id
-            LEFT JOIN positions pos ON e.position_id = pos.id
-            LEFT JOIN employment_types et ON e.employment_type_id = et.id
-            WHERE p.id = :id
+            JOIN employees e ON p.employee_id = e.employee_id
+            WHERE p.payslip_id = :id
         ");
 
         $stmt->execute([':id' => $payslipId]);
@@ -76,7 +73,7 @@ class PayslipModel
         // Breakdown items (earnings/deductions)
         $stmt2 = $this->db->prepare("
             SELECT item_type, description, amount
-            FROM payslip_items
+            FROM pr_payslip_items
             WHERE payslip_id = :id
         ");
         $stmt2->execute([':id' => $payslipId]);
@@ -137,7 +134,7 @@ class PayslipModel
 
         if ($periodId) {
             $query .= " WHERE payroll_run_id IN (
-                SELECT id FROM pr_runs WHERE payroll_period_id = :pid
+                SELECT run_id FROM pr_runs WHERE payroll_period_id = :pid
             )";
             $stmt = $this->db->prepare($query);
             $stmt->execute([':pid' => $periodId]);
@@ -154,7 +151,7 @@ class PayslipModel
 
         if ($periodId) {
             $query .= " WHERE payroll_run_id IN (
-                SELECT id FROM pr_runs WHERE payroll_period_id = :pid
+                SELECT run_id FROM pr_runs WHERE payroll_period_id = :pid
             )";
             $stmt = $this->db->prepare($query);
             $stmt->execute([':pid' => $periodId]);
@@ -171,7 +168,7 @@ class PayslipModel
 
         if ($periodId) {
             $query .= " WHERE payroll_run_id IN (
-                SELECT id FROM pr_runs WHERE payroll_period_id = :pid
+                SELECT run_id FROM pr_runs WHERE payroll_period_id = :pid
             )";
             $stmt = $this->db->prepare($query);
             $stmt->execute([':pid' => $periodId]);

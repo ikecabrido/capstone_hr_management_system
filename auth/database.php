@@ -3,7 +3,7 @@
 class Database
 {
     private static $instance = null;
-    private PDO $conn;
+    private $conn;
 
     private string $host = "localhost";
     private string $db   = "hr_management";
@@ -29,15 +29,30 @@ class Database
         }
     }
 
-    public static function getInstance(): Database
+    public static function getInstance()
     {
         if (self::$instance === null) {
-            self::$instance = new Database();
+            self::$instance = new self();
         }
         return self::$instance;
     }
 
-    public function getConnection(): PDO
+    private function connect()
+    {
+        try {
+            $this->conn = new PDO(
+                "mysql:host={$this->host};dbname={$this->db}",
+                $this->user,
+                $this->pass
+            );
+
+            $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        } catch (PDOException $e) {
+            die("Database Connection Failed: " . $e->getMessage());
+        }
+    }
+
+    public function getConnection()
     {
         return $this->conn;
     }

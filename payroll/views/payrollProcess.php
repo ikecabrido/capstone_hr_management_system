@@ -17,7 +17,7 @@ $controller = new PayrollController();
 $periods = $controller->getPeriods();
 
 // Get selected period
-$selectedPeriodId = $_POST['period_id'] ?? null;
+$selectedPeriodId = $_POST['period_id'] ?? '';
 
 // Initialize toast variables
 $toastMessage = null;
@@ -27,7 +27,7 @@ $toastType = 'info';
 $previewData = [];
 $payrollResults = [];
 
-if ($selectedPeriodId) {
+if ($selectedPeriodId !== '') {
     $selectedPeriodId = (int)$selectedPeriodId;
 
     // Preview payroll
@@ -268,8 +268,8 @@ if (isset($_GET['error'])) {
                                 <div class="card-body p-0" style="max-height: 600px; overflow-y: auto;">
                                     <form method="POST" id="employeeForm">
                                         <div class="list-group list-group-flush">
-                                            <?php if (!empty($payrollResults)): ?>
-                                                <?php foreach ($payrollResults as $idx => $row): ?>
+                                            <?php if (!empty($previewData)): ?>
+                                                <?php foreach ($previewData as $idx => $row): ?>
                                                     <button type="button"
                                                         class="list-group-item list-group-item-action employee-item"
                                                         onclick="selectEmployee(<?= $idx ?>, '<?= htmlspecialchars($row['name']) ?>')"
@@ -307,7 +307,7 @@ if (isset($_GET['error'])) {
                                                     <option value="">-- Select Payroll Period --</option>
                                                     <?php foreach ($periods as $p): ?>
                                                         <option value="<?= $p['period_id'] ?>"
-                                                            <?= ($selectedPeriodId == $p['period_id']) ? 'selected' : '' ?>>
+                                                            <?= ($selectedPeriodId !== '' && (int)$selectedPeriodId === $p['period_id']) ? 'selected' : '' ?>>
                                                             <?= htmlspecialchars($p['period_name']) ?>
                                                             (<?= ucfirst($p['status']) ?>)
                                                         </option>
@@ -626,7 +626,7 @@ if (isset($_GET['error'])) {
     <script src="../../assets/dist/js/profile.js"></script>
     <script>
         // Store payroll data for JavaScript access
-        const payrollData = <?php echo json_encode($payrollResults); ?>;
+        const payrollData = <?php echo json_encode($previewData); ?>;
         const periodData = <?php echo json_encode($periods); ?>;
         const selectedPeriodId = <?php echo $selectedPeriodId ?? 'null'; ?>;
 

@@ -39,9 +39,9 @@ class PayrollModel
         $sql = "
         SELECT 
             p.payslip_id AS payroll_id, 
-            CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+            e.full_name AS employee_name,
             e.position AS position,
-            e.status AS employment_type,
+            e.employment_status AS employment_type,
             pp.period_name, 
             p.gross_pay, 
             p.total_deductions, 
@@ -51,7 +51,7 @@ class PayrollModel
         JOIN employees e ON p.employee_id = e.employee_id
         LEFT JOIN pr_runs pr ON p.payroll_run_id = pr.run_id
         LEFT JOIN pr_periods pp ON pr.payroll_period_id = pp.period_id
-        WHERE e.status = 'ACTIVE'
+        WHERE e.employment_status = 'Active'
     ";
 
         $params = [];
@@ -156,6 +156,18 @@ class PayrollModel
         $stmt->execute(['periodId' => $periodId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function getAllActiveEmployeesForPeriod(int $periodId): array
+    {
+        $stmt = $this->db->prepare("
+        SELECT e.employee_id, e.full_name AS name, e.position
+        FROM employees e
+        WHERE e.employment_status='Active'
+    ");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function calculateEmployeePayroll(string $employeeId, int $periodId): array
     {
         /* ==============================
@@ -190,23 +202,36 @@ class PayrollModel
     ");
         $stmtEmp->execute([':eid' => $employeeId]);
         $employee = $stmtEmp->fetch(PDO::FETCH_ASSOC);
-        $isPartTime = ($employee['employment_type'] === 'Part-Time');
+        $isPartTime = ($employee['employment_status'] === 'Part-Time');
 
         /* ==============================
        Get Basic Salary (Simplified)
     ============================== */
         // Use default salary for now - can be enhanced with proper salary tables later
-        $basicSalary = 15000.00; // Default semi-monthly salary
+        $basicSalary = 15000.00; // Default semi-monthly salary (full attendance)
         $allowances = 2000.00;   // Default allowances
         $deductions = 500.00;    // Default deductions
 
+        // Calculate based on attendance (with 15 expected workdays per half-month)
+        $dailyRate = $basicSalary / 15;
+        $basicSalary = $dailyRate * $daysWorked;
+
         /* ==============================
-       Simplified Attendance (Default values for now)
-    ============================== */
-        $daysWorked = 10;  // Default days worked
-        $absentDays = 0;   // Default absences
-        $hoursWorked = 80; // Default hours
-        $overtimeHours = 0; // Default overtime
+       Attendance (from TA table when available, otherwise 0)
+    ==============================
+        */
+        $attendance = $this->getTimeAttendanceMetrics($employeeId, $start, $end);
+        $daysWorked = 0;
+        $absentDays = 0;
+        $hoursWorked = 0;
+        $overtimeHours = 0;
+
+        if ($attendance) {
+            $daysWorked = (int)($attendance['present_days'] ?? 0);
+            $absentDays = (int)($attendance['absent_days'] ?? 0);
+            $hoursWorked = (float)($attendance['total_hours_worked'] ?? 0);
+            $overtimeHours = (float)($attendance['total_overtime_hours'] ?? 0);
+        }
 
         /* ==============================
    Get Adjustments (Per Period)
@@ -295,8 +320,8 @@ class PayrollModel
     ============================== */
 
 
-        // Monthly salary for contribution calculation
-        $monthlySalary = $isPartTime ? ($basicSalary * 2) : ($salaryData['basic_salary'] ?? 0);
+        // Monthly salary for contribution calculation (based on earned salary)
+        $monthlySalary = ($basicSalary > 0) ? ($basicSalary * 2) : 0;
 
         // 1. SSS Contribution (2024 rates)
         $sssContribution = $this->calculateSSS($monthlySalary);
@@ -456,7 +481,7 @@ class PayrollModel
 
     public function createPayrollRun(int $periodId): int
     {
-        $stmt = $this->db->prepare("INSERT INTO payroll_runs (payroll_period_id, processed_at, status) VALUES (:pid, NOW(), 'draft')");
+        $stmt = $this->db->prepare("INSERT INTO pr_runs (payroll_period_id, processed_at, status) VALUES (:pid, NOW(), 'draft')");
         $stmt->execute([':pid' => $periodId]);
         return (int)$this->db->lastInsertId();
     }
@@ -507,25 +532,24 @@ class PayrollModel
     }
     public function closePayrollPeriod(int $periodId): bool
     {
-        $stmt = $this->db->prepare("UPDATE payroll_periods SET status='closed' WHERE id=:pid");
+        $stmt = $this->db->prepare("UPDATE pr_periods SET status='closed' WHERE period_id=:pid");
         return $stmt->execute([':pid' => $periodId]);
     }
     public function finalizeRun($runId)
     {
-        $stmt = $this->db->prepare("UPDATE payroll_runs SET status='finalized' WHERE id=:rid AND status='draft' ");
+        $stmt = $this->db->prepare("UPDATE pr_runs SET status='finalized' WHERE run_id=:rid AND status='draft' ");
         return $stmt->execute([':rid' => $runId]);
     }
     // Preview payroll before processing
     public function getPayrollPreview(int $periodId): array
     {
-        $employees = $this->getEmployeesForPayroll($periodId);
+        $employees = $this->getAllActiveEmployeesForPeriod($periodId);
         $preview = [];
 
         foreach ($employees as $emp) {
             $payroll = $this->calculateEmployeePayroll($emp['employee_id'], $periodId);
 
-
-            if (!isset($payroll['gross_pay']) || $payroll['gross_pay'] <= 0) {
+            if (!isset($payroll['gross_pay'])) {
                 continue;
             }
 
