@@ -3,6 +3,12 @@ session_start();
 require_once "../auth/auth_check.php";
 $theme = $_SESSION['user']['theme'] ?? 'light';
 
+// Redirect to create program page if modal=program parameter is present
+if (isset($_GET['modal']) && $_GET['modal'] === 'program' && $_SESSION['user']['role'] === 'learning') {
+    header("Location: views/create_training_program.php");
+    exit;
+}
+
 ?>
 
 <!doctype html>
@@ -29,6 +35,8 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
   <link rel="stylesheet" href="../assets/dist/css/adminlte.min.css" />
   <link rel="stylesheet" href="custom.css" />
   <link rel="stylesheet" href="../layout/toast.css" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body
@@ -126,51 +134,50 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
               </a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-chart-pie"></i>
-                <p>Module 1</p>
+              <a href="views/browse_training_programs.php" class="nav-link">
+                <i class="nav-icon fas fa-book"></i>
+                <p>Browse Programs</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-tree"></i>
-                <p>Module 2</p>
+              <a href="views/browse_courses.php" class="nav-link">
+                <i class="nav-icon fas fa-graduation-cap"></i>
+                <p>Browse Courses</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-edit"></i>
-                <p>Module 3</p>
+              <a href="views/certification_management.php" class="nav-link">
+                <i class="nav-icon fas fa-certificate"></i>
+                <p>Certifications</p>
+              </a>
+            </li>
+            <?php if ($_SESSION['user']['role'] === 'learning'): ?>
+            <li class="nav-header">ADMIN FEATURES</li>
+            <li class="nav-item">
+              <a href="views/track_enrollments.php" class="nav-link">
+                <i class="nav-icon fas fa-chart-line"></i>
+                <p>Enrollments</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-table"></i>
-                <p>Module 4</p>
-              </a>
-            </li>
-            <li class="nav-header">OTHER EXAMPLES</li>
-            <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-calendar-alt"></i>
-                <p>
-                  Calendar
-                  <span class="badge badge-info right">2</span>
-                </p>
+              <a href="views/create_training_program.php" class="nav-link">
+                <i class="nav-icon fas fa-plus"></i>
+                <p>Create Programs</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="nav-icon far fa-image"></i>
-                <p>Gallery</p>
+              <a href="views/create_course.php" class="nav-link">
+                <i class="nav-icon fas fa-plus-circle"></i>
+                <p>Create Course</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-columns"></i>
-                <p>Kanban Board</p>
+              <a href="views/archive.php" class="nav-link">
+                <i class="nav-icon fas fa-archive"></i>
+                <p>Archives</p>
               </a>
             </li>
+            <?php endif; ?>
             <li class="nav-item">
               <a href="../logout.php" class="nav-link">
                 <i class="nav-icon fas fa-sign-out-alt"></i>
@@ -191,10 +198,15 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
         <div class="container-fluid">
           <div class="row mb-2">
             <div class="col-sm-6">
-              <h1 class="m-0">Learning and Development Management System</h1>
+              <h1 class="m-0">Learning and Development Dashboard</h1>
             </div>
             <!-- /.col -->
-
+            <div class="col-sm-6">
+              <ol class="breadcrumb float-sm-right">
+                <li class="breadcrumb-item"><a href="#">Home</a></li>
+                <li class="breadcrumb-item active">Dashboard</li>
+              </ol>
+            </div>
             <!-- /.col -->
           </div>
           <!-- /.row -->
@@ -206,241 +218,323 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
       <!-- Main content -->
       <section class="content">
         <div class="container-fluid">
-          <!-- Info boxes -->
+          <?php
+            require_once "controllers/TrainingProgramController.php";
+            require_once "controllers/CourseController.php";
+            require_once "controllers/EnrollmentController.php";
+            require_once "controllers/CertificationController.php";
+
+            $programController = new TrainingProgramController();
+            $programs = $programController->index();
+            $activePrograms = array_filter($programs, function($program) {
+                return isset($program['status']) && $program['status'] !== 'inactive';
+            });
+            $inactivePrograms = array_filter($programs, function($program) {
+                return isset($program['status']) && $program['status'] === 'inactive';
+            });
+
+            $courseController = new CourseController();
+            $courses = $courseController->index();
+            $activeCourses = array_filter($courses, function($course) {
+                return isset($course['status']) && $course['status'] !== 'inactive';
+            });
+            $inactiveCourses = array_filter($courses, function($course) {
+                return isset($course['status']) && $course['status'] === 'inactive';
+            });
+
+            $enrollmentController = new EnrollmentController();
+            $enrollments = $_SESSION['user']['role'] === 'learning' ? $enrollmentController->index() : $enrollmentController->getByEmployee($_SESSION['user']['id']);
+            $completedEnrollments = array_filter($enrollments, function($enroll) {
+                return isset($enroll['status']) && $enroll['status'] === 'completed';
+            });
+            $ongoingEnrollments = array_filter($enrollments, function($enroll) {
+                return isset($enroll['status']) && in_array($enroll['status'], ['active','ongoing'], true);
+            });
+
+            $certificationController = new CertificationController();
+            $certifications = $_SESSION['user']['role'] === 'learning' ? $certificationController->index() : $certificationController->getByEmployee($_SESSION['user']['id']);
+            $activeCertifications = array_filter($certifications, function($cert) {
+                return isset($cert['status']) && in_array($cert['status'], ['active', 'issued']);
+            });
+            $revokedCertifications = array_filter($certifications, function($cert) {
+                return isset($cert['status']) && $cert['status'] === 'revoked';
+            });
+            $expiredCertifications = array_filter($certifications, function($cert) {
+                return isset($cert['status']) && $cert['status'] === 'expired';
+            });
+
+            // Prepare data for enrollment chart
+            $enrollmentData = [];
+            $courseData = [];
+            $months = [];
+            for ($i = 5; $i >= 0; $i--) {
+                $date = date('Y-m', strtotime("-$i months"));
+                $months[] = date('M Y', strtotime("-$i months"));
+                
+                // Count enrollments for this month
+                $enrollmentCount = count(array_filter($enrollments, function($enroll) use ($date) {
+                    return isset($enroll['enrolled_at']) && substr($enroll['enrolled_at'], 0, 7) === $date;
+                }));
+                $enrollmentData[] = $enrollmentCount;
+                
+                // For courses, we'll use total active courses (since courses don't have creation dates in the data)
+                $courseData[] = count($activeCourses);
+            }
+            $enrollmentDataJson = json_encode($enrollmentData);
+            $courseDataJson = json_encode($courseData);
+            $monthsJson = json_encode($months);
+
+            // Calculate additional metrics
+            $completionRate = count($enrollments) > 0 ? round((count($completedEnrollments) / count($enrollments)) * 100, 1) : 0;
+            
+            // Top courses by enrollment count
+            $courseEnrollmentCount = [];
+            foreach ($enrollments as $enroll) {
+                $courseId = $enroll['ld_courses_id'] ?? null;
+                if ($courseId) {
+                    $courseEnrollmentCount[$courseId] = ($courseEnrollmentCount[$courseId] ?? 0) + 1;
+                }
+            }
+            arsort($courseEnrollmentCount);
+            $topCourses = array_slice($courseEnrollmentCount, 0, 5);
+            
+            // Get course titles for top courses
+            $topCoursesData = [];
+            foreach ($topCourses as $courseId => $count) {
+                $course = array_values(array_filter($courses, function($c) use ($courseId) {
+                    return $c['ld_courses_id'] == $courseId;
+                }));
+                if (!empty($course)) {
+                    $topCoursesData[] = ['title' => substr($course[0]['title'] ?? 'Unknown', 0, 20), 'count' => $count];
+                }
+            }
+            $topCoursesJson = json_encode($topCoursesData);
+            $topCoursesLabels = json_encode(array_column($topCoursesData, 'title'));
+            $topCoursesValues = json_encode(array_column($topCoursesData, 'count'));
+            
+            // Enrollment status distribution
+            $statusData = [
+                'completed' => count($completedEnrollments),
+                'ongoing' => count($ongoingEnrollments),
+                'pending' => count($enrollments) - count($completedEnrollments) - count($ongoingEnrollments)
+            ];
+            $statusLabels = json_encode(array_keys($statusData));
+            $statusValues = json_encode(array_values($statusData));
+          ?>
+
+          <!-- Info boxes and Chart -->
           <div class="row">
-            <div class="col-12 col-sm-6 col-md-3">
-              <div class="info-box">
-                <span class="info-box-icon bg-info elevation-1"><i class="fas fa-cog"></i></span>
+            <!-- Left Column: Stacked Info Boxes -->
+            <div class="col-md-5">
+              <div class="row">
+                <div class="col-12">
+                  <div class="info-box">
+                    <span class="info-box-icon bg-info elevation-1"><i class="fas fa-book"></i></span>
 
-                <div class="info-box-content">
-                  <span class="info-box-text">CPU Traffic</span>
-                  <span class="info-box-number">
-                    10
-                    <small>%</small>
-                  </span>
+                    <div class="info-box-content">
+                      <span class="info-box-text">Training Programs</span>
+                      <div class="info-box-grid">
+                        <div class="grid-item">
+                          <div class="grid-label">Active</div>
+                          <div class="grid-value"><?= count($activePrograms) ?></div>
+                        </div>
+                        <div class="grid-item">
+                          <div class="grid-label">Inactive</div>
+                          <div class="grid-value"><?= count($inactivePrograms) ?></div>
+                        </div>
+                        <div class="grid-item">
+                          <div class="grid-label">Total</div>
+                          <div class="grid-value"><?= count($programs) ?></div>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- /.info-box-content -->
+                  </div>
+                  <!-- /.info-box -->
                 </div>
-                <!-- /.info-box-content -->
               </div>
-              <!-- /.info-box -->
-            </div>
-            <!-- /.col -->
-            <div class="col-12 col-sm-6 col-md-3">
-              <div class="info-box mb-3">
-                <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-thumbs-up"></i></span>
 
-                <div class="info-box-content">
-                  <span class="info-box-text">Likes</span>
-                  <span class="info-box-number">41,410</span>
+              <div class="row">
+                <div class="col-12">
+                  <div class="info-box mb-3">
+                    <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-graduation-cap"></i></span>
+
+                    <div class="info-box-content">
+                      <span class="info-box-text">Available Courses</span>
+                      <div class="info-box-grid">
+                        <div class="grid-item">
+                          <div class="grid-label">Active</div>
+                          <div class="grid-value"><?= count($activeCourses) ?></div>
+                        </div>
+                        <div class="grid-item">
+                          <div class="grid-label">Inactive</div>
+                          <div class="grid-value"><?= count($inactiveCourses) ?></div>
+                        </div>
+                        <div class="grid-item">
+                          <div class="grid-label">Total</div>
+                          <div class="grid-value"><?= count($courses) ?></div>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- /.info-box-content -->
+                  </div>
+                  <!-- /.info-box -->
                 </div>
-                <!-- /.info-box-content -->
               </div>
-              <!-- /.info-box -->
-            </div>
-            <!-- /.col -->
 
-            <!-- fix for small devices only -->
-            <div class="clearfix hidden-md-up"></div>
+              <div class="row">
+                <div class="col-12">
+                  <div class="info-box mb-3">
+                    <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-certificate"></i></span>
 
-            <div class="col-12 col-sm-6 col-md-3">
-              <div class="info-box mb-3">
-                <span class="info-box-icon bg-success elevation-1"><i class="fas fa-shopping-cart"></i></span>
-
-                <div class="info-box-content">
-                  <span class="info-box-text">Sales</span>
-                  <span class="info-box-number">760</span>
+                    <div class="info-box-content">
+                      <span class="info-box-text">Certifications</span>
+                      <div class="info-box-grid">
+                        <div class="grid-item">
+                          <div class="grid-label">Active</div>
+                          <div class="grid-value"><?= count($activeCertifications) ?></div>
+                        </div>
+                        <div class="grid-item">
+                          <div class="grid-label">Revoked</div>
+                          <div class="grid-value"><?= count($revokedCertifications) ?></div>
+                        </div>
+                        <div class="grid-item">
+                          <div class="grid-label">Expired</div>
+                          <div class="grid-value"><?= count($expiredCertifications) ?></div>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- /.info-box-content -->
+                  </div>
+                  <!-- /.info-box -->
                 </div>
-                <!-- /.info-box-content -->
               </div>
-              <!-- /.info-box -->
             </div>
-            <!-- /.col -->
-            <div class="col-12 col-sm-6 col-md-3">
-              <div class="info-box mb-3">
-                <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-users"></i></span>
 
-                <div class="info-box-content">
-                  <span class="info-box-text">New Members</span>
-                  <span class="info-box-number">2,000</span>
+            <!-- Right Column: Enrollment Chart -->
+            <div class="col-md-7">
+              <div class="card chart-card">
+                <div class="card-header">
+                  <h5 class="card-title">Enrollment Trends</h5>
                 </div>
-                <!-- /.info-box-content -->
+                <div class="card-body">
+                  <canvas id="enrollmentChart" style="max-height: 245px;"></canvas>
+                  <div class="chart-data mt-3">
+                    <div class="row">
+                      <div class="col-sm-4">
+                        <div class="small-box">
+                          <div class="inner">
+                            <h6>Total Enrollments</h6>
+                            <p><?= array_sum($enrollmentData) ?></p>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-sm-4">
+                        <div class="small-box">
+                          <div class="inner">
+                            <h6>Average per Month</h6>
+                            <p><?= round(array_sum($enrollmentData) / max(1, count($enrollmentData)), 1) ?></p>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-sm-4">
+                        <div class="small-box">
+                          <div class="inner">
+                            <h6>Most Recent</h6>
+                            <p><?= end($enrollmentData) ?></p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <!-- /.info-box -->
             </div>
-            <!-- /.col -->
           </div>
           <!-- /.row -->
 
-          <div class="row">
-            <div class="col-md-12">
-              <div class="card">
-                <div class="card-header">
-                  <h5 class="card-title">Monthly Recap Report</h5>
-
-                  <div class="card-tools">
-                    <button
-                      type="button"
-                      class="btn btn-tool"
-                      data-card-widget="collapse">
-                      <i class="fas fa-minus"></i>
-                    </button>
-                    <div class="btn-group">
-                      <button
-                        type="button"
-                        class="btn btn-tool dropdown-toggle"
-                        data-toggle="dropdown">
-                        <i class="fas fa-wrench"></i>
-                      </button>
-                      <div
-                        class="dropdown-menu dropdown-menu-right"
-                        role="menu">
-                        <a href="#" class="dropdown-item">Action</a>
-                        <a href="#" class="dropdown-item">Another action</a>
-                        <a href="#" class="dropdown-item">Something else here</a>
-                        <a class="dropdown-divider"></a>
-                        <a href="#" class="dropdown-item">Separated link</a>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      class="btn btn-tool"
-                      data-card-widget="remove">
-                      <i class="fas fa-times"></i>
-                    </button>
-                  </div>
+          <!-- Key Metrics Row -->
+          <div class="row mt-4">
+            <div class="col-md-3">
+              <div class="info-box mb-3" style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(100, 200, 120, 0.08)); border-color: rgba(76, 175, 80, 0.4);">
+                <span class="info-box-icon" style="color: #2e7d32;"><i class="fas fa-percent"></i></span>
+                <div class="info-box-content">
+                  <span class="info-box-text">Completion Rate</span>
+                  <span class="info-box-number"><?= $completionRate ?>%</span>
                 </div>
-                <!-- /.card-header -->
-                <div class="card-body">
-                  <div class="row">
-                    <div class="col-md-8">
-                      <p class="text-center">
-                        <strong>Sales: 1 Jan, 2014 - 30 Jul, 2014</strong>
-                      </p>
-
-                      <div class="chart">
-                        <!-- Sales Chart Canvas -->
-                        <canvas
-                          id="salesChart"
-                          height="180"
-                          style="height: 180px"></canvas>
-                      </div>
-                      <!-- /.chart-responsive -->
-                    </div>
-                    <!-- /.col -->
-                    <div class="col-md-4">
-                      <p class="text-center">
-                        <strong>Goal Completion</strong>
-                      </p>
-
-                      <div class="progress-group">
-                        Add Products to Cart
-                        <span class="float-right"><b>160</b>/200</span>
-                        <div class="progress progress-sm">
-                          <div
-                            class="progress-bar bg-primary"
-                            style="width: 80%"></div>
-                        </div>
-                      </div>
-                      <!-- /.progress-group -->
-
-                      <div class="progress-group">
-                        Complete Purchase
-                        <span class="float-right"><b>310</b>/400</span>
-                        <div class="progress progress-sm">
-                          <div
-                            class="progress-bar bg-danger"
-                            style="width: 75%"></div>
-                        </div>
-                      </div>
-
-                      <!-- /.progress-group -->
-                      <div class="progress-group">
-                        <span class="progress-text">Visit Premium Page</span>
-                        <span class="float-right"><b>480</b>/800</span>
-                        <div class="progress progress-sm">
-                          <div
-                            class="progress-bar bg-success"
-                            style="width: 60%"></div>
-                        </div>
-                      </div>
-
-                      <!-- /.progress-group -->
-                      <div class="progress-group">
-                        Send Inquiries
-                        <span class="float-right"><b>250</b>/500</span>
-                        <div class="progress progress-sm">
-                          <div
-                            class="progress-bar bg-warning"
-                            style="width: 50%"></div>
-                        </div>
-                      </div>
-                      <!-- /.progress-group -->
-                    </div>
-                    <!-- /.col -->
-                  </div>
-                  <!-- /.row -->
-                </div>
-                <!-- ./card-body -->
-                <div class="card-footer">
-                  <div class="row">
-                    <div class="col-sm-3 col-6">
-                      <div class="description-block border-right">
-                        <span class="description-percentage text-success"><i class="fas fa-caret-up"></i> 17%</span>
-                        <h5 class="description-header">$35,210.43</h5>
-                        <span class="description-text">TOTAL REVENUE</span>
-                      </div>
-                      <!-- /.description-block -->
-                    </div>
-                    <!-- /.col -->
-                    <div class="col-sm-3 col-6">
-                      <div class="description-block border-right">
-                        <span class="description-percentage text-warning"><i class="fas fa-caret-left"></i> 0%</span>
-                        <h5 class="description-header">$10,390.90</h5>
-                        <span class="description-text">TOTAL COST</span>
-                      </div>
-                      <!-- /.description-block -->
-                    </div>
-                    <!-- /.col -->
-                    <div class="col-sm-3 col-6">
-                      <div class="description-block border-right">
-                        <span class="description-percentage text-success"><i class="fas fa-caret-up"></i> 20%</span>
-                        <h5 class="description-header">$24,813.53</h5>
-                        <span class="description-text">TOTAL PROFIT</span>
-                      </div>
-                      <!-- /.description-block -->
-                    </div>
-                    <!-- /.col -->
-                    <div class="col-sm-3 col-6">
-                      <div class="description-block">
-                        <span class="description-percentage text-danger"><i class="fas fa-caret-down"></i> 18%</span>
-                        <h5 class="description-header">1200</h5>
-                        <span class="description-text">GOAL COMPLETIONS</span>
-                      </div>
-                      <!-- /.description-block -->
-                    </div>
-                  </div>
-                  <!-- /.row -->
-                </div>
-                <!-- /.card-footer -->
               </div>
-              <!-- /.card -->
             </div>
-            <!-- /.col -->
+            <div class="col-md-3">
+              <div class="info-box mb-3" style="background: linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(255, 180, 0, 0.08)); border-color: rgba(255, 152, 0, 0.4);">
+                <span class="info-box-icon" style="color: #e65100;"><i class="fas fa-users"></i></span>
+                <div class="info-box-content">
+                  <span class="info-box-text">Total Enrollments</span>
+                  <span class="info-box-number"><?= count($enrollments) ?></span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="info-box mb-3" style="background: linear-gradient(135deg, rgba(244, 67, 54, 0.1), rgba(255, 100, 80, 0.08)); border-color: rgba(244, 67, 54, 0.4);">
+                <span class="info-box-icon" style="color: #c62828;"><i class="fas fa-exclamation-triangle"></i></span>
+                <div class="info-box-content">
+                  <span class="info-box-text">Expired Certs</span>
+                  <span class="info-box-number"><?= count($expiredCertifications) ?></span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="info-box mb-3" style="background: linear-gradient(135deg, rgba(63, 81, 181, 0.1), rgba(100, 130, 255, 0.08)); border-color: rgba(63, 81, 181, 0.4);">
+                <span class="info-box-icon" style="color: #283593;"><i class="fas fa-chart-bar"></i></span>
+                <div class="info-box-content">
+                  <span class="info-box-text">Avg Completion</span>
+                  <span class="info-box-number"><?= count($enrollments) > 0 ? round(count($completedEnrollments) / count($enrollments) * 100, 0) : 0 ?></span>
+                </div>
+              </div>
+            </div>
           </div>
-          <!-- Main row -->
+          <!-- /.row -->
+
+          <!-- Charts Row: Top Courses & Enrollment Status -->
+          <div class="row mt-2">
+            <div class="col-md-6">
+              <div class="card chart-card">
+                <div class="card-header">
+                  <h5 class="card-title">Top 5 Courses</h5>
+                </div>
+                <div class="card-body">
+                  <canvas id="topCoursesChart" style="max-height: 250px;"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card chart-card">
+                <div class="card-header">
+                  <h5 class="card-title">Enrollment Status</h5>
+                </div>
+                <div class="card-body">
+                  <canvas id="statusChart" style="max-height: 250px;"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- /.row -->
         </div>
         <!--/. container-fluid -->
       </section>
       <!-- /.content -->
     </div>
-    <!-- /.content-wrapper -->
+x`    <!-- /.content-wrapper -->
     <?php include "../layout/global_modal.php"; ?>
+
     <!-- Control Sidebar -->
     <aside class="control-sidebar control-sidebar-dark">
       <!-- Control sidebar content goes here -->
     </aside>
     <!-- /.control-sidebar -->
-
-    <!-- Main Footer -->
+    <aside class="control-sidebar control-sidebar-dark">
+      <!-- Control sidebar content goes here -->
+    </aside>
+    <!-- /.control-sidebar -->
 
   </div>
   <!-- ./wrapper -->
@@ -473,8 +567,139 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
   <script src="../assets/dist/js/global_modal.js"></script>
   <script src="../assets/dist/js/profile.js"></script>
 
+  <script>
+    // Handle form submissions with AJAX
+    // Removed modal functionality from main dashboard
 
-  <script></script>
+    // Enrollment Chart
+    const ctx = document.getElementById('enrollmentChart').getContext('2d');
+    const enrollmentChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: <?= $monthsJson ?>,
+        datasets: [{
+          label: 'Enrollments',
+          data: <?= $enrollmentDataJson ?>,
+          borderColor: 'rgb(75, 192, 192)',
+          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          tension: 0.1
+        }, {
+          label: 'Available Courses',
+          data: <?= $courseDataJson ?>,
+          borderColor: 'rgb(255, 99, 132)',
+          backgroundColor: 'rgba(255, 99, 132, 0.2)',
+          tension: 0.1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+          },
+          title: {
+            display: true,
+            text: 'Enrollment Trends Over Last 6 Months'
+          }
+        }
+      }
+    });
+
+    // Top Courses Chart
+    const ctxCourses = document.getElementById('topCoursesChart').getContext('2d');
+    const topCoursesChart = new Chart(ctxCourses, {
+      type: 'bar',
+      data: {
+        labels: <?= $topCoursesLabels ?>,
+        datasets: [{
+          label: 'Enrollments',
+          data: <?= $topCoursesValues ?>,
+          backgroundColor: [
+            'rgba(63, 81, 181, 0.7)',
+            'rgba(33, 150, 243, 0.7)',
+            'rgba(76, 175, 80, 0.7)',
+            'rgba(255, 152, 0, 0.7)',
+            'rgba(244, 67, 54, 0.7)'
+          ],
+          borderColor: [
+            'rgb(63, 81, 181)',
+            'rgb(33, 150, 243)',
+            'rgb(76, 175, 80)',
+            'rgb(255, 152, 0)',
+            'rgb(244, 67, 54)'
+          ],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        scales: {
+          x: {
+            beginAtZero: true
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          }
+        }
+      }
+    });
+
+    // Enrollment Status Chart
+    const ctxStatus = document.getElementById('statusChart').getContext('2d');
+    const statusChart = new Chart(ctxStatus, {
+      type: 'doughnut',
+      data: {
+        labels: ['Completed', 'Ongoing', 'Pending'],
+        datasets: [{
+          data: <?= $statusValues ?>,
+          backgroundColor: [
+            'rgba(76, 175, 80, 0.8)',
+            'rgba(33, 150, 243, 0.8)',
+            'rgba(255, 152, 0, 0.8)'
+          ],
+          borderColor: [
+            'rgb(76, 175, 80)',
+            'rgb(33, 150, 243)',
+            'rgb(255, 152, 0)'
+          ],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom'
+          }
+        }
+      }
+    });
+  </script>
+
+  <script>
+    // Hide preloader when page is fully loaded
+    $(document).ready(function() {
+      $('.preloader').fadeOut('slow');
+      $('body').removeClass('preloader-active');
+    });
+
+    // Fallback: hide preloader after 3 seconds
+    setTimeout(function() {
+      $('.preloader').fadeOut('slow');
+      $('body').removeClass('preloader-active');
+    }, 3000);
+  </script>
 </body>
 
 </html>

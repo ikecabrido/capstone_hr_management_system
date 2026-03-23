@@ -42,15 +42,13 @@ class User
             'id' => $id
         ]);
     }
-    public function updatePassword($id, $password)
+    public function getAllUsers()
     {
-        $sql = "UPDATE users SET password = :password WHERE id = :id";
+        $sql = "SELECT id, full_name, role FROM users ORDER BY full_name";
 
         $stmt = $this->db->prepare($sql);
+        $stmt->execute();
 
-        return $stmt->execute([
-            'password' => password_hash($password, PASSWORD_DEFAULT),
-            'id' => $id
-        ]);
+        return $stmt->fetchAll();
     }
 }
