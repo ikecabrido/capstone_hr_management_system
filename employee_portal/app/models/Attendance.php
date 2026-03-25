@@ -20,15 +20,15 @@ class Attendance
     /**
      * Get today's attendance record for an employee
      */
-    public function getTodayAttendance($employee_id)
+    public function getTodayAttendance($employee_no)
     {
         $query = "SELECT * FROM $this->table 
-                  WHERE employee_id = :employee_id 
+                  WHERE employee_no = :employee_no 
                   AND attendance_date = CURDATE() 
                   LIMIT 1";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':employee_id', $employee_id);
+        $stmt->bindParam(':employee_no', $employee_no);
         $stmt->execute();
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -37,14 +37,14 @@ class Attendance
     /**
      * Record Time In
      */
-    public function timeIn($employee_id, $method)
+    public function timeIn($employee_no, $method)
     {
         $query = "INSERT INTO $this->table 
-                  (employee_id, time_in, attendance_date, recorded_by)
-                  VALUES (:employee_id, NOW(), CURDATE(), :method)";
+                  (employee_no, time_in, attendance_date, recorded_by)
+                  VALUES (:employee_no, NOW(), CURDATE(), :method)";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':employee_id', $employee_id);
+        $stmt->bindParam(':employee_no', $employee_no);
         $stmt->bindParam(':method', $method);
 
         return $stmt->execute();
@@ -68,15 +68,15 @@ class Attendance
     /**
      * Get attendance records for date range
      */
-    public function getByDateRange($start_date, $end_date, $employee_id = null, $limit = 500, $offset = 0)
+    public function getByDateRange($start_date, $end_date, $employee_no = null, $limit = 500, $offset = 0)
     {
         $query = "SELECT a.*, e.full_name, e.department, e.position
                   FROM $this->table a
-                  JOIN employees e ON a.employee_id = e.employee_id
+                  JOIN employees e ON a.employee_no = e.employee_no
                   WHERE a.attendance_date BETWEEN :start_date AND :end_date";
 
-        if (!is_null($employee_id)) {
-            $query .= " AND a.employee_id = :employee_id";
+        if (!is_null($employee_no)) {
+            $query .= " AND a.employee_no = :employee_no";
         }
 
         $query .= " ORDER BY a.attendance_date DESC, a.created_at DESC
@@ -86,8 +86,8 @@ class Attendance
         $stmt->bindParam(':start_date', $start_date);
         $stmt->bindParam(':end_date', $end_date);
 
-        if (!is_null($employee_id)) {
-            $stmt->bindParam(':employee_id', $employee_id);
+        if (!is_null($employee_no)) {
+            $stmt->bindParam(':employee_no', $employee_no);
         }
 
         $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
@@ -122,7 +122,7 @@ class Attendance
     {
         $query = "SELECT a.*, e.full_name, e.department, e.position
                   FROM $this->table a
-                  RIGHT JOIN employees e ON a.employee_id = e.employee_id 
+                  RIGHT JOIN employees e ON a.employee_no = e.employee_no 
                     AND a.attendance_date = CURDATE()
                   WHERE e.employment_status = 'Active'
                   ORDER BY e.full_name
@@ -139,15 +139,15 @@ class Attendance
     /**
      * Get attendance history for a specific employee
      */
-    public function getEmployeeHistory($employee_id, $limit = 30, $offset = 0)
+    public function getEmployeeHistory($employee_no, $limit = 30, $offset = 0)
     {
         $query = "SELECT * FROM $this->table
-                  WHERE employee_id = :employee_id
+                  WHERE employee_no = :employee_no
                   ORDER BY attendance_date DESC
                   LIMIT :limit OFFSET :offset";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':employee_id', $employee_id);
+        $stmt->bindParam(':employee_no', $employee_no);
         $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -162,7 +162,7 @@ class Attendance
     {
         $query = "SELECT a.*, e.full_name, e.department
                   FROM $this->table a
-                  JOIN employees e ON a.employee_id = e.employee_id
+                  JOIN employees e ON a.employee_no = e.employee_no
                   WHERE a.is_approved = 0
                   ORDER BY a.created_at DESC
                   LIMIT :limit OFFSET :offset";

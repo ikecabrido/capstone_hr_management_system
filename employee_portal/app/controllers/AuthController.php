@@ -21,15 +21,15 @@ class AuthController
         Session::start();
 
         try {
-            $employeeID = Helper::sanitize($_POST['employee_id'] ?? '');
+            $employee_no = Helper::sanitize($_POST['employee_no'] ?? '');
             $password   = trim($_POST['password'] ?? '');
 
-            if (empty($employeeID) || empty($password)) {
+            if (empty($employee_no) || empty($password)) {
                 throw new Exception("Please fill in all fields");
             }
 
-            $user = $this->userModel->login($employeeID);
-
+            $user = $this->userModel->login($employee_no);
+            
             if (!$user || empty($user['user_id'])) {
                 throw new Exception("Invalid credentials");
             }
@@ -39,10 +39,11 @@ class AuthController
             }
 
             Session::set('user_id', $user['user_id']);
-            Session::set('employee_id', $user['employee_id']);
+            Session::set('employee_no', $user['employee_no']);
             Session::set('username', $user['username']);
             Session::set('role', $user['role']);
-            Session::set('full_name', $user['full_name']);
+            Session::set('first_name', $user['first_name']);
+            Session::set('last_name', $user['last_name']);
             Session::set('success', "Login successful!");
 
             Helper::redirect('index.php?url=dashboard');

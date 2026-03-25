@@ -34,34 +34,6 @@ $statusInfo = $attendanceController->getStatus($employee_id);
 $message = "";
 $messageType = "";
 
-if (isset($_SESSION['qr_success'])) {
-    $message = $_SESSION['qr_success'];
-    $messageType = "success";
-    unset($_SESSION['qr_success']);
-}
-
-if (isset($_SESSION['qr_error'])) {
-    $message = $_SESSION['qr_error'];
-    $messageType = "error";
-    unset($_SESSION['qr_error']);
-}
-
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $action = trim($_POST['action'] ?? '');
-    if ($action === 'time_in') {
-        $result = $attendanceController->timeIn($employee_id, 'MANUAL');
-        $message = $result['message'];
-        $messageType = $result['success'] ? "success" : "error";
-        if ($result['success']) $_SESSION['show_time_in_confirm'] = true;
-        $statusInfo = $attendanceController->getStatus($employee_id);
-    } elseif ($action === 'time_out') {
-        $result = $attendanceController->timeOut($employee_id);
-        $message = $result['message'];
-        $messageType = $result['success'] ? "success" : "error";
-        if ($result['success']) $_SESSION['show_time_out_confirm'] = true;
-        $statusInfo = $attendanceController->getStatus($employee_id);
-    }
-}
 
 $current_month_start = date('Y-m-01');
 $current_month_end = date('Y-m-t');

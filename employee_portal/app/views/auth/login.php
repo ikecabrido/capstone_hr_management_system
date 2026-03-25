@@ -33,10 +33,10 @@
                     <div></div>
                 </div>
                 <div class="label">
-                    <label for="">Employee Id</label>
+                    <label for="">Employee No</label>
                     <input
                         type="text"
-                        name="employee_id"
+                        name="employee_no"
                         placeholder="Your User ID..."
                         required />
                 </div>

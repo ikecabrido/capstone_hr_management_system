@@ -36,17 +36,17 @@ class Employee
     }
 
     /**
-     * Get employee by employee_id
+     * Get employee by employee_no
      */
-    public function getById($employee_id)
+    public function getById($employee_no)
     {
         $query = "SELECT e.*, u.username, u.role 
                   FROM " . $this->table . " e
                   LEFT JOIN users u ON e.user_id = u.id
-                  WHERE e.employee_id = :employee_id LIMIT 1";
+                  WHERE e.employee_no = :employee_no LIMIT 1";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':employee_id', $employee_id);
+        $stmt->bindParam(':employee_no', $employee_no);
         $stmt->execute();
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -76,14 +76,14 @@ class Employee
     /**
      * Get employee full name
      */
-    public function getFullName($employee_id)
+    public function getFullName($employee_no)
     {
         $query = "SELECT full_name 
                   FROM " . $this->table . " 
-                  WHERE employee_id = :employee_id LIMIT 1";
+                  WHERE employee_no = :employee_no LIMIT 1";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':employee_id', $employee_id);
+        $stmt->bindParam(':employee_no', $employee_no);
         $stmt->execute();
 
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -93,7 +93,7 @@ class Employee
     /**
      * Update employee information
      */
-    public function update($employee_id, $data)
+    public function update($employee_no, $data)
     {
         $query = "UPDATE " . $this->table . " SET ";
         $fields = [];
@@ -102,10 +102,10 @@ class Employee
             $fields[] = "$key = :$key";
         }
 
-        $query .= implode(", ", $fields) . " WHERE employee_id = :employee_id";
+        $query .= implode(", ", $fields) . " WHERE employee_no = :employee_no";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':employee_id', $employee_id);
+        $stmt->bindParam(':employee_no', $employee_no);
 
         foreach ($data as $key => $value) {
             $stmt->bindParam(':' . $key, $data[$key]);
@@ -130,7 +130,12 @@ class Employee
 
     public function all()
     {
-        $query = "SELECT * FROM " . $this->table . " ORDER BY full_name ASC";
+        $query = "
+        SELECT *, CONCAT(first_name, ' ', last_name) AS full_name
+        FROM " . $this->table . "
+        ORDER BY full_name ASC
+    ";
+
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
 

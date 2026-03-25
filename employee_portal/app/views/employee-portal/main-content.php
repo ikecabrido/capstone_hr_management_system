@@ -1,10 +1,11 @@
 <div class="w-full ml-16">
+    <?php require __DIR__ . '/../partials/notif.php'; ?>
     <div class="content-wrapper w-full">
         <div style="display: flex; align-items: center; margin-bottom: 20px;">
             <div class="live-clock" id="liveClock">00:00:00</div>
         </div>
         <h1>Dashboard</h1>
-        <p>Welcome back, <strong><?php echo isset($employee['full_name']) ? htmlspecialchars($employee['full_name']) : "none"; ?></strong>!</p>
+        <p class="text-[24px]">Welcome back, <strong><?php echo isset($employee['first_name']) ? htmlspecialchars($employee['first_name']) : "none"; ?></strong>!</p>
         <?php require __DIR__ . '/../partials/notif.php'; ?>
 
         <!-- Messages -->
@@ -17,9 +18,9 @@
                 <span><?php echo htmlspecialchars($message); ?></span>
             </div>
         <?php endif; ?>
+
         <!-- Time In/Out Action Section -->
         <div class="time-action-section">
-
             <div class="time-action-header">
                 <h3> Time In/Out</h3>
                 <span><?php echo date('l, F j, Y'); ?></span>
@@ -30,7 +31,7 @@
                     <div class="time-status-value">
                         <?php echo !empty($statusInfo['time_in'])
                             ? Helper::formatTime($statusInfo['time_in'])
-                            : 'null'; ?>
+                            : '00:00'; ?>
                     </div>
                 </div>
 
@@ -39,7 +40,7 @@
                     <div class="time-status-value">
                         <?php echo !empty($statusInfo['time_out'])
                             ? Helper::formatTime($statusInfo['time_out'])
-                            : 'null'; ?>
+                            : '00:00'; ?>
                     </div>
                 </div>
 
@@ -48,14 +49,14 @@
                     <div class="time-status-value">
                         <?php echo !empty($statusInfo['duration'])
                             ? $statusInfo['duration']
-                            : 'null'; ?>
+                            : '00:00'; ?>
                     </div>
                 </div>
             </div>
 
             <?php if (empty($statusInfo['time_in'])): ?>
                 <form method="POST" class="btn btn-primary" action="index.php?url=employee-time-in">
-                    <input type="hidden" value="<?= $employee_id ?>" name="employee_id">
+                    <input type="hidden" value="<?= $employee_no ?>" name="employee_no">
                     <input type="hidden" value="time_in" name="time_in">
                     <button type="submit" name="submit" class="btn-time-action btn-time-in">
                         Time In
@@ -64,7 +65,7 @@
                 </form>
             <?php elseif (empty($statusInfo['time_out'])): ?>
                 <form method="POST" class="btn btn-primary" action="index.php?url=employee-time-out">
-                    <input type="hidden" value="<?= $employee_id ?>" name="employee_id">
+                    <input type="hidden" value="<?= $employee_no ?>" name="employee_no">
                     <input type="hidden" value="time_out" name="time_out">
                     <button type="submit" name="submit" class="btn-time-action btn-time-out">
                         Time Out
@@ -83,7 +84,7 @@
             <div class="card present">
                 <h3>Present This Month</h3>
                 <div class="card-value">
-                    <?php echo isset($present_count) ? $present_count : 'null'; ?>
+                    <?php echo isset($present_count) ? $present_count : '00'; ?>
                 </div>
                 <div class="card-unit">days</div>
             </div>
@@ -91,7 +92,7 @@
             <div class="card late">
                 <h3>Late Arrivals</h3>
                 <div class="card-value">
-                    <?php echo isset($late_count) ? $late_count : 'null'; ?>
+                    <?php echo isset($late_count) ? $late_count : '00'; ?>
                 </div>
                 <div class="card-unit">times</div>
             </div>
@@ -101,7 +102,7 @@
                 <div class="card-value">
                     <?php echo isset($total_hours)
                         ? number_format($total_hours, 1)
-                        : 'null'; ?>
+                        : '00'; ?>
                 </div>
                 <div class="card-unit">hours</div>
             </div>
@@ -111,7 +112,7 @@
                 <div class="card-value">
                     <?php echo isset($total_overtime)
                         ? number_format($total_overtime, 1)
-                        : 'null'; ?>
+                        : '00'; ?>
                 </div>
                 <div class="card-unit">hours</div>
             </div>
