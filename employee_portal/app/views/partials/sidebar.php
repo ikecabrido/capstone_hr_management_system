@@ -57,7 +57,7 @@
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="payslip.php" class="nav-link">
+                            <a href="index.php?url=employee-payslip-items" class="nav-link">
                                 <i class="far fa-file-alt nav-icon"></i>
                                 <p>Payslip</p>
                             </a>

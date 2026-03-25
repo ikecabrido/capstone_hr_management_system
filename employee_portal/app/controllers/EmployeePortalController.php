@@ -10,9 +10,9 @@ class EmployeePortalController
         Auth::requireAuth();
 
         $title = "Employee Portal";
-        $employee_id = Session::get('employee_id');
+        $employee_no = Session::get('employee_no');
         $employeeModel = new Employee();
-        $employee = $employeeModel->getById($employee_id);
+        $employee = $employeeModel->getById($employee_no);
 
         if (!$employee) {
             Session::set('error', 'Employee data not found');
@@ -21,15 +21,15 @@ class EmployeePortalController
         }
 
         $attendanceController = new AttendanceController();
-        $employeeId = Session::get('employee_id');
+        $employeeId = Session::get('employee_no');
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $action = $_POST['action'];
 
             if ($action === 'time_in') {
-                $result = $attendanceController->timeIn($employee_id);
+                $result = $attendanceController->timeIn($employee_no);
             } elseif ($action === 'time_out') {
-                $result = $attendanceController->timeOut($employee_id);
+                $result = $attendanceController->timeOut($employee_no);
             }
 
             if (isset($result)) {
@@ -43,7 +43,7 @@ class EmployeePortalController
             }
         }
 
-        $statusInfo = $attendanceController->getStatus($employee_id);
+        $statusInfo = $attendanceController->getStatus($employee_no);
 
         $message = Session::get('success') ?? Session::get('error') ?? null;
         $messageType = Session::get('success') ? 'success' : (Session::get('error') ? 'danger' : 'info');

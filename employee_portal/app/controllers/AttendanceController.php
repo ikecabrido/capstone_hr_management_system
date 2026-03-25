@@ -32,69 +32,69 @@ class AttendanceController
 
     public function timeIn()
     {
-        Session::start();
-        $user_id = Session::get('user_id');
-        $employee_id = $_POST['employee_id'];
-        $method = 'MANUAL';
-        $todayDate = date('Y-m-d');
-        $timeIn = $_POST['time_in'] ?? null;
-        $existingRecord = $this->attendanceModel->getTodayAttendance($employee_id);
-
-        //check if post
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header("Location: " . ($_SERVER['HTTP_REFERER'] ?? "index.php?url=employee-documents-index"));
-            exit;
-        }
-
-        //check if theres a holiday
-        if ($this->attendanceModel->isHoliday($todayDate)) {
-
-            $holiday = $this->attendanceModel->getHolidayInfo($todayDate);
-            $this->auditLog->log(
-                'TIME_IN_FAILED',
-                $user_id,
-                $employee_id,
-                null,
-                ['reason' => 'Holiday'],
-                'FAILED',
-                'Cannot time in on holiday: ' . $holiday['holiday_name']
-            );
-            return [
-                'success' => false,
-                'message' => 'Today is a holiday (' . $holiday['holiday_name'] . '). No attendance recording required.',
-                'holiday_name' => $holiday['holiday_name']
-            ];
-        }
-
-        //check existing record
-        if ($existingRecord && !empty($existingRecord['time_in'])) {
-            $this->auditLog->log(
-                'TIME_IN_FAILED',
-                $user_id,
-                $employee_id,
-                null,
-                ['reason' => 'Already timed in'],
-                'FAILED',
-                'Employee already has time in record for today'
-            );
-            return [
-                'success' => false,
-                'message' => 'You have already timed in today at ' . Helper::formatTime($existingRecord['time_in'])
-            ];
-        }
-
-        //storing data
         try {
-            if ($this->attendanceModel->timeIn($employee_id, $method)) {
-                $record = $this->attendanceModel->getTodayAttendance($employee_id);
+            Session::start();
+            $user_id = Session::get('user_id');
+            $employee_no = $_POST['employee_no'];
+            $method = 'MANUAL';
+            $todayDate = date('Y-m-d');
+            $timeIn = $_POST['time_in'] ?? null;
+            $existingRecord = $this->attendanceModel->getTodayAttendance($employee_no);
+
+            //check if post
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                header("Location: " . ($_SERVER['HTTP_REFERER'] ?? "index.php?url=employee-documents-index"));
+                exit;
+            }
+
+            //check if theres a holiday
+            if ($this->attendanceModel->isHoliday($todayDate)) {
+
+                $holiday = $this->attendanceModel->getHolidayInfo($todayDate);
+                $this->auditLog->log(
+                    'TIME_IN_FAILED',
+                    $user_id,
+                    $employee_no,
+                    null,
+                    ['reason' => 'Holiday'],
+                    'FAILED',
+                    'Cannot time in on holiday: ' . $holiday['holiday_name']
+                );
+                return [
+                    'success' => false,
+                    'message' => 'Today is a holiday (' . $holiday['holiday_name'] . '). No attendance recording required.',
+                    'holiday_name' => $holiday['holiday_name']
+                ];
+            }
+
+            //check existing record
+            if ($existingRecord && !empty($existingRecord['time_in'])) {
+                $this->auditLog->log(
+                    'TIME_IN_FAILED',
+                    $user_id,
+                    $employee_no,
+                    null,
+                    ['reason' => 'Already timed in'],
+                    'FAILED',
+                    'Employee already has time in record for today'
+                );
+                return [
+                    'success' => false,
+                    'message' => 'You have already timed in today at ' . Helper::formatTime($existingRecord['time_in'])
+                ];
+            }
+
+            //storing data
+            if ($this->attendanceModel->timeIn($employee_no, $method)) {
+                $record = $this->attendanceModel->getTodayAttendance($employee_no);
 
                 $status = Helper::determineStatus($record['time_in']);
-                $employee = $this->employeeModel->getById($employee_id);
+                $employee = $this->employeeModel->getById($employee_no);
 
                 $this->auditLog->log(
                     'TIME_IN_SUCCESS',
                     $user_id,
-                    $employee_id,
+                    $employee_no,
                     $record['attendance_id'],
                     ['method' => $method, 'status' => $status],
                     'SUCCESS'
@@ -112,7 +112,7 @@ class AttendanceController
                 $this->auditLog->log(
                     'TIME_IN_FAILED',
                     $user_id,
-                    $employee_id,
+                    $employee_no,
                     null,
                     ['reason' => 'Database error'],
                     'FAILED',
@@ -132,16 +132,16 @@ class AttendanceController
     {
         Session::start();
         $user_id = Session::get('user_id');
-        $employee_id = $_POST['employee_id'];
+        $employee_no = $_POST['employee_no'];
         $method = 'MANUAL';
-        $record = $this->attendanceModel->getTodayAttendance($employee_id);
+        $record = $this->attendanceModel->getTodayAttendance($employee_no);
 
         //Check Record
         if (!$record) {
             $this->auditLog->log(
                 'TIME_OUT_FAILED',
                 $user_id,
-                $employee_id,
+                $employee_no,
                 null,
                 ['reason' => 'No time in record'],
                 'FAILED',
@@ -158,7 +158,7 @@ class AttendanceController
             $this->auditLog->log(
                 'TIME_OUT_FAILED',
                 $user_id,
-                $employee_id,
+                $employee_no,
                 $record['attendance_id'],
                 ['reason' => 'Already timed out'],
                 'FAILED',
@@ -172,19 +172,19 @@ class AttendanceController
         try {
             // Update time out
             if ($this->attendanceModel->timeOut($record['attendance_id'])) {
-                $updatedRecord = $this->attendanceModel->getTodayAttendance($employee_id);
+                $updatedRecord = $this->attendanceModel->getTodayAttendance($employee_no);
 
                 $duration = Helper::calculateDuration($updatedRecord['time_in'], $updatedRecord['time_out']);
                 $hoursData = Helper::calculateHours($updatedRecord['time_in'], $updatedRecord['time_out'], 8);
 
                 $this->attendanceModel->updateHours($record['attendance_id'], $hoursData);
 
-                $employee = $this->employeeModel->getById($employee_id);
+                $employee = $this->employeeModel->getById($employee_no);
 
                 $this->auditLog->log(
                     'TIME_OUT_SUCCESS',
                     $user_id,
-                    $employee_id,
+                    $employee_no,
                     $record['attendance_id'],
                     ['duration' => $duration, 'hours' => $hoursData],
                     'SUCCESS'
@@ -205,7 +205,7 @@ class AttendanceController
                 $this->auditLog->log(
                     'TIME_OUT_FAILED',
                     $user_id,
-                    $employee_id,
+                    $employee_no,
                     $record['attendance_id'],
                     ['reason' => 'Database error'],
                     'FAILED',
@@ -221,7 +221,7 @@ class AttendanceController
             $this->auditLog->log(
                 'TIME_OUT_ERROR',
                 $user_id,
-                $employee_id,
+                $employee_no,
                 null,
                 ['error' => $e->getMessage()],
                 'FAILED',
@@ -247,7 +247,7 @@ class AttendanceController
             // Update time out
             if ($this->attendanceModel->timeOut($record['attendance_id'])) {
                 // Get updated record
-                $updatedRecord = $this->attendanceModel->getTodayAttendance($employee_id);
+                $updatedRecord = $this->attendanceModel->getTodayAttendance($employee_no);
 
                 // Calculate duration and hours
                 $duration = Helper::calculateDuration($updatedRecord['time_in'], $updatedRecord['time_out']);
@@ -257,13 +257,13 @@ class AttendanceController
                 $this->attendanceModel->updateHours($record['attendance_id'], $hoursData);
 
                 // Get employee name
-                $employee = $this->employeeModel->getById($employee_id);
+                $employee = $this->employeeModel->getById($employee_no);
 
                 // Log success
                 $this->auditLog->log(
                     'TIME_OUT_SUCCESS',
                     $user_id,
-                    $employee_id,
+                    $employee_no,
                     $record['attendance_id'],
                     ['duration' => $duration, 'hours' => $hoursData],
                     'SUCCESS'
@@ -283,7 +283,7 @@ class AttendanceController
                 $this->auditLog->log(
                     'TIME_OUT_FAILED',
                     $user_id,
-                    $employee_id,
+                    $employee_no,
                     $record['attendance_id'],
                     ['reason' => 'Database error'],
                     'FAILED',
@@ -299,7 +299,7 @@ class AttendanceController
             $this->auditLog->log(
                 'TIME_OUT_ERROR',
                 $user_id,
-                $employee_id,
+                $employee_no,
                 null,
                 ['error' => $e->getMessage()],
                 'FAILED',
@@ -316,11 +316,11 @@ class AttendanceController
      * Process QR attendance (Smart - handles both Time In and Time Out)
      * Validates token and records time in or time out based on current status
      * 
-     * @param int $employee_id - Employee ID
+     * @param int $employee_no - Employee ID
      * @param string $token - QR token
      * @return array - Response array
      */
-    public function processQRAttendance($employee_id, $token)
+    public function processQRAttendance($employee_no, $token)
     {
         Session::start();
         $user_id = Session::get('user_id');
@@ -333,7 +333,7 @@ class AttendanceController
                 $this->auditLog->log(
                     'QR_SCAN_FAILED',
                     $user_id,
-                    $employee_id,
+                    $employee_no,
                     null,
                     ['reason' => 'Invalid or expired token'],
                     'FAILED',
@@ -350,7 +350,7 @@ class AttendanceController
                 $this->auditLog->log(
                     'QR_SCAN_FAILED',
                     $user_id,
-                    $employee_id,
+                    $employee_no,
                     null,
                     ['reason' => 'Token not for today'],
                     'FAILED',
@@ -363,18 +363,18 @@ class AttendanceController
             }
 
             // Mark token as used
-            $this->qrHelper->markUsed($token, $employee_id);
+            $this->qrHelper->markUsed($token, $employee_no);
 
             // Check if employee has timed in today
-            $todayRecord = $this->attendanceModel->getTodayAttendance($employee_id);
+            $todayRecord = $this->attendanceModel->getTodayAttendance($employee_no);
 
             // Smart decision: if already timed in, do time out; otherwise do time in
             if ($todayRecord && !empty($todayRecord['time_in']) && empty($todayRecord['time_out'])) {
                 // Employee already timed in, so do TIME OUT
-                $result = $this->timeOut($employee_id, 'QR');
+                $result = $this->timeOut($employee_no, 'QR');
             } else if (!$todayRecord || empty($todayRecord['time_in'])) {
                 // Employee hasn't timed in yet, so do TIME IN
-                $result = $this->timeIn($employee_id, 'QR');
+                $result = $this->timeIn($employee_no, 'QR');
             } else {
                 // Already timed out
                 $result = [
@@ -387,7 +387,7 @@ class AttendanceController
                 $this->auditLog->log(
                     'QR_SCAN_SUCCESS',
                     $user_id,
-                    $employee_id,
+                    $employee_no,
                     null,
                     ['token_id' => $tokenData['token_id'], 'action' => isset($result['time_in']) ? 'TIME_IN' : 'TIME_OUT'],
                     'SUCCESS'
@@ -401,7 +401,7 @@ class AttendanceController
             $this->auditLog->log(
                 'QR_SCAN_ERROR',
                 $user_id,
-                $employee_id,
+                $employee_no,
                 null,
                 ['error' => $error_msg],
                 'FAILED',
@@ -417,23 +417,23 @@ class AttendanceController
     /**
      * Get today's attendance record for employee
      * 
-     * @param int $employee_id - Employee ID
+     * @param int $employee_no - Employee ID
      * @return array|null - Attendance record or null
      */
-    public function getTodayRecord($employee_id)
+    public function getTodayRecord($employee_no)
     {
-        return $this->attendanceModel->getTodayAttendance($employee_id);
+        return $this->attendanceModel->getTodayAttendance($employee_no);
     }
 
     /**
      * Get attendance status for display
      * 
-     * @param int $employee_id - Employee ID
+     * @param int $employee_no - Employee ID
      * @return array - Status information
      */
-    public function getStatus($employee_id)
+    public function getStatus($employee_no)
     {
-        $record = $this->getTodayRecord($employee_id);
+        $record = $this->getTodayRecord($employee_no);
 
         if (!$record) {
             return [

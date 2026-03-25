@@ -34,8 +34,8 @@
                         <select class="form-select rounded-3" name="submit_by">
                             <option value="">-- None --</option>
                             <?php foreach ($employees as $emp): ?>
-                                <option value="<?= $emp['employee_id'] ?>" <?= ($_SESSION['employee_id'] ?? '') == $emp['employee_id'] ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($emp['full_name']) ?>
+                                <option value="<?= $emp['id'] ?>" <?= ($_SESSION['id'] ?? '') == $emp['id'] ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($emp['first_name']) ?> <?= htmlspecialchars($emp['last_name']) ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>

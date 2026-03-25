@@ -12,20 +12,17 @@ class EmployeeDocuments
         $this->conn = $database->getConnection();
     }
 
-    /**
-     * Get all employee documents
-     */
     public function all()
     {
         $stmt = $this->conn->prepare("
         SELECT DISTINCT ed.*, 
                d.department_name, 
-               e.full_name AS approver_name, 
-               s.full_name AS submitter_name
+               CONCAT(e.first_name, ' ', e.last_name) AS approver_name, 
+               CONCAT(s.first_name, ' ', s.last_name) AS submitter_name
         FROM {$this->table} ed
         LEFT JOIN departments d ON ed.department = d.id
-        LEFT JOIN employees e ON ed.approver_id = e.employee_id
-        LEFT JOIN employees s ON ed.submit_by = s.employee_id
+        LEFT JOIN employees e ON ed.approver_id = e.id
+        LEFT JOIN employees s ON ed.submit_by = s.id
         ORDER BY ed.submitted_on DESC
     ");
         $stmt->execute();
@@ -37,12 +34,12 @@ class EmployeeDocuments
         $stmt = $this->conn->prepare("
         SELECT DISTINCT ed.*, 
                d.department_name, 
-               e.full_name AS approver_name, 
-               s.full_name AS submitter_name
+               CONCAT(e.first_name, ' ', e.last_name) AS approver_name, 
+               CONCAT(s.first_name, ' ', s.last_name) AS submitter_name
         FROM {$this->table} ed
         LEFT JOIN departments d ON ed.department = d.id
-        LEFT JOIN employees e ON ed.approver_id = e.employee_id
-        LEFT JOIN employees s ON ed.submit_by = s.employee_id
+        LEFT JOIN employees e ON ed.approver_id = e.id
+        LEFT JOIN employees s ON ed.submit_by = s.id
         WHERE ed.department = :department
         ORDER BY ed.submitted_on DESC
     ");
@@ -50,9 +47,7 @@ class EmployeeDocuments
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    /**
-     * Get document by approval_id
-     */
+
     public function getById($approvalId)
     {
         $query = "SELECT * FROM " . $this->table . " WHERE approval_id = :approval_id LIMIT 1";
@@ -63,9 +58,6 @@ class EmployeeDocuments
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Insert a new document
-     */
     public function create($data)
     {
         $query = "INSERT INTO " . $this->table . " 
@@ -81,9 +73,6 @@ class EmployeeDocuments
         return $stmt->execute() ? $this->conn->lastInsertId() : false;
     }
 
-    /**
-     * Update document
-     */
     public function update($approvalId, $data)
     {
         $fields = [];

@@ -5,7 +5,7 @@ require 'app/controllers/EmployeePortalController.php';
 require 'app/controllers/AuthController.php';
 require 'app/controllers/EmployeeDocumentsController.php';
 require 'app/controllers/EmployeeGrievanceController.php';
-
+require 'app/controllers/PayslipController.php';
 
 $url = $_GET['url'] ?? 'auth-index';
 
@@ -56,8 +56,14 @@ switch ($url) {
         (new EmployeeGrievanceController)->create();
         break;
 
+    // Employee Payslips
+    case 'employee-payslip-items':
+        (new PayslipController)->index();
+        break;
 
-
+    case 'view-payslip':
+        (new PayslipController)->viewPayslip();
+        break;
 
     // Employee Dashboard
     case 'dashboard':
