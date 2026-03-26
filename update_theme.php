@@ -12,8 +12,8 @@ $userId = $_SESSION['user']['id'];
 $theme = $_POST['theme'] ?? 'light';
 
 /* create database connection */
-$database = new Database();
-$pdo = $database->connect();
+$database = Database::getInstance();
+$pdo = $database->getConnection();
 
 /* update theme */
 $stmt = $pdo->prepare("UPDATE users SET theme = ? WHERE id = ?");

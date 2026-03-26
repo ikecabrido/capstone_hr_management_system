@@ -17,7 +17,7 @@ $controller = new PayrollController();
 $periods = $controller->getPeriods();
 
 // Get selected period
-$selectedPeriodId = $_POST['period_id'] ?? null;
+$selectedPeriodId = $_POST['period_id'] ?? '';
 
 // Initialize toast variables
 $toastMessage = null;
@@ -27,7 +27,7 @@ $toastType = 'info';
 $previewData = [];
 $payrollResults = [];
 
-if ($selectedPeriodId) {
+if ($selectedPeriodId !== '') {
     $selectedPeriodId = (int)$selectedPeriodId;
 
     // Preview payroll
@@ -256,77 +256,225 @@ if (isset($_GET['error'])) {
             <!-- Main content -->
             <section class="content">
                 <div class="container-fluid">
-                    <!-- Main row -->
-                    <form method="POST" class="mb-3">
-                        <div class="row align-items-end">
-                            <div class="col-md-4">
-                                <label><strong>Payroll Period</strong></label>
-                                <select name="period_id" class="form-control" required>
-                                    <option value="">-- Select Payroll Period --</option>
-                                    <?php foreach ($periods as $p): ?>
-                                        <option value="<?= $p['id'] ?>"
-                                            <?= ($selectedPeriodId == $p['id']) ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($p['period_name']) ?>
-                                            (<?= ucfirst($p['status']) ?>)
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <button type="submit" class="btn btn-primary w-100">
-                                    <i class="fas fa-calculator"></i> Calculate
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                    <?php if ($selectedPeriodId && !empty($payrollResults)): ?>
-                        <div class="card mt-4">
-                            <div class="card-header bg-info">
-                                <h3 class="card-title">
-                                    <i class="fas fa-eye"></i> Payroll Preview
-                                </h3>
-                            </div>
-                            <div class="card-body table-responsive p-0">
-                                <table class="table table-hover text-nowrap">
-                                    <thead>
-                                        <tr>
-                                            <th>Employee</th>
-                                            <th>Position</th>
-                                            <th>Gross Pay</th>
-                                            <th>Deductions</th>
-                                            <th>Net Pay</th>
-
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($payrollResults as $row): ?>
-                                            <tr>
-                                                <td><?= htmlspecialchars($row['name']) ?></td>
-                                                <td><?= htmlspecialchars($row['position'] ?? '-') ?></td>
-                                                <td>₱<?= number_format($row['gross_pay'], 2) ?></td>
-                                                <td>₱<?= number_format($row['total_deductions'], 2) ?></td>
-                                                <td>
-                                                    <strong>
-                                                        ₱<?= number_format($row['net_pay'], 2) ?>
-                                                    </strong>
-                                                </td>
-
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
+                    <div class="row">
+                        <!-- Left Sidebar: Employee List -->
+                        <div class="col-md-3">
+                            <div class="card card-primary card-outline">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-users"></i> Staff List
+                                    </h3>
+                                </div>
+                                <div class="card-body p-0" style="max-height: 600px; overflow-y: auto;">
+                                    <form method="POST" id="employeeForm">
+                                        <div class="list-group list-group-flush">
+                                            <?php if (!empty($previewData)): ?>
+                                                <?php foreach ($previewData as $idx => $row): ?>
+                                                    <button type="button"
+                                                        class="list-group-item list-group-item-action employee-item"
+                                                        onclick="selectEmployee(<?= $idx ?>, '<?= htmlspecialchars($row['name']) ?>')"
+                                                        data-employee-idx="<?= $idx ?>">
+                                                        <div class="d-flex justify-content-between">
+                                                            <strong><?= htmlspecialchars($row['name']) ?></strong>
+                                                        </div>
+                                                        <small class="text-muted"><?= htmlspecialchars($row['position'] ?? '-') ?></small>
+                                                    </button>
+                                                <?php endforeach; ?>
+                                            <?php else: ?>
+                                                <div class="p-3 text-center text-muted">
+                                                    <small>No employees to display. Select a period first.</small>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         </div>
-                        <?php if ($selectedPeriodId && !empty($payrollResults)): ?>
-                            <button type="button"
-                                class="btn btn-success mt-3 mb-3"
-                                <?= empty($payrollResults) ? 'disabled' : '' ?>
-                                data-toggle="modal"
-                                data-target="#finalizeModal">
-                                <i class="fas fa-check"></i> Finalize Payroll
-                            </button>
-                        <?php endif; ?>
-                    <?php endif; ?>
+
+                        <!-- Main Content: Period Selection & Calculator -->
+                        <div class="col-md-9">
+                            <!-- Period Selection -->
+                            <form method="POST" class="mb-4">
+                                <div class="card card-info">
+                                    <div class="card-header">
+                                        <h3 class="card-title"><i class="fas fa-calendar-alt"></i> Payroll Period</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-8">
+                                                <label><strong>Select Period</strong></label>
+                                                <select name="period_id" class="form-control" required onchange="this.form.submit();">
+                                                    <option value="">-- Select Payroll Period --</option>
+                                                    <?php foreach ($periods as $p): ?>
+                                                        <option value="<?= $p['period_id'] ?>"
+                                                            <?= ($selectedPeriodId !== '' && (int)$selectedPeriodId === $p['period_id']) ? 'selected' : '' ?>>
+                                                            <?= htmlspecialchars($p['period_name']) ?>
+                                                            (<?= ucfirst($p['status']) ?>)
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+
+                            <!-- Salary Details Card (Shown when employee is selected) -->
+                            <div id="salaryDetailsContainer" style="display: none;">
+                                <!-- Period Info -->
+                                <div class="card card-secondary mb-3">
+                                    <div class="card-header">
+                                        <h3 class="card-title"><i class="fas fa-info-circle"></i> Period Details</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-4 text-center">
+                                                <small class="text-muted">Period Start</small>
+                                                <p class="m-0"><strong id="periodStart">-</strong></p>
+                                            </div>
+                                            <div class="col-md-4 text-center">
+                                                <small class="text-muted">Period End</small>
+                                                <p class="m-0"><strong id="periodEnd">-</strong></p>
+                                            </div>
+                                            <div class="col-md-4 text-center">
+                                                <small class="text-muted">Pay Date</small>
+                                                <p class="m-0"><strong id="payDate">-</strong></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Hours & Days Worked -->
+                                <div class="card card-warning mb-3">
+                                    <div class="card-header">
+                                        <h3 class="card-title"><i class="fas fa-clock"></i> Hours & Attendance</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="text-muted">Hours Worked</label>
+                                                    <h5 id="hoursWorked" class="m-0"><strong>0</strong></h5>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="text-muted">Days Worked</label>
+                                                    <h5 id="daysWorked" class="m-0"><strong>0</strong></h5>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="text-muted">Overtime Pay</label>
+                                                    <h5 id="overtimePay" class="m-0"><strong>₱0.00</strong></h5>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="text-muted">Overtime Multiplier</label>
+                                                    <h5 id="overtimeMultiplier" class="m-0"><strong>1.25x</strong></h5>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Earnings Breakdown -->
+                                <div class="card card-success mb-3">
+                                    <div class="card-header">
+                                        <h3 class="card-title"><i class="fas fa-plus-circle"></i> Earnings</h3>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <table class="table table-hover table-sm m-0">
+                                            <thead class="bg-light">
+                                                <tr>
+                                                    <th>Description</th>
+                                                    <th class="text-right" style="width: 150px;">Amount (₱)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="earningsTable">
+                                                <tr>
+                                                    <td colspan="2" class="text-muted text-center py-3">-</td>
+                                                </tr>
+                                            </tbody>
+                                            <tfoot class="bg-light font-weight-bold">
+                                                <tr>
+                                                    <td>Total Earnings</td>
+                                                    <td class="text-right"><strong id="totalEarnings">₱0.00</strong></td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- Deductions Breakdown -->
+                                <div class="card card-danger mb-3">
+                                    <div class="card-header">
+                                        <h3 class="card-title"><i class="fas fa-minus-circle"></i> Deductions</h3>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <table class="table table-hover table-sm m-0">
+                                            <thead class="bg-light">
+                                                <tr>
+                                                    <th>Description</th>
+                                                    <th class="text-right" style="width: 150px;">Amount (₱)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="deductionsTable">
+                                                <tr>
+                                                    <td colspan="2" class="text-muted text-center py-3">-</td>
+                                                </tr>
+                                            </tbody>
+                                            <tfoot class="bg-light font-weight-bold">
+                                                <tr>
+                                                    <td>Total Deductions</td>
+                                                    <td class="text-right"><strong id="totalDeductions">₱0.00</strong></td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- Net Pay Summary -->
+                                <div class="card card-primary">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="text-muted">Gross Pay</label>
+                                                    <h4 id="grossPay" class="m-0">₱0.00</h4>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="text-muted">Net Pay</label>
+                                                    <h4 id="netPay" class="m-0 text-success">₱0.00</h4>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="mt-4 mb-3">
+                                    <button type="button"
+                                        class="btn btn-success"
+                                        data-toggle="modal"
+                                        data-target="#finalizeModal"
+                                        <?= empty($payrollResults) ? 'disabled' : '' ?>>
+                                        <i class="fas fa-check"></i> Process Payroll
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Initial Message -->
+                            <div id="initialMessage" class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> Select a payroll period and an employee to view salary details.
+                            </div>
+                        </div>
+                    </div>
                     <!--/. container-fluid -->
             </section>
             <!-- /.content -->
@@ -340,14 +488,6 @@ if (isset($_GET['error'])) {
         <!-- /.control-sidebar -->
 
         <!-- Main Footer -->
-        <footer class="main-footer">
-            <strong>Copyright &copy; 2026-2027 Bestlink College of the
-                Philippines.</strong>
-            All rights reserved.
-            <!-- <div class="float-right d-none d-sm-inline-block">
-          <b>Version</b> 3.2.0
-        </div> -->
-        </footer>
     </div>
     <!-- Edit Payroll Modal -->
     <div class="modal fade" id="editPayrollModal" tabindex="-1" aria-labelledby="editPayrollLabel" aria-hidden="true">
@@ -484,7 +624,85 @@ if (isset($_GET['error'])) {
     <script src="../../assets/dist/js/time.js"></script>
     <script src="../../assets/dist/js/global_modal.js"></script>
     <script src="../../assets/dist/js/profile.js"></script>
-    <script></script>
+    <script>
+        // Store payroll data for JavaScript access
+        const payrollData = <?php echo json_encode($previewData); ?>;
+        const periodData = <?php echo json_encode($periods); ?>;
+        const selectedPeriodId = <?php echo $selectedPeriodId ?? 'null'; ?>;
+
+        function selectEmployee(index, name) {
+            if (!payrollData || payrollData.length === 0) {
+                console.log('No payroll data available');
+                return;
+            }
+
+            const employee = payrollData[index];
+            if (!employee) {
+                console.log('Invalid employee index:', index);
+                return;
+            }
+
+            // Update active state
+            document.querySelectorAll('.employee-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            const activeBtn = document.querySelector(`[data-employee-idx="${index}"]`);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+            }
+
+            // Find period data
+            const period = periodData.find(p => p.id == selectedPeriodId);
+
+            // Update period info
+            if (period) {
+                document.getElementById('periodStart').textContent = period.start_date;
+                document.getElementById('periodEnd').textContent = period.end_date;
+                document.getElementById('payDate').textContent = period.pay_date;
+            }
+
+            // Update earnings
+            const earningsHtml = employee.earnings.map(e => `
+                <tr>
+                    <td>${e.description}</td>
+                    <td class="text-right">₱${parseFloat(e.amount).toFixed(2)}</td>
+                </tr>
+            `).join('');
+            document.getElementById('earningsTable').innerHTML = earningsHtml || '<tr><td colspan="2" class="text-muted text-center py-3">No earnings</td></tr>';
+            document.getElementById('totalEarnings').textContent = `₱${parseFloat(employee.gross_pay).toFixed(2)}`;
+
+            // Update hours and attendance
+            document.getElementById('hoursWorked').textContent = (employee.hours_worked || 0).toFixed(2);
+            document.getElementById('daysWorked').textContent = (employee.days_worked || 0);
+            document.getElementById('overtimePay').textContent = `₱${parseFloat(employee.overtime_pay || 0).toFixed(2)}`;
+            document.getElementById('overtimeMultiplier').textContent = `${employee.overtime_multiplier || 1.25}x (${(employee.overtime_hours || 0).toFixed(2)} hrs)`;
+
+            // Update deductions
+            const deductionsHtml = employee.deductions.map(d => `
+                <tr>
+                    <td>${d.description}</td>
+                    <td class="text-right">₱${parseFloat(d.amount).toFixed(2)}</td>
+                </tr>
+            `).join('');
+            document.getElementById('deductionsTable').innerHTML = deductionsHtml || '<tr><td colspan="2" class="text-muted text-center py-3">No deductions</td></tr>';
+            document.getElementById('totalDeductions').textContent = `₱${parseFloat(employee.total_deductions).toFixed(2)}`;
+
+            // Update summary
+            document.getElementById('grossPay').textContent = `₱${parseFloat(employee.gross_pay).toFixed(2)}`;
+            document.getElementById('netPay').textContent = `₱${parseFloat(employee.net_pay).toFixed(2)}`;
+
+            // Show details and hide initial message
+            document.getElementById('salaryDetailsContainer').style.display = 'block';
+            document.getElementById('initialMessage').style.display = 'none';
+        }
+
+        // Auto-select first employee if payroll data exists
+        document.addEventListener('DOMContentLoaded', function() {
+            if (payrollData && payrollData.length > 0 && selectedPeriodId) {
+                selectEmployee(0, payrollData[0].name);
+            }
+        });
+    </script>
 
     <!-- DataTables -->
     <script src="../../assets/plugins/datatables/jquery.dataTables.min.js"></script>
