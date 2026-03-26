@@ -1,7 +1,64 @@
 <?php
 session_start();
 require_once "../auth/auth_check.php";
+require_once "controllers/ExitManagementController.php";
+require_once "controllers/ResignationController.php";
+require_once "controllers/ExitInterviewController.php";
+require_once "controllers/KnowledgeTransferController.php";
+require_once "controllers/SettlementController.php";
+require_once "controllers/DocumentationController.php";
+require_once "controllers/SurveyController.php";
+
 $theme = $_SESSION['user']['theme'] ?? 'light';
+
+// Initialize controllers
+$exitController = new ExitManagementController();
+$resignationController = new ResignationController();
+$interviewController = new ExitInterviewController();
+$transferController = new KnowledgeTransferController();
+$settlementController = new SettlementController();
+$documentationController = new DocumentationController();
+$surveyController = new SurveyController();
+
+// Handle AJAX requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
+    header('Content-Type: application/json');
+
+    $action = $_POST['ajax_action'];
+    $controller = $_POST['controller'] ?? 'exit_management';
+
+    $data = $_POST;
+    unset($data['ajax_action'], $data['controller']);
+
+    error_log("=== AJAX REQUEST: action=$action, controller=$controller ===");
+
+    switch ($controller) {
+        case 'resignation':
+            $response = $resignationController->handleAjaxRequest($action, $data);
+            break;
+        case 'interview':
+            $response = $interviewController->handleAjaxRequest($action, $data);
+            break;
+        case 'transfer':
+            $response = $transferController->handleAjaxRequest($action, $data);
+            break;
+        case 'settlement':
+            $response = $settlementController->handleAjaxRequest($action, $data);
+            break;
+        case 'documentation':
+            $response = $documentationController->handleAjaxRequest($action, $data);
+            break;
+        case 'survey':
+            $response = $surveyController->handleAjaxRequest($action, $data);
+            break;
+        default:
+            $response = $exitController->handleAjaxRequest($action, $data);
+    }
+
+    error_log("=== AJAX RESPONSE: " . json_encode($response) . " ===");
+    echo json_encode($response);
+    exit;
+}
 
 ?>
 
@@ -11,7 +68,7 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Exit Management</title>
+  <title>Exit Management System</title>
 
   <!-- Google Font: Source Sans Pro -->
   <link
@@ -88,7 +145,6 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
     <aside class="main-sidebar sidebar-dark-primary elevation-4">
       <!-- Brand Logo -->
       <a href="exit_management.php" class="brand-link">
-
         <img
           src="../assets/pics/bcpLogo.png"
           alt="AdminLTE Logo"
@@ -117,58 +173,46 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
             data-widget="treeview"
             role="menu"
             data-accordion="false">
-            <!-- Add icons to the links using the .nav-icon class
-               with font-awesome or any other icon font library -->
             <li class="nav-item">
-              <a href="#" class="nav-link active">
+              <a href="#dashboard" class="nav-link active" onclick="showSection('dashboard')">
                 <i class="nav-icon fas fa-tachometer-alt"></i>
                 <p>Dashboard</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-chart-pie"></i>
-                <p>Module 1</p>
+              <a href="#resignations" class="nav-link" onclick="showSection('resignations')">
+                <i class="nav-icon fas fa-user-times"></i>
+                <p>Resignations</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-tree"></i>
-                <p>Module 2</p>
+              <a href="#interviews" class="nav-link" onclick="showSection('interviews')">
+                <i class="nav-icon fas fa-comments"></i>
+                <p>Exit Interviews</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-edit"></i>
-                <p>Module 3</p>
+              <a href="#transfers" class="nav-link" onclick="showSection('transfers')">
+                <i class="nav-icon fas fa-exchange-alt"></i>
+                <p>Knowledge Transfer</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-table"></i>
-                <p>Module 4</p>
-              </a>
-            </li>
-            <li class="nav-header">OTHER EXAMPLES</li>
-            <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-calendar-alt"></i>
-                <p>
-                  Calendar
-                  <span class="badge badge-info right">2</span>
-                </p>
+              <a href="#settlements" class="nav-link" onclick="showSection('settlements')">
+                <i class="nav-icon fas fa-calculator"></i>
+                <p>Settlements</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="nav-icon far fa-image"></i>
-                <p>Gallery</p>
+              <a href="#documents" class="nav-link" onclick="showSection('documents')">
+                <i class="nav-icon fas fa-file-alt"></i>
+                <p>Documentation</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-columns"></i>
-                <p>Kanban Board</p>
+              <a href="#surveys" class="nav-link" onclick="showSection('surveys')">
+                <i class="nav-icon fas fa-poll"></i>
+                <p>Post-Exit Surveys</p>
               </a>
             </li>
             <li class="nav-item">
@@ -193,287 +237,300 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
             <div class="col-sm-6">
               <h1 class="m-0">Exit Management System</h1>
             </div>
-            <!-- /.col -->
-
-            <!-- /.col -->
           </div>
-          <!-- /.row -->
         </div>
-        <!-- /.container-fluid -->
       </div>
-      <!-- /.content-header -->
 
       <!-- Main content -->
       <section class="content">
         <div class="container-fluid">
-          <!-- Info boxes -->
-          <div class="row">
-            <div class="col-12 col-sm-6 col-md-3">
-              <div class="info-box">
-                <span class="info-box-icon bg-info elevation-1"><i class="fas fa-cog"></i></span>
-
-                <div class="info-box-content">
-                  <span class="info-box-text">CPU Traffic</span>
-                  <span class="info-box-number">
-                    10
-                    <small>%</small>
-                  </span>
+          <!-- Dashboard Section -->
+          <div id="dashboard-section" class="section">
+            <div class="row">
+              <div class="col-lg-3 col-6">
+                <div class="small-box bg-info">
+                  <div class="inner">
+                    <h3 id="pending-resignations">0</h3>
+                    <p>Pending Resignations</p>
+                  </div>
+                  <div class="icon">
+                    <i class="fas fa-user-times"></i>
+                  </div>
                 </div>
-                <!-- /.info-box-content -->
               </div>
-              <!-- /.info-box -->
-            </div>
-            <!-- /.col -->
-            <div class="col-12 col-sm-6 col-md-3">
-              <div class="info-box mb-3">
-                <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-thumbs-up"></i></span>
-
-                <div class="info-box-content">
-                  <span class="info-box-text">Likes</span>
-                  <span class="info-box-number">41,410</span>
+              <div class="col-lg-3 col-6">
+                <div class="small-box bg-success">
+                  <div class="inner">
+                    <h3 id="scheduled-interviews">0</h3>
+                    <p>Scheduled Interviews</p>
+                  </div>
+                  <div class="icon">
+                    <i class="fas fa-comments"></i>
+                  </div>
                 </div>
-                <!-- /.info-box-content -->
               </div>
-              <!-- /.info-box -->
-            </div>
-            <!-- /.col -->
-
-            <!-- fix for small devices only -->
-            <div class="clearfix hidden-md-up"></div>
-
-            <div class="col-12 col-sm-6 col-md-3">
-              <div class="info-box mb-3">
-                <span class="info-box-icon bg-success elevation-1"><i class="fas fa-shopping-cart"></i></span>
-
-                <div class="info-box-content">
-                  <span class="info-box-text">Sales</span>
-                  <span class="info-box-number">760</span>
+              <div class="col-lg-3 col-6">
+                <div class="small-box bg-warning">
+                  <div class="inner">
+                    <h3 id="active-transfers">0</h3>
+                    <p>Active Transfers</p>
+                  </div>
+                  <div class="icon">
+                    <i class="fas fa-exchange-alt"></i>
+                  </div>
                 </div>
-                <!-- /.info-box-content -->
               </div>
-              <!-- /.info-box -->
-            </div>
-            <!-- /.col -->
-            <div class="col-12 col-sm-6 col-md-3">
-              <div class="info-box mb-3">
-                <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-users"></i></span>
-
-                <div class="info-box-content">
-                  <span class="info-box-text">New Members</span>
-                  <span class="info-box-number">2,000</span>
+              <div class="col-lg-3 col-6">
+                <div class="small-box bg-danger">
+                  <div class="inner">
+                    <h3 id="pending-settlements">0</h3>
+                    <p>Pending Settlements</p>
+                  </div>
+                  <div class="icon">
+                    <i class="fas fa-calculator"></i>
+                  </div>
                 </div>
-                <!-- /.info-box-content -->
               </div>
-              <!-- /.info-box -->
             </div>
-            <!-- /.col -->
           </div>
-          <!-- /.row -->
 
-          <div class="row">
-            <div class="col-md-12">
-              <div class="card">
-                <div class="card-header">
-                  <h5 class="card-title">Monthly Recap Report</h5>
-
-                  <div class="card-tools">
-                    <button
-                      type="button"
-                      class="btn btn-tool"
-                      data-card-widget="collapse">
-                      <i class="fas fa-minus"></i>
-                    </button>
-                    <div class="btn-group">
-                      <button
-                        type="button"
-                        class="btn btn-tool dropdown-toggle"
-                        data-toggle="dropdown">
-                        <i class="fas fa-wrench"></i>
-                      </button>
-                      <div
-                        class="dropdown-menu dropdown-menu-right"
-                        role="menu">
-                        <a href="#" class="dropdown-item">Action</a>
-                        <a href="#" class="dropdown-item">Another action</a>
-                        <a href="#" class="dropdown-item">Something else here</a>
-                        <a class="dropdown-divider"></a>
-                        <a href="#" class="dropdown-item">Separated link</a>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      class="btn btn-tool"
-                      data-card-widget="remove">
-                      <i class="fas fa-times"></i>
-                    </button>
-                  </div>
+          <!-- Resignations Section -->
+          <div id="resignations-section" class="section" style="display: none;">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Resignation Management</h3>
+                <div class="card-tools">
+                  <button type="button" class="btn btn-primary" onclick="showResignationModal()">
+                    <i class="fas fa-plus"></i> New Resignation
+                  </button>
                 </div>
-                <!-- /.card-header -->
-                <div class="card-body">
-                  <div class="row">
-                    <div class="col-md-8">
-                      <p class="text-center">
-                        <strong>Sales: 1 Jan, 2014 - 30 Jul, 2014</strong>
-                      </p>
-
-                      <div class="chart">
-                        <!-- Sales Chart Canvas -->
-                        <canvas
-                          id="salesChart"
-                          height="180"
-                          style="height: 180px"></canvas>
-                      </div>
-                      <!-- /.chart-responsive -->
-                    </div>
-                    <!-- /.col -->
-                    <div class="col-md-4">
-                      <p class="text-center">
-                        <strong>Goal Completion</strong>
-                      </p>
-
-                      <div class="progress-group">
-                        Add Products to Cart
-                        <span class="float-right"><b>160</b>/200</span>
-                        <div class="progress progress-sm">
-                          <div
-                            class="progress-bar bg-primary"
-                            style="width: 80%"></div>
-                        </div>
-                      </div>
-                      <!-- /.progress-group -->
-
-                      <div class="progress-group">
-                        Complete Purchase
-                        <span class="float-right"><b>310</b>/400</span>
-                        <div class="progress progress-sm">
-                          <div
-                            class="progress-bar bg-danger"
-                            style="width: 75%"></div>
-                        </div>
-                      </div>
-
-                      <!-- /.progress-group -->
-                      <div class="progress-group">
-                        <span class="progress-text">Visit Premium Page</span>
-                        <span class="float-right"><b>480</b>/800</span>
-                        <div class="progress progress-sm">
-                          <div
-                            class="progress-bar bg-success"
-                            style="width: 60%"></div>
-                        </div>
-                      </div>
-
-                      <!-- /.progress-group -->
-                      <div class="progress-group">
-                        Send Inquiries
-                        <span class="float-right"><b>250</b>/500</span>
-                        <div class="progress progress-sm">
-                          <div
-                            class="progress-bar bg-warning"
-                            style="width: 50%"></div>
-                        </div>
-                      </div>
-                      <!-- /.progress-group -->
-                    </div>
-                    <!-- /.col -->
-                  </div>
-                  <!-- /.row -->
-                </div>
-                <!-- ./card-body -->
-                <div class="card-footer">
-                  <div class="row">
-                    <div class="col-sm-3 col-6">
-                      <div class="description-block border-right">
-                        <span class="description-percentage text-success"><i class="fas fa-caret-up"></i> 17%</span>
-                        <h5 class="description-header">$35,210.43</h5>
-                        <span class="description-text">TOTAL REVENUE</span>
-                      </div>
-                      <!-- /.description-block -->
-                    </div>
-                    <!-- /.col -->
-                    <div class="col-sm-3 col-6">
-                      <div class="description-block border-right">
-                        <span class="description-percentage text-warning"><i class="fas fa-caret-left"></i> 0%</span>
-                        <h5 class="description-header">$10,390.90</h5>
-                        <span class="description-text">TOTAL COST</span>
-                      </div>
-                      <!-- /.description-block -->
-                    </div>
-                    <!-- /.col -->
-                    <div class="col-sm-3 col-6">
-                      <div class="description-block border-right">
-                        <span class="description-percentage text-success"><i class="fas fa-caret-up"></i> 20%</span>
-                        <h5 class="description-header">$24,813.53</h5>
-                        <span class="description-text">TOTAL PROFIT</span>
-                      </div>
-                      <!-- /.description-block -->
-                    </div>
-                    <!-- /.col -->
-                    <div class="col-sm-3 col-6">
-                      <div class="description-block">
-                        <span class="description-percentage text-danger"><i class="fas fa-caret-down"></i> 18%</span>
-                        <h5 class="description-header">1200</h5>
-                        <span class="description-text">GOAL COMPLETIONS</span>
-                      </div>
-                      <!-- /.description-block -->
-                    </div>
-                  </div>
-                  <!-- /.row -->
-                </div>
-                <!-- /.card-footer -->
               </div>
-              <!-- /.card -->
+              <div class="card-body">
+                <table id="resignations-table" class="table table-bordered table-striped table-sm">
+                  <thead>
+                    <tr>
+                      <th>Employee</th>
+                      <th>Department</th>
+                      <th>Email</th>
+                      <th>Type</th>
+                      <th>Reason</th>
+                      <th>Notice Date</th>
+                      <th>Last Working Date</th>
+                      <th>Comments</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="resignations-tbody">
+                    <!-- Data will be loaded here -->
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <!-- /.col -->
           </div>
-          <!-- Main row -->
+
+          <!-- Interviews Section -->
+          <div id="interviews-section" class="section" style="display: none;">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Exit Interviews</h3>
+                <div class="card-tools">
+                  <button type="button" class="btn btn-success" onclick="showInterviewModal()">
+                    <i class="fas fa-plus"></i> Schedule Interview
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <table id="interviews-table" class="table table-bordered table-striped">
+                  <thead>
+                    <tr>
+                      <th>Employee</th>
+                      <th>Interviewer</th>
+                      <th>Scheduled Date</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="interviews-tbody">
+                    <!-- Data will be loaded here -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Transfers Section -->
+          <div id="transfers-section" class="section" style="display: none;">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Knowledge Transfer</h3>
+                <div class="card-tools">
+                  <button type="button" class="btn btn-warning" onclick="showTransferModal()">
+                    <i class="fas fa-plus"></i> Create Transfer Plan
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <table id="transfers-table" class="table table-bordered table-striped">
+                  <thead>
+                    <tr>
+                      <th>Employee</th>
+                      <th>Successor</th>
+                      <th>Start Date</th>
+                      <th>End Date</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="transfers-tbody">
+                    <!-- Data will be loaded here -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Settlements Section -->
+          <div id="settlements-section" class="section" style="display: none;">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Final Settlements</h3>
+                <div class="card-tools">
+                  <button type="button" class="btn btn-danger" onclick="showSettlementModal()">
+                    <i class="fas fa-plus"></i> Calculate Settlement
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <table id="settlements-table" class="table table-bordered table-striped">
+                  <thead>
+                    <tr>
+                      <th>Employee</th>
+                      <th>Settlement Date</th>
+                      <th>Net Payable</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="settlements-tbody">
+                    <!-- Data will be loaded here -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Documents Section -->
+          <div id="documents-section" class="section" style="display: none;">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Documentation Management</h3>
+                <div class="card-tools">
+                  <button type="button" class="btn btn-info" onclick="showDocumentModal()">
+                    <i class="fas fa-plus"></i> Upload Document
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <table id="documents-table" class="table table-bordered table-striped">
+                  <thead>
+                    <tr>
+                      <th>Employee</th>
+                      <th>Document Type</th>
+                      <th>Title</th>
+                      <th>Upload Date</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="documents-tbody">
+                    <!-- Data will be loaded here -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Surveys Section -->
+          <div id="surveys-section" class="section" style="display: none;">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Post-Exit Surveys</h3>
+                <div class="card-tools">
+                  <button type="button" class="btn btn-primary" onclick="showSurveyModal()">
+                    <i class="fas fa-plus"></i> Create Survey
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <table id="surveys-table" class="table table-bordered table-striped">
+                  <thead>
+                    <tr>
+                      <th>Survey Title</th>
+                      <th>Start Date</th>
+                      <th>End Date</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="surveys-tbody">
+                    <!-- Data will be loaded here -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
-        <!--/. container-fluid -->
       </section>
-      <!-- /.content -->
     </div>
-    <!-- /.content-wrapper -->
+
     <?php include "../layout/global_modal.php"; ?>
+    <?php include "modals.php"; ?>
+
     <!-- Control Sidebar -->
     <aside class="control-sidebar control-sidebar-dark">
       <!-- Control sidebar content goes here -->
     </aside>
-    <!-- /.control-sidebar -->
-
-    <!-- Main Footer -->
 
   </div>
   <!-- ./wrapper -->
 
   <!-- REQUIRED SCRIPTS -->
-  <!-- jQuery -->
   <script src="../assets/plugins/jquery/jquery.min.js"></script>
-  <!-- Bootstrap -->
   <script src="../assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <!-- overlayScrollbars -->
   <script src="../assets/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
-  <!-- AdminLTE App -->
   <script src="../assets/dist/js/adminlte.js"></script>
-
-  <!-- PAGE PLUGINS -->
-  <!-- jQuery Mapael -->
-  <script src="../assets/plugins/jquery-mousewheel/jquery.mousewheel.js"></script>
-  <script src="../assets/plugins/raphael/raphael.min.js"></script>
-  <script src="../assets/plugins/jquery-mapael/jquery.mapael.min.js"></script>
-  <script src="../assets/plugins/jquery-mapael/maps/usa_states.min.js"></script>
-  <!-- ChartJS -->
-  <script src="../assets/plugins/chart.js/Chart.min.js"></script>
-
-  <!-- AdminLTE for demo purposes -->
-  <!-- <script src="assets/dist/js/demo.js"></script> -->
-  <!-- AdminLTE dashboard demo (This is only for demo purposes) -->
-  <!-- <script src="assets/dist/js/pages/dashboard2.js"></script> -->
   <script src="../assets/dist/js/theme.js"></script>
   <script src="../assets/dist/js/time.js"></script>
   <script src="../assets/dist/js/global_modal.js"></script>
   <script src="../assets/dist/js/profile.js"></script>
+  <script src="custom.js"></script>
 
-  <script></script>
+  <script>
+    // Section navigation
+    function showSection(sectionName) {
+      // Hide all sections
+      document.querySelectorAll('.section').forEach(section => {
+        section.style.display = 'none';
+      });
+
+      // Show selected section
+      document.getElementById(sectionName + '-section').style.display = 'block';
+
+      // Update active nav link
+      document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+      });
+      event.target.closest('.nav-link').classList.add('active');
+
+      // Load data for the section
+      loadSectionData(sectionName);
+    }
+
+    // Initialize
+    $(document).ready(function() {
+      loadDashboardData();
+    });
+  </script>
 </body>
 
 </html>
