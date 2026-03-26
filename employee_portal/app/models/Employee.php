@@ -141,4 +141,14 @@ class Employee
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function findByUserId($user_id)
+    {
+        $query = "SELECT * FROM employees WHERE user_id = :user_id LIMIT 1";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([':user_id' => $user_id]);
+
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 }

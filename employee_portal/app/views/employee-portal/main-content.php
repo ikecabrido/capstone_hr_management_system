@@ -178,9 +178,9 @@
         <div class="leave-balance-section">
             <div class="leave-balance-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <h2>Leave Balance</h2>
-                <button onclick="openLeaveModal()" class="btn-primary" style="padding: 10px 20px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                <a href="index.php?url=employee-leave-request" class="btn-primary" style="padding: 10px 20px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px;">
                     ➕ Request Leave
-                </button>
+                </a>
             </div>
 
             <?php if (!empty($leave_balances)): ?>
