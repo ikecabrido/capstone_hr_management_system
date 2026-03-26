@@ -1,11 +1,12 @@
 <?php
 session_start();
 
-require 'app/controllers/EmployeePortalController.php';
 require 'app/controllers/AuthController.php';
+require 'app/controllers/PayslipController.php';
+require 'app/controllers/LeaveRequestController.php';
+require 'app/controllers/EmployeePortalController.php';
 require 'app/controllers/EmployeeDocumentsController.php';
 require 'app/controllers/EmployeeGrievanceController.php';
-require 'app/controllers/PayslipController.php';
 
 $url = $_GET['url'] ?? 'auth-index';
 
@@ -74,7 +75,16 @@ switch ($url) {
         (new EmployeePortalController)->adminIndex();
         break;
 
-    default:
+    //Leave Request 
+    case 'employee-leave-request':
+        (new LeaveRequestController)->index();
+        break;
+
+    case 'leave-request-store':
+        (new LeaveRequestController)->store();
+        break;
+        
+        default:
         $title = "Page Not Found";
         $content = __DIR__ . 'app/views/error-content.php';
         require __DIR__ . '/layout.php';

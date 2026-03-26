@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/Database.php';
 class Leave
 {
     private $conn;
-    private $table = 'leave_requests';
+    private $table = 'leaves';
 
     public function __construct()
     {
@@ -117,14 +117,14 @@ class Leave
         $stmt->execute();
 
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        
+
         if (!$result) {
             return ['status' => false, 'message' => 'Leave balance record not found'];
         }
 
         if ($result['remaining_days'] < $requested_days) {
             return [
-                'status' => false, 
+                'status' => false,
                 'message' => 'Insufficient leave balance. Available: ' . $result['remaining_days'] . ' days'
             ];
         }
@@ -178,5 +178,66 @@ class Leave
         $stmt->execute();
 
         return $leave_type_id ? $stmt->fetch(PDO::FETCH_ASSOC) : $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function create($data)
+    {
+        $query = "INSERT INTO leaves 
+              (employee_id, leave_type, start_date, end_date, reason, status) 
+              VALUES 
+              (:employee_id, :leave_type, :start_date, :end_date, :reason, :status)";
+
+        $stmt = $this->conn->prepare($query);
+
+        return $stmt->execute([
+            ':employee_id' => $data['employee_id'],
+            ':leave_type'  => $data['leave_type'],
+            ':start_date'  => $data['start_date'],
+            ':end_date'    => $data['end_date'],
+            ':reason'      => $data['reason'],
+            ':status'      => $data['status']
+        ]);
+    }
+
+    public function getTotalLeaves($employee_id)
+    {
+        $query = "SELECT start_date, end_date 
+              FROM leaves 
+              WHERE employee_id = :employee_id
+              AND status = 'Approved'";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([':employee_id' => $employee_id]);
+        $leaves = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $totalDays = 0;
+
+        foreach ($leaves as $leave) {
+            $start = new DateTime($leave['start_date']);
+            $end   = new DateTime($leave['end_date']);
+
+            $days = $start->diff($end)->days + 1;
+            $totalDays += $days;
+        }
+
+        return $totalDays;
+    }
+
+    public function getUsedLeaves($employee_id)
+    {
+        $query = "SELECT COUNT(*) FROM leaves 
+              WHERE employee_id = :employee_id 
+              AND status = 'Approved'";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([':employee_id' => $employee_id]);
+        return (int) $stmt->fetchColumn();
+    }
+
+    public function getLeavesByEmployee($employee_id)
+    {
+        $query = "SELECT * FROM leaves WHERE employee_id = :employee_id ORDER BY start_date DESC";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([':employee_id' => $employee_id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

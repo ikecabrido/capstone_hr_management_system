@@ -165,7 +165,7 @@
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="" class="nav-link">
+                            <a href="index.php?url=employee-leave-request" class="nav-link">
                                 <i class="fas fa-calendar-alt nav-icon"></i>
                                 <p>Leave Request</p>
                             </a>
