@@ -46,7 +46,7 @@ switch ($role) {
     case 'exit':
         header("Location: exit_management/exit_management.php");
         break;
-    case 'employee-portal-admin':
+    case 'employee_portal':
         header("Location: employee_portal/app/views/admin/index.php");
         break;
 

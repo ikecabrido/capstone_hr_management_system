@@ -2,7 +2,7 @@
     <div class="content-wrapper w-auto">
         <div class="card shadow-lg border-0 rounded-4">
 
-            <div class="bg-blue-500 text-white px-6 py-4 flex items-center justify-between">
+            <div class="px-6 py-4 flex items-center justify-between">
                 <h2 class="text-2xl font-semibold flex items-center gap-2">
                     <i class="fas fa-receipt"></i>
                     My Payslip Records
@@ -70,16 +70,7 @@
                                             <i class="fas fa-eye mr-1"></i> View
                                         </a>
 
-                                        <!-- Print -->
-                                        <div class="mt-4 text-right">
-                                            <button onclick="printDiv('payslip-table-div')"
-                                                class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">
-                                                <i class="fas fa-print mr-1"></i> Print
-                                            </button>
-                                        </div>
-
                                     </td>
-
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
@@ -90,8 +81,20 @@
                             </tr>
                         <?php endif; ?>
                     </tbody>
-
                 </table>
+                <!-- Print -->
+                <div class="mt-4 text-right no-print">
+                    <button onclick="printDiv('payslip-table-div')"
+                        class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">
+                        <i class="fas fa-print mr-1"></i> Print
+                    </button>
+                </div>
+                <div class="mt-4 text-right no-print">
+                    <a href="index.php?url=export-payslip-csv"
+                        class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition ms-2">
+                        <i class="fas fa-file-csv mr-1"></i> Export CSV
+                    </a>
+                </div>
             </div>
         </div>
     </div>

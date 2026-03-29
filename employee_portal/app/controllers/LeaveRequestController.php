@@ -32,6 +32,27 @@ class LeaveRequestController
         require __DIR__ . '/../views/leave-request/index.php';
     }
 
+    public function indexAdmin()
+    {
+        $user_id = $_SESSION['user_id'] ?? null;
+        var_dump($user_id);
+        die;
+        if (!$user_id) {
+            die('User not logged in.');
+        }
+        $employee = $this->employeeModel->findByUserId($user_id);
+        $employee_id = $employee['id'] ?? null;
+
+        $totalLeaves = $this->leaveModel->getTotalLeaves($employee_id);
+        $usedLeaves  = $this->leaveModel->getUsedLeaves($employee_id);
+        $remainingLeaves = $totalLeaves - $usedLeaves;
+
+        $leaves = $this->leaveModel->getLeavesByEmployee($employee_id);
+
+        $content = __DIR__ . '/../views/leave-request/main-content.php';
+        require __DIR__ . '/../views/leave-request/index.php';
+    }
+
     public function store()
     {
         $user_id = $_POST['user_id'] ?? null;

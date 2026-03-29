@@ -189,7 +189,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="#" class="nav-link">
+                            <a href="index.php?url=online-meeting" class="nav-link">
                                 <i class="fas fa-video nav-icon"></i>
                                 <p>Online Meeting</p>
                             </a>

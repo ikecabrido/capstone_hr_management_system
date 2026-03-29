@@ -4,6 +4,13 @@ require_once __DIR__ . '/../models/Grievance.php';
 
 class EmployeeGrievanceController
 {
+    private $grievanceModel;
+
+    public function __construct()
+    {
+        $this->grievanceModel = new Grievance();
+    }
+
     public function index()
     {
         $employee_id = Session::get('employee_id');
@@ -67,8 +74,8 @@ class EmployeeGrievanceController
                 'attachment_path' => $attachmentPath
             ];
 
-            $grievanceModel = new Grievance();
-            $grievanceModel->create($data);
+            $this->grievanceModel = new Grievance();
+            $this->grievanceModel->create($data);
 
             $_SESSION['success'] = "Document submitted successfully.";
         } catch (Exception $e) {
