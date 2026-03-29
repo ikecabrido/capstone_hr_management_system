@@ -20,11 +20,11 @@
                 Login
             </h1>
         </div>
-        
+
         <div class="box2">
             <form action="index.php?url=auth-login" method="POST">
-                
-                 <?php require __DIR__ . '/../partials/notif.php' ?>
+
+                <?php require __DIR__ . '/../partials/notif.php' ?>
                 <div class="header">
 
                     <img src="/capstone_hr_management_system/assets/pics/bcpLogo.png" class="brand-image" alt="AdminLTE Logo"
@@ -50,7 +50,12 @@
                 </div>
                 <button type="submit" name="login">Login</button>
                 <p class="para mt-3 d-flex justify-content-center">
-                    Looking for Portal?<span><a class="link" href="index.php"> Click Here!</a></span>
+                    Looking for Admin Login?
+                    <span>
+                        <a class="link" href="http://localhost/capstone_hr_management_system/">
+                            Click Here!
+                        </a>
+                    </span>
                 </p>
             </form>
         </div>

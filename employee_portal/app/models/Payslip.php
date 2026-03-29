@@ -93,6 +93,8 @@ class Payslip
 
 
 
+
+
     // public function create($data)
     // {
     //     $query = "INSERT INTO {$this->table} 

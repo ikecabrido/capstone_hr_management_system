@@ -4,6 +4,7 @@ session_start();
 require 'app/controllers/AuthController.php';
 require 'app/controllers/PayslipController.php';
 require 'app/controllers/LeaveRequestController.php';
+require 'app/controllers/OnlineMeetingController.php';
 require 'app/controllers/EmployeePortalController.php';
 require 'app/controllers/EmployeeDocumentsController.php';
 require 'app/controllers/EmployeeGrievanceController.php';
@@ -38,6 +39,9 @@ switch ($url) {
         (new EmployeeDocumentsController)->adminDocsIndex();
         break;
 
+    case 'employee-documents-decision':
+        (new EmployeeDocumentsController)->decision();
+        break;
 
     // Employee Attendance
     case 'employee-time-in':
@@ -66,7 +70,11 @@ switch ($url) {
         (new PayslipController)->viewPayslip();
         break;
 
-    // Employee Dashboard
+    case 'export-payslip-csv':
+        (new PayslipController)->exportCsv();
+        break;
+
+    //Dashboard
     case 'dashboard':
         (new EmployeePortalController)->index();
         break;
@@ -83,8 +91,33 @@ switch ($url) {
     case 'leave-request-store':
         (new LeaveRequestController)->store();
         break;
-        
-        default:
+
+    case 'admin-leave-request':
+        (new LeaveRequestController)->indexAdmin();
+        break;
+
+    //Online Meeting
+    case 'online-meeting':
+        (new OnlineMeetingController)->index();
+        break;
+
+    case 'admin-online-meeting':
+        (new OnlineMeetingController)->adminIndex();
+        break;
+
+    case 'admin-online-meeting-store':
+        (new OnlineMeetingController)->store();
+        break;
+
+    case 'admin-online-meeting-update':
+        (new OnlineMeetingController)->update();
+        break;
+
+    case 'admin-online-meeting-delete':
+        (new OnlineMeetingController)->delete();
+        break;
+
+    default:
         $title = "Page Not Found";
         $content = __DIR__ . 'app/views/error-content.php';
         require __DIR__ . '/layout.php';

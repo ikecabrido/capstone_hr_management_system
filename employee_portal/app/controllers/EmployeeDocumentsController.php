@@ -5,22 +5,29 @@ require_once __DIR__ . '/../models/Employee.php';
 
 class EmployeeDocumentsController
 {
+
+    private $employeeDocumentsModel;
+    private $departmentsModel;
+    private $employeeModel;
+
+    public function __construct()
+    {
+        $this->employeeDocumentsModel = new EmployeeDocuments();
+        $this->departmentsModel = new Departments();
+        $this->employeeModel = new Employee();
+    }
     public function employeeIndex()
     {
-        $employeeDocumentsModel = new EmployeeDocuments();
-        $departmentsModel = new Departments();
-        $employeeModel = new Employee();
-
         $departmentId = $_GET['department'] ?? null;
 
         if ($departmentId) {
-            $empdocs = $employeeDocumentsModel->getByDepartment($departmentId);
+            $empdocs = $this->employeeDocumentsModel->getByDepartment($departmentId);
         } else {
-            $empdocs = $employeeDocumentsModel->all();
+            $empdocs = $this->employeeDocumentsModel->all();
         }
 
-        $departments = $departmentsModel->all();
-        $employees = $employeeModel->all();
+        $departments = $this->departmentsModel->all();
+        $employees = $this->employeeModel->all();
 
         $title = "Employee Documents";
         $content = __DIR__ . '/../views/employee-documents/main-content.php';
@@ -94,28 +101,61 @@ class EmployeeDocumentsController
         exit;
     }
 
-public function adminDocsIndex()
-{
-    $employeeDocumentsModel = new EmployeeDocuments();
+    public function adminDocsIndex()
+    {
+        $employeeDocumentsModel = new EmployeeDocuments();
 
-    try {
-        $empdocs = $employeeDocumentsModel->all();
+        try {
+            $empdocs = $employeeDocumentsModel->all();
 
-        if (!is_array($empdocs)) {
+            if (!is_array($empdocs)) {
+                $empdocs = [];
+            }
+
+            $title   = "Admin - Employee Documents";
+            $content = __DIR__ . '/../views/admin/employee-documents/main-content.php';
+
+            require __DIR__ . '/../views/admin/employee-documents/index.php';
+        } catch (PDOException $e) {
+            echo "<div class='alert alert-danger'>Database Error: " . htmlspecialchars($e->getMessage()) . "</div>";
+            $empdocs = [];
+        } catch (Exception $e) {
+            echo "<div class='alert alert-danger'>Error: " . htmlspecialchars($e->getMessage()) . "</div>";
             $empdocs = [];
         }
-
-        $title   = "Admin - Employee Documents";
-        $content = __DIR__ . '/../views/admin/employee-documents/main-content.php';
-
-        require __DIR__ . '/../views/admin/employee-documents/index.php';
-
-    } catch (PDOException $e) {
-        echo "<div class='alert alert-danger'>Database Error: " . htmlspecialchars($e->getMessage()) . "</div>";
-        $empdocs = [];
-    } catch (Exception $e) {
-        echo "<div class='alert alert-danger'>Error: " . htmlspecialchars($e->getMessage()) . "</div>";
-        $empdocs = [];
     }
-}
+
+    public function decision()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header("Location: index.php?url=admin-documents-index");
+            exit;
+        }
+
+        $approval_id = $_POST['approval_id'] ?? null;
+        $decision = $_POST['decision'] ?? null;
+        
+        if (!$approval_id || !$decision) {
+            $_SESSION['error'] = "Invalid request.";
+            header("Location: index.php?url=admin-documents-index");
+            exit;
+        }
+
+        try {
+            $data = [
+                'decision' => $decision,
+                'approved_at' => date('Y-m-d H:i:s')
+            ];
+
+            $this->employeeDocumentsModel->update($approval_id, $data);
+
+            $_SESSION['success'] = "Document " . ucfirst($decision) . " successfully!";
+        } catch (Exception $e) {
+            error_log($e->getMessage());
+            $_SESSION['error'] = "Failed to update decision.";
+        }
+
+        header("Location: index.php?url=admin-documents-index");
+        exit;
+    }
 }

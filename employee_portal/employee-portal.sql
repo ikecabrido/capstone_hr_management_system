@@ -15,3 +15,13 @@ CREATE TABLE `employee_documents` (
   KEY `department` (`department`),
   KEY `submit_by` (`submit_by`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE meetings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255),
+    meeting_link TEXT,
+    created_by INT,
+    employee_id INT,
+    scheduled_at DATETIME,
+    status ENUM('scheduled','completed','cancelled') DEFAULT 'scheduled'
+);
