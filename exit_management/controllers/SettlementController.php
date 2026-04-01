@@ -136,11 +136,11 @@ class SettlementController extends ExitManagementController
     }
 
     /**
-     * Get all settlements
+     * Get all settlements (with optional status filter)
      */
-    public function getSettlements(): array
+    public function getSettlements(string $status = null): array
     {
-        return $this->settlementModel->getAllSettlements();
+        return $this->settlementModel->getAllSettlements($status);
     }
 
     /**
@@ -183,7 +183,7 @@ class SettlementController extends ExitManagementController
                 return $this->getPendingSettlements();
 
             case 'get_settlements':
-                return $this->getSettlements();
+                return $this->getSettlements($data['status'] ?? null);
 
             case 'print_settlement':
                 return $this->printSettlement($data['settlement_id'] ?? 0);

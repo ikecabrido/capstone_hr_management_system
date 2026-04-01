@@ -113,11 +113,11 @@ class SurveyController extends ExitManagementController
     }
 
     /**
-     * Get all surveys
+     * Get all surveys with optional status filter
      */
-    public function getSurveys(): array
+    public function getSurveys(string $status = null): array
     {
-        return $this->surveyModel->getAllSurveys();
+        return $this->surveyModel->getAllSurveys($status);
     }
 
     /**
@@ -154,9 +154,13 @@ class SurveyController extends ExitManagementController
                 return $this->createSurvey($data);
 
             case 'submit_survey_response':
+                $employeeId = $data['employee_id'] ?? 0;
+                if ($employeeId == 0 && isset($_SESSION['user']['id'])) {
+                    $employeeId = $_SESSION['user']['id'];
+                }
                 return $this->submitSurveyResponse(
                     $data['survey_id'] ?? 0,
-                    $data['employee_id'] ?? 0,
+                    $employeeId,
                     $data['responses'] ?? []
                 );
 
@@ -176,7 +180,7 @@ class SurveyController extends ExitManagementController
                 return $this->getSurveyResponseDetails($data['response_id'] ?? 0);
 
             case 'get_surveys':
-                return $this->getSurveys();
+                return $this->getSurveys($data['status'] ?? null);
 
             case 'duplicate_survey':
                 return $this->duplicateSurvey($data['survey_id'] ?? 0);

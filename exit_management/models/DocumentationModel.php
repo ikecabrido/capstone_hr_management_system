@@ -105,9 +105,10 @@ class DocumentationModel extends ExitManagementModel
     public function getDocumentById(int $documentId): ?array
     {
         $stmt = $this->db->prepare("
-            SELECT d.*, u.full_name, u.id as user_id
+            SELECT d.*, e.full_name as employee_name, u.full_name as uploaded_by_name
             FROM exit_documents d
-            JOIN users u ON d.employee_id = u.id
+            LEFT JOIN employees e ON d.employee_id = e.employee_id
+            LEFT JOIN users u ON d.uploaded_by = u.id
             WHERE d.id = ? AND d.status = 'active'
         ");
         $stmt->execute([$documentId]);
@@ -136,14 +137,13 @@ class DocumentationModel extends ExitManagementModel
     }
 
     /**
-     * Get all documents
+     * Get all documents with optional status filter
      */
-    public function getAllDocuments(): array
+    public function getAllDocuments(string $status = null): array
     {
-        error_log(">>> getAllDocuments() CALLED");
+        error_log(">>> getAllDocuments() CALLED status=" . $status);
         try {
-            // Query all documents - no filtering
-            $query = "
+            $sql = "
                 SELECT 
                     d.id,
                     d.employee_id,
@@ -153,18 +153,25 @@ class DocumentationModel extends ExitManagementModel
                     d.uploaded_by,
                     d.status,
                     d.created_at,
-                    u.full_name as employee_name
+                    e.full_name as employee_name,
+                    u.full_name as uploaded_by_name
                 FROM exit_documents d
-                LEFT JOIN users u ON d.employee_id = u.id
-                ORDER BY d.created_at DESC
+                LEFT JOIN employees e ON d.employee_id = e.employee_id
+                LEFT JOIN users u ON d.uploaded_by = u.id
             ";
-            
-            $stmt = $this->db->query($query);
+
+            if ($status && $status !== 'all') {
+                $sql .= " WHERE d.status = ?";
+                $sql .= " ORDER BY d.created_at DESC";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([$status]);
+            } else {
+                $sql .= " ORDER BY d.created_at DESC";
+                $stmt = $this->db->query($sql);
+            }
+
             $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
             error_log(">>> getAllDocuments() RESULT: " . count($result) . " documents");
-            error_log(">>> JSON: " . json_encode($result));
-            
             return $result;
         } catch (Exception $e) {
             error_log(">>> getAllDocuments() ERROR: " . $e->getMessage());

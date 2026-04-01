@@ -19,11 +19,17 @@ class ResignationController extends ExitManagementController
     {
         try {
             // Validate required fields
-            $required = ['employee_id', 'resignation_type', 'reason', 'notice_date', 'last_working_date'];
+            $required = ['employee_id', 'resignation_type', 'reason', 'notice_date', 'last_working_date', 'preclearance_desk_person'];
             foreach ($required as $field) {
                 if (empty($data[$field])) {
                     return ['success' => false, 'message' => "Field '$field' is required"];
                 }
+            }
+
+            // Check employee eligibility
+            $eligibility = $this->resignationModel->checkEmployeeEligibility($data['employee_id']);
+            if (!$eligibility['eligible']) {
+                return ['success' => false, 'message' => $eligibility['reason']];
             }
 
             // Add submitted_by from session
@@ -86,29 +92,79 @@ class ResignationController extends ExitManagementController
     }
 
     /**
-     * Get all resignations
+     * Get resignations by status
      */
-    public function getResignations(): array
+    public function getResignations(string $status = null): array
     {
-        return $this->resignationModel->getAllResignations();
+        return $this->resignationModel->getResignations($status);
     }
 
     /**
-     * Delete resignation
+     * Get archived resignations
      */
-    public function deleteResignation(int $resignationId): array
+    public function getArchivedResignations(): array
+    {
+        return $this->resignationModel->getResignations('archived');
+    }
+
+    /**
+     * Unarchive resignation
+     */
+    public function unarchiveResignation(int $resignationId): array
     {
         try {
-            $success = $this->resignationModel->deleteResignation($resignationId);
+            $success = $this->resignationModel->unarchiveResignation($resignationId);
 
             if ($success) {
                 return [
                     'success' => true,
-                    'message' => 'Resignation deleted successfully'
+                    'message' => 'Resignation unarchived successfully'
                 ];
             } else {
-                return ['success' => false, 'message' => 'Failed to delete resignation'];
+                return ['success' => false, 'message' => 'Failed to unarchive resignation'];
             }
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Archive resignation
+     */
+    public function archiveResignation(int $resignationId): array
+    {
+        try {
+            $success = $this->resignationModel->archiveResignation($resignationId);
+
+            if ($success) {
+                return [
+                    'success' => true,
+                    'message' => 'Resignation archived successfully'
+                ];
+            } else {
+                return ['success' => false, 'message' => 'Failed to archive resignation'];
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Check employee eligibility for resignation
+     */
+    public function checkEmployeeEligibility(string $employeeId): array
+    {
+        try {
+            if (empty($employeeId)) {
+                return ['success' => false, 'message' => 'Employee ID is required'];
+            }
+
+            $eligibility = $this->resignationModel->checkEmployeeEligibility($employeeId);
+
+            return [
+                'success' => $eligibility['eligible'],
+                'message' => $eligibility['reason']
+            ];
         } catch (Exception $e) {
             return ['success' => false, 'message' => $e->getMessage()];
         }
@@ -138,10 +194,26 @@ class ResignationController extends ExitManagementController
                 return $this->getPendingResignations();
 
             case 'get_resignations':
-                return $this->getResignations();
+                $status = $data['status'] ?? null;
+                if ($status === 'archived') {
+                    return $this->getArchivedResignations();
+                }
+                if ($status === 'all') {
+                    return $this->resignationModel->getResignations('all');
+                }
+                return $this->getResignations($status);
 
-            case 'delete_resignation':
-                return $this->deleteResignation($data['resignation_id'] ?? 0);
+            case 'get_archived_resignations':
+                return $this->getArchivedResignations();
+
+            case 'archive_resignation':
+                return $this->archiveResignation($data['resignation_id'] ?? 0);
+
+            case 'unarchive_resignation':
+                return $this->unarchiveResignation($data['resignation_id'] ?? 0);
+
+            case 'check_eligibility':
+                return $this->checkEmployeeEligibility($data['employee_id'] ?? '');
 
             default:
                 return parent::handleAjaxRequest($action, $data);

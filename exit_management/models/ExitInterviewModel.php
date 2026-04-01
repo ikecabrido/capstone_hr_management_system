@@ -84,11 +84,11 @@ class ExitInterviewModel extends ExitManagementModel
     }
 
     /**
-     * Get all interviews
+     * Get all interviews with optional status filter
      */
-    public function getAllInterviews(): array
+    public function getAllInterviews(string $status = null): array
     {
-        $stmt = $this->db->query("
+        $sql = "
             SELECT 
                 ei.id,
                 ei.employee_id,
@@ -105,8 +105,16 @@ class ExitInterviewModel extends ExitManagementModel
             FROM exit_interviews ei
             JOIN employees e ON ei.employee_id = e.employee_id
             LEFT JOIN users u ON ei.interviewer_id = u.id
-            ORDER BY ei.scheduled_date DESC
-        ");
+        ";
+
+        if ($status && $status !== 'all') {
+            $sql .= " WHERE ei.status = ?";
+            $stmt = $this->db->prepare($sql . " ORDER BY ei.scheduled_date DESC");
+            $stmt->execute([$status]);
+        } else {
+            $stmt = $this->db->query($sql . " ORDER BY ei.scheduled_date DESC");
+        }
+
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 

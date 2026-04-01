@@ -20,6 +20,23 @@ $settlementController = new SettlementController();
 $documentationController = new DocumentationController();
 $surveyController = new SurveyController();
 
+// Handle GET requests for document viewing
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
+    header('Content-Type: application/json');
+    
+    $action = $_GET['ajax_action'];
+    
+    if ($action === 'view_document' && isset($_GET['document_id'])) {
+        $response = $documentationController->viewDocument((int)$_GET['document_id']);
+        echo json_encode($response);
+        exit;
+    } elseif ($action === 'download_document' && isset($_GET['document_id'])) {
+        $response = $documentationController->downloadDocument((int)$_GET['document_id']);
+        echo json_encode($response);
+        exit;
+    }
+}
+
 // Handle AJAX requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
     header('Content-Type: application/json');
@@ -86,6 +103,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
   <link rel="stylesheet" href="../assets/dist/css/adminlte.min.css" />
   <link rel="stylesheet" href="custom.css" />
   <link rel="stylesheet" href="../layout/toast.css" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
 </head>
 
 <body
@@ -292,6 +311,135 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                 </div>
               </div>
             </div>
+
+            <!-- Charts Row -->
+            <div class="row mt-4">
+              <div class="col-lg-6">
+                <div class="card">
+                  <div class="card-header">
+                    <h3 class="card-title">Resignation Trend (Last 6 Months)</h3>
+                  </div>
+                  <div class="card-body">
+                    <canvas id="resignationTrendChart"></canvas>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-6">
+                <div class="card">
+                  <div class="card-header">
+                    <h3 class="card-title">Resignation Reasons Distribution</h3>
+                  </div>
+                  <div class="card-body">
+                    <canvas id="resignationReasonsChart"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Exit Status Summary -->
+            <div class="row mt-4">
+              <div class="col-lg-4">
+                <div class="card">
+                  <div class="card-header">
+                    <h3 class="card-title">Exit Status Overview</h3>
+                  </div>
+                  <div class="card-body">
+                    <canvas id="exitStatusChart"></canvas>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-8">
+                <div class="card">
+                  <div class="card-header">
+                    <h3 class="card-title">Resignation Type Distribution</h3>
+                  </div>
+                  <div class="card-body">
+                    <canvas id="resignationTypeChart"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Resignations -->
+            <div class="row mt-4">
+              <div class="col-lg-12">
+                <div class="card">
+                  <div class="card-header">
+                    <h3 class="card-title">Recent Resignations</h3>
+                    <div class="card-tools">
+                      <span class="badge badge-info" id="recent-count">0</span>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <table class="table table-bordered table-striped table-sm">
+                      <thead>
+                        <tr>
+                          <th>Employee</th>
+                          <th>Department</th>
+                          <th>Type</th>
+                          <th>Reason</th>
+                          <th>Notice Date</th>
+                          <th>Last Working Date</th>
+                          <th>Status</th>
+                          <th>Days Left</th>
+                        </tr>
+                      </thead>
+                      <tbody id="recent-resignations-tbody">
+                        <tr><td colspan="8" class="text-center text-muted">Loading...</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Key Metrics -->
+            <div class="row mt-4">
+              <div class="col-lg-3 col-6">
+                <div class="small-box bg-primary">
+                  <div class="inner">
+                    <h3 id="total-exited">0</h3>
+                    <p>Total Exited (This Year)</p>
+                  </div>
+                  <div class="icon">
+                    <i class="fas fa-sign-out-alt"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-3 col-6">
+                <div class="small-box bg-info">
+                  <div class="inner">
+                    <h3 id="avg-notice">0</h3>
+                    <p>Avg Notice Period (Days)</p>
+                  </div>
+                  <div class="icon">
+                    <i class="fas fa-calendar"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-3 col-6">
+                <div class="small-box bg-success">
+                  <div class="inner">
+                    <h3 id="top-reason">--</h3>
+                    <p>Top Resignation Reason</p>
+                  </div>
+                  <div class="icon">
+                    <i class="fas fa-chart-pie"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-3 col-6">
+                <div class="small-box bg-warning">
+                  <div class="inner">
+                    <h3 id="avg-interviews">0%</h3>
+                    <p>Interviews Completed</p>
+                  </div>
+                  <div class="icon">
+                    <i class="fas fa-percentage"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Resignations Section -->
@@ -299,9 +447,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
             <div class="card">
               <div class="card-header">
                 <h3 class="card-title">Resignation Management</h3>
-                <div class="card-tools">
-                  <button type="button" class="btn btn-primary" onclick="showResignationModal()">
+                <div class="card-tools d-flex align-items-center">
+                  <button type="button" class="btn btn-primary mr-2 btn-action-fixed" onclick="showResignationModal()">
                     <i class="fas fa-plus"></i> New Resignation
+                  </button>
+                  <select id="resignation-status-filter" class="form-control form-control-sm mr-2" onchange="onResignationStatusFilterChange()">
+                    <option value="active">Active</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="withdrawn">Withdrawn</option>
+                    <option value="archived">Archived</option>
+                    <option value="all">All</option>
+                  </select>
+                  <button id="toggle-archived-resignations" type="button" class="btn btn-secondary" onclick="toggleArchivedResignations()">
+                    <i class="fas fa-archive"></i> Show Archived
                   </button>
                 </div>
               </div>
@@ -312,6 +472,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                       <th>Employee</th>
                       <th>Department</th>
                       <th>Email</th>
+                      <th>Pre-clearance Desk</th>
                       <th>Type</th>
                       <th>Reason</th>
                       <th>Notice Date</th>
@@ -325,6 +486,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                     <!-- Data will be loaded here -->
                   </tbody>
                 </table>
+
+                <div id="archived-resignations-container" class="mt-4" style="display: none;">
+                  <h5>Archived Resignations</h5>
+                  <table id="archived-resignations-table" class="table table-bordered table-striped table-sm">
+                    <thead>
+                      <tr>
+                        <th>Employee</th>
+                        <th>Department</th>
+                        <th>Email</th>
+                        <th>Pre-clearance Desk</th>
+                        <th>Type</th>
+                        <th>Reason</th>
+                        <th>Notice Date</th>
+                        <th>Last Working Date</th>
+                        <th>Comments</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="archived-resignations-tbody">
+                      <!-- Data will be loaded here -->
+                    </tbody>
+                  </table>
+                  <div id="archived-resignations-pagination" class="mt-2 d-flex justify-content-end"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -334,10 +520,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
             <div class="card">
               <div class="card-header">
                 <h3 class="card-title">Exit Interviews</h3>
-                <div class="card-tools">
-                  <button type="button" class="btn btn-success" onclick="showInterviewModal()">
+                <div class="card-tools d-flex align-items-center">
+                  <button type="button" class="btn btn-success mr-2 btn-action-fixed" onclick="showInterviewModal()">
                     <i class="fas fa-plus"></i> Schedule Interview
                   </button>
+                  <select id="interview-status-filter" class="form-control form-control-sm" onchange="onInterviewStatusFilterChange()">
+                    <option value="all">All</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="completed">Completed</option>
+                    <option value="pending">Pending</option>
+                  </select>
                 </div>
               </div>
               <div class="card-body">
@@ -364,10 +556,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
             <div class="card">
               <div class="card-header">
                 <h3 class="card-title">Knowledge Transfer</h3>
-                <div class="card-tools">
-                  <button type="button" class="btn btn-warning" onclick="showTransferModal()">
+                <div class="card-tools d-flex align-items-center">
+                  <button type="button" class="btn btn-warning mr-2 btn-action-fixed" onclick="showTransferModal()">
                     <i class="fas fa-plus"></i> Create Transfer Plan
                   </button>
+                  <select id="transfer-status-filter" class="form-control form-control-sm" onchange="onTransferStatusFilterChange()">
+                    <option value="all">All</option>
+                    <option value="active">Active</option>
+                    <option value="completed">Completed</option>
+                    <option value="pending">Pending</option>
+                  </select>
                 </div>
               </div>
               <div class="card-body">
@@ -395,10 +593,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
             <div class="card">
               <div class="card-header">
                 <h3 class="card-title">Final Settlements</h3>
-                <div class="card-tools">
-                  <button type="button" class="btn btn-danger" onclick="showSettlementModal()">
+                <div class="card-tools d-flex align-items-center">
+                  <button type="button" class="btn btn-danger mr-2 btn-action-fixed" onclick="showSettlementModal()">
                     <i class="fas fa-plus"></i> Calculate Settlement
                   </button>
+                  <select id="settlement-status-filter" class="form-control form-control-sm" onchange="onSettlementStatusFilterChange()">
+                    <option value="all">All</option>
+                    <option value="draft">Draft</option>
+                    <option value="pending_approval">Pending Approval</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
                 </div>
               </div>
               <div class="card-body">
@@ -425,10 +630,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
             <div class="card">
               <div class="card-header">
                 <h3 class="card-title">Documentation Management</h3>
-                <div class="card-tools">
-                  <button type="button" class="btn btn-info" onclick="showDocumentModal()">
+                <div class="card-tools d-flex align-items-center">
+                  <button type="button" class="btn btn-info mr-2 btn-action-fixed" onclick="showDocumentModal()">
                     <i class="fas fa-plus"></i> Upload Document
                   </button>
+                  <select id="document-status-filter" class="form-control form-control-sm" onchange="onDocumentStatusFilterChange()">
+                    <option value="all">All</option>
+                    <option value="active">Active</option>
+                    <option value="deleted">Deleted</option>
+                  </select>
                 </div>
               </div>
               <div class="card-body">
@@ -455,10 +665,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
             <div class="card">
               <div class="card-header">
                 <h3 class="card-title">Post-Exit Surveys</h3>
-                <div class="card-tools">
-                  <button type="button" class="btn btn-primary" onclick="showSurveyModal()">
+                <div class="card-tools d-flex align-items-center">
+                  <button type="button" class="btn btn-primary mr-2 btn-action-fixed" onclick="showSurveyModal()">
                     <i class="fas fa-plus"></i> Create Survey
                   </button>
+                  <select id="survey-status-filter" class="form-control form-control-sm" onchange="onSurveyStatusFilterChange()">
+                    <option value="all">All</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
                 </div>
               </div>
               <div class="card-body">

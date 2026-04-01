@@ -40,3 +40,10 @@ img {
 .buttons a:hover {
   background-color: #0056b3;
 }
+
+/* Exit management action button text display fix */
+.btn-action-fixed {
+  min-height: 44px;
+  white-space: nowrap;
+}
+

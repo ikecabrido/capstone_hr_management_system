@@ -15,20 +15,29 @@
                     <input type="hidden" id="resignationId" name="resignation_id">
 
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label for="employeeSelect">Employee *</label>
                                 <select class="form-control" id="employeeSelect" name="employee_id" required>
                                     <option value="">Select Employee</option>
                                 </select>
+                                <div id="eligibilityMessage" class="mt-2" style="display: none;"></div>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label for="resignationType">Resignation Type *</label>
                                 <select class="form-control" id="resignationType" name="resignation_type" required>
                                     <option value="voluntary">Voluntary</option>
                                     <option value="involuntary">Involuntary</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="preclearanceDeskPerson">Pre-clearance Desk Person *</label>
+                                <select class="form-control" id="preclearanceDeskPerson" name="preclearance_desk_person" required>
+                                    <option value="">Select Desk Person</option>
                                 </select>
                             </div>
                         </div>
@@ -514,9 +523,11 @@
 <div class="modal fade" id="surveyModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
-            <div class="modal-header bg-primary">
-                <h5 class="modal-title" id="surveyModalTitle">Create Post-Exit Survey</h5>
-                <button type="button" class="close" data-dismiss="modal">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="surveyModalTitle">
+                    <i class="fas fa-poll mr-2"></i>Create Post-Exit Survey
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
                     <span>&times;</span>
                 </button>
             </div>
@@ -524,84 +535,154 @@
                 <div class="modal-body">
                     <input type="hidden" id="surveyId" name="survey_id">
 
-                    <div class="form-group">
-                        <label for="surveyTitle">Survey Title *</label>
-                        <input type="text" class="form-control" id="surveyTitle" name="title" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="surveyDescription">Description</label>
-                        <textarea class="form-control" id="surveyDescription" name="description" rows="2"></textarea>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="surveyStartDate">Start Date *</label>
-                                <input type="date" class="form-control" id="surveyStartDate" name="start_date" required>
-                            </div>
+                    <!-- Survey Overview Section -->
+                    <div class="card mb-4 border-left-primary">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="fas fa-info-circle text-primary mr-2"></i>Survey Overview</h6>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="surveyEndDate">End Date *</label>
-                                <input type="date" class="form-control" id="surveyEndDate" name="end_date" required>
+                        <div class="card-body">
+                            <div class="form-group mb-0">
+                                <label for="surveyTitle" class="font-weight-bold">Survey Title <span class="text-danger">*</span></label>
+                                <small class="form-text text-muted d-block mb-2">Give your survey a clear, descriptive title</small>
+                                <input type="text" class="form-control" id="surveyTitle" name="title" placeholder="e.g., Exit Experience Survey 2026" required>
+                            </div>
+
+                            <div class="form-group mt-3 mb-0">
+                                <label for="surveyDescription" class="font-weight-bold">Description</label>
+                                <small class="form-text text-muted d-block mb-2">Optional: Add context or instructions for respondents</small>
+                                <textarea class="form-control" id="surveyDescription" name="description" rows="2" placeholder="e.g., Please help us improve by sharing your feedback..."></textarea>
                             </div>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="surveyAudience">Target Audience</label>
-                        <select class="form-control" id="surveyAudience" name="target_audience">
-                            <option value="all">All Ex-Employees</option>
-                            <option value="voluntary">Voluntary Resignations</option>
-                            <option value="involuntary">Involuntary Resignations</option>
-                        </select>
+                    <!-- Survey Timeline Section -->
+                    <div class="card mb-4 border-left-info">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="fas fa-calendar text-info mr-2"></i>Survey Timeline</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-0">
+                                        <label for="surveyStartDate" class="font-weight-bold">Start Date <span class="text-danger">*</span></label>
+                                        <small class="form-text text-muted d-block mb-2">When survey becomes available</small>
+                                        <input type="date" class="form-control" id="surveyStartDate" name="start_date" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-0">
+                                        <label for="surveyEndDate" class="font-weight-bold">End Date <span class="text-danger">*</span></label>
+                                        <small class="form-text text-muted d-block mb-2">When survey closes</small>
+                                        <input type="date" class="form-control" id="surveyEndDate" name="end_date" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Survey Settings Section -->
+                    <div class="card mb-4 border-left-success">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="fas fa-cog text-success mr-2"></i>Survey Settings</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group mb-0">
+                                <label for="surveyAudience" class="font-weight-bold">Target Audience</label>
+                                <small class="form-text text-muted d-block mb-2">Who should receive this survey?</small>
+                                <select class="form-control" id="surveyAudience" name="target_audience">
+                                    <option value="all">All Ex-Employees</option>
+                                    <option value="voluntary">Voluntary Resignations Only</option>
+                                    <option value="involuntary">Involuntary Resignations Only</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Survey Questions Section -->
-                    <div class="form-group">
-                        <label>Survey Questions</label>
-                        <div id="surveyQuestionsContainer">
-                            <div class="question-item mb-3 p-3 border rounded">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <input type="text" class="form-control" name="questions[0][text]" placeholder="Question text" required>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <select class="form-control question-type" name="questions[0][type]" required>
-                                            <option value="text">Text</option>
-                                            <option value="textarea">Textarea</option>
-                                            <option value="radio">Radio Buttons</option>
-                                            <option value="checkbox">Checkboxes</option>
-                                            <option value="select">Select</option>
-                                            <option value="rating">Rating (1-5)</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="questions[0][required]" checked>
-                                            <label class="form-check-label">Required</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-1">
-                                        <button type="button" class="btn btn-danger btn-sm remove-question">
-                                            <i class="fas fa-trash"></i>
+                    <div class="card border-left-warning">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="fas fa-list-check text-warning mr-2"></i>Survey Questions</h6>
+                            <small class="text-muted">Build your survey by adding questions below</small>
+                        </div>
+                        <div class="card-body">
+                            <div id="surveyQuestionsContainer">
+                                <!-- First question template -->
+                                <div class="question-item card mb-3 shadow-sm border-0">
+                                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                        <span class="font-weight-bold">
+                                            <i class="fas fa-question-circle text-primary mr-2"></i>Question 1
+                                        </span>
+                                        <button type="button" class="btn btn-sm btn-outline-danger remove-question" title="Delete question">
+                                            <i class="fas fa-trash-alt"></i>
                                         </button>
                                     </div>
-                                </div>
-                                <div class="options-container mt-2" style="display: none;">
-                                    <textarea class="form-control" name="questions[0][options]" rows="2" placeholder="Options (one per line)"></textarea>
+                                    <div class="card-body pt-3 pb-2">
+                                        <!-- Question Text -->
+                                        <div class="form-group mb-3">
+                                            <label class="font-weight-bold">Question Text <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control form-control-lg" name="questions[0][text]" placeholder="Enter your question here..." required>
+                                        </div>
+
+                                        <!-- Question Type & Required -->
+                                        <div class="row">
+                                            <div class="col-md-8">
+                                                <div class="form-group mb-0">
+                                                    <label class="font-weight-bold">Question Type <span class="text-danger">*</span></label>
+                                                    <select class="form-control question-type" name="questions[0][type]" required>
+                                                        <option value="">-- Select Type --</option>
+                                                        <option value="text">📝 Short Text</option>
+                                                        <option value="textarea">📄 Long Text / Paragraph</option>
+                                                        <option value="radio">⭕ Multiple Choice (Single Answer)</option>
+                                                        <option value="checkbox">☑️ Multiple Choice (Multiple Answers)</option>
+                                                        <option value="select">⬇️ Dropdown List</option>
+                                                        <option value="rating">⭐ Rating Scale (1-5)</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group mb-0">
+                                                    <label class="font-weight-bold">Question Settings</label>
+                                                    <div class="form-check mt-2">
+                                                        <input class="form-check-input" type="checkbox" id="req0" name="questions[0][required]" checked>
+                                                        <label class="form-check-label" for="req0">
+                                                            Required <span class="text-danger">*</span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Options Container -->
+                                        <div class="options-container mt-3 pt-3 border-top" style="display: none;">
+                                            <label class="font-weight-bold">Answer Options <span class="text-danger">*</span></label>
+                                            <small class="form-text text-muted d-block mb-2">Enter each option on a new line</small>
+                                            <textarea class="form-control" name="questions[0][options]" rows="3" placeholder="Option 1&#10;Option 2&#10;Option 3"></textarea>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+
+                            <!-- Add Question Button -->
+                            <button type="button" class="btn btn-outline-primary btn-block mt-3" id="addSurveyQuestion">
+                                <i class="fas fa-plus-circle mr-2"></i>Add Another Question
+                            </button>
                         </div>
-                        <button type="button" class="btn btn-outline-primary btn-sm" id="addSurveyQuestion">
-                            <i class="fas fa-plus"></i> Add Question
-                        </button>
+                    </div>
+
+                    <!-- Help Text -->
+                    <div class="alert alert-info alert-sm mt-3" role="alert">
+                        <i class="fas fa-lightbulb mr-2"></i>
+                        <strong>Tip:</strong> Use rating scales for satisfaction, yes/no multiple choice for quick feedback, and text fields for detailed comments.
                     </div>
                 </div>
+
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="surveySubmitBtn">Create Survey</button>
+                    <button type="button" class="btn btn-light" data-dismiss="modal">
+                        <i class="fas fa-times mr-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="surveySubmitBtn">
+                        <i class="fas fa-save mr-2"></i>Create Survey
+                    </button>
                 </div>
             </form>
         </div>
@@ -610,9 +691,9 @@
 
 <!-- Answer Survey Modal -->
 <div class="modal fade" id="answerSurveyModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
-            <div class="modal-header bg-success">
+            <div class="modal-header bg-primary">
                 <h5 class="modal-title" id="answerSurveyTitle">Answer Survey</h5>
                 <button type="button" class="close" data-dismiss="modal">
                     <span>&times;</span>
@@ -621,18 +702,35 @@
             <form id="answerSurveyForm">
                 <div class="modal-body">
                     <input type="hidden" id="answerSurveyId" name="survey_id">
-                    
+
+                    <!-- Progress Bar -->
+                    <div class="progress mb-4" style="height: 8px;">
+                        <div class="progress-bar bg-success" id="surveyProgress" style="width: 0%"></div>
+                    </div>
+
                     <div class="survey-info mb-4">
                         <h6 id="answerSurveyDesc" class="text-muted"></h6>
                     </div>
 
-                    <div id="surveyQuestionsAnswer">
-                        <!-- Questions will be loaded here -->
+                    <!-- Question Container -->
+                    <div id="surveyQuestionContainer" class="text-center">
+                        <!-- Current question will be loaded here -->
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success" id="answerSurveySubmitBtn">Submit Answers</button>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary" id="prevQuestionBtn" style="display: none;">
+                        <i class="fas fa-arrow-left"></i> Previous
+                    </button>
+                    <div>
+                        <span class="text-muted mr-3" id="questionCounter">Question 1 of 1</span>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="nextQuestionBtn">
+                            Next <i class="fas fa-arrow-right"></i>
+                        </button>
+                        <button type="submit" class="btn btn-success" id="answerSurveySubmitBtn" style="display: none;">
+                            <i class="fas fa-paper-plane"></i> Submit Survey
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>

@@ -205,11 +205,11 @@ class DocumentationController extends ExitManagementController
     }
 
     /**
-     * Get all documents
+     * Get all documents with optional status filter
      */
-    public function getDocuments(): array
+    public function getDocuments(string $status = null): array
     {
-        return $this->documentationModel->getAllDocuments();
+        return $this->documentationModel->getAllDocuments($status);
     }
 
     /**
@@ -225,27 +225,58 @@ class DocumentationController extends ExitManagementController
     }
 
     /**
-     * View document (placeholder for file viewing)
+     * View document (return file path and document details)
      */
     public function viewDocument(int $documentId): array
     {
-        // This would redirect to file view or return file URL
-        return [
-            'success' => true,
-            'message' => 'Document view functionality not yet implemented'
-        ];
+        try {
+            $document = $this->documentationModel->getDocumentById($documentId);
+            
+            if (!$document) {
+                return ['success' => false, 'message' => 'Document not found'];
+            }
+
+            // Return document details including file path for frontend to display
+            return [
+                'success' => true,
+                'id' => $document['id'],
+                'employee_id' => $document['employee_id'],
+                'employee_name' => $document['employee_name'],
+                'document_type' => $document['document_type'],
+                'title' => $document['title'],
+                'file_path' => $document['file_path'],
+                'uploaded_by_name' => $document['uploaded_by_name'],
+                'created_at' => $document['created_at'],
+                'message' => 'Document retrieved successfully'
+            ];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
+        }
     }
 
     /**
-     * Download document (placeholder for file download)
+     * Download document (force file download)
      */
     public function downloadDocument(int $documentId): array
     {
-        // This would force download the file
-        return [
-            'success' => true,
-            'message' => 'Document download functionality not yet implemented'
-        ];
+        try {
+            $document = $this->documentationModel->getDocumentById($documentId);
+            
+            if (!$document) {
+                return ['success' => false, 'message' => 'Document not found'];
+            }
+
+            // Return file path for frontend to handle download
+            // Frontend should use this file_path to download the file
+            return [
+                'success' => true,
+                'file_path' => $document['file_path'],
+                'title' => $document['title'],
+                'message' => 'Document ready for download'
+            ];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
+        }
     }
 
     /**
@@ -289,7 +320,7 @@ class DocumentationController extends ExitManagementController
                 return $this->getDocumentTypes();
 
             case 'get_documents':
-                return $this->getDocuments();
+                return $this->getDocuments($data['status'] ?? null);
 
             case 'view_document':
                 return $this->viewDocument($data['document_id'] ?? 0);

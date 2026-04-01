@@ -95,11 +95,11 @@ class ExitInterviewController extends ExitManagementController
     }
 
     /**
-     * Get all interviews
+     * Get all interviews (support status filter)
      */
-    public function getInterviews(): array
+    public function getInterviews(string $status = null): array
     {
-        return $this->interviewModel->getAllInterviews();
+        return $this->interviewModel->getAllInterviews($status);
     }
 
     /**
@@ -147,7 +147,7 @@ class ExitInterviewController extends ExitManagementController
                 return $this->getScheduledInterviews();
 
             case 'get_interviews':
-                return $this->getInterviews();
+                return $this->getInterviews($data['status'] ?? null);
 
             case 'complete_interview':
                 return $this->completeInterview($data['interview_id'] ?? 0);

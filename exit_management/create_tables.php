@@ -4,7 +4,7 @@ require_once "../auth/database.php";
 $db = Database::getInstance()->getConnection();
 
 // Check if tables already exist
-$tables = ['resignations', 'exit_interviews', 'knowledge_transfer_plans', 'knowledge_transfer_items', 'employee_settlements', 'exit_documents', 'exit_surveys', 'survey_questions', 'survey_responses', 'survey_answers'];
+$tables = ['exit_resignations', 'exit_interviews', 'exit_knowledge_transfer_plans', 'exit_knowledge_transfer_items', 'exit_employee_settlements', 'exit_documents', 'exit_surveys', 'exit_survey_questions', 'exit_survey_responses', 'exit_survey_answers'];
 $existingTables = [];
 
 foreach ($tables as $table) {
@@ -22,8 +22,8 @@ if (!empty($existingTables)) {
 }
 
 $exitTablesSQL = "
--- Table structure for table `resignations`
-CREATE TABLE `resignations` (
+-- Table structure for table `exit_resignations`
+CREATE TABLE `exit_resignations` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `employee_id` varchar(50) NOT NULL,
   `resignation_type` enum('voluntary','involuntary') NOT NULL,
@@ -32,6 +32,7 @@ CREATE TABLE `resignations` (
   `last_working_date` date NOT NULL,
   `comments` text,
   `submitted_by` int(11) DEFAULT NULL,
+  `preclearance_desk_person` int(11) DEFAULT NULL,
   `status` enum('pending','approved','rejected','withdrawn') DEFAULT 'pending',
   `approved_by` int(11) DEFAULT NULL,
   `approved_at` timestamp NULL DEFAULT NULL,
@@ -40,6 +41,7 @@ CREATE TABLE `resignations` (
   PRIMARY KEY (`id`),
   KEY `fk_resignation_employee` (`employee_id`),
   KEY `fk_resignation_submitted_by` (`submitted_by`),
+  KEY `fk_resignation_preclearance_desk` (`preclearance_desk_person`),
   KEY `fk_resignation_approved_by` (`approved_by`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -61,8 +63,8 @@ CREATE TABLE `exit_interviews` (
   KEY `fk_interview_interviewer` (`interviewer_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Table structure for table `knowledge_transfer_plans`
-CREATE TABLE `knowledge_transfer_plans` (
+-- Table structure for table `exit_knowledge_transfer_plans`
+CREATE TABLE `exit_knowledge_transfer_plans` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `employee_id` varchar(50) NOT NULL,
   `successor_id` varchar(50) DEFAULT NULL,
@@ -78,8 +80,8 @@ CREATE TABLE `knowledge_transfer_plans` (
   KEY `fk_transfer_created_by` (`created_by`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Table structure for table `knowledge_transfer_items`
-CREATE TABLE `knowledge_transfer_items` (
+-- Table structure for table `exit_knowledge_transfer_items`
+CREATE TABLE `exit_knowledge_transfer_items` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `plan_id` int(11) NOT NULL,
   `item_type` enum('document','process','contact','system','other') NOT NULL,
@@ -93,8 +95,8 @@ CREATE TABLE `knowledge_transfer_items` (
   KEY `fk_item_plan` (`plan_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Table structure for table `employee_settlements`
-CREATE TABLE `employee_settlements` (
+-- Table structure for table `exit_employee_settlements`
+CREATE TABLE `exit_employee_settlements` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `employee_id` varchar(50) NOT NULL,
   `resignation_id` int(11) DEFAULT NULL,
@@ -155,8 +157,8 @@ CREATE TABLE `exit_surveys` (
   KEY `fk_survey_created_by` (`created_by`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Table structure for table `survey_questions`
-CREATE TABLE `survey_questions` (
+-- Table structure for table `exit_survey_questions`
+CREATE TABLE `exit_survey_questions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `survey_id` int(11) NOT NULL,
   `question_text` text NOT NULL,
@@ -169,8 +171,8 @@ CREATE TABLE `survey_questions` (
   KEY `fk_question_survey` (`survey_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Table structure for table `survey_responses`
-CREATE TABLE `survey_responses` (
+-- Table structure for table `exit_survey_responses`
+CREATE TABLE `exit_survey_responses` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `survey_id` int(11) NOT NULL,
   `employee_id` varchar(50) NOT NULL,
@@ -181,8 +183,8 @@ CREATE TABLE `survey_responses` (
   KEY `fk_response_employee` (`employee_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Table structure for table `survey_answers`
-CREATE TABLE `survey_answers` (
+-- Table structure for table `exit_survey_answers`
+CREATE TABLE `exit_survey_answers` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `response_id` int(11) NOT NULL,
   `question_id` int(11) NOT NULL,
@@ -195,16 +197,16 @@ CREATE TABLE `survey_answers` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Constraints
-ALTER TABLE `resignations` ADD CONSTRAINT `fk_resignation_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_resignation_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE, ADD CONSTRAINT `fk_resignation_submitted_by` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+ALTER TABLE `exit_resignations` ADD CONSTRAINT `fk_resignation_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_resignation_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE, ADD CONSTRAINT `fk_resignation_submitted_by` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_resignation_preclearance_desk` FOREIGN KEY (`preclearance_desk_person`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 ALTER TABLE `exit_interviews` ADD CONSTRAINT `fk_interview_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE, ADD CONSTRAINT `fk_interview_interviewer` FOREIGN KEY (`interviewer_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-ALTER TABLE `knowledge_transfer_plans` ADD CONSTRAINT `fk_transfer_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_transfer_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE, ADD CONSTRAINT `fk_transfer_successor` FOREIGN KEY (`successor_id`) REFERENCES `employees` (`employee_id`) ON DELETE SET NULL;
-ALTER TABLE `knowledge_transfer_items` ADD CONSTRAINT `fk_item_plan` FOREIGN KEY (`plan_id`) REFERENCES `knowledge_transfer_plans` (`id`) ON DELETE CASCADE;
-ALTER TABLE `employee_settlements` ADD CONSTRAINT `fk_settlement_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_settlement_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_settlement_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE, ADD CONSTRAINT `fk_settlement_resignation` FOREIGN KEY (`resignation_id`) REFERENCES `resignations` (`id`) ON DELETE SET NULL;
+ALTER TABLE `exit_knowledge_transfer_plans` ADD CONSTRAINT `fk_transfer_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_transfer_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE, ADD CONSTRAINT `fk_transfer_successor` FOREIGN KEY (`successor_id`) REFERENCES `employees` (`employee_id`) ON DELETE SET NULL;
+ALTER TABLE `exit_knowledge_transfer_items` ADD CONSTRAINT `fk_item_plan` FOREIGN KEY (`plan_id`) REFERENCES `exit_knowledge_transfer_plans` (`id`) ON DELETE CASCADE;
+ALTER TABLE `exit_employee_settlements` ADD CONSTRAINT `fk_settlement_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_settlement_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_settlement_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE, ADD CONSTRAINT `fk_settlement_resignation` FOREIGN KEY (`resignation_id`) REFERENCES `exit_resignations` (`id`) ON DELETE SET NULL;
 ALTER TABLE `exit_documents` ADD CONSTRAINT `fk_document_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE, ADD CONSTRAINT `fk_document_uploaded_by` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 ALTER TABLE `exit_surveys` ADD CONSTRAINT `fk_survey_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-ALTER TABLE `survey_questions` ADD CONSTRAINT `fk_question_survey` FOREIGN KEY (`survey_id`) REFERENCES `exit_surveys` (`id`) ON DELETE CASCADE;
-ALTER TABLE `survey_responses` ADD CONSTRAINT `fk_response_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE, ADD CONSTRAINT `fk_response_survey` FOREIGN KEY (`survey_id`) REFERENCES `exit_surveys` (`id`) ON DELETE CASCADE;
-ALTER TABLE `survey_answers` ADD CONSTRAINT `fk_answer_question` FOREIGN KEY (`question_id`) REFERENCES `survey_questions` (`id`) ON DELETE CASCADE, ADD CONSTRAINT `fk_answer_response` FOREIGN KEY (`response_id`) REFERENCES `survey_responses` (`id`) ON DELETE CASCADE;
+ALTER TABLE `exit_survey_questions` ADD CONSTRAINT `fk_question_survey` FOREIGN KEY (`survey_id`) REFERENCES `exit_surveys` (`id`) ON DELETE CASCADE;
+ALTER TABLE `exit_survey_responses` ADD CONSTRAINT `fk_response_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE, ADD CONSTRAINT `fk_response_survey` FOREIGN KEY (`survey_id`) REFERENCES `exit_surveys` (`id`) ON DELETE CASCADE;
+ALTER TABLE `exit_survey_answers` ADD CONSTRAINT `fk_answer_question` FOREIGN KEY (`question_id`) REFERENCES `exit_survey_questions` (`id`) ON DELETE CASCADE, ADD CONSTRAINT `fk_answer_response` FOREIGN KEY (`response_id`) REFERENCES `exit_survey_responses` (`id`) ON DELETE CASCADE;
 ";
 
 try {

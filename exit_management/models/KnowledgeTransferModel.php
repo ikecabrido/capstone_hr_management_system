@@ -11,7 +11,7 @@ class KnowledgeTransferModel extends ExitManagementModel
     {
         try {
             $stmt = $this->db->prepare("
-                INSERT INTO knowledge_transfer_plans (employee_id, successor_id, start_date,
+                INSERT INTO exit_knowledge_transfer_plans (employee_id, successor_id, start_date,
                                                     end_date, status, created_by, created_at)
                 VALUES (?, ?, ?, ?, 'active', ?, NOW())
             ");
@@ -47,7 +47,7 @@ class KnowledgeTransferModel extends ExitManagementModel
     public function updateTransferPlan(int $planId, array $data): bool
     {
         $stmt = $this->db->prepare("
-            UPDATE knowledge_transfer_plans
+            UPDATE exit_knowledge_transfer_plans
             SET employee_id = ?, successor_id = ?, start_date = ?,
                 end_date = ?, updated_at = NOW()
             WHERE id = ?
@@ -68,7 +68,7 @@ class KnowledgeTransferModel extends ExitManagementModel
     public function addTransferItems(int $planId, array $items): bool
     {
         $stmt = $this->db->prepare("
-            INSERT INTO knowledge_transfer_items (plan_id, item_type, title,
+            INSERT INTO exit_knowledge_transfer_items (plan_id, item_type, title,
                                                description, priority, status, created_at)
             VALUES (?, ?, ?, ?, ?, 'pending', NOW())
         ");
@@ -104,7 +104,7 @@ class KnowledgeTransferModel extends ExitManagementModel
                 e.full_name as employee_name,
                 e.employee_id as emp_id,
                 s.full_name as successor_name
-            FROM knowledge_transfer_plans ktp
+            FROM exit_knowledge_transfer_plans ktp
             JOIN employees e ON ktp.employee_id = e.employee_id
             LEFT JOIN employees s ON ktp.successor_id = s.employee_id
             WHERE ktp.id = ?
@@ -129,7 +129,7 @@ class KnowledgeTransferModel extends ExitManagementModel
                 ktp.created_at,
                 ktp.updated_at,
                 s.full_name as successor_name
-            FROM knowledge_transfer_plans ktp
+            FROM exit_knowledge_transfer_plans ktp
             LEFT JOIN employees s ON ktp.successor_id = s.employee_id
             WHERE ktp.employee_id = ?
             ORDER BY ktp.created_at DESC
@@ -144,7 +144,7 @@ class KnowledgeTransferModel extends ExitManagementModel
     public function getTransferItems(int $planId): array
     {
         $stmt = $this->db->prepare("
-            SELECT * FROM knowledge_transfer_items
+            SELECT * FROM exit_knowledge_transfer_items
             WHERE plan_id = ?
             ORDER BY priority DESC, created_at ASC
         ");
@@ -158,7 +158,7 @@ class KnowledgeTransferModel extends ExitManagementModel
     public function updateItemStatus(int $itemId, string $status, string $notes = null): bool
     {
         $stmt = $this->db->prepare("
-            UPDATE knowledge_transfer_items
+            UPDATE exit_knowledge_transfer_items
             SET status = ?, completed_at = ?, notes = ?
             WHERE id = ?
         ");
@@ -174,7 +174,7 @@ class KnowledgeTransferModel extends ExitManagementModel
     public function completeTransferPlan(int $planId): bool
     {
         $stmt = $this->db->prepare("
-            UPDATE knowledge_transfer_plans
+            UPDATE exit_knowledge_transfer_plans
             SET status = 'completed', completed_at = NOW()
             WHERE id = ?
         ");
@@ -198,7 +198,7 @@ class KnowledgeTransferModel extends ExitManagementModel
                 ktp.updated_at,
                 e.full_name as employee_name,
                 s.full_name as successor_name
-            FROM knowledge_transfer_plans ktp
+            FROM exit_knowledge_transfer_plans ktp
             JOIN employees e ON ktp.employee_id = e.employee_id
             LEFT JOIN employees s ON ktp.successor_id = s.employee_id
             WHERE ktp.status = 'active'
@@ -208,11 +208,11 @@ class KnowledgeTransferModel extends ExitManagementModel
     }
 
     /**
-     * Get all transfer plans
+     * Get all transfer plans with optional status filter
      */
-    public function getAllTransferPlans(): array
+    public function getAllTransferPlans(string $status = null): array
     {
-        $stmt = $this->db->query("
+        $sql = "
             SELECT 
                 ktp.id,
                 ktp.employee_id,
@@ -224,11 +224,19 @@ class KnowledgeTransferModel extends ExitManagementModel
                 ktp.updated_at,
                 e.full_name as employee_name,
                 s.full_name as successor_name
-            FROM knowledge_transfer_plans ktp
+            FROM exit_knowledge_transfer_plans ktp
             JOIN employees e ON ktp.employee_id = e.employee_id
             LEFT JOIN employees s ON ktp.successor_id = s.employee_id
-            ORDER BY ktp.created_at DESC
-        ");
+        ";
+
+        if ($status && $status !== 'all') {
+            $sql .= " WHERE ktp.status = ?";
+            $stmt = $this->db->prepare($sql . " ORDER BY ktp.created_at DESC");
+            $stmt->execute([$status]);
+        } else {
+            $stmt = $this->db->query($sql . " ORDER BY ktp.created_at DESC");
+        }
+
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -240,14 +248,14 @@ class KnowledgeTransferModel extends ExitManagementModel
         try {
             // Delete associated transfer items first (cascade)
             $stmt = $this->db->prepare("
-                DELETE FROM knowledge_transfer_items
+                DELETE FROM exit_knowledge_transfer_items
                 WHERE plan_id = ?
             ");
             $stmt->execute([$planId]);
 
             // Delete the transfer plan
             $stmt = $this->db->prepare("
-                DELETE FROM knowledge_transfer_plans
+                DELETE FROM exit_knowledge_transfer_plans
                 WHERE id = ?
             ");
             return $stmt->execute([$planId]);

@@ -152,11 +152,11 @@ class KnowledgeTransferController extends ExitManagementController
     }
 
     /**
-     * Get all transfer plans
+     * Get all transfer plans with optional status filter
      */
-    public function getTransferPlans(): array
+    public function getTransferPlans(string $status = null): array
     {
-        return $this->transferModel->getAllTransferPlans();
+        return $this->transferModel->getAllTransferPlans($status);
     }
 
     /**
@@ -204,7 +204,7 @@ class KnowledgeTransferController extends ExitManagementController
                 return $this->getActiveTransferPlans();
 
             case 'get_transfer_plans':
-                return $this->getTransferPlans();
+                return $this->getTransferPlans($data['status'] ?? null);
 
             case 'get_transfer_items':
                 return $this->getTransferItems($data['plan_id'] ?? 0);

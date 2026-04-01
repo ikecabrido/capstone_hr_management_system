@@ -40,7 +40,7 @@ class SurveyModel extends ExitManagementModel
     public function addSurveyQuestions(int $surveyId, array $questions): bool
     {
         $stmt = $this->db->prepare("
-            INSERT INTO survey_questions (survey_id, question_text, question_type,
+            INSERT INTO exit_survey_questions (survey_id, question_text, question_type,
                                         options, required, order_num, created_at)
             VALUES (?, ?, ?, ?, ?, ?, NOW())
         ");
@@ -82,7 +82,7 @@ class SurveyModel extends ExitManagementModel
     public function getSurveyQuestions(int $surveyId): array
     {
         $stmt = $this->db->prepare("
-            SELECT * FROM survey_questions
+            SELECT * FROM exit_survey_questions
             WHERE survey_id = ?
             ORDER BY order_num ASC
         ");
@@ -110,15 +110,17 @@ class SurveyModel extends ExitManagementModel
         try {
             // Insert response record
             $stmt = $this->db->prepare("
-                INSERT INTO survey_responses (survey_id, employee_id, submitted_at)
+                INSERT INTO exit_survey_responses (survey_id, employee_id, submitted_at)
                 VALUES (?, ?, NOW())
             ");
-            $stmt->execute([$surveyId, $employeeId]);
+            if (!$stmt->execute([$surveyId, $employeeId])) {
+                throw new Exception('Failed to insert survey response');
+            }
             $responseId = (int)$this->db->lastInsertId();
 
             // Insert individual answers
             $stmt = $this->db->prepare("
-                INSERT INTO survey_answers (response_id, question_id, answer_text, answer_value)
+                INSERT INTO exit_survey_answers (response_id, question_id, answer_text, answer_value)
                 VALUES (?, ?, ?, ?)
             ");
 
@@ -126,7 +128,9 @@ class SurveyModel extends ExitManagementModel
                 $answerText = is_array($answer) ? json_encode($answer) : $answer;
                 $answerValue = is_array($answer) ? implode(', ', $answer) : $answer;
 
-                $stmt->execute([$responseId, $questionId, $answerText, $answerValue]);
+                if (!$stmt->execute([$responseId, $questionId, $answerText, $answerValue])) {
+                    throw new Exception('Failed to insert survey answer');
+                }
             }
 
             $this->db->commit();
@@ -143,11 +147,13 @@ class SurveyModel extends ExitManagementModel
     public function getSurveyResponses(int $surveyId): array
     {
         $stmt = $this->db->prepare("
-            SELECT sr.*, u.full_name, u.username as emp_id
-            FROM survey_responses sr
+            SELECT sa.*, sq.question_text, u.full_name as respondent_name, sr.submitted_at
+            FROM exit_survey_answers sa
+            JOIN exit_survey_questions sq ON sa.question_id = sq.id
+            JOIN exit_survey_responses sr ON sa.response_id = sr.id
             JOIN users u ON sr.employee_id = u.id
             WHERE sr.survey_id = ?
-            ORDER BY sr.submitted_at DESC
+            ORDER BY sr.submitted_at DESC, sq.order_num ASC
         ");
         $stmt->execute([$surveyId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -161,7 +167,7 @@ class SurveyModel extends ExitManagementModel
         // Get response info
         $stmt = $this->db->prepare("
             SELECT sr.*, s.title as survey_title, u.full_name
-            FROM survey_responses sr
+            FROM exit_survey_responses sr
             JOIN exit_surveys s ON sr.survey_id = s.id
             JOIN users u ON sr.employee_id = u.id
             WHERE sr.id = ?
@@ -174,8 +180,8 @@ class SurveyModel extends ExitManagementModel
         // Get answers
         $stmt = $this->db->prepare("
             SELECT sa.*, sq.question_text, sq.question_type
-            FROM survey_answers sa
-            JOIN survey_questions sq ON sa.question_id = sq.id
+            FROM exit_survey_answers sa
+            JOIN exit_survey_questions sq ON sa.question_id = sq.id
             WHERE sa.response_id = ?
             ORDER BY sq.order_num ASC
         ");
@@ -206,7 +212,7 @@ class SurveyModel extends ExitManagementModel
             AND s.start_date <= CURDATE()
             AND s.end_date >= CURDATE()
             AND (s.target_audience = 'all' OR s.id NOT IN (
-                SELECT survey_id FROM survey_responses WHERE employee_id = ?
+                SELECT survey_id FROM exit_survey_responses WHERE employee_id = ?
             ))
         ");
         $stmt->execute([$employeeId]);
@@ -214,22 +220,39 @@ class SurveyModel extends ExitManagementModel
     }
 
     /**
-     * Get all surveys
+     * Get all surveys with optional status filter
      */
-    public function getAllSurveys(): array
+    public function getAllSurveys(string $status = null): array
     {
-        $stmt = $this->db->prepare("
-            SELECT 
-                id,
-                title,
-                description,
-                status,
-                created_at,
-                updated_at
-            FROM exit_surveys
-            ORDER BY created_at DESC
-        ");
-        $stmt->execute();
+        if ($status && $status !== 'all') {
+            $stmt = $this->db->prepare("
+                SELECT 
+                    id,
+                    title,
+                    description,
+                    status,
+                    created_at,
+                    updated_at
+                FROM exit_surveys
+                WHERE status = ?
+                ORDER BY created_at DESC
+            ");
+            $stmt->execute([$status]);
+        } else {
+            $stmt = $this->db->prepare("
+                SELECT 
+                    id,
+                    title,
+                    description,
+                    status,
+                    created_at,
+                    updated_at
+                FROM exit_surveys
+                ORDER BY created_at DESC
+            ");
+            $stmt->execute();
+        }
+
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -259,8 +282,8 @@ class SurveyModel extends ExitManagementModel
             // Get answers for this question
             $stmt = $this->db->prepare("
                 SELECT answer_value, COUNT(*) as count
-                FROM survey_answers sa
-                JOIN survey_responses sr ON sa.response_id = sr.id
+                FROM exit_survey_answers sa
+                JOIN exit_survey_responses sr ON sa.response_id = sr.id
                 WHERE sa.question_id = ? AND sr.survey_id = ?
                 GROUP BY answer_value
                 ORDER BY count DESC

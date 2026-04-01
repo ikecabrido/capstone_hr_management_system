@@ -14,12 +14,12 @@ try {
     
     // List of tables to fix
     $tablesToFix = [
-        'resignations',
+        'exit_resignations',
         'exit_interviews',
-        'knowledge_transfer_plans',
-        'template_response_sections_sections',
-        'settlements',
-        'exit_documentation',
+        'exit_knowledge_transfer_plans',
+        'exit_knowledge_transfer_items',
+        'exit_documents',
+        'exit_employee_settlements',
         'exit_surveys'
     ];
     
@@ -65,7 +65,7 @@ try {
     // Test the JOIN after fixing
     $testStmt = $db->query("
         SELECT r.id, e.full_name, r.resignation_type 
-        FROM resignations r 
+        FROM exit_resignations r 
         JOIN employees e ON r.employee_id = e.employee_id 
         LIMIT 1
     ");
