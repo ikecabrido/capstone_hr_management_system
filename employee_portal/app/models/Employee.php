@@ -131,7 +131,7 @@ class Employee
     public function all()
     {
         $query = "
-        SELECT *, CONCAT(first_name, ' ', last_name) AS full_name
+        SELECT *, full_name
         FROM " . $this->table . "
         ORDER BY full_name ASC
     ";

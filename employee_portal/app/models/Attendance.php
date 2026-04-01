@@ -9,7 +9,7 @@ require_once __DIR__ . '/../config/Database.php';
 class Attendance
 {
     private $conn;
-    private $table = "attendance";
+    private $table = "ta_attendance";
 
     public function __construct()
     {

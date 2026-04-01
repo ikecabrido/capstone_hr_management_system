@@ -120,9 +120,9 @@ class Attendance
      */
     public function getTodayAllEmployees($limit = 100, $offset = 0)
     {
-        $query = "SELECT a.*, e.full_name, e.department, e.position
+        $query = "SELECT a.*, e.full_name, e.department, e.position_id
                   FROM $this->table a
-                  RIGHT JOIN employees e ON a.employee_id = e.employee_id 
+                  RIGHT JOIN employees e ON a.employee_no = e.employee_no 
                     AND a.attendance_date = CURDATE()
                   WHERE e.employment_status = 'Active'
                   ORDER BY e.full_name
@@ -162,7 +162,7 @@ class Attendance
     {
         $query = "SELECT a.*, e.full_name, e.department
                   FROM $this->table a
-                  JOIN employees e ON a.employee_id = e.employee_id
+                  JOIN employees e ON a.employee_no = e.employee_no
                   WHERE a.is_approved = 0
                   ORDER BY a.created_at DESC
                   LIMIT :limit OFFSET :offset";

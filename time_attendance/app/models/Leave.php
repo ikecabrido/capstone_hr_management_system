@@ -58,7 +58,7 @@ class Leave
     {
         $query = "SELECT lr.*, e.full_name, e.department, lt.leave_type_name
                   FROM ta_leave_requests lr
-                  INNER JOIN employees e ON lr.employee_id = e.employee_id
+                  INNER JOIN employees e ON lr.employee_id = e.employee_no
                   INNER JOIN ta_leave_types lt ON lr.leave_type_id = lt.leave_type_id
                   WHERE lr.status IN ('Pending', 'Approved')
                   ORDER BY lr.date_submitted DESC";

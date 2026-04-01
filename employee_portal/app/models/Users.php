@@ -17,8 +17,7 @@ class User
         $query = "
         SELECT 
             e.employee_no,
-            e.first_name,
-            e.last_name,
+            e.full_name,
             e.user_id,
             u.id AS user_id_ref,
             u.username,

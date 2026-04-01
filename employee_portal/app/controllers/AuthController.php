@@ -42,8 +42,7 @@ class AuthController
             Session::set('employee_no', $user['employee_no']);
             Session::set('username', $user['username']);
             Session::set('role', $user['role']);
-            Session::set('first_name', $user['first_name']);
-            Session::set('last_name', $user['last_name']);
+            Session::set('full_name', $user['full_name']);
             Session::set('success', "Login successful!");
 
             Helper::redirect('index.php?url=dashboard');
