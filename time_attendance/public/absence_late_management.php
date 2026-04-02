@@ -26,18 +26,69 @@ if (!AuthController::hasRole('time') && !AuthController::hasRole('hr')) {
 $absenceLateMgmt = new AbsenceLateMgmt();
 $employeeModel = new Employee();
 
-// Get initial data
-$filters = [
-    'excuse_status' => $_GET['status'] ?? 'PENDING',
-    'type' => $_GET['type'] ?? null,
-    'start_date' => $_GET['start_date'] ?? date('Y-m-01'),
-    'end_date' => $_GET['end_date'] ?? date('Y-m-d'),
-    'limit' => 50
-];
+// Determine date range from period selector
+$period = $_GET['period'] ?? 'today';
+$customStartDate = $_GET['custom_start_date'] ?? null;
+$customEndDate = $_GET['custom_end_date'] ?? null;
 
-$records = $absenceLateMgmt->getRecords($filters);
-$pendingCount = count($absenceLateMgmt->getPendingApprovals(100));
-$summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['start_date'], 'end_date' => $filters['end_date']]);
+$today = new DateTime();
+$startDate = clone $today;
+$endDate = clone $today;
+
+switch ($period) {
+    case 'today':
+        break; // Already set to today
+    case 'yesterday':
+        $startDate->modify('-1 day');
+        $endDate->modify('-1 day');
+        break;
+    case 'this_week':
+        $startDate->modify('Monday this week');
+        break;
+    case 'last_week':
+        $startDate->modify('Monday last week');
+        $endDate->modify('Sunday last week');
+        break;
+    case 'this_month':
+        $startDate->modify('first day of this month');
+        break;
+    case 'last_month':
+        $startDate->modify('first day of last month');
+        $endDate->modify('last day of last month');
+        break;
+    case 'last_2_weeks':
+        $startDate->modify('-14 days');
+        break;
+    case 'last_2_months':
+        $startDate->modify('-2 months');
+        break;
+    case 'custom':
+        if ($customStartDate && $customEndDate) {
+            $startDate = new DateTime($customStartDate);
+            $endDate = new DateTime($customEndDate);
+        }
+        break;
+}
+
+$startDateStr = $startDate->format('Y-m-d');
+$endDateStr = $endDate->format('Y-m-d');
+
+// Get employee attendance records with status
+$attendanceRecords = $absenceLateMgmt->detectAbsentAndLateEmployees($startDateStr, $endDateStr);
+
+// Group records by date for display
+$recordsByDate = [];
+foreach ($attendanceRecords as $record) {
+    $date = $record['check_date'];
+    if (!isset($recordsByDate[$date])) {
+        $recordsByDate[$date] = [];
+    }
+    $recordsByDate[$date][] = $record;
+}
+krsort($recordsByDate); // Sort dates in descending order
+
+// Count statistics
+$summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $startDateStr, 'end_date' => $endDateStr]);
 ?>
 
 <!DOCTYPE html>
@@ -114,6 +165,10 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
             box-shadow: 0 4px 20px rgba(0, 61, 130, 0.15);
             position: relative;
             overflow: hidden;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
         }
 
         .page-header::before {
@@ -598,11 +653,16 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
         <div class="content-wrapper">
             <!-- Page Header -->
             <div class="page-header">
-                <div class="page-title">
-                    <i class="fas fa-calendar-times"></i>
-                    <span>Absence & Late Management</span>
+                <div>
+                    <div class="page-title">
+                        <i class="fas fa-calendar-times"></i>
+                        <span>Absence & Late Management</span>
+                    </div>
+                    <div class="page-subtitle">Review and manage employee absence and late arrival records</div>
                 </div>
-                <div class="page-subtitle">Review and manage employee absence and late arrival records</div>
+                <button onclick="detectAbsenceAndLate()" style="padding: 12px 20px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; align-self: flex-end;">
+                    <i class="fas fa-sync-alt"></i> Detect Now
+                </button>
             </div>
 
             <div class="absence-late-container">
@@ -637,112 +697,134 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
 
                 <!-- Filters -->
                 <div class="filter-section">
-                    <input type="date" id="startDate" value="<?php echo $filters['start_date']; ?>" placeholder="Start Date">
-                    <input type="date" id="endDate" value="<?php echo $filters['end_date']; ?>" placeholder="End Date">
-                    
-                    <select id="statusFilter">
-                        <option value="">All Status</option>
-                        <option value="PENDING" <?php echo $filters['excuse_status'] === 'PENDING' ? 'selected' : ''; ?>>Pending</option>
-                        <option value="APPROVED" <?php echo $filters['excuse_status'] === 'APPROVED' ? 'selected' : ''; ?>>Approved</option>
-                        <option value="REJECTED" <?php echo $filters['excuse_status'] === 'REJECTED' ? 'selected' : ''; ?>>Rejected</option>
-                    </select>
-
-                    <select id="typeFilter">
-                        <option value="">All Types</option>
-                        <option value="ABSENT" <?php echo $filters['type'] === 'ABSENT' ? 'selected' : ''; ?>>Absence</option>
-                        <option value="LATE" <?php echo $filters['type'] === 'LATE' ? 'selected' : ''; ?>>Late</option>
-                    </select>
-
-                    <button class="btn btn-primary" onclick="applyFilters()">
-                        <i class="fas fa-filter"></i> Apply Filters
-                    </button>
-
-                    <button class="btn btn-secondary" onclick="generateReport()">
-                        <i class="fas fa-file-pdf"></i> Generate Report
-                    </button>
+                    <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 10px; flex-grow: 1; min-width: 250px;">
+                            <label for="periodSelector" style="margin: 0; font-weight: 600; white-space: nowrap;">Time Period:</label>
+                            <select id="periodSelector" onchange="changePeriod(this.value)" style="flex: 1; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; cursor: pointer;">
+                                <option value="today" <?php echo $period === 'today' ? 'selected' : ''; ?>>Today</option>
+                                <option value="yesterday" <?php echo $period === 'yesterday' ? 'selected' : ''; ?>>Yesterday</option>
+                                <option value="this_week" <?php echo $period === 'this_week' ? 'selected' : ''; ?>>This Week</option>
+                                <option value="last_week" <?php echo $period === 'last_week' ? 'selected' : ''; ?>>Last Week</option>
+                                <option value="this_month" <?php echo $period === 'this_month' ? 'selected' : ''; ?>>This Month</option>
+                                <option value="last_month" <?php echo $period === 'last_month' ? 'selected' : ''; ?>>Last Month</option>
+                                <option value="last_2_weeks" <?php echo $period === 'last_2_weeks' ? 'selected' : ''; ?>>Last 2 Weeks</option>
+                                <option value="last_2_months" <?php echo $period === 'last_2_months' ? 'selected' : ''; ?>>Last 2 Months</option>
+                                <option value="custom" <?php echo $period === 'custom' ? 'selected' : ''; ?>>Custom Range</option>
+                            </select>
+                        </div>
+                        
+                        <div id="customDateRange" style="display: <?php echo $period === 'custom' ? 'flex' : 'none'; ?>; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <input type="date" id="customStartDate" value="<?php echo $customStartDate ?? $startDateStr; ?>" style="padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+                            <span style="white-space: nowrap;">to</span>
+                            <input type="date" id="customEndDate" value="<?php echo $customEndDate ?? $endDateStr; ?>" style="padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+                            <button class="btn btn-primary" onclick="applyCustomDate()" style="white-space: nowrap;">
+                                <i class="fas fa-check"></i> Apply
+                            </button>
+                        </div>
+                        
+                        <button class="btn btn-secondary" onclick="generateReport()" style="white-space: nowrap;">
+                            <i class="fas fa-file-pdf"></i> Report
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Records Table -->
                 <div class="records-table">
-                    <?php if (count($records) > 0): ?>
-                    <table id="recordsTable">
-                        <thead>
-                            <tr>
-                                <th>Employee</th>
-                                <th>Department</th>
-                                <th>Date</th>
-                                <th>Type</th>
-                                <th>Status</th>
-                                <th>Excused</th>
-                                <th>Reason</th>
-                                <th>Submitted</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($records as $record): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($record['full_name']); ?></td>
-                                <td><?php echo htmlspecialchars($record['department'] ?? 'N/A'); ?></td>
-                                <td><?php echo date('M d, Y', strtotime($record['absence_date'])); ?></td>
-                                <td>
-                                    <span class="badge <?php echo $record['type'] === 'ABSENT' ? 'badge-absent' : 'badge-late'; ?>">
-                                        <?php echo $record['type']; ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="badge badge-<?php echo strtolower($record['excuse_status']); ?>">
-                                        <?php echo $record['excuse_status']; ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <?php if ($record['is_excused']): ?>
-                                        <?php if ($record['excuse_type'] === 'APPROVED_LEAVE'): ?>
-                                            <span class="badge badge-success" title="Excused due to approved leave request">
-                                                <i class="fas fa-check-circle"></i> Leave Approved
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="badge badge-excused">
-                                                <i class="fas fa-check"></i> Excused
-                                            </span>
-                                        <?php endif; ?>
-                                    <?php else: ?>
-                                        <span class="badge badge-unexcused">
-                                            <i class="fas fa-times"></i> Unexcused
+                    <?php if (!empty($recordsByDate)): ?>
+                    <div style="margin-bottom: 20px;">
+                        <p style="color: #666; font-size: 14px; margin: 0;">
+                            Showing records from <strong><?php echo date('M d, Y', strtotime($startDateStr)); ?></strong> to <strong><?php echo date('M d, Y', strtotime($endDateStr)); ?></strong>
+                        </p>
+                    </div>
+                    
+                    <?php foreach ($recordsByDate as $date => $records): ?>
+                    <div style="margin-bottom: 25px; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+                        <div style="background: linear-gradient(135deg, #f0f5ff 0%, #e8f0ff 100%); padding: 15px 20px; border-bottom: 2px solid #e0e0e0;">
+                            <h3 style="margin: 0; color: #003d82; font-size: 16px; font-weight: 700;">
+                                <i class="fas fa-calendar"></i> <?php echo date('l, M d, Y', strtotime($date)); ?>
+                            </h3>
+                        </div>
+                        
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f8f9fa; border-bottom: 2px solid #e0e0e0;">
+                                    <th style="padding: 12px 15px; text-align: left; color: #333; font-weight: 600; border-right: 1px solid #e0e0e0;">Employee</th>
+                                    <th style="padding: 12px 15px; text-align: left; color: #333; font-weight: 600; border-right: 1px solid #e0e0e0;">Department</th>
+                                    <th style="padding: 12px 15px; text-align: center; color: #333; font-weight: 600; border-right: 1px solid #e0e0e0; width: 100px;">Status</th>
+                                    <th style="padding: 12px 15px; text-align: left; color: #333; font-weight: 600; border-right: 1px solid #e0e0e0;">Time In / Expected</th>
+                                    <th style="padding: 12px 15px; text-align: left; color: #333; font-weight: 600; border-right: 1px solid #e0e0e0;">Minutes Late</th>
+                                    <th style="padding: 12px 15px; text-align: left; color: #333; font-weight: 600;">Excuse Type / Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($records as $record): 
+                                    $statusClass = '';
+                                    $statusIcon = '';
+                                    $statusText = '';
+                                    
+                                    switch ($record['status']) {
+                                        case 'ABSENT':
+                                            $statusClass = 'background: #ffebee; color: #c62828;';
+                                            $statusIcon = 'fas fa-times-circle';
+                                            $statusText = 'ABSENT';
+                                            break;
+                                        case 'LATE':
+                                            $statusClass = 'background: #fff3e0; color: #e65100;';
+                                            $statusIcon = 'fas fa-clock';
+                                            $statusText = 'LATE';
+                                            break;
+                                        case 'ON_TIME':
+                                            $statusClass = 'background: #e8f5e9; color: #2e7d32;';
+                                            $statusIcon = 'fas fa-check-circle';
+                                            $statusText = 'ON TIME';
+                                            break;
+                                    }
+                                ?>
+                                <tr style="border-bottom: 1px solid #f0f0f0;" onmouseover="this.style.backgroundColor='#f9f9f9'" onmouseout="this.style.backgroundColor='transparent'">
+                                    <td style="padding: 12px 15px; border-right: 1px solid #f0f0f0;">
+                                        <strong><?php echo htmlspecialchars($record['full_name']); ?></strong>
+                                    </td>
+                                    <td style="padding: 12px 15px; border-right: 1px solid #f0f0f0; color: #666;">
+                                        <?php echo htmlspecialchars($record['department'] ?? 'N/A'); ?>
+                                    </td>
+                                    <td style="padding: 12px 15px; border-right: 1px solid #f0f0f0; text-align: center;">
+                                        <span style="padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; <?php echo $statusClass; ?> display: inline-block;">
+                                            <i class="<?php echo $statusIcon; ?>" style="margin-right: 5px;"></i><?php echo $statusText; ?>
                                         </span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <?php if ($record['excuse_type'] === 'APPROVED_LEAVE'): ?>
-                                        <em>Approved Leave</em>
-                                    <?php else: ?>
-                                        <?php echo htmlspecialchars(substr($record['reason'] ?? '', 0, 30)); ?>
-                                    <?php endif; ?>
-                                </td>
-                                <td><?php echo date('M d, Y', strtotime($record['submitted_date'])); ?></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="btn-action btn-view" onclick="viewRecord(<?php echo $record['record_id']; ?>)">
-                                            <i class="fas fa-eye"></i> View
-                                        </button>
-                                        <?php if ($record['excuse_status'] === 'PENDING' && $record['excuse_type'] !== 'APPROVED_LEAVE' && (AuthController::hasRole('time') || AuthController::hasRole('hr'))): ?>
-                                        <button class="btn-action btn-approve" onclick="approveExcuse(<?php echo $record['record_id']; ?>)">
-                                            <i class="fas fa-check"></i> Approve
-                                        </button>
-                                        <button class="btn-action btn-reject" onclick="rejectExcuse(<?php echo $record['record_id']; ?>)">
-                                            <i class="fas fa-times"></i> Reject
-                                        </button>
+                                    </td>
+                                    <td style="padding: 12px 15px; border-right: 1px solid #f0f0f0; color: #666;">
+                                        <?php if ($record['time_in']): ?>
+                                            <strong><?php echo date('H:i', strtotime($record['time_in'])); ?></strong> / <?php echo $record['start_time'] ? date('H:i', strtotime($record['start_time'])) : 'N/A'; ?>
+                                        <?php else: ?>
+                                            <em style="color: #999;">No check-in</em>
                                         <?php endif; ?>
-                                    </div>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                                    </td>
+                                    <td style="padding: 12px 15px; border-right: 1px solid #f0f0f0; color: #666;">
+                                        <?php echo $record['minutes_late'] ? $record['minutes_late'] . ' min' : '-'; ?>
+                                    </td>
+                                    <td style="padding: 12px 15px; color: #666;">
+                                        <?php if ($record['excuse_type']): ?>
+                                            <span style="background: #e3f2fd; color: #0d47a1; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; display: inline-block;">
+                                                <?php echo htmlspecialchars($record['excuse_type']); ?>
+                                            </span>
+                                            <?php if ($record['excuse_reason']): ?>
+                                                <br><small style="color: #666; margin-top: 4px; display: inline-block;"><?php echo htmlspecialchars(substr($record['excuse_reason'], 0, 50)); ?></small>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            <span style="color: #999;">-</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <?php endforeach; ?>
+                    
                     <?php else: ?>
                     <div class="empty-state">
                         <i class="fas fa-inbox"></i>
-                        <p>No absence or late records found</p>
+                        <p>No attendance records found for the selected period</p>
                     </div>
                     <?php endif; ?>
                 </div>
@@ -797,19 +879,30 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
     <script>
         let currentRecordId = null;
 
+        function changePeriod(period) {
+            if (period === 'custom') {
+                document.getElementById('customDateRange').style.display = 'flex';
+            } else {
+                document.getElementById('customDateRange').style.display = 'none';
+                window.location.href = `absence_late_management.php?period=${period}`;
+            }
+        }
+
+        function applyCustomDate() {
+            const startDate = document.getElementById('customStartDate').value;
+            const endDate = document.getElementById('customEndDate').value;
+
+            if (!startDate || !endDate) {
+                alert('Please select both start and end dates');
+                return;
+            }
+
+            window.location.href = `absence_late_management.php?period=custom&custom_start_date=${startDate}&custom_end_date=${endDate}`;
+        }
+
         function applyFilters() {
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
-            const status = document.getElementById('statusFilter').value;
-            const type = document.getElementById('typeFilter').value;
-
-            let url = 'absence_late_management.php?';
-            if (startDate) url += `start_date=${startDate}&`;
-            if (endDate) url += `end_date=${endDate}&`;
-            if (status) url += `status=${status}&`;
-            if (type) url += `type=${type}`;
-
-            window.location.href = url;
+            const period = document.getElementById('periodSelector').value;
+            window.location.href = `absence_late_management.php?period=${period}`;
         }
 
         function viewRecord(recordId) {
@@ -901,31 +994,38 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
         });
 
         function generateReport() {
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
-            const status = document.getElementById('statusFilter').value;
-            const type = document.getElementById('typeFilter').value;
+            const startDate = '<?php echo $startDateStr; ?>';
+            const endDate = '<?php echo $endDateStr; ?>';
 
             let url = '../app/api/absence_late_management.php?action=get_report';
             if (startDate) url += `&start_date=${startDate}`;
             if (endDate) url += `&end_date=${endDate}`;
-            if (status) url += `&status=${status}`;
-            if (type) url += `&type=${type}`;
 
             fetch(url)
                 .then(r => r.json())
                 .then(res => {
                     if (res.success) {
                         downloadReport(res.data);
+                    } else {
+                        alert('Error generating report: ' + res.message);
                     }
                 })
-                .catch(err => toastr.error('Failed to generate report'));
+                .catch(err => {
+                    console.error('Error:', err);
+                    alert('Failed to generate report');
+                });
         }
 
         function downloadReport(data) {
-            let csv = 'Employee,Department,Type,Date,Status,Excused,Reason,Reviewed By,Review Date\n';
+            let csv = 'Employee,Department,Date,Status,Time In,Shift Start,Minutes Late,Excuse Type,Reason\n';
             data.forEach(record => {
-                csv += `"${record.full_name}","${record.department}","${record.type}","${record.absence_date}","${record.excuse_status}","${record.is_excused ? 'Yes' : 'No'}","${record.reason || ''}","${record.reviewed_by_name || ''}","${record.reviewed_date || ''}"\n`;
+                const timeIn = record.time_in ? new Date(record.time_in).toLocaleTimeString() : 'N/A';
+                const shiftStart = record.start_time ? record.start_time : 'N/A';
+                const minutesLate = record.minutes_late ? record.minutes_late : '-';
+                const excuseType = record.excuse_type || '-';
+                const reason = record.excuse_reason || '-';
+                
+                csv += `"${record.full_name}","${record.department}","${record.check_date}","${record.status}","${timeIn}","${shiftStart}","${minutesLate}","${excuseType}","${reason}"\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv' });
@@ -955,6 +1055,71 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
                 "'": '&#039;'
             };
             return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Detect Absence and Late function
+        function detectAbsenceAndLate() {
+            const btn = event.target.closest('button');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Detecting...';
+
+            fetch('../app/api/detect_absence_late.php?action=detect_all', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    let message = `✓ Detection Completed!\n\n`;
+                    message += `Absences Detected: ${data.absences_detected}\n`;
+                    message += `Late Arrivals Detected: ${data.late_detected}`;
+
+                    if (data.absences && data.absences.length > 0) {
+                        message += `\n\nAbsences:\n`;
+                        data.absences.forEach(emp => {
+                            message += `- ${emp.name} (${emp.department})\n`;
+                        });
+                    }
+
+                    if (data.late_arrivals && data.late_arrivals.length > 0) {
+                        message += `\n\nLate Arrivals:\n`;
+                        data.late_arrivals.forEach(emp => {
+                            message += `- ${emp.name} (${emp.department}) - ${emp.minutes_late} minutes late\n`;
+                        });
+                    }
+
+                    alert(message);
+                    
+                    // Reload the page to show newly detected records
+                    setTimeout(() => {
+                        location.reload();
+                    }, 500);
+                    
+                    // Show success toast
+                    if (typeof toastr !== 'undefined') {
+                        toastr.success(data.message, 'Detection Completed');
+                    }
+                } else {
+                    alert('Error: ' + data.message);
+                    if (typeof toastr !== 'undefined') {
+                        toastr.error(data.message, 'Detection Failed');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error detecting absences and late arrivals: ' + error.message);
+                if (typeof toastr !== 'undefined') {
+                    toastr.error('Error detecting absences and late arrivals', 'Error');
+                }
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            });
         }
     </script>
 </body>

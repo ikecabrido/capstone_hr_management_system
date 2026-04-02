@@ -526,5 +526,130 @@ class AbsenceLateMgmt
 
         return 'Excused - ' . $record['excuse_status'];
     }
+
+    /**
+     * Detect absent employees for a given date or date range
+     * @param string $startDate 'Y-m-d'
+     * @param string $endDate 'Y-m-d' (optional, defaults to start_date)
+     * @return array List of employees with their attendance status
+     */
+    public function detectAbsentAndLateEmployees($startDate, $endDate = null)
+    {
+        if ($endDate === null) {
+            $endDate = $startDate;
+        }
+
+        try {
+            $query = "
+                SELECT 
+                    e.employee_id,
+                    e.full_name,
+                    e.department,
+                    CAST(:date AS DATE) as check_date,
+                    CASE 
+                        WHEN a.attendance_id IS NULL THEN 'ABSENT'
+                        WHEN TIME(a.time_in) > TIME(s.start_time) THEN 'LATE'
+                        ELSE 'ON_TIME'
+                    END as status,
+                    a.time_in,
+                    a.time_out,
+                    s.start_time,
+                    s.end_time,
+                    CASE 
+                        WHEN a.attendance_id IS NULL THEN NULL
+                        ELSE TIMESTAMPDIFF(MINUTE, s.start_time, TIME(a.time_in))
+                    END as minutes_late,
+                    CASE 
+                        WHEN lr.leave_request_id IS NOT NULL THEN 'APPROVED_LEAVE'
+                        WHEN r.is_excused = 1 THEN r.excuse_type
+                        ELSE NULL
+                    END as excuse_type,
+                    r.reason as excuse_reason,
+                    r.excuse_status
+                FROM employees e
+                LEFT JOIN ta_shifts s ON e.employee_id = s.employee_id 
+                    AND s.effective_from <= :date 
+                    AND (s.effective_to IS NULL OR s.effective_to >= :date)
+                    AND s.is_active = 1
+                LEFT JOIN ta_employee_shifts es ON e.employee_id = es.employee_id 
+                    AND es.effective_from <= :date 
+                    AND (es.effective_to IS NULL OR es.effective_to >= :date)
+                    AND es.is_active = 1
+                LEFT JOIN ta_shifts s2 ON es.shift_id = s2.shift_id
+                LEFT JOIN {$this->attendance_table} a ON e.employee_id = a.employee_id 
+                    AND CAST(a.time_in AS DATE) = :date
+                LEFT JOIN {$this->records_table} r ON e.employee_id = r.employee_id 
+                    AND CAST(r.absence_date AS DATE) = :date
+                LEFT JOIN leave_requests lr ON e.employee_id = lr.employee_id 
+                    AND :date BETWEEN lr.start_date AND lr.end_date 
+                    AND lr.approval_status = 'APPROVED'
+                WHERE e.employment_status = 'Active'
+                    AND e.employee_id NOT IN (
+                        SELECT DISTINCT employee_id FROM leave_requests 
+                        WHERE :date BETWEEN start_date AND end_date 
+                        AND approval_status = 'APPROVED'
+                    )
+                ORDER BY e.full_name ASC
+            ";
+
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':date', $startDate);
+            $stmt->execute();
+            
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // If we have a date range, recursively add data for other dates
+            if ($endDate !== $startDate) {
+                $allResults = $results;
+                $currentDate = new DateTime($startDate);
+                $endDateObj = new DateTime($endDate);
+
+                while ($currentDate < $endDateObj) {
+                    $currentDate->modify('+1 day');
+                    $dateStr = $currentDate->format('Y-m-d');
+
+                    $stmt = $this->conn->prepare($query);
+                    $stmt->bindParam(':date', $dateStr);
+                    $stmt->execute();
+                    
+                    $dayResults = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    $allResults = array_merge($allResults, $dayResults);
+                }
+
+                return $allResults;
+            }
+
+            return $results;
+
+        } catch (\Exception $e) {
+            error_log("Error detecting absent/late employees: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Get distinct dates in a given period
+     */
+    public function getWorkingDatesInRange($startDate, $endDate)
+    {
+        try {
+            $query = "
+                SELECT DISTINCT CAST(a.time_in AS DATE) as work_date
+                FROM {$this->attendance_table} a
+                WHERE CAST(a.time_in AS DATE) BETWEEN :start_date AND :end_date
+                ORDER BY work_date DESC
+            ";
+
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':start_date', $startDate);
+            $stmt->bindParam(':end_date', $endDate);
+            $stmt->execute();
+
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (\Exception $e) {
+            error_log("Error getting working dates: " . $e->getMessage());
+            return [];
+        }
+    }
 }
 ?>
