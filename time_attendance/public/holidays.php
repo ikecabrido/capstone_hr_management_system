@@ -102,18 +102,19 @@ $currentMonth = date('F Y');
             margin-bottom: 30px;
         }
 
+        /* Holiday Widget */
         .holiday-widget {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #003d82 0%, #005ba8 100%);
             color: white;
             padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 61, 130, 0.25);
         }
 
         .holiday-widget h3 {
             margin: 0 0 15px 0;
             font-size: 18px;
-            font-weight: 600;
+            font-weight: 700;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -224,30 +225,73 @@ $currentMonth = date('F Y');
 
         .calendar-container {
             background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0, 61, 130, 0.08);
+            border: 2px solid rgba(0, 61, 130, 0.08);
         }
 
         .calendar-container h3 {
             margin: 0 0 20px 0;
-            color: #333;
+            color: #003d82;
             display: flex;
             align-items: center;
             gap: 10px;
+            font-size: 20px;
+            font-weight: 700;
         }
 
         #holidayCalendar {
             height: 550px;
         }
 
-        .fc-daygrid-day.holiday {
-            background-color: #fff3cd !important;
+        /* FullCalendar Custom Styling */
+        .fc {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        .fc-event {
+        .fc .fc-button-primary {
+            background-color: #003d82 !important;
+            border-color: #003d82 !important;
+        }
+
+        .fc .fc-button-primary:not(:disabled).fc-button-active {
+            background-color: #005ba8 !important;
+            border-color: #005ba8 !important;
+        }
+
+        .fc .fc-button-primary:hover {
+            background-color: #005ba8 !important;
+            border-color: #005ba8 !important;
+        }
+
+        .fc .fc-daygrid-day.fc-day-other {
+            background-color: #fafbfc;
+        }
+
+        .fc .fc-event {
             border: none !important;
-            padding: 2px 4px !important;
+            padding: 2px !important;
+        }
+
+        .fc .fc-event-title {
+            font-weight: 600;
+            padding: 4px 6px;
+            white-space: normal !important;
+        }
+
+        .holiday-event {
+            background: linear-gradient(135deg, #003d82 0%, #005ba8 100%) !important;
+            color: white !important;
+            border: none !important;
+            font-weight: 600 !important;
+            padding: 4px 6px !important;
+        }
+
+        .holiday-event .fc-event-title {
+            color: white !important;
+            font-weight: 700 !important;
+            font-size: 12px !important;
         }
 
         @media (max-width: 1024px) {
@@ -563,15 +607,22 @@ $currentMonth = date('F Y');
             if (!calendarEl) return;
 
             try {
-                const events = holidays.map(h => ({
-                    title: h.holiday_name,
-                    start: h.holiday_date,
-                    backgroundColor: '#667eea',
-                    borderColor: '#667eea',
-                    extendedProps: {
-                        category: h.category || 'Holiday'
-                    }
-                }));
+                const events = holidays.map(h => {
+                    // Ensure holiday_name is defined and not null
+                    const title = h.holiday_name || h.name || 'Holiday';
+                    return {
+                        title: title,
+                        start: h.holiday_date,
+                        backgroundColor: '#003d82',
+                        borderColor: '#003d82',
+                        textColor: '#ffffff',
+                        classNames: ['holiday-event'],
+                        extendedProps: {
+                            category: h.category || h.holiday_type || 'Holiday',
+                            description: h.description || ''
+                        }
+                    };
+                });
 
                 const calendar = new FullCalendar.Calendar(calendarEl, {
                     initialView: 'dayGridMonth',
@@ -580,20 +631,47 @@ $currentMonth = date('F Y');
                         center: 'title',
                         right: 'dayGridMonth,listMonth'
                     },
+                    height: 'auto',
+                    contentHeight: 'auto',
                     events: events,
+                    eventDisplay: 'block',
                     eventClick: function(info) {
                         const event = info.event;
+                        const dateStr = event.start ? event.start.toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        }) : 'Unknown date';
+                        
                         alert(
-                            event.title + '\n' +
-                            'Date: ' + event.start.toLocaleDateString() + '\n' +
-                            'Category: ' + (event.extendedProps.category || 'Holiday')
+                            '📅 ' + event.title + '\n' +
+                            'Date: ' + dateStr + '\n' +
+                            'Type: ' + (event.extendedProps.category || 'Holiday')
                         );
                     },
                     editable: false,
-                    selectable: false
+                    selectable: false,
+                    datesSet: function() {
+                        // Ensure all holiday event titles are properly displayed
+                        document.querySelectorAll('.fc-event-title').forEach(el => {
+                            if (el.textContent.trim() === '' || el.textContent.includes('undefined')) {
+                                el.textContent = 'Holiday';
+                            }
+                        });
+                    }
                 });
                 
                 calendar.render();
+                
+                // Ensure all event titles are properly displayed after render
+                setTimeout(function() {
+                    document.querySelectorAll('.fc-event-title').forEach(el => {
+                        if (el.textContent.trim() === '' || el.textContent.includes('undefined')) {
+                            el.textContent = 'Holiday';
+                        }
+                    });
+                }, 100);
+                
             } catch (err) {
                 console.error('Calendar initialization error:', err);
             }
