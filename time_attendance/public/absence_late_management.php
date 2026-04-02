@@ -8,6 +8,7 @@ require_once "../app/controllers/AuthController.php";
 require_once "../app/models/AbsenceLateMgmt.php";
 require_once "../app/models/Employee.php";
 require_once "../app/core/Session.php";
+require_once "../app/config/Database.php";
 
 Session::start();
 
@@ -25,6 +26,8 @@ if (!AuthController::hasRole('time') && !AuthController::hasRole('hr')) {
 
 $absenceLateMgmt = new AbsenceLateMgmt();
 $employeeModel = new Employee();
+$database = new Database();
+$conn = $database->getConnection();
 
 // Determine date range from period selector
 $period = $_GET['period'] ?? 'today';
@@ -695,8 +698,43 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $startDateStr
                     </div>
                 </div>
 
-                <!-- Filters -->
-                <div class="filter-section">
+                <!-- Diagnostic Info -->
+                <div style="background: #e3f2fd; border-left: 4px solid #1976d2; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleDiagnostics()">
+                        <strong style="color: #0d47a1;">
+                            <i class="fas fa-info-circle"></i> Period: <?php echo date('M d, Y', strtotime($startDateStr)); ?> to <?php echo date('M d, Y', strtotime($endDateStr)); ?>
+                        </strong>
+                        <span id="diagToggle" style="color: #0d47a1;">▼</span>
+                    </div>
+                    <div id="diagnostics" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #bbdefb; font-size: 12px; color: #555;">
+                        <p><strong>Records Found:</strong> <?php echo count($recordsByDate); ?> dates | <?php echo count($attendanceRecords); ?> total records</p>
+                        <?php 
+                        // Check if today is a holiday
+                        $stmt = $conn->prepare("SELECT COUNT(*) as count FROM ta_holidays WHERE holiday_date = :today");
+                        $stmt->bindParam(':today', $startDateStr);
+                        $stmt->execute();
+                        $holidayCheck = $stmt->fetch(PDO::FETCH_ASSOC);
+                        if ($holidayCheck['count'] > 0) {
+                            echo "<p style='color: orange;'><i class='fas fa-calendar-times'></i> <strong>Note:</strong> " . date('l, M d, Y', strtotime($startDateStr)) . " is a holiday - employees may be excluded</p>";
+                        }
+                        ?>
+                        <p><strong>Detection Method:</strong> Auto-detecting absent/late employees from attendance records</p>
+                    </div>
+                </div>
+
+                <script>
+                function toggleDiagnostics() {
+                    const diag = document.getElementById('diagnostics');
+                    const toggle = document.getElementById('diagToggle');
+                    if (diag.style.display === 'none') {
+                        diag.style.display = 'block';
+                        toggle.textContent = '▲';
+                    } else {
+                        diag.style.display = 'none';
+                        toggle.textContent = '▼';
+                    }
+                }
+                </script>
                     <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                         <div style="display: flex; align-items: center; gap: 10px; flex-grow: 1; min-width: 250px;">
                             <label for="periodSelector" style="margin: 0; font-weight: 600; white-space: nowrap;">Time Period:</label>

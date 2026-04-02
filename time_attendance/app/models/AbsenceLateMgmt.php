@@ -548,16 +548,17 @@ class AbsenceLateMgmt
                     CAST(:date AS DATE) as check_date,
                     CASE 
                         WHEN a.attendance_id IS NULL THEN 'ABSENT'
-                        WHEN TIME(a.time_in) > TIME(s.start_time) THEN 'LATE'
+                        WHEN s2.start_time IS NOT NULL AND TIME(a.time_in) > TIME(s2.start_time) THEN 'LATE'
                         ELSE 'ON_TIME'
                     END as status,
                     a.time_in,
                     a.time_out,
-                    s.start_time,
-                    s.end_time,
+                    s2.start_time,
+                    s2.end_time,
                     CASE 
                         WHEN a.attendance_id IS NULL THEN NULL
-                        ELSE TIMESTAMPDIFF(MINUTE, s.start_time, TIME(a.time_in))
+                        WHEN s2.start_time IS NOT NULL THEN TIMESTAMPDIFF(MINUTE, s2.start_time, TIME(a.time_in))
+                        ELSE NULL
                     END as minutes_late,
                     CASE 
                         WHEN lr.leave_request_id IS NOT NULL THEN 'APPROVED_LEAVE'
@@ -567,10 +568,6 @@ class AbsenceLateMgmt
                     r.reason as excuse_reason,
                     r.excuse_status
                 FROM employees e
-                LEFT JOIN ta_shifts s ON e.employee_id = s.employee_id 
-                    AND s.effective_from <= :date 
-                    AND (s.effective_to IS NULL OR s.effective_to >= :date)
-                    AND s.is_active = 1
                 LEFT JOIN ta_employee_shifts es ON e.employee_id = es.employee_id 
                     AND es.effective_from <= :date 
                     AND (es.effective_to IS NULL OR es.effective_to >= :date)
