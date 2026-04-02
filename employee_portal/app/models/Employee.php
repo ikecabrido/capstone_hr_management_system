@@ -40,6 +40,8 @@ class Employee
      */
     public function getById($employee_no)
     {
+        var_dump($employee_no);
+        die;
         $query = "SELECT e.*, u.username, u.role 
                   FROM " . $this->table . " e
                   LEFT JOIN users u ON e.user_id = u.id

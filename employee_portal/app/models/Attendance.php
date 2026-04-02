@@ -1,9 +1,4 @@
 <?php
-/**
- * Attendance Model for Time & Attendance System
- * Handles all attendance-related database operations
- */
-
 require_once __DIR__ . '/../config/Database.php';
 
 class Attendance
@@ -17,9 +12,6 @@ class Attendance
         $this->conn = $database->getConnection();
     }
 
-    /**
-     * Get today's attendance record for an employee
-     */
     public function getTodayAttendance($employee_no)
     {
         $query = "SELECT * FROM $this->table 
@@ -34,9 +26,6 @@ class Attendance
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Record Time In
-     */
     public function timeIn($employee_no, $method)
     {
         $query = "INSERT INTO $this->table 
@@ -50,9 +39,6 @@ class Attendance
         return $stmt->execute();
     }
 
-    /**
-     * Record Time Out
-     */
     public function timeOut($attendance_id)
     {
         $query = "UPDATE $this->table 
@@ -65,9 +51,6 @@ class Attendance
         return $stmt->execute();
     }
 
-    /**
-     * Get attendance records for date range
-     */
     public function getByDateRange($start_date, $end_date, $employee_no = null, $limit = 500, $offset = 0)
     {
         $query = "SELECT a.*, e.full_name, e.department, e.position
@@ -97,9 +80,6 @@ class Attendance
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Get today's attendance summary (for dashboard)
-     */
     public function getTodaySummary()
     {
         $query = "SELECT 
@@ -115,9 +95,6 @@ class Attendance
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Get attendance status for all employees today
-     */
     public function getTodayAllEmployees($limit = 100, $offset = 0)
     {
         $query = "SELECT a.*, e.full_name, e.department, e.position
@@ -136,9 +113,6 @@ class Attendance
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Get attendance history for a specific employee
-     */
     public function getEmployeeHistory($employee_no, $limit = 30, $offset = 0)
     {
         $query = "SELECT * FROM $this->table
@@ -155,9 +129,6 @@ class Attendance
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Get pending approvals
-     */
     public function getPendingApprovals($limit = 50, $offset = 0)
     {
         $query = "SELECT a.*, e.full_name, e.department
@@ -175,9 +146,6 @@ class Attendance
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Approve attendance record
-     */
     public function approve($attendance_id, $approved_by, $remarks = "")
     {
         $query = "UPDATE $this->table 
@@ -195,9 +163,6 @@ class Attendance
         return $stmt->execute();
     }
 
-    /**
-     * Update attendance status
-     */
     public function updateStatus($attendance_id, $status)
     {
         $query = "UPDATE $this->table 
@@ -211,9 +176,6 @@ class Attendance
         return $stmt->execute();
     }
 
-    /**
-     * Update attendance record with hours data
-     */
     public function updateHours($attendance_id, $hoursData)
     {
         $query = "UPDATE $this->table 
@@ -231,15 +193,15 @@ class Attendance
         return $stmt->execute();
     }
 
-    /**
-     * Check if a date is a holiday
-     */
     public function isHoliday($date)
     {
-        $query = "SELECT is_working_day FROM holidays 
-                  WHERE holiday_date = :date 
-                  AND year = YEAR(:date) 
-                  AND is_working_day = 0";
+        $query = "SELECT id FROM ta_holidays 
+              WHERE is_active = 1
+              AND (
+                    holiday_date = :date
+                    OR (is_recurring = 1 AND DATE_FORMAT(holiday_date, '%m-%d') = DATE_FORMAT(:date, '%m-%d'))
+                  )
+              LIMIT 1";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':date', $date);
@@ -248,15 +210,16 @@ class Attendance
         return $stmt->fetch(PDO::FETCH_ASSOC) ? true : false;
     }
 
-    /**
-     * Get holiday information for a date
-     */
     public function getHolidayInfo($date)
     {
-        $query = "SELECT holiday_id, holiday_name, description, is_working_day 
-                  FROM holidays 
-                  WHERE holiday_date = :date 
-                  AND year = YEAR(:date)";
+        $query = "SELECT id, name, description, category, is_recurring
+              FROM ta_holidays 
+              WHERE is_active = 1
+              AND (
+                    holiday_date = :date
+                    OR (is_recurring = 1 AND DATE_FORMAT(holiday_date, '%m-%d') = DATE_FORMAT(:date, '%m-%d'))
+                  )
+              LIMIT 1";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':date', $date);
@@ -265,17 +228,15 @@ class Attendance
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Get all holidays for a year
-     */
     public function getHolidaysByYear($year = null)
     {
         $year = $year ?: date('Y');
-        
-        $query = "SELECT holiday_date, holiday_name, description, is_working_day 
-                  FROM holidays 
-                  WHERE year = :year 
-                  ORDER BY holiday_date ASC";
+
+        $query = "SELECT id, name, holiday_date, description, category, is_recurring
+              FROM ta_holidays 
+              WHERE is_active = 1
+              AND YEAR(holiday_date) = :year
+              ORDER BY holiday_date ASC";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':year', $year, PDO::PARAM_INT);

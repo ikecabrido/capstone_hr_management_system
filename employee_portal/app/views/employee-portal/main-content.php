@@ -1,11 +1,12 @@
-<div class="w-full ml-16">
+<div class="ml-16 flex-1 w-full">
     <?php require __DIR__ . '/../partials/notif.php'; ?>
-    <div class="content-wrapper w-full">
+
+    <div class="content-wrapper w-full max-w-none">
         <div style="display: flex; align-items: center; margin-bottom: 20px;">
             <div class="live-clock" id="liveClock">00:00:00</div>
         </div>
         <h1>Dashboard</h1>
-        <p class="text-[24px]">Welcome back, <strong><?php echo isset($employee['first_name']) ? htmlspecialchars($employee['first_name']) : "none"; ?></strong>!</p>
+        <p class="text-[24px]">Welcome back, <strong><?php echo isset($employee['full_name']) ? htmlspecialchars($employee['full_name']) : "none"; ?></strong>!</p>
         <?php require __DIR__ . '/../partials/notif.php'; ?>
 
         <!-- Messages -->
@@ -20,7 +21,7 @@
         <?php endif; ?>
 
         <!-- Time In/Out Action Section -->
-        <div class="time-action-section">
+        <div class="time-action-section" style="margin-left: 16px; width: 800px;">
             <div class="time-action-header">
                 <h3> Time In/Out</h3>
                 <span><?php echo date('l, F j, Y'); ?></span>
@@ -77,101 +78,6 @@
                     Time In Completed
                 </button>
             <?php endif; ?>
-        </div>
-
-        <!-- Quick Stats -->
-        <div class="dashboard-grid">
-            <div class="card present">
-                <h3>Present This Month</h3>
-                <div class="card-value">
-                    <?php echo isset($present_count) ? $present_count : '00'; ?>
-                </div>
-                <div class="card-unit">days</div>
-            </div>
-
-            <div class="card late">
-                <h3>Late Arrivals</h3>
-                <div class="card-value">
-                    <?php echo isset($late_count) ? $late_count : '00'; ?>
-                </div>
-                <div class="card-unit">times</div>
-            </div>
-
-            <div class="card hours">
-                <h3>Hours Worked</h3>
-                <div class="card-value">
-                    <?php echo isset($total_hours)
-                        ? number_format($total_hours, 1)
-                        : '00'; ?>
-                </div>
-                <div class="card-unit">hours</div>
-            </div>
-
-            <div class="card overtime">
-                <h3>Overtime Hours</h3>
-                <div class="card-value">
-                    <?php echo isset($total_overtime)
-                        ? number_format($total_overtime, 1)
-                        : '00'; ?>
-                </div>
-                <div class="card-unit">hours</div>
-            </div>
-        </div>
-
-        <!-- Today's Shift Schedule Card -->
-        <div class="dashboard-grid">
-            <div class="card shift-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                <h3 style="color: white; margin-top: 0;">📅 Today's Shift</h3>
-                <?php if (!empty($today_shift)): ?>
-                    <div style="margin-top: 15px;">
-                        <p style="font-size: 18px; font-weight: bold; margin: 10px 0;">
-                            <?php echo htmlspecialchars($today_shift['shift_name'] ?? 'none'); ?>
-                        </p>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
-                            <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 6px; text-align: center;">
-                                <p style="margin: 0; font-size: 12px; opacity: 0.9;">Start Time</p>
-                                <p style="margin: 5px 0 0 0; font-size: 16px; font-weight: bold;">
-                                    <?php echo !empty($today_shift['start_time'])
-                                        ? date('h:i A', strtotime($today_shift['start_time']))
-                                        : '--:--'; ?>
-                                </p>
-                            </div>
-                            <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 6px; text-align: center;">
-                                <p style="margin: 0; font-size: 12px; opacity: 0.9;">End Time</p>
-                                <p style="margin: 5px 0 0 0; font-size: 16px; font-weight: bold;">
-                                    <?php echo !empty($today_shift['end_time'])
-                                        ? date('h:i A', strtotime($today_shift['end_time']))
-                                        : '--:--'; ?>
-                                </p>
-                            </div>
-                        </div>
-                        <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 6px; margin-top: 10px; text-align: center;">
-                            <p style="margin: 0; font-size: 12px; opacity: 0.9;">Break Duration</p>
-                            <p style="margin: 5px 0 0 0; font-weight: bold;">
-                                <?php echo htmlspecialchars($today_shift['break_duration'] ?? 'none'); ?>
-                            </p>
-                        </div>
-                    </div>
-                <?php else: ?>
-                    <p style="color: rgba(255,255,255,0.9); font-style: italic; margin-top: 15px;">ℹ️ No shift assigned for today</p>
-                <?php endif; ?>
-            </div>
-        </div>
-
-        <!-- Attendance Percentage Chart -->
-        <div class="chart-container">
-            <h3>Attendance Percentage This Month</h3>
-            <div style="position: relative; width: 100%; height: 100%; flex: 1;">
-                <canvas id="attendanceChart" width="800" height="400"></canvas>
-            </div>
-        </div>
-
-        <!-- 6-Month Trend Chart -->
-        <div class="chart-container">
-            <h3>6-Month Attendance Trend</h3>
-            <div style="position: relative; width: 100%; height: 100%; flex: 1;">
-                <canvas id="trendChart" width="800" height="400"></canvas>
-            </div>
         </div>
 
         <!-- Leave Balance -->

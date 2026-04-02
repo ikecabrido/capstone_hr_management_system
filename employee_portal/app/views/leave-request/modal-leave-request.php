@@ -12,11 +12,11 @@
                     <input type="hidden" name="user_id" value="<?= $_SESSION['user_id'] ?? '' ?>">
                     <div class="mb-4">
                         <label class="form-label fw-semibold">Leave Type</label>
-                        <select name="leave_type" class="form-select shadow-sm" required>
+                        <select name="leave_type_id" class="form-select shadow-sm" required>
                             <option value="" disabled selected>Choose leave type...</option>
-                            <option value="Sick Leave">Sick Leave</option>
-                            <option value="Vacation Leave">Vacation Leave</option>
-                            <option value="Emergency Leave">Emergency Leave</option>
+                            <?php foreach ($leaveTypes as $type): ?>
+                                <option value="<?= $type['leave_type_id'] ?>"><?= htmlspecialchars($type['leave_type_name']) ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
 
