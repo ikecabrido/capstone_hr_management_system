@@ -12,28 +12,28 @@ class Attendance
         $this->conn = $database->getConnection();
     }
 
-    public function getTodayAttendance($employee_no)
+    public function getTodayAttendance($employee_id)
     {
         $query = "SELECT * FROM $this->table 
-                  WHERE employee_no = :employee_no 
+                  WHERE employee_no = :employee_id 
                   AND attendance_date = CURDATE() 
                   LIMIT 1";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':employee_no', $employee_no);
+        $stmt->bindParam(':employee_id', $employee_id);
         $stmt->execute();
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function timeIn($employee_no, $method)
+    public function timeIn($employee_id, $method)
     {
         $query = "INSERT INTO $this->table 
                   (employee_no, time_in, attendance_date, recorded_by)
                   VALUES (:employee_no, NOW(), CURDATE(), :method)";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':employee_no', $employee_no);
+        $stmt->bindParam(':employee_no', $employee_id);
         $stmt->bindParam(':method', $method);
 
         return $stmt->execute();
@@ -241,6 +241,29 @@ class Attendance
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':year', $year, PDO::PARAM_INT);
         $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getMonthlyAttendance($employee_id, $month = null, $year = null)
+    {
+        $month = $month ?? date('m'); 
+        $year = $year ?? date('Y');  
+
+        $query = "SELECT *,
+                     TIME_TO_SEC(TIMEDIFF(time_out, time_in)) / 3600 AS total_hours_worked
+              FROM ta_attendance
+              WHERE employee_no = :employee_id
+                AND MONTH(attendance_date) = :month
+                AND YEAR(attendance_date) = :year
+              ORDER BY attendance_date DESC";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([
+            ':employee_id' => $employee_id,
+            ':month' => $month,
+            ':year' => $year
+        ]);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

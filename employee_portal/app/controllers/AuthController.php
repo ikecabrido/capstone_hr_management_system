@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../models/Users.php';
+require_once __DIR__ . '/../models/Employee.php';
 require_once __DIR__ . '/../core/Session.php';
 require_once __DIR__ . '/../core/Helper.php';
 require_once __DIR__ . '/../core/AuditLog.php';
@@ -9,11 +10,13 @@ class AuthController
 {
     private $userModel;
     private $auditLog;
+    private $employeeModel;
 
     public function __construct()
     {
         $this->userModel = new User();
         $this->auditLog  = new AuditLog();
+        $this->employeeModel = new Employee();
     }
 
     public function login()
@@ -29,7 +32,7 @@ class AuthController
             }
 
             $user = $this->userModel->login($employee_no);
-            
+
             if (!$user || empty($user['user_id'])) {
                 throw new Exception("Invalid credentials");
             }
@@ -117,13 +120,30 @@ class AuthController
 
     public static function requireAuth()
     {
-        session_start(); 
+        session_start();
 
         if (!isset($_SESSION['user_id'])) {
-            header('Location: /index.php'); 
-            exit(); 
+            header('Location: /index.php');
+            exit();
         }
 
         return $_SESSION['user_id'];
+    }
+
+    public function checkUserEmployee($user_id)
+    {
+        $employee = $this->employeeModel->findByUserId($user_id);
+
+        if (!$user_id) {
+            die('User not logged in.');
+        }
+
+        if (!$employee) {
+            Session::set('error', 'Employee data not found');
+            header("Location: index.php?url=auth-index");
+            exit;
+        }
+
+        return $employee;
     }
 }

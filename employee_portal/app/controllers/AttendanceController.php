@@ -29,32 +29,29 @@ class AttendanceController
         $this->qrHelper = new QRHelper();
         $this->auditLog = new AuditLog();
     }
-
     public function timeIn()
     {
         try {
             Session::start();
+            $employee_id = $_POST['employee_id'];
 
             // Only allow POST
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                 header("Location: index.php?url=dashboard");
                 exit;
             }
-
             $user_id = Session::get('user_id');
-            $employee_no = $_POST['employee_no'] ?? null;
             $method = 'MANUAL';
             $todayDate = date('Y-m-d');
-
-            if (!$employee_no) {
+            if (!$employee_id) {
                 Session::set('error', 'Employee not found.');
                 header("Location: index.php?url=dashboard");
                 exit;
             }
 
-            $existingRecord = $this->attendanceModel->getTodayAttendance($employee_no);
+            $existingRecord = $this->attendanceModel->getTodayAttendance($employee_id);
 
-            // ✅ Holiday check
+            //Holiday check
             if ($this->attendanceModel->isHoliday($todayDate)) {
 
                 $holiday = $this->attendanceModel->getHolidayInfo($todayDate);
@@ -62,7 +59,7 @@ class AttendanceController
                 $this->auditLog->log(
                     'TIME_IN_FAILED',
                     $user_id,
-                    $employee_no,
+                    $employee_id,
                     null,
                     ['reason' => 'Holiday'],
                     'FAILED',
@@ -75,13 +72,13 @@ class AttendanceController
                 exit;
             }
 
-            // ✅ Already timed in
+            //Already timed in
             if ($existingRecord && !empty($existingRecord['time_in'])) {
 
                 $this->auditLog->log(
                     'TIME_IN_FAILED',
                     $user_id,
-                    $employee_no,
+                    $employee_id,
                     null,
                     ['reason' => 'Already timed in'],
                     'FAILED'
@@ -92,17 +89,16 @@ class AttendanceController
                 header("Location: index.php?url=dashboard");
                 exit;
             }
+            //Insert Time In
+            if ($this->attendanceModel->timeIn($employee_id, $method)) {
 
-            // ✅ Insert Time In
-            if ($this->attendanceModel->timeIn($employee_no, $method)) {
-
-                $record = $this->attendanceModel->getTodayAttendance($employee_no);
+                $record = $this->attendanceModel->getTodayAttendance($employee_id);
                 $status = Helper::determineStatus($record['time_in']);
 
                 $this->auditLog->log(
                     'TIME_IN_SUCCESS',
                     $user_id,
-                    $employee_no,
+                    $employee_id,
                     $record['attendance_id'],
                     ['method' => $method, 'status' => $status],
                     'SUCCESS'
@@ -114,7 +110,7 @@ class AttendanceController
                 $this->auditLog->log(
                     'TIME_IN_FAILED',
                     $user_id,
-                    $employee_no,
+                    $employee_id,
                     null,
                     ['reason' => 'DB error'],
                     'FAILED'
@@ -123,7 +119,7 @@ class AttendanceController
                 Session::set('error', 'Failed to record time in.');
             }
 
-            // ✅ FINAL REDIRECT (always reached)
+            //REDIRECT 
             header("Location: index.php?url=dashboard");
             exit;
         } catch (Exception $e) {
@@ -133,129 +129,52 @@ class AttendanceController
             exit;
         }
     }
-
     public function timeOut()
     {
-        try {
-            Session::start();
+        Session::start();
 
-            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                header("Location: index.php?url=dashboard");
-                exit;
-            }
+        $employee_id = $_POST['employee_id'] ?? null;
+        $user_id = Session::get('user_id');
 
-            $user_id = Session::get('user_id');
-            $employee_no = $_POST['employee_no'] ?? null;
-
-            if (!$employee_no) {
-                Session::set('error', 'Employee not found.');
-                header("Location: index.php?url=dashboard");
-                exit;
-            }
-
-            $record = $this->attendanceModel->getTodayAttendance($employee_no);
-
-            if (!$record) {
-                $this->auditLog->log(
-                    'TIME_OUT_FAILED',
-                    $user_id,
-                    $employee_no,
-                    null,
-                    ['reason' => 'No time in record'],
-                    'FAILED'
-                );
-
-                Session::set('error', 'Please record Time In first.');
-                header("Location: index.php?url=dashboard");
-                exit;
-            }
-
-            if (!empty($record['time_out'])) {
-                $this->auditLog->log(
-                    'TIME_OUT_FAILED',
-                    $user_id,
-                    $employee_no,
-                    $record['attendance_id'],
-                    ['reason' => 'Already timed out'],
-                    'FAILED'
-                );
-
-                Session::set('error', 'Already timed out at ' . Helper::formatTime($record['time_out']));
-                header("Location: index.php?url=dashboard");
-                exit;
-            }
-
-            if ($this->attendanceModel->timeOut($record['attendance_id'])) {
-
-                $updatedRecord = $this->attendanceModel->getTodayAttendance($employee_no);
-
-                $duration  = Helper::calculateDuration($updatedRecord['time_in'], $updatedRecord['time_out']);
-                $hoursData = Helper::calculateHours($updatedRecord['time_in'], $updatedRecord['time_out'], 8);
-
-                $this->attendanceModel->updateHours($record['attendance_id'], $hoursData);
-                $employee = $this->employeeModel->findByUserId($employee_no);
-
-                $this->auditLog->log(
-                    'TIME_OUT_SUCCESS',
-                    $user_id,
-                    $employee_no,
-                    $record['attendance_id'],
-                    [
-                        'duration' => $duration,
-                        'hours' => $hoursData
-                    ],
-                    'SUCCESS'
-                );
-
-                Session::set(
-                    'success',
-                    'Time Out at ' . Helper::formatTime($updatedRecord['time_out']) .
-                        ' | Total Hours: ' . $hoursData['total_hours']
-                );
-            } else {
-
-                $this->auditLog->log(
-                    'TIME_OUT_FAILED',
-                    $user_id,
-                    $employee_no,
-                    $record['attendance_id'],
-                    ['reason' => 'Database error'],
-                    'FAILED'
-                );
-
-                Session::set('error', 'Failed to record time out.');
-            }
-
-            header("Location: index.php?url=dashboard");
-            exit;
-        } catch (Exception $e) {
-
-            error_log("TimeOut Error: " . $e->getMessage());
-
-            $this->auditLog->log(
-                'TIME_OUT_ERROR',
-                $user_id ?? null,
-                $employee_no ?? null,
-                null,
-                ['error' => $e->getMessage()],
-                'FAILED'
-            );
-
-            Session::set('error', 'An error occurred. Please contact HR.');
-
+        if (!$employee_id) {
+            Session::set('error', 'Employee not found');
             header("Location: index.php?url=dashboard");
             exit;
         }
-    }
 
-    /**
-     * Process QR attendance (Smart - handles both Time In and Time Out)
-     * Validates token and records time in or time out based on current status
-     * 
-     * @param int $employee_no - Employee ID
-     * @param string $token - QR token
-     * @return array - Response array
-     */
+        $record = $this->attendanceModel->getTodayAttendance($employee_id);
+
+        if (!$record) {
+            Session::set('error', 'Please record Time In first.');
+            header("Location: index.php?url=dashboard");
+            exit;
+        }
+
+        if (!empty($record['time_out'])) {
+            Session::set('error', 'Already timed out at ' . Helper::formatTime($record['time_out']));
+            header("Location: index.php?url=dashboard");
+            exit;
+        }
+
+        if ($this->attendanceModel->timeOut($record['attendance_id'])) {
+
+            $updatedRecord = $this->attendanceModel->getTodayAttendance($employee_id);
+            $hoursData = Helper::calculateHours($updatedRecord['time_in'], $updatedRecord['time_out'], 8);
+
+            $this->attendanceModel->updateHours($record['attendance_id'], $hoursData);
+
+            Session::set(
+                'success',
+                'Time Out at ' . Helper::formatTime($updatedRecord['time_out']) .
+                    ' | Total Hours: ' . $hoursData['total_hours']
+            );
+        } else {
+            Session::set('error', 'Failed to record time out.');
+        }
+
+        header("Location: index.php?url=dashboard");
+        exit;
+    }
     public function processQRAttendance($employee_no, $token)
     {
         Session::start();
@@ -350,27 +269,10 @@ class AttendanceController
         }
     }
 
-    /**
-     * Get today's attendance record for employee
-     * 
-     * @param int $employee_no - Employee ID
-     * @return array|null - Attendance record or null
-     */
-    public function getTodayRecord($employee_no)
+    public function getStatus($employee_id)
     {
-        return $this->attendanceModel->getTodayAttendance($employee_no);
-    }
+        $record = $this->attendanceModel->getTodayAttendance($employee_id);
 
-    /**
-     * Get attendance status for display
-     * 
-     * @param int $employee_no - Employee ID
-     * @return array - Status information
-     */
-    public function getStatus($employee_no)
-    {
-
-        $record = $this->getTodayRecord($employee_no);
         if (!$record) {
             return [
                 'status' => 'NOT_STARTED',

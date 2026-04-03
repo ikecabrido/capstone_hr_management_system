@@ -57,7 +57,7 @@
 
             <?php if (empty($statusInfo['time_in'])): ?>
                 <form method="POST" class="btn btn-primary" action="index.php?url=employee-time-in">
-                    <input type="hidden" value="<?= $user_id ?>" name="employee_no">
+                    <input type="hidden" value="<?= $employee_id ?>" name="employee_id">
                     <input type="hidden" value="time_in" name="time_in">
                     <button type="submit" name="submit" class="btn-time-action btn-time-in">
                         Time In
@@ -66,7 +66,7 @@
                 </form>
             <?php elseif (empty($statusInfo['time_out'])): ?>
                 <form method="POST" class="btn btn-primary" action="index.php?url=employee-time-out">
-                    <input type="hidden" value="<?= $user_id ?>" name="employee_no">
+                    <input type="hidden" value="<?= $employee_id ?>" name="employee_id">
                     <input type="hidden" value="time_out" name="time_out">
                     <button type="submit" name="submit" class="btn-time-action btn-time-out">
                         Time Out
@@ -136,76 +136,80 @@
         </div>
 
         <!-- Recent Attendance -->
-        <h2 style="margin-top: 40px;">Recent Attendance</h2>
-        <div class="attendance-record">
-            <?php if (!empty($monthly_attendance)): ?>
-                <?php foreach (array_slice($monthly_attendance, 0, 10) as $record): ?>
-                    <?php
-                    $statusClass = isset($record['status']) ? strtolower($record['status']) : 'none';
-                    $timeInDate = !empty($record['time_in']) ? Helper::formatDate($record['time_in']) : 'none';
-                    $timeInTime = !empty($record['time_in']) ? Helper::formatTime($record['time_in']) : 'none';
-                    $timeOutTime = !empty($record['time_out']) ? Helper::formatTime($record['time_out']) : 'Not yet';
-                    $statusText = $record['status'] ?? 'none';
-                    $statusColor = ($statusText === 'ON_TIME') ? '#27ae60' : '#f39c12';
-                    $hoursWorked = isset($record['total_hours_worked']) ? number_format($record['total_hours_worked'], 2) : '0.00';
-                    ?>
-                    <div class="record-item <?php echo $statusClass; ?>">
-                        <strong><?php echo $timeInDate; ?></strong><br>
-                        In: <?php echo $timeInTime; ?><br>
-                        Out: <?php echo $timeOutTime; ?><br>
-                        Status: <span style="color: <?php echo $statusColor; ?>;"><strong><?php echo $statusText; ?></strong></span><br>
-                        Hours: <?php echo $hoursWorked; ?>h
-                    </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <p>No attendance records this month.</p>
-            <?php endif; ?>
+        <div>
+            <h2 style="margin-top: 40px;">Recent Attendance</h2>
+            <div class="attendance-record">
+                <?php if (!empty($monthly_attendance)): ?>
+                    <?php foreach (array_slice($monthly_attendance, 0, 10) as $record): ?>
+                        <?php
+                        $statusClass = isset($record['status']) ? strtolower($record['status']) : 'none';
+                        $timeInDate = !empty($record['time_in']) ? Helper::formatDate($record['time_in']) : 'none';
+                        $timeInTime = !empty($record['time_in']) ? Helper::formatTime($record['time_in']) : 'none';
+                        $timeOutTime = !empty($record['time_out']) ? Helper::formatTime($record['time_out']) : 'Not yet';
+                        $statusText = $record['status'] ?? 'none';
+                        $statusColor = ($statusText === 'ON_TIME') ? '#27ae60' : '#f39c12';
+                        $hoursWorked = isset($record['total_hours_worked']) ? number_format($record['total_hours_worked'], 2) : '0.00';
+                        ?>
+                        <div class="record-item <?php echo $statusClass; ?>">
+                            <strong><?php echo $timeInDate; ?></strong><br>
+                            In: <?php echo $timeInTime; ?><br>
+                            Out: <?php echo $timeOutTime; ?><br>
+                            Status: <span style="color: <?php echo $statusColor; ?>;"><strong><?php echo $statusText; ?></strong></span><br>
+                            Hours: <?php echo $hoursWorked; ?>h
+                        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <p>No attendance records this month.</p>
+                <?php endif; ?>
+            </div>
         </div>
 
         <!-- Leave Requests History -->
-        <h2 style="margin-top: 40px;">📋 My Leave Requests</h2>
-        <div class="leave-requests-section">
-            <?php if (!empty($leave_requests)): ?>
-                <div style="display: grid; gap: 12px;">
-                    <?php foreach ($leave_requests as $req): ?>
-                        <?php
-                        $leaveType = htmlspecialchars($req['leave_type_name'] ?? 'none');
-                        $startDate = !empty($req['start_date']) ? date('M d, Y', strtotime($req['start_date'])) : 'none';
-                        $endDate = !empty($req['end_date']) ? date('M d, Y', strtotime($req['end_date'])) : 'none';
-                        $reason = !empty($req['reason']) ? htmlspecialchars(substr($req['reason'], 0, 60)) : 'none';
-                        $reasonMore = strlen($req['reason'] ?? '') > 60 ? '...' : '';
-                        $submitted = !empty($req['created_at']) ? date('M d, Y h:i A', strtotime($req['created_at'])) : 'none';
-                        $status = htmlspecialchars($req['status'] ?? 'none');
-                        $remarks = htmlspecialchars($req['remarks'] ?? 'none');
-                        $statusColor = $status === 'Pending' ? ['bg' => '#fff3cd', 'text' => '#856404'] : ($status === 'Approved' || $status === 'Final-Approved' ? ['bg' => '#d4edda', 'text' => '#155724'] :
-                            ['bg' => '#f8d7da', 'text' => '#721c24']);
-                        $borderColor = $status === 'Pending' ? '#f39c12' : ($status === 'Approved' || $status === 'Final-Approved' ? '#27ae60' : '#e74c3c');
-                        ?>
-                        <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid <?php echo $borderColor; ?>; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                            <div style="display: flex; justify-content: space-between; align-items: start;">
-                                <div style="flex: 1;">
-                                    <h4 style="margin: 0 0 8px 0; color: #333;"><?php echo $leaveType; ?></h4>
-                                    <p style="margin: 0 0 5px 0; color: #666; font-size: 13px;"><strong>Dates:</strong> <?php echo $startDate; ?> - <?php echo $endDate; ?></p>
-                                    <p style="margin: 0 0 5px 0; color: #666; font-size: 13px;"><strong>Reason:</strong> <?php echo $reason . $reasonMore; ?></p>
-                                    <p style="margin: 0; color: #999; font-size: 12px;">Submitted: <?php echo $submitted; ?></p>
+        <div>
+            <h2 style="margin-top: 40px;">📋 My Leave Requests</h2>
+            <div class="leave-requests-section">
+                <?php if (!empty($leave_requests)): ?>
+                    <div style="display: grid; gap: 12px;">
+                        <?php foreach ($leave_requests as $req): ?>
+                            <?php
+                            $leaveType = htmlspecialchars($req['leave_type_name'] ?? 'none');
+                            $startDate = !empty($req['start_date']) ? date('M d, Y', strtotime($req['start_date'])) : 'none';
+                            $endDate = !empty($req['end_date']) ? date('M d, Y', strtotime($req['end_date'])) : 'none';
+                            $reason = !empty($req['reason']) ? htmlspecialchars(substr($req['reason'], 0, 60)) : 'none';
+                            $reasonMore = strlen($req['reason'] ?? '') > 60 ? '...' : '';
+                            $submitted = !empty($req['created_at']) ? date('M d, Y h:i A', strtotime($req['created_at'])) : 'none';
+                            $status = htmlspecialchars($req['status'] ?? 'none');
+                            $remarks = htmlspecialchars($req['remarks'] ?? 'none');
+                            $statusColor = $status === 'Pending' ? ['bg' => '#fff3cd', 'text' => '#856404'] : ($status === 'Approved' || $status === 'Final-Approved' ? ['bg' => '#d4edda', 'text' => '#155724'] :
+                                ['bg' => '#f8d7da', 'text' => '#721c24']);
+                            $borderColor = $status === 'Pending' ? '#f39c12' : ($status === 'Approved' || $status === 'Final-Approved' ? '#27ae60' : '#e74c3c');
+                            ?>
+                            <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid <?php echo $borderColor; ?>; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                <div style="display: flex; justify-content: space-between; align-items: start;">
+                                    <div style="flex: 1;">
+                                        <h4 style="margin: 0 0 8px 0; color: #333;"><?php echo $leaveType; ?></h4>
+                                        <p style="margin: 0 0 5px 0; color: #666; font-size: 13px;"><strong>Dates:</strong> <?php echo $startDate; ?> - <?php echo $endDate; ?></p>
+                                        <p style="margin: 0 0 5px 0; color: #666; font-size: 13px;"><strong>Reason:</strong> <?php echo $reason . $reasonMore; ?></p>
+                                        <p style="margin: 0; color: #999; font-size: 12px;">Submitted: <?php echo $submitted; ?></p>
+                                    </div>
+                                    <span style="background: <?php echo $statusColor['bg']; ?>; color: <?php echo $statusColor['text']; ?>; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; white-space: nowrap;">
+                                        <?php echo $status; ?>
+                                    </span>
                                 </div>
-                                <span style="background: <?php echo $statusColor['bg']; ?>; color: <?php echo $statusColor['text']; ?>; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; white-space: nowrap;">
-                                    <?php echo $status; ?>
-                                </span>
+                                <?php if (!empty($req['remarks'])): ?>
+                                    <p style="margin: 8px 0 0 0; padding-top: 8px; border-top: 1px solid #eee; color: #666; font-size: 12px;">
+                                        <strong>Remarks:</strong> <?php echo $remarks; ?>
+                                    </p>
+                                <?php endif; ?>
                             </div>
-                            <?php if (!empty($req['remarks'])): ?>
-                                <p style="margin: 8px 0 0 0; padding-top: 8px; border-top: 1px solid #eee; color: #666; font-size: 12px;">
-                                    <strong>Remarks:</strong> <?php echo $remarks; ?>
-                                </p>
-                            <?php endif; ?>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            <?php else: ?>
-                <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; color: #999; border: 1px solid #eee;">
-                    <p>📭 No leave requests yet</p>
-                </div>
-            <?php endif; ?>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; color: #999; border: 1px solid #eee;">
+                        <p>📭 No leave requests yet</p>
+                    </div>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </div>

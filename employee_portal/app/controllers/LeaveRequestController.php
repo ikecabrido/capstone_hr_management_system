@@ -43,7 +43,7 @@ class LeaveRequestController
         foreach ($leaves as &$leave) {
             $leave['leave_type_name'] = $leaveTypeMap[$leave['leave_type_id']] ?? 'Unknown';
         }
-        unset($leave); 
+        unset($leave);
 
         $totalLeaves     = $this->leaveModel->getTotalLeaves($employee_id);
         $usedLeaves      = $this->leaveModel->getUsedLeaves($employee_id);
