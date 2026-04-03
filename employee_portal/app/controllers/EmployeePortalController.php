@@ -10,9 +10,9 @@ class EmployeePortalController
 
     public function __construct()
     {
-        $employeeModel = new Employee();
+        $this->employeeModel = new Employee();
 
-        $attendanceController = new AttendanceController();
+        $this->attendanceController = new AttendanceController();
     }
     
 public function index()
@@ -21,14 +21,12 @@ public function index()
 
     $title = "Employee Portal";
 
-    // STEP 1: Get logged-in user
     $user_id = Session::get('user_id');
 
     if (!$user_id) {
         die('User not logged in.');
     }
 
-    // STEP 2: Get employee using user_id
     $employee = $this->employeeModel->findByUserId($user_id);
 
     if (!$employee) {
@@ -37,14 +35,11 @@ public function index()
         exit;
     }
 
-    // STEP 3: Extract needed values
-    $employee_id = $employee['id'];           // ✅ THIS is what you want
-    $employee_no = $employee['employee_no'];  // ✅ for attendance
+    $employee_id = $employee['id'];           
+    $employee_no = $employee['employee_no'];  
 
-    // (Optional) store in session if you want reuse
     Session::set('employee_id', $employee_id);
 
-    // HANDLE FORM ACTIONS
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $action = $_POST['action'];
 
@@ -65,10 +60,8 @@ public function index()
         }
     }
 
-    // Get attendance status
-    $statusInfo = $this->attendanceController->getStatus($employee_no);
+    $statusInfo = $this->attendanceController->getStatus($user_id);
 
-    // Messages
     $message = Session::get('success') ?? Session::get('error') ?? null;
     $messageType = Session::get('success') ? 'success' : (Session::get('error') ? 'danger' : 'info');
 

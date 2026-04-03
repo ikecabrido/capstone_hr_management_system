@@ -57,7 +57,7 @@
 
             <?php if (empty($statusInfo['time_in'])): ?>
                 <form method="POST" class="btn btn-primary" action="index.php?url=employee-time-in">
-                    <input type="hidden" value="<?= $employee_no ?>" name="employee_no">
+                    <input type="hidden" value="<?= $user_id ?>" name="employee_no">
                     <input type="hidden" value="time_in" name="time_in">
                     <button type="submit" name="submit" class="btn-time-action btn-time-in">
                         Time In
@@ -66,7 +66,7 @@
                 </form>
             <?php elseif (empty($statusInfo['time_out'])): ?>
                 <form method="POST" class="btn btn-primary" action="index.php?url=employee-time-out">
-                    <input type="hidden" value="<?= $employee_no ?>" name="employee_no">
+                    <input type="hidden" value="<?= $user_id ?>" name="employee_no">
                     <input type="hidden" value="time_out" name="time_out">
                     <button type="submit" name="submit" class="btn-time-action btn-time-out">
                         Time Out
