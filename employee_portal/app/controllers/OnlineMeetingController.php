@@ -40,7 +40,6 @@ class OnlineMeetingController
         $content = __DIR__ . '/../views/admin/online-meeting/main-content.php';
         require __DIR__ . '/../views/admin/online-meeting/index.php';
     }
-
     public function store()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -78,7 +77,6 @@ class OnlineMeetingController
 
         header("Location: index.php?url=admin-online-meeting");
     }
-
     public function update()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -112,7 +110,6 @@ class OnlineMeetingController
         header("Location: index.php?url=admin-online-meeting");
         exit;
     }
-
     public function delete()
     {
         session_start();

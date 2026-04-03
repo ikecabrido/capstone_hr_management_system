@@ -6,7 +6,7 @@ class Meeting
 {
 
     private $conn;
-    private $table = 'meetings';
+    private $table = 'ep_meetings';
 
     public function __construct()
     {
@@ -15,7 +15,7 @@ class Meeting
     }
     public function getAll()
     {
-        $query = "SELECT * FROM meetings ORDER BY scheduled_at DESC";
+        $query = "SELECT * FROM {$this->table} ORDER BY scheduled_at DESC";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
 
@@ -23,7 +23,7 @@ class Meeting
     }
     public function create($data)
     {
-        $query = "INSERT INTO meetings 
+        $query = "INSERT INTO {$this->table}  
         (title, meeting_link, created_by, employee_no, scheduled_at)
         VALUES 
         (:title, :meeting_link, :created_by, :employee_no, :scheduled_at)";
@@ -41,10 +41,10 @@ class Meeting
 
     public function update($data)
     {
-        $query = "UPDATE meetings 
+        $query = "UPDATE {$this->table}  
               SET title = :title, 
                   scheduled_at = :scheduled_at
-              WHERE id = :id";
+              WHERE meetings_id = :id";
 
         $stmt = $this->conn->prepare($query);
 
@@ -57,7 +57,7 @@ class Meeting
 
     public function delete($id)
     {
-        $query = "DELETE FROM meetings WHERE id = :id";
+        $query = "DELETE FROM {$this->table}  WHERE meetings_id = :id";
         $stmt = $this->conn->prepare($query);
 
         return $stmt->execute([

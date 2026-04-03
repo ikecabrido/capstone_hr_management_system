@@ -1,4 +1,4 @@
-CREATE TABLE `employee_documents` (
+CREATE TABLE `ep_employee_documents` (
   `approval_id` INT(11) NOT NULL AUTO_INCREMENT,
   `title` VARCHAR(255) NOT NULL,
   `description` TEXT NOT NULL,
@@ -16,8 +16,8 @@ CREATE TABLE `employee_documents` (
   KEY `submit_by` (`submit_by`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE meetings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE ep_meetings (
+    meetings_id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255),
     meeting_link TEXT,
     created_by INT,

@@ -28,7 +28,6 @@
                         <p>Dashboard</p>
                     </a>
                 </li>
-
                 <li class="nav-item has-treeview">
                     <a href="#" class="nav-link">
                         <i class="nav-icon fas fa-users"></i>
@@ -37,16 +36,21 @@
                             <i class="right fas fa-angle-left"></i>
                         </p>
                     </a>
-                    <ul class="nav nav-treeview">
+                    <ul class="nav nav-treeview sub-menu">
                         <li class="nav-item">
-                            <a href="index.php?url=employee-grievance" class="nav-link">
+                            <a href="index.php?url=employee-grievance" class="nav-link sub-link">
                                 <i class="fas fa-comments nav-icon"></i>
                                 <p>Grievance</p>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a href="index.php?url=employee-announcements" class="nav-link sub-link">
+                                <i class="fas fa-bullhorn nav-icon"></i>
+                                <p>Announcements</p>
+                            </a>
+                        </li>
                     </ul>
                 </li>
-
                 <li class="nav-item has-treeview">
                     <a href="#" class="nav-link">
                         <i class="nav-icon fas fa-file-invoice-dollar"></i>

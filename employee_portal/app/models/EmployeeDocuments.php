@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/Database.php';
 class EmployeeDocuments
 {
     private $conn;
-    private $table = "employee_documents";
+    private $table = "ep_employee_documents";
 
     public function __construct()
     {

@@ -4,6 +4,7 @@ session_start();
 require 'app/controllers/AuthController.php';
 require 'app/controllers/PayslipController.php';
 require 'app/controllers/LeaveRequestController.php';
+require 'app/controllers/AnnouncementController.php';
 require 'app/controllers/OnlineMeetingController.php';
 require 'app/controllers/EmployeePortalController.php';
 require 'app/controllers/EmployeeDocumentsController.php';
@@ -115,6 +116,11 @@ switch ($url) {
 
     case 'admin-online-meeting-delete':
         (new OnlineMeetingController)->delete();
+        break;
+
+    //Announcement
+    case 'employee-announcements':
+        (new AnnouncementController)->index();
         break;
 
     default:
