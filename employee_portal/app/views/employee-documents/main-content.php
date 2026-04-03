@@ -35,7 +35,7 @@
                             <option value="">-- None --</option>
                             <?php foreach ($employees as $emp): ?>
                                 <option value="<?= $emp['id'] ?>" <?= ($_SESSION['id'] ?? '') == $emp['id'] ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($emp['first_name']) ?> <?= htmlspecialchars($emp['last_name']) ?>
+                                    <?= htmlspecialchars($emp['full_name']) ?> 
                                 </option>
                             <?php endforeach; ?>
                         </select>

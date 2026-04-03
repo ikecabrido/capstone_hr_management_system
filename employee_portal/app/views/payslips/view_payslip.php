@@ -19,7 +19,7 @@
                         <table class="w-full text-sm">
                             <tr>
                                 <td class="font-semibold">Employee:</td>
-                                <td><?= htmlspecialchars($payslip['first_name'] . ' ' . $payslip['last_name']) ?></td>
+                                <td><?= htmlspecialchars($payslip['full_name']) ?></td>
                             </tr>
                             <tr>
                                 <td class="font-semibold">Position:</td>

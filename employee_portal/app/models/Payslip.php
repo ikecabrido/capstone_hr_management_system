@@ -38,8 +38,7 @@ class Payslip
 
     public function getByEmployee($id)
     {
-        $query = "SELECT p.*, 
-                     CONCAT(e.first_name, ' ', e.last_name) AS full_name
+        $query = "SELECT p.*, e.full_name
               FROM {$this->table} p
               JOIN employees e ON p.employee_id = e.id
               WHERE p.employee_id = ?
@@ -54,8 +53,7 @@ class Payslip
     {
         $query = "
         SELECT p.*, 
-               e.first_name, 
-               e.last_name, 
+               e.full_name,  
                pos.title AS position, 
                et.name AS employment_type
         FROM payslips p

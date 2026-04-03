@@ -83,17 +83,19 @@
                     </tbody>
                 </table>
                 <!-- Print -->
-                <div class="mt-4 text-right no-print">
-                    <button onclick="printDiv('payslip-table-div')"
-                        class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">
-                        <i class="fas fa-print mr-1"></i> Print
-                    </button>
-                </div>
-                <div class="mt-4 text-right no-print">
-                    <a href="index.php?url=export-payslip-csv"
-                        class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition ms-2">
-                        <i class="fas fa-file-csv mr-1"></i> Export CSV
-                    </a>
+                <div class="flex justify-end">
+                    <div class="mt-4 text-right no-print">
+                        <button onclick="printDiv('payslip-table-div')"
+                            class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">
+                            <i class="fas fa-print mr-1"></i> Print
+                        </button>
+                    </div>
+                    <div class="mt-8 text-right no-print ml-2">
+                        <a href="index.php?url=export-payslip-csv"
+                            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                            <i class="fas fa-file-csv mr-1"></i> Export CSV
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

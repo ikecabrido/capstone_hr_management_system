@@ -13,7 +13,7 @@
 
 
                 <h5 class="fw-semibold text-3xl">
-                    <div class="card border-0 shadow-sm rounded-4 mr-2"></div>Meeting List
+                    <div class="card border-0 shadow-sm rounded-4 mr-2"></div>Available Meeting List
                 </h5>
 
                 <table class="table table-hover align-middle">

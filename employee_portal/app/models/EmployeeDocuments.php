@@ -17,8 +17,8 @@ class EmployeeDocuments
         $stmt = $this->conn->prepare("
         SELECT DISTINCT ed.*, 
                d.department_name, 
-               CONCAT(e.first_name, ' ', e.last_name) AS approver_name, 
-               CONCAT(s.first_name, ' ', s.last_name) AS submitter_name
+               e.full_name AS approver_name, 
+               s.full_name AS submitter_name
         FROM {$this->table} ed
         LEFT JOIN departments d ON ed.department = d.id
         LEFT JOIN employees e ON ed.approver_id = e.id
@@ -34,8 +34,8 @@ class EmployeeDocuments
         $stmt = $this->conn->prepare("
         SELECT DISTINCT ed.*, 
                d.department_name, 
-               CONCAT(e.first_name, ' ', e.last_name) AS approver_name, 
-               CONCAT(s.first_name, ' ', s.last_name) AS submitter_name
+               e.full_name AS approver_name, 
+               s.full_name AS submitter_name
         FROM {$this->table} ed
         LEFT JOIN departments d ON ed.department = d.id
         LEFT JOIN employees e ON ed.approver_id = e.id
