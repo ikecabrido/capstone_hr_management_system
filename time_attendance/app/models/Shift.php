@@ -17,7 +17,6 @@ class Shift {
     public $end_time;
     public $break_duration;
     public $description;
-    public $include_saturday;
     public $is_active;
 
     public function __construct($db) {
@@ -67,8 +66,8 @@ class Shift {
      */
     public function create() {
         $query = "INSERT INTO " . $this->table . "
-                  (shift_name, start_time, end_time, break_duration, description, include_saturday, is_active)
-                  VALUES (?, ?, ?, ?, ?, ?, ?)";
+                  (shift_name, start_time, end_time, break_duration, description, is_active)
+                  VALUES (?, ?, ?, ?, ?, ?)";
 
         $stmt = $this->conn->prepare($query);
 
@@ -77,8 +76,7 @@ class Shift {
         $stmt->bindParam(3, $this->end_time);
         $stmt->bindParam(4, $this->break_duration);
         $stmt->bindParam(5, $this->description);
-        $stmt->bindParam(6, $this->include_saturday);
-        $stmt->bindParam(7, $this->is_active);
+        $stmt->bindParam(6, $this->is_active);
 
         return $stmt->execute();
     }
@@ -91,7 +89,7 @@ class Shift {
     public function update() {
         $query = "UPDATE " . $this->table . "
                   SET shift_name = ?, start_time = ?, end_time = ?, 
-                      break_duration = ?, description = ?, include_saturday = ?, is_active = ?
+                      break_duration = ?, description = ?, is_active = ?
                   WHERE shift_id = ?";
 
         $stmt = $this->conn->prepare($query);
@@ -101,9 +99,8 @@ class Shift {
         $stmt->bindParam(3, $this->end_time);
         $stmt->bindParam(4, $this->break_duration);
         $stmt->bindParam(5, $this->description);
-        $stmt->bindParam(6, $this->include_saturday);
-        $stmt->bindParam(7, $this->is_active);
-        $stmt->bindParam(8, $this->shift_id);
+        $stmt->bindParam(6, $this->is_active);
+        $stmt->bindParam(7, $this->shift_id);
 
         return $stmt->execute();
     }

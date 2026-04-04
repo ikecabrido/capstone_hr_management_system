@@ -79,8 +79,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 }
             }
             
-            // Validate and build URL - Point to unified QR handler
-            $qr_url = $protocol . "://" . $host . "/capstone_hr_management_system/qr_handler.php";
+            // Validate and build URL - Point to root login with qr_token parameter
+            $qr_url = $protocol . "://" . $host . "/capstone_hr_management_system/login_form.php";
             
             // Verify URL is valid
             if (!filter_var($qr_url, FILTER_VALIDATE_URL)) {

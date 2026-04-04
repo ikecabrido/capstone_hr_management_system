@@ -51,53 +51,26 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $leave_request_id = (int)($_POST['leave_request_id'] ?? 0);
     $remarks = Helper::sanitize($_POST['remarks'] ?? '');
     $is_hr = ($role === 'time');
-    
-    // Return JSON for AJAX requests, redirect for regular form submissions
-    $is_ajax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
 
     if ($action === 'approve' && $leave_request_id) {
         $new_status = $is_hr ? 'APPROVED_BY_HR' : 'APPROVED_BY_HEAD';
         if ($leaveModel->updateStatus($leave_request_id, $new_status, $user_id, $remarks)) {
-            if ($is_ajax) {
-                header('Content-Type: application/json');
-                echo json_encode(['success' => true, 'message' => 'Leave request approved successfully!']);
-                exit;
-            } else {
-                $message = "Leave request approved successfully!";
-                $messageType = "success";
-                // Optionally refresh the list
-                header("Location: " . $_SERVER['PHP_SELF']);
-                exit;
-            }
+            $message = "Leave request approved successfully!";
+            $messageType = "success";
+            // Optionally refresh the list
+            header("Location: " . $_SERVER['PHP_SELF']);
+            exit;
         } else {
-            if ($is_ajax) {
-                header('Content-Type: application/json');
-                echo json_encode(['success' => false, 'message' => 'Failed to process approval.']);
-                exit;
-            } else {
-                $message = "Failed to process approval.";
-                $messageType = "error";
-            }
+            $message = "Failed to process approval.";
+            $messageType = "error";
         }
     } elseif ($action === 'reject' && $leave_request_id) {
         if ($leaveModel->updateStatus($leave_request_id, 'REJECTED', $user_id, $remarks)) {
-            if ($is_ajax) {
-                header('Content-Type: application/json');
-                echo json_encode(['success' => true, 'message' => 'Leave request rejected.']);
-                exit;
-            } else {
-                $message = "Leave request rejected.";
-                $messageType = "warning";
-            }
+            $message = "Leave request rejected.";
+            $messageType = "warning";
         } else {
-            if ($is_ajax) {
-                header('Content-Type: application/json');
-                echo json_encode(['success' => false, 'message' => 'Failed to process rejection.']);
-                exit;
-            } else {
-                $message = "Failed to process rejection.";
-                $messageType = "error";
-            }
+            $message = "Failed to process rejection.";
+            $messageType = "error";
         }
     }
 }
@@ -116,9 +89,9 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Leave Approvals - Time & Attendance System</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" href="../Bestlink College of the Philippines.jpeg" type="image/jpeg">
     <link rel="stylesheet" href="../assets/style.css">
+    <script src="../assets/mobile-responsive.js" defer></script>
     <style>
         body {
             background: #f5f5f5;
@@ -388,15 +361,6 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
     </style>
 </head>
 <body>
-    <div
-      class="preloader flex-column justify-content-center align-items-center">
-      <img
-        class="animation__wobble"
-        src="../assets/pics/bcpLogo.png"
-        alt="BCP Logo"
-        height="60"
-        width="60" />
-    </div>
     <?php require_once "../app/components/Sidebar.php"; ?>
 
     <div class="main-content">
@@ -442,8 +406,8 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
                                         </span>
                                     </td>
                                     <td>
-                                        <button class="action-btn btn-approve" onclick="openApproveModal(<?php echo $req['id']; ?>)">Approve</button>
-                                        <button class="action-btn btn-reject" onclick="openRejectModal(<?php echo $req['id']; ?>)">Reject</button>
+                                        <button class="action-btn btn-approve" onclick="openApproveModal(<?php echo $req['leave_request_id']; ?>)">Approve</button>
+                                        <button class="action-btn btn-reject" onclick="openRejectModal(<?php echo $req['leave_request_id']; ?>)">Reject</button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -459,7 +423,7 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
         <div class="modal-content">
             <span class="modal-close" onclick="closeModal('approveModal')">&times;</span>
             <h3>Approve Leave Request</h3>
-            <form method="POST" onsubmit="submitLeaveForm(event, 'approveModal')">
+            <form method="POST">
                 <input type="hidden" name="action" value="approve">
                 <input type="hidden" name="leave_request_id" id="approveRequestId">
                 <div style="margin: 15px 0;">
@@ -477,7 +441,7 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
         <div class="modal-content">
             <span class="modal-close" onclick="closeModal('rejectModal')">&times;</span>
             <h3>Reject Leave Request</h3>
-            <form method="POST" onsubmit="submitLeaveForm(event, 'rejectModal')">
+            <form method="POST">
                 <input type="hidden" name="action" value="reject">
                 <input type="hidden" name="leave_request_id" id="rejectRequestId">
                 <div style="margin: 15px 0;">
@@ -505,35 +469,6 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
             document.getElementById(modalId).classList.remove('active');
         }
 
-        // Handle form submissions via AJAX
-        function submitLeaveForm(event, modalId) {
-            event.preventDefault();
-            const form = event.target;
-            const formData = new FormData(form);
-            
-            fetch(window.location.href, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    closeModal(modalId);
-                    alert(data.message);
-                    location.reload();
-                } else {
-                    alert(data.message || 'An error occurred');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred while processing the request');
-            });
-        }
-
         window.onclick = function(event) {
             if (event.target.classList.contains('modal')) {
                 event.target.classList.remove('active');
@@ -547,34 +482,6 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
                 document.body.classList.add('dark-mode');
             }
         });
-
-        // Preloader Management
-        document.addEventListener('DOMContentLoaded', function() {
-            const preloader = document.querySelector('.preloader');
-            
-            // Hide preloader after page load
-            setTimeout(() => {
-                if (preloader) {
-                    preloader.style.display = 'none';
-                }
-            }, 500);
-
-            // Show preloader on navigation links
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    const href = this.getAttribute('href');
-                    if (href && !href.includes('logout') && !href.startsWith('javascript')) {
-                        if (preloader) {
-                            preloader.style.display = 'flex';
-                            setTimeout(() => {
-                                preloader.style.display = 'none';
-                            }, 3000);
-                        }
-                    }
-                });
-            });
-        });
     </script>
-    <script src="../assets/mobile-responsive.js"></script>
 </body>
 </html>

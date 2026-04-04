@@ -32,7 +32,7 @@ $shiftController = new ShiftController($db);
 try {
     $create_table_sql = "CREATE TABLE IF NOT EXISTS ta_flexible_schedules (
         id INT PRIMARY KEY AUTO_INCREMENT,
-        employee_id INT NOT NULL,
+        employee_id VARCHAR(50) NOT NULL,
         schedule_date DATE NOT NULL,
         start_time TIME NOT NULL,
         end_time TIME NOT NULL,
@@ -43,8 +43,7 @@ try {
         created_by INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_employee (employee_id),
-        INDEX idx_date (schedule_date),
-        FOREIGN KEY (employee_id) REFERENCES employees(employee_id) ON DELETE CASCADE ON UPDATE CASCADE
+        INDEX idx_date (schedule_date)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
     
     $db->exec($create_table_sql);
@@ -71,37 +70,23 @@ try {
         }
     }
     
-    // Ensure employee_id is INT and properly configured
+    // CRITICAL FIX: Ensure employee_id is VARCHAR(50), not INT
     try {
         $check_column = "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS 
                         WHERE TABLE_NAME = 'ta_flexible_schedules' AND COLUMN_NAME = 'employee_id'";
         $column_result = $db->query($check_column)->fetch(PDO::FETCH_ASSOC);
         
-        if ($column_result && strpos($column_result['COLUMN_TYPE'], 'varchar') !== false) {
-            // Column is VARCHAR, need to change it to INT
-            error_log("MIGRATING: Changing ta_flexible_schedules.employee_id from VARCHAR to INT");
-            $db->exec("SET FOREIGN_KEY_CHECKS = 0");
-            $db->exec("ALTER TABLE ta_flexible_schedules MODIFY employee_id INT NOT NULL");
-            $db->exec("SET FOREIGN_KEY_CHECKS = 1");
-            error_log("SUCCESS: employee_id column changed to INT");
+        if ($column_result && strpos($column_result['COLUMN_TYPE'], 'INT') !== false) {
+            // Column is INT, need to change it to VARCHAR(50)
+            error_log("FIXING: Changing ta_flexible_schedules.employee_id from INT to VARCHAR(50)");
+            $db->exec("ALTER TABLE ta_flexible_schedules MODIFY employee_id VARCHAR(50) NOT NULL");
+            error_log("SUCCESS: employee_id column changed to VARCHAR(50)");
         }
     } catch (Exception $e) {
         error_log("Note: Could not modify employee_id column: " . $e->getMessage());
     }
 } catch (Exception $e) {
     // Table already exists or other error - ignore
-}
-
-// Add include_saturday column to ta_shifts if it doesn't exist
-try {
-    $check_column = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-                    WHERE TABLE_NAME = 'ta_shifts' AND COLUMN_NAME = 'include_saturday'";
-    $result = $db->query($check_column)->fetch();
-    if (!$result) {
-        $db->exec("ALTER TABLE ta_shifts ADD COLUMN include_saturday TINYINT(1) DEFAULT 0 AFTER description");
-    }
-} catch (Exception $e) {
-    // Column already exists or table doesn't exist
 }
 
 $action = $_GET['action'] ?? 'list';
@@ -117,7 +102,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'end_time' => $_POST['end_time'],
             'break_duration' => $_POST['break_duration'] ?? 60,
             'description' => $_POST['description'] ?? null,
-            'include_saturday' => isset($_POST['include_saturday']) ? 1 : 0,
             'is_active' => isset($_POST['is_active']) ? 1 : 0
         ]);
         
@@ -136,7 +120,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'end_time' => $_POST['end_time'],
             'break_duration' => $_POST['break_duration'] ?? 60,
             'description' => $_POST['description'] ?? null,
-            'include_saturday' => isset($_POST['include_saturday']) ? 1 : 0,
             'is_active' => isset($_POST['is_active']) ? 1 : 0
         ]);
         
@@ -160,132 +143,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($_POST['assign_shift'])) {
-        // Support both single and bulk assignment
-        $employee_ids = $_POST['employee_id'] ?? [];
+        $result = $shiftController->assignShiftToEmployee(
+            $_POST['employee_id'],
+            $_POST['shift_id'],
+            $_POST['effective_from'],
+            $_POST['effective_to'] ?? null
+        );
         
-        // Ensure it's an array
-        if (!is_array($employee_ids)) {
-            $employee_ids = [$employee_ids];
-        }
-        
-        // Filter out empty values
-        $employee_ids = array_filter($employee_ids, function($id) { 
-            return !empty($id); 
-        });
-        
-        if (empty($employee_ids)) {
-            $error = "Please select at least one employee to assign a shift.";
-        } else {
-            $successful = 0;
-            $failed = 0;
-            $duplicates = [];
-            $errors = [];
-            
-            // Loop through each selected employee
-            foreach ($employee_ids as $emp_id) {
-                $result = $shiftController->assignShiftToEmployee(
-                    $emp_id,
-                    $_POST['shift_id'],
-                    $_POST['effective_from'],
-                    $_POST['effective_to'] ?? null
-                );
-                
-                if ($result['success']) {
-                    $successful++;
-                } elseif (isset($result['duplicate']) && $result['duplicate']) {
-                    // Store duplicate for confirmation modal
-                    $duplicates[] = [
-                        'employee_id' => $emp_id,
-                        'employee_name' => $result['employee_name'],
-                        'shift_name' => $result['shift_name'],
-                        'existing_id' => $result['existing_id']
-                    ];
-                } else {
-                    $failed++;
-                    $errors[] = "Employee " . htmlspecialchars($emp_id) . ": " . $result['message'];
-                }
-            }
-            
-            // If there are duplicates, store them in session and show confirmation modal
-            if (!empty($duplicates)) {
-                $_SESSION['shift_assignment_duplicates'] = $duplicates;
-                $_SESSION['shift_assignment_data'] = [
-                    'shift_id' => $_POST['shift_id'],
-                    'effective_from' => $_POST['effective_from'],
-                    'effective_to' => $_POST['effective_to'] ?? null
-                ];
-                $_SESSION['shift_assignment_counts'] = [
-                    'successful' => $successful,
-                    'failed' => $failed,
-                    'total' => count($employee_ids)
-                ];
-                // Store that we should show the modal on page load
-                $action = 'show_duplicate_modal';
-            } elseif ($successful > 0) {
-                // Set appropriate message
-                $message = "Successfully assigned shift to $successful employee" . ($successful > 1 ? "s" : "") . ".";
-                if ($failed > 0) {
-                    $message .= " Failed for $failed employee" . ($failed > 1 ? "s" : "") . ".";
-                }
-                $action = 'assignments';
-            } else {
-                $error = "Failed to assign shift to any employees. " . implode(" ", $errors);
-            }
-        }
-    }
-
-    // Handle confirmation modal submission (user confirmed overwrite)
-    if (isset($_POST['confirm_duplicate_overwrite'])) {
-        $duplicates = $_SESSION['shift_assignment_duplicates'] ?? [];
-        $shift_data = $_SESSION['shift_assignment_data'] ?? [];
-        
-        if (!empty($duplicates) && !empty($shift_data)) {
-            $successful = 0;
-            $failed = 0;
-            
-            foreach ($duplicates as $dup) {
-                $result = $shiftController->forceAssignShift(
-                    $dup['employee_id'],
-                    $shift_data['shift_id'],
-                    $shift_data['effective_from'],
-                    $shift_data['effective_to'],
-                    $dup['existing_id']
-                );
-                
-                if ($result['success']) {
-                    $successful++;
-                } else {
-                    $failed++;
-                }
-            }
-            
-            // Add the previously successful assignments
-            $prev_counts = $_SESSION['shift_assignment_counts'] ?? ['successful' => 0, 'failed' => 0];
-            $total_successful = $prev_counts['successful'] + $successful;
-            $total_failed = $prev_counts['failed'] + $failed;
-            
-            $message = "Successfully assigned shift to $total_successful employee" . ($total_successful > 1 ? "s" : "") . ".";
-            if ($total_failed > 0) {
-                $message .= " Failed for $total_failed employee" . ($total_failed > 1 ? "s" : "") . ".";
-            }
-            
-            // Clean up session
-            unset($_SESSION['shift_assignment_duplicates']);
-            unset($_SESSION['shift_assignment_data']);
-            unset($_SESSION['shift_assignment_counts']);
-            
+        if ($result['success']) {
+            $message = $result['message'];
             $action = 'assignments';
+        } else {
+            $error = $result['message'];
         }
-    }
-
-    // Handle decline (user declined overwrite)
-    if (isset($_POST['decline_duplicate_overwrite'])) {
-        unset($_SESSION['shift_assignment_duplicates']);
-        unset($_SESSION['shift_assignment_data']);
-        unset($_SESSION['shift_assignment_counts']);
-        
-        $message = "Shift assignment cancelled. No changes were made.";
-        $action = 'assignments';
     }
 
     if (isset($_POST['create_flexible'])) {
@@ -963,43 +833,6 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
             color: #e0e0e0;
         }
 
-        .checkbox-group {
-            display: flex !important;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 0;
-            font-weight: normal;
-            color: #333;
-            width: auto !important;
-            padding: 0 !important;
-            border: none !important;
-            background: none !important;
-        }
-
-        .checkbox-group input[type="checkbox"] {
-            width: auto;
-            padding: 0;
-            margin: 0;
-            border: none;
-            cursor: pointer;
-            accent-color: #003d82;
-            flex-shrink: 0;
-        }
-
-        .checkbox-group span {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            font-weight: 500;
-            color: #333;
-        }
-
-        body.dark-mode .checkbox-group,
-        body.dark-mode .checkbox-group span {
-            color: #e0e0e0;
-        }
-
         .form-buttons {
             display: flex;
             gap: 10px;
@@ -1442,7 +1275,7 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                                     </span>
                                 </td>
                                 <td style="display: flex; gap: 8px;">
-                                    <button type="button" class="btn btn-sm btn-primary" onclick="openEditShiftModal(<?php echo $shift['shift_id']; ?>, '<?php echo htmlspecialchars($shift['shift_name']); ?>', '<?php echo $shift['start_time']; ?>', '<?php echo $shift['end_time']; ?>', <?php echo $shift['break_duration']; ?>, '<?php echo htmlspecialchars($shift['description'] ?? ''); ?>', <?php echo $shift['is_active'] ? 'true' : 'false'; ?>, <?php echo ($shift['include_saturday'] ?? 0) ? 'true' : 'false'; ?>);">
+                                    <button type="button" class="btn btn-sm btn-primary" onclick="openEditShiftModal(<?php echo $shift['shift_id']; ?>, '<?php echo htmlspecialchars($shift['shift_name']); ?>', '<?php echo $shift['start_time']; ?>', '<?php echo $shift['end_time']; ?>', <?php echo $shift['break_duration']; ?>, '<?php echo htmlspecialchars($shift['description'] ?? ''); ?>', <?php echo $shift['is_active'] ? 'true' : 'false'; ?>);">
                                         <i class="fas fa-edit"></i> Edit
                                     </button>
                                     <form method="POST" style="display: inline;">
@@ -2303,12 +2136,6 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                     </div>
                     <div class="form-group">
                         <label class="checkbox-group">
-                            <input type="checkbox" name="include_saturday">
-                            <span><i class="fas fa-calendar-day"></i> Include Saturday</span>
-                        </label>
-                    </div>
-                    <div class="form-group">
-                        <label class="checkbox-group">
                             <input type="checkbox" name="is_active" checked>
                             <span><i class="fas fa-check"></i> Active</span>
                         </label>
@@ -2354,12 +2181,6 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                     </div>
                     <div class="form-group">
                         <label class="checkbox-group">
-                            <input type="checkbox" id="edit_include_saturday" name="include_saturday">
-                            <span><i class="fas fa-calendar-day"></i> Include Saturday</span>
-                        </label>
-                    </div>
-                    <div class="form-group">
-                        <label class="checkbox-group">
                             <input type="checkbox" id="edit_is_active" name="is_active">
                             <span><i class="fas fa-check"></i> Active</span>
                         </label>
@@ -2377,79 +2198,22 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
     <div id="assignmentModal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h2><i class="fas fa-user-check"></i> Assign Shift to Employees</h2>
+                <h2><i class="fas fa-user-check"></i> Assign Shift to Employee</h2>
                 <button class="modal-close" onclick="closeModal('assignmentModal')">&times;</button>
             </div>
             <form method="POST" class="shift-form" style="padding: 0;">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label style="font-weight: 600; margin-bottom: 12px; display: block;"><i class="fas fa-user"></i> Select Employees *</label>
-                        
-                        <!-- Search Bar and Filter -->
-                        <div style="margin-bottom: 12px; display: flex; gap: 8px; align-items: center;">
-                            <input type="text" id="employeeSearchInput" placeholder="Search employee name..." style="flex: 1; min-width: 0; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px; transition: all 0.2s;" onfocus="this.style.borderColor='#2196F3'; this.style.boxShadow='0 0 0 3px rgba(33,150,243,0.1)'" onblur="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none'">
-                            <button type="button" onclick="document.getElementById('employeeSearchInput').focus()" style="padding: 12px 16px; background: #2196F3; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" onmouseover="this.style.background='#1976D2'" onmouseout="this.style.background='#2196F3'">
-                                <i class="fas fa-search"></i>
-                            </button>
-                            <select id="employeeFilterSelect" style="padding: 12px 8px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 13px; cursor: pointer; width: 90px; flex-shrink: 0; transition: all 0.2s;">
-                                <option value="all">All</option>
-                                <option value="unassigned">Unassigned</option>
-                                <option value="assigned">Assigned</option>
-                            </select>
-                        </div>
-
-                        <!-- Dropdown Toggle Button -->
-                        <button type="button" id="employeeDropdownToggle" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #f5f5f5 0%, #fafafa 100%); border: 2px solid #2196F3; border-radius: 8px; cursor: pointer; font-weight: 600; color: #333; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s;" onclick="toggleEmployeeDropdown(event)">
-                            <span style="display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-chevron-down" style="font-size: 14px;"></i>
-                                <span id="dropdownButtonText">Click to select employees</span>
-                            </span>
-                            <span id="selectedBadge" style="background: #2196F3; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; display: none;">0 selected</span>
-                        </button>
-
-                        <!-- Employee Dropdown List -->
-                        <div id="employeeDropdownList" style="display: none; margin-top: 12px; border: 2px solid #e0e0e0; border-radius: 8px; background: #fff; padding: 8px; max-height: 350px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                            <!-- Select All in Dropdown -->
-                            <div style="padding: 10px 12px; border-bottom: 2px solid #f0f0f0; margin-bottom: 8px;">
-                                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 0; font-weight: 600; color: #333;">
-                                    <input type="checkbox" id="selectAllEmployeesDropdown" onchange="toggleSelectAllEmployees()" style="width: 18px; height: 18px; cursor: pointer; accent-color: #2196F3;">
-                                    <i class="fas fa-check-circle" style="color: #2196F3; font-size: 16px;"></i>
-                                    Select All
-                                </label>
-                            </div>
-
-                            <!-- Employee Checkboxes -->
-                            <div id="employeeCheckboxList">
-                                <?php
-                                $stmt = $db->query("SELECT e.employee_id, e.full_name, 
-                                                    COUNT(es.employee_shift_id) as shift_count
-                                                    FROM employees e
-                                                    LEFT JOIN ta_employee_shifts es ON e.employee_id = es.employee_id AND es.is_active = 1
-                                                    GROUP BY e.employee_id, e.full_name
-                                                    ORDER BY e.full_name");
-                                while ($emp = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                                    $assigned = $emp['shift_count'] > 0 ? 'assigned' : 'unassigned';
-                                    $statusBadge = $assigned === 'assigned' 
-                                        ? '<span style="font-size: 11px; background: #4CAF50; color: white; padding: 3px 8px; border-radius: 12px; margin-left: 8px;">✓ Assigned</span>'
-                                        : '<span style="font-size: 11px; background: #f44336; color: white; padding: 3px 8px; border-radius: 12px; margin-left: 8px;">✗ Unassigned</span>';
-                                    
-                                    echo '<label style="display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 10px 12px; margin: 4px 0; border-radius: 6px; transition: all 0.2s; background: transparent;" class="employee-option" data-status="' . $assigned . '"';
-                                    echo ' onmouseover="this.style.background=\'#f0f7ff\'; this.style.borderLeft=\'4px solid #2196F3\';" onmouseout="this.style.background=\'transparent\'; this.style.borderLeft=\'none\';">';
-                                    echo '<input type="checkbox" name="employee_id[]" value="' . htmlspecialchars($emp['employee_id']) . '" class="employee-checkbox" onchange="updateSelectedEmployees()" style="width: 18px; height: 18px; cursor: pointer; accent-color: #2196F3;">';
-                                    echo '<span style="flex: 1; font-size: 14px; color: #333; display: flex; align-items: center;">' . htmlspecialchars($emp['full_name']) . $statusBadge . '</span>';
-                                    echo '</label>';
-                                }
-                                ?>
-                            </div>
-                        </div>
-
-                        <!-- Selected Counter -->
-                        <div id="selectedEmployeesList" style="margin-top: 12px; padding: 12px 14px; background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border-radius: 8px; border-left: 5px solid #4CAF50; display: none; box-shadow: 0 2px 4px rgba(76,175,80,0.1);">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-check-circle" style="color: #4CAF50; font-size: 18px;"></i>
-                                <span style="font-weight: 600; color: #2e7d32;"><span id="selectedCount">0</span> employee(s) selected</span>
-                            </div>
-                        </div>
+                        <label for="employee_id"><i class="fas fa-user"></i> Employee *</label>
+                        <select id="employee_id" name="employee_id" required>
+                            <option value="">Select an employee...</option>
+                            <?php
+                            $stmt = $db->query("SELECT employee_id, full_name FROM employees ORDER BY full_name");
+                            while ($emp = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                                echo '<option value="' . $emp['employee_id'] . '">' . htmlspecialchars($emp['full_name']) . '</option>';
+                            }
+                            ?>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label for="shift_id"><i class="fas fa-briefcase"></i> Shift *</label>
@@ -2475,7 +2239,7 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('assignmentModal')">Cancel</button>
-                    <button type="submit" name="assign_shift" class="btn btn-primary" style="background: #4CAF50; border: none;"><i class="fas fa-check-double"></i> Assign to Selected</button>
+                    <button type="submit" name="assign_shift" class="btn btn-primary"><i class="fas fa-check"></i> Assign Shift</button>
                 </div>
             </form>
         </div>
@@ -2896,31 +2660,6 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
         }
     </style>
 
-    <!-- Duplicate Assignment Confirmation Modal -->
-    <div id="duplicateConfirmationModal" class="modal" style="display: none;">
-        <div class="modal-content" style="max-width: 600px;">
-            <div class="modal-header" style="background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);">
-                <h2><i class="fas fa-exclamation-triangle"></i> Confirm Shift Overwrite</h2>
-                <button class="modal-close" onclick="closeModal('duplicateConfirmationModal')">&times;</button>
-            </div>
-            <form method="POST" style="padding: 0;">
-                <div class="modal-body">
-                    <p style="color: #666; margin-bottom: 20px; font-size: 14px; padding: 12px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 4px;">
-                        <i class="fas fa-info-circle"></i> The following employees already have this shift assigned for this date. Do you want to overwrite their current shifts?
-                    </p>
-                    
-                    <div id="duplicateList" style="max-height: 300px; overflow-y: auto; border: 2px solid #e0e0e0; border-radius: 8px; padding: 12px; background: #fafafa; margin-bottom: 20px;">
-                        <!-- Populated by JavaScript -->
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" name="decline_duplicate_overwrite" class="btn btn-secondary" style="background: #9e9e9e; color: white; border: none;"><i class="fas fa-times"></i> Keep Existing</button>
-                    <button type="submit" name="confirm_duplicate_overwrite" class="btn btn-primary" style="background: #ff9800; color: white; border: none;"><i class="fas fa-check"></i> Overwrite & Continue</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <script>
         function openModal(modalId) {
             const modal = document.getElementById(modalId);
@@ -2937,167 +2676,9 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                 const forms = modal.querySelectorAll('form');
                 forms.forEach(form => form.reset());
             }
-            // Reset checkbox UI when closing assignment modal
-            if (modalId === 'assignmentModal') {
-                const dropdown = document.getElementById('employeeDropdownList');
-                const toggle = document.getElementById('employeeDropdownToggle');
-                if (dropdown) {
-                    dropdown.style.display = 'none';
-                }
-                if (toggle) {
-                    toggle.style.borderColor = '#e0e0e0';
-                    toggle.style.background = 'linear-gradient(135deg, #f5f5f5 0%, #fafafa 100%)';
-                    toggle.querySelector('i').style.transform = 'rotate(0deg)';
-                }
-                document.getElementById('selectAllEmployeesDropdown').checked = false;
-                document.getElementById('selectedEmployeesList').style.display = 'none';
-                document.getElementById('selectedBadge').style.display = 'none';
-            }
         }
 
-        // Bulk assignment checkbox functions
-        function toggleEmployeeDropdown(event) {
-            event.preventDefault();
-            const dropdown = document.getElementById('employeeDropdownList');
-            const toggle = document.getElementById('employeeDropdownToggle');
-            
-            if (dropdown.style.display === 'none') {
-                dropdown.style.display = 'block';
-                toggle.style.borderColor = '#2196F3';
-                toggle.style.background = '#e3f2fd';
-                toggle.querySelector('i').style.transform = 'rotate(180deg)';
-            } else {
-                dropdown.style.display = 'none';
-                toggle.style.borderColor = '#e0e0e0';
-                toggle.style.background = 'linear-gradient(135deg, #f5f5f5 0%, #fafafa 100%)';
-                toggle.querySelector('i').style.transform = 'rotate(0deg)';
-            }
-        }
-
-        function toggleSelectAllEmployees() {
-            const selectAll = document.getElementById('selectAllEmployeesDropdown').checked;
-            const checkboxes = document.querySelectorAll('.employee-checkbox:not([style*="display: none"])');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = selectAll;
-            });
-            updateSelectedEmployees();
-        }
-
-        function updateSelectedEmployees() {
-            const checkboxes = document.querySelectorAll('.employee-checkbox:checked');
-            const selectedCount = checkboxes.length;
-            const selectedList = document.getElementById('selectedEmployeesList');
-            const countSpan = document.getElementById('selectedCount');
-            const badge = document.getElementById('selectedBadge');
-            const buttonText = document.getElementById('dropdownButtonText');
-            
-            countSpan.textContent = selectedCount;
-            
-            if (selectedCount > 0) {
-                selectedList.style.display = 'block';
-                badge.style.display = 'inline-block';
-                badge.textContent = selectedCount + ' selected';
-                buttonText.textContent = selectedCount + ' employee(s) selected';
-            } else {
-                selectedList.style.display = 'none';
-                badge.style.display = 'none';
-                buttonText.textContent = 'Click to select employees';
-            }
-            
-            // Update Select All checkbox
-            const allCheckboxes = document.querySelectorAll('.employee-checkbox:not([style*="display: none"])');
-            const visibleChecked = Array.from(allCheckboxes).filter(cb => cb.checked).length;
-            document.getElementById('selectAllEmployeesDropdown').checked = visibleChecked === allCheckboxes.length && allCheckboxes.length > 0;
-        }
-
-        // Search and filter functionality
-        function setupEmployeeSearchAndFilter() {
-            const searchInput = document.getElementById('employeeSearchInput');
-            const filterSelect = document.getElementById('employeeFilterSelect');
-            const employeeOptions = document.querySelectorAll('.employee-option');
-            const dropdown = document.getElementById('employeeDropdownList');
-
-            if (!searchInput || !filterSelect) return;
-
-            function filterEmployees() {
-                const searchTerm = searchInput.value.toLowerCase();
-                const filterType = filterSelect.value;
-
-                employeeOptions.forEach(option => {
-                    const text = option.textContent.toLowerCase();
-                    const status = option.dataset.status;
-                    
-                    // Check search term
-                    const matchesSearch = text.includes(searchTerm);
-                    
-                    // Check filter
-                    const matchesFilter = filterType === 'all' || 
-                                        (filterType === 'assigned' && status === 'assigned') ||
-                                        (filterType === 'unassigned' && status === 'unassigned');
-                    
-                    // Show or hide
-                    if (matchesSearch && matchesFilter) {
-                        option.style.display = 'flex';
-                    } else {
-                        option.style.display = 'none';
-                    }
-                });
-
-                // Update Select All checkbox state
-                const visibleCheckboxes = document.querySelectorAll('.employee-checkbox:not([style*="display: none"])');
-                const selectAllCheckbox = document.getElementById('selectAllEmployeesDropdown');
-                const visibleChecked = Array.from(visibleCheckboxes).filter(cb => cb.checked).length;
-                selectAllCheckbox.checked = visibleChecked === visibleCheckboxes.length && visibleCheckboxes.length > 0;
-            }
-
-            // Auto-open dropdown when typing in search bar
-            searchInput.addEventListener('input', function() {
-                filterEmployees();
-                // Auto-open dropdown if not already open
-                if (dropdown && dropdown.style.display === 'none' && this.value.length > 0) {
-                    dropdown.style.display = 'block';
-                    const toggle = document.getElementById('employeeDropdownToggle');
-                    toggle.style.borderColor = '#2196F3';
-                    toggle.style.background = '#e3f2fd';
-                    toggle.querySelector('i').style.transform = 'rotate(180deg)';
-                }
-            });
-
-            filterSelect.addEventListener('change', filterEmployees);
-        }
-
-        // Initialize search and filter when assignment modal opens
-        const originalOpenModal = window.openModal;
-        window.openModal = function(modalId) {
-            originalOpenModal(modalId);
-            if (modalId === 'assignmentModal') {
-                setupEmployeeSearchAndFilter();
-            }
-        }
-
-        // Show duplicate confirmation modal with employee list
-        function showDuplicateConfirmationModal(duplicates) {
-            const duplicateList = document.getElementById('duplicateList');
-            duplicateList.innerHTML = '';
-            
-            duplicates.forEach(function(item, index) {
-                const itemDiv = document.createElement('div');
-                itemDiv.style.cssText = 'padding: 12px; margin: 8px 0; background: white; border-left: 4px solid #ff9800; border-radius: 4px; display: flex; align-items: center; gap: 12px;';
-                itemDiv.innerHTML = `
-                    <i class="fas fa-user-circle" style="font-size: 20px; color: #ff9800;"></i>
-                    <div style="flex: 1;">
-                        <div style="font-weight: 600; color: #333;">${item.employee_name}</div>
-                        <div style="font-size: 12px; color: #999;">${item.shift_name}</div>
-                    </div>
-                    <i class="fas fa-exchange-alt" style="color: #ff9800; font-size: 16px;"></i>
-                `;
-                duplicateList.appendChild(itemDiv);
-            });
-            
-            openModal('duplicateConfirmationModal');
-        }
-
-        function openEditShiftModal(shiftId, shiftName, startTime, endTime, breakDuration, description, isActive, includeSaturday) {
+        function openEditShiftModal(shiftId, shiftName, startTime, endTime, breakDuration, description, isActive) {
             // Populate the edit modal with current values
             document.getElementById('edit_shift_id').value = shiftId;
             document.getElementById('edit_shift_name').value = shiftName;
@@ -3105,7 +2686,6 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
             document.getElementById('edit_end_time').value = endTime;
             document.getElementById('edit_break_duration').value = breakDuration;
             document.getElementById('edit_description').value = description;
-            document.getElementById('edit_include_saturday').checked = includeSaturday;
             document.getElementById('edit_is_active').checked = isActive;
             
             // Open the modal
@@ -3264,19 +2844,6 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                     flexTab.classList.add('active');
                 }
             }
-
-            // Show duplicate confirmation modal if there are duplicates
-            if (currentAction === 'show_duplicate_modal') {
-                const duplicatesJson = '<?php echo isset($_SESSION['shift_assignment_duplicates']) ? json_encode($_SESSION['shift_assignment_duplicates']) : '[]'; ?>';
-                try {
-                    const duplicates = JSON.parse(duplicatesJson);
-                    if (duplicates && duplicates.length > 0) {
-                        showDuplicateConfirmationModal(duplicates);
-                    }
-                } catch (e) {
-                    console.error('Error parsing duplicates:', e);
-                }
-            }
         });
 
         // Form validation for flexible schedule creation - using event delegation
@@ -3331,33 +2898,6 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                 }
                 console.log('✓ All validations passed. Form will submit with employee_id:', employeeId);
             }
-        });
-
-        // Preloader Management
-        document.addEventListener('DOMContentLoaded', function() {
-            const preloader = document.querySelector('.preloader');
-            
-            // Hide preloader after page load
-            setTimeout(() => {
-                if (preloader) {
-                    preloader.style.display = 'none';
-                }
-            }, 500);
-
-            // Show preloader on navigation links
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    const href = this.getAttribute('href');
-                    if (href && !href.includes('logout') && !href.startsWith('javascript')) {
-                        if (preloader) {
-                            preloader.style.display = 'flex';
-                            setTimeout(() => {
-                                preloader.style.display = 'none';
-                            }, 3000);
-                        }
-                    }
-                });
-            });
         });
     </script>
 </body>

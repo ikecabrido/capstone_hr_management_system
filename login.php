@@ -1,8 +1,5 @@
 <?php
 
-// Set Philippines timezone globally
-date_default_timezone_set('Asia/Manila');
-
 // Set headers FIRST before any output
 header('Content-Type: application/json');
 header('Cache-Control: no-cache, no-store, must-revalidate');
@@ -51,13 +48,8 @@ try {
         $qrToken = trim($_POST['qr_token'] ?? '');
         
         if (!empty($qrToken)) {
-            // Store QR token in session and redirect to new employee portal QR handler
-            if (session_status() === PHP_SESSION_NONE) {
-                session_start();
-            }
-            $_SESSION['qr_token'] = $qrToken;
-            // Redirect to new employee portal QR attendance handler
-            sendResponse(true, 'Login successful', 200, 'employee_portal/index.php?url=qr-attendance');
+            // Redirect to QR scan handler with token
+            sendResponse(true, 'Login successful', 200, 'time_attendance/public/qr_scan.php?token=' . urlencode($qrToken));
         } else {
             // Normal login redirect
             sendResponse(true, 'Login successful', 200, 'router.php');

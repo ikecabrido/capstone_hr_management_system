@@ -126,27 +126,33 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
               </a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
+              <a href="module/Employee Database.php" class="nav-link">
                 <i class="nav-icon fas fa-chart-pie"></i>
-                <p>Module 1</p>
+                <p>Employee Database</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
+              <a href="module/Employee history.php" class="nav-link">
                 <i class="nav-icon fas fa-tree"></i>
-                <p>Module 2</p>
+                <p>Employee History</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
+              <a href="module/Employee Self Service.php" class="nav-link">
                 <i class="nav-icon fas fa-edit"></i>
-                <p>Module 3</p>
+                <p>Employee Self Service</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
+              <a href="module/Document Management.php" class="nav-link">
                 <i class="nav-icon fas fa-table"></i>
-                <p>Module 4</p>
+                <p>Document Management</p>
+              </a>
+            </li>
+             <li class="nav-item">
+              <a href="module/Personal Information.php" class="nav-link">
+                <i class="nav-icon fas fa-table"></i>
+                <p>Personal Information</p>
               </a>
             </li>
             <li class="nav-header">OTHER EXAMPLES</li>

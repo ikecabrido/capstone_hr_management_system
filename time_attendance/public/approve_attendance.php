@@ -63,7 +63,6 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Approve Manual Time - Time & Attendance System</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" href="../Bestlink College of the Philippines.jpeg" type="image/jpeg">
     <link rel="stylesheet" href="../assets/style.css">
     <script src="../assets/mobile-responsive.js" defer></script>
@@ -310,7 +309,7 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
 
     <div class="main-content">
         <div class="content-wrapper">
-            <h1>Approve Manual Time</h1>
+            <h1>⏳ Approve Manual Time</h1>
             <p>Review and approve manual attendance entries</p>
 
             <?php if (!empty($message)): ?>
@@ -411,33 +410,6 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
             if (darkMode) {
                 document.body.classList.add('dark-mode');
             }
-        });
-
-        // Preloader Management
-        document.addEventListener('DOMContentLoaded', function() {
-            const preloader = document.querySelector('.preloader');
-            
-            // Hide preloader after page load
-            setTimeout(() => {
-                if (preloader) {
-                    preloader.style.display = 'none';
-                }
-            }, 500);
-
-            // Show preloader on navigation links
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    const href = this.getAttribute('href');
-                    if (href && !href.includes('logout') && !href.startsWith('javascript')) {
-                        if (preloader) {
-                            preloader.style.display = 'flex';
-                            setTimeout(() => {
-                                preloader.style.display = 'none';
-                            }, 3000);
-                        }
-                    }
-                });
-            });
         });
     </script>
 </body>

@@ -49,7 +49,6 @@ $currentMonth = date('F Y');
         html, body {
             margin: 0;
             padding: 0;
-            overflow-x: hidden;
         }
 
         body {
@@ -63,16 +62,13 @@ $currentMonth = date('F Y');
             margin-left: 0;
         }
 
-        .main-sidebar {
-        position: fixed !important;
-        top: 0 ;          /* 🔥 VERY IMPORTANT */
-        left: 0;
-        width: 250px;
-        height: calc(100vh - 60px);   /* 🔥 FIX HEIGHT */
-        overflow-y: auto;
-        z-index: 1000;
-        margin-left: 250px;
-        margin-top: 60px;
+        .main-content {
+            width: calc(100% - 250px);
+            margin-left: 250px;
+            margin-top: 60px;
+            min-height: calc(100vh - 60px);
+            overflow-y: auto;
+            transition: width 0.3s ease, margin-left 0.3s ease;
         }
 
         body.sidebar-collapsed .main-content {
@@ -81,9 +77,9 @@ $currentMonth = date('F Y');
         }
 
         .content-wrapper {
-        width: 100%;
-        margin-left: 0 !important;
-        padding: 30px 20px; /* balanced */
+            width: 100%;
+            margin: 0;
+            padding: 30px 20px;
         }
 
         /* Override AdminLTE container defaults */
@@ -106,19 +102,18 @@ $currentMonth = date('F Y');
             margin-bottom: 30px;
         }
 
-        /* Holiday Widget */
         .holiday-widget {
-            background: linear-gradient(135deg, #003d82 0%, #005ba8 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 61, 130, 0.25);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
         .holiday-widget h3 {
             margin: 0 0 15px 0;
             font-size: 18px;
-            font-weight: 700;
+            font-weight: 600;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -229,73 +224,30 @@ $currentMonth = date('F Y');
 
         .calendar-container {
             background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 16px rgba(0, 61, 130, 0.08);
-            border: 2px solid rgba(0, 61, 130, 0.08);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
         .calendar-container h3 {
             margin: 0 0 20px 0;
-            color: #003d82;
+            color: #333;
             display: flex;
             align-items: center;
             gap: 10px;
-            font-size: 20px;
-            font-weight: 700;
         }
 
         #holidayCalendar {
             height: 550px;
         }
 
-        /* FullCalendar Custom Styling */
-        .fc {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        .fc-daygrid-day.holiday {
+            background-color: #fff3cd !important;
         }
 
-        .fc .fc-button-primary {
-            background-color: #003d82 !important;
-            border-color: #003d82 !important;
-        }
-
-        .fc .fc-button-primary:not(:disabled).fc-button-active {
-            background-color: #005ba8 !important;
-            border-color: #005ba8 !important;
-        }
-
-        .fc .fc-button-primary:hover {
-            background-color: #005ba8 !important;
-            border-color: #005ba8 !important;
-        }
-
-        .fc .fc-daygrid-day.fc-day-other {
-            background-color: #fafbfc;
-        }
-
-        .fc .fc-event {
+        .fc-event {
             border: none !important;
-            padding: 2px !important;
-        }
-
-        .fc .fc-event-title {
-            font-weight: 600;
-            padding: 4px 6px;
-            white-space: normal !important;
-        }
-
-        .holiday-event {
-            background: linear-gradient(135deg, #003d82 0%, #005ba8 100%) !important;
-            color: white !important;
-            border: none !important;
-            font-weight: 600 !important;
-            padding: 4px 6px !important;
-        }
-
-        .holiday-event .fc-event-title {
-            color: white !important;
-            font-weight: 700 !important;
-            font-size: 12px !important;
+            padding: 2px 4px !important;
         }
 
         @media (max-width: 1024px) {
@@ -304,7 +256,7 @@ $currentMonth = date('F Y');
             }
 
             #holidayCalendar {
-                height: 380px;
+                height: 400px;
             }
         }
 
@@ -524,11 +476,10 @@ $currentMonth = date('F Y');
             if (data.upcoming && data.upcoming.length > 0) {
                 data.upcoming.forEach(holiday => {
                     const daysLeft = Math.ceil((new Date(holiday.holiday_date) - new Date()) / (1000 * 60 * 60 * 24));
-                    const holidayName = holiday.holiday_name || holiday.name || 'Holiday';
                     upcomingHtml += `
                         <div class="holiday-item" style="background: rgba(255, 255, 255, 0.1); padding: 10px; margin-bottom: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; border-left: 3px solid rgba(255, 255, 255, 0.3);">
                             <div class="name" style="flex: 1;">
-                                <strong>${holidayName}</strong><br>
+                                <strong>${holiday.holiday_name}</strong><br>
                                 <span style="font-size: 11px; opacity: 0.8;">${new Date(holiday.holiday_date).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</span>
                             </div>
                             <div class="days" style="background: rgba(255, 255, 255, 0.2); padding: 3px 10px; border-radius: 4px; font-weight: 600; font-size: 12px;">${daysLeft} days</div>
@@ -543,7 +494,7 @@ $currentMonth = date('F Y');
             container.innerHTML = `
                 <div class="holiday-container" style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px; margin-bottom: 30px;">
                     <!-- Left: Holiday Widget -->
-                    <div class="holiday-widget" style="background: linear-gradient(135deg, #003d82 0%, #005ba8 100%); color: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0, 61, 130, 0.25);">
+                    <div class="holiday-widget" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);">
                         <h3 style="margin: 0 0 15px 0; font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 10px;">
                             <i class="fas fa-bell"></i> Upcoming Holidays
                         </h3>
@@ -568,7 +519,7 @@ $currentMonth = date('F Y');
                         ${nextHoliday ? `
                             <div class="next-holiday-block" style="background: rgba(255, 255, 255, 0.15); padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid rgba(255, 255, 255, 0.5);">
                                 <div class="label" style="font-size: 12px; opacity: 0.9; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Next Holiday</div>
-                                <div class="holiday-name" style="font-size: 20px; font-weight: 600; margin-bottom: 10px;">${nextHoliday.holiday_name || nextHoliday.name || 'Holiday'}</div>
+                                <div class="holiday-name" style="font-size: 20px; font-weight: 600; margin-bottom: 10px;">${nextHoliday.holiday_name}</div>
                                 <div class="countdown" style="font-size: 36px; font-weight: 700; margin-bottom: 5px; color: #fff;">${daysUntilNext}</div>
                                 <div class="countdown-label" style="font-size: 12px; opacity: 0.85;">${daysUntilNext == 0 ? 'Today!' : daysUntilNext == 1 ? 'Tomorrow' : 'days remaining'}</div>
                             </div>
@@ -593,11 +544,11 @@ $currentMonth = date('F Y');
                     </div>
 
                     <!-- Right: Calendar -->
-                    <div class="calendar-container" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column;">
+                    <div class="calendar-container" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
                         <h3 style="margin: 0 0 20px 0; color: #333; display: flex; align-items: center; gap: 10px;">
                             <i class="fas fa-calendar-days"></i> Holiday Calendar
                         </h3>
-                        <div id="holidayCalendar" style="flex: 1; min-height: 450px;"></div>
+                        <div id="holidayCalendar" style="height: 550px;"></div>
                     </div>
                 </div>
             `;
@@ -612,22 +563,15 @@ $currentMonth = date('F Y');
             if (!calendarEl) return;
 
             try {
-                const events = holidays.map(h => {
-                    // Ensure holiday_name is defined and not null
-                    const title = h.holiday_name || h.name || 'Holiday';
-                    return {
-                        title: title,
-                        start: h.holiday_date,
-                        backgroundColor: '#003d82',
-                        borderColor: '#003d82',
-                        textColor: '#ffffff',
-                        classNames: ['holiday-event'],
-                        extendedProps: {
-                            category: h.category || h.holiday_type || 'Holiday',
-                            description: h.description || ''
-                        }
-                    };
-                });
+                const events = holidays.map(h => ({
+                    title: h.holiday_name,
+                    start: h.holiday_date,
+                    backgroundColor: '#667eea',
+                    borderColor: '#667eea',
+                    extendedProps: {
+                        category: h.category || 'Holiday'
+                    }
+                }));
 
                 const calendar = new FullCalendar.Calendar(calendarEl, {
                     initialView: 'dayGridMonth',
@@ -636,47 +580,20 @@ $currentMonth = date('F Y');
                         center: 'title',
                         right: 'dayGridMonth,listMonth'
                     },
-                    height: 'auto',
-                    contentHeight: 'auto',
                     events: events,
-                    eventDisplay: 'block',
                     eventClick: function(info) {
                         const event = info.event;
-                        const dateStr = event.start ? event.start.toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                        }) : 'Unknown date';
-                        
                         alert(
-                            '📅 ' + event.title + '\n' +
-                            'Date: ' + dateStr + '\n' +
-                            'Type: ' + (event.extendedProps.category || 'Holiday')
+                            event.title + '\n' +
+                            'Date: ' + event.start.toLocaleDateString() + '\n' +
+                            'Category: ' + (event.extendedProps.category || 'Holiday')
                         );
                     },
                     editable: false,
-                    selectable: false,
-                    datesSet: function() {
-                        // Ensure all holiday event titles are properly displayed
-                        document.querySelectorAll('.fc-event-title').forEach(el => {
-                            if (el.textContent.trim() === '' || el.textContent.includes('undefined')) {
-                                el.textContent = 'Holiday';
-                            }
-                        });
-                    }
+                    selectable: false
                 });
                 
                 calendar.render();
-                
-                // Ensure all event titles are properly displayed after render
-                setTimeout(function() {
-                    document.querySelectorAll('.fc-event-title').forEach(el => {
-                        if (el.textContent.trim() === '' || el.textContent.includes('undefined')) {
-                            el.textContent = 'Holiday';
-                        }
-                    });
-                }, 100);
-                
             } catch (err) {
                 console.error('Calendar initialization error:', err);
             }

@@ -9,21 +9,18 @@
 
 require_once(__DIR__ . '/../models/Shift.php');
 require_once(__DIR__ . '/../models/EmployeeShift.php');
-require_once(__DIR__ . '/../models/Employee.php');
 require_once(__DIR__ . '/../helpers/AuditLog.php');
 
 class ShiftController {
     private $db;
     private $shift;
     private $employeeShift;
-    private $employee;
     private $auditLog;
 
     public function __construct($db) {
         $this->db = $db;
         $this->shift = new Shift($db);
         $this->employeeShift = new EmployeeShift($db);
-        $this->employee = new Employee();
         $this->auditLog = new AuditLog($db);
     }
 
@@ -55,7 +52,6 @@ class ShiftController {
         $this->shift->end_time = $data['end_time'];
         $this->shift->break_duration = $data['break_duration'] ?? 60;
         $this->shift->description = $data['description'] ?? null;
-        $this->shift->include_saturday = $data['include_saturday'] ?? 0;
         $this->shift->is_active = $data['is_active'] ?? 1;
 
         if ($this->shift->create()) {
@@ -89,7 +85,6 @@ class ShiftController {
         $this->shift->end_time = $data['end_time'] ?? $shift['end_time'];
         $this->shift->break_duration = $data['break_duration'] ?? $shift['break_duration'];
         $this->shift->description = $data['description'] ?? $shift['description'];
-        $this->shift->include_saturday = isset($data['include_saturday']) ? $data['include_saturday'] : ($shift['include_saturday'] ?? 0);
         $this->shift->is_active = isset($data['is_active']) ? $data['is_active'] : $shift['is_active'];
 
         if ($this->shift->update()) {
@@ -137,71 +132,6 @@ class ShiftController {
      * Assign shift to employee
      */
     public function assignShiftToEmployee($employee_id, $shift_id, $effective_from, $effective_to = null) {
-        // Validate employee exists
-        $employee = $this->employee->getById($employee_id);
-        if (empty($employee)) {
-            return ['success' => false, 'message' => 'Employee not found in the system', 'duplicate' => false];
-        }
-
-        // Validate shift exists
-        $shift = $this->shift->getById($shift_id);
-        if (empty($shift)) {
-            return ['success' => false, 'message' => 'Shift not found', 'duplicate' => false];
-        }
-
-        $this->employeeShift->employee_id = $employee_id;
-        $this->employeeShift->shift_id = $shift_id;
-        $this->employeeShift->effective_from = $effective_from;
-        $this->employeeShift->effective_to = $effective_to;
-        $this->employeeShift->is_active = 1;
-
-        try {
-            $result = $this->employeeShift->assign();
-            
-            // Check for duplicate detection
-            if (isset($result['duplicate']) && $result['duplicate']) {
-                return [
-                    'success' => false,
-                    'duplicate' => true,
-                    'existing_id' => $result['existing_id'],
-                    'employee_id' => $employee_id,
-                    'employee_name' => $employee['full_name'],
-                    'shift_name' => $shift['shift_name'],
-                    'message' => $employee['full_name'] . ' already has ' . $shift['shift_name'] . ' assigned for this date. Overwrite?'
-                ];
-            }
-            
-            if ($result['success']) {
-                // Log action
-                $this->auditLog->log(
-                    $_SESSION['user_id'] ?? null,
-                    'SHIFT_ASSIGNED',
-                    'employee_shifts',
-                    $employee_id,
-                    'Assigned ' . $shift['shift_name'] . ' to employee ID: ' . $employee_id
-                );
-
-                return ['success' => true, 'message' => 'Shift assigned successfully', 'duplicate' => false];
-            }
-
-            return ['success' => false, 'message' => 'Failed to assign shift', 'duplicate' => false];
-        } catch (PDOException $e) {
-            return ['success' => false, 'message' => 'Database error: ' . $e->getMessage(), 'duplicate' => false];
-        } catch (Exception $e) {
-            return ['success' => false, 'message' => 'An unexpected error occurred: ' . $e->getMessage(), 'duplicate' => false];
-        }
-    }
-
-    /**
-     * Force assign shift (overwrite existing)
-     */
-    public function forceAssignShift($employee_id, $shift_id, $effective_from, $effective_to = null, $existing_employee_shift_id) {
-        // Validate employee exists
-        $employee = $this->employee->getById($employee_id);
-        if (empty($employee)) {
-            return ['success' => false, 'message' => 'Employee not found in the system'];
-        }
-
         // Validate shift exists
         $shift = $this->shift->getById($shift_id);
         if (empty($shift)) {
@@ -214,25 +144,20 @@ class ShiftController {
         $this->employeeShift->effective_to = $effective_to;
         $this->employeeShift->is_active = 1;
 
-        try {
-            if ($this->employeeShift->forceAssign($existing_employee_shift_id)) {
-                // Log action
-                $this->auditLog->log(
-                    $_SESSION['user_id'] ?? null,
-                    'SHIFT_OVERWRITTEN',
-                    'employee_shifts',
-                    $employee_id,
-                    'Overwritten ' . $shift['shift_name'] . ' for employee ID: ' . $employee_id
-                );
+        if ($this->employeeShift->assign()) {
+            // Log action
+            $this->auditLog->log(
+                $_SESSION['user_id'] ?? null,
+                'SHIFT_ASSIGNED',
+                'employee_shifts',
+                $employee_id,
+                'Assigned ' . $shift['shift_name'] . ' to employee ID: ' . $employee_id
+            );
 
-                return ['success' => true, 'message' => 'Shift overwritten successfully'];
-            }
-            return ['success' => false, 'message' => 'Failed to overwrite shift'];
-        } catch (PDOException $e) {
-            return ['success' => false, 'message' => 'Database error: ' . $e->getMessage()];
-        } catch (Exception $e) {
-            return ['success' => false, 'message' => 'An unexpected error occurred: ' . $e->getMessage()];
+            return ['success' => true, 'message' => 'Shift assigned successfully'];
         }
+
+        return ['success' => false, 'message' => 'Failed to assign shift'];
     }
 
     /**

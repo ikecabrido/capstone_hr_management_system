@@ -174,7 +174,7 @@ $query_shift = "SELECT es.*, s.shift_name, s.start_time, s.end_time, s.break_dur
                 WHERE es.employee_id = ? AND es.is_active = 1 AND (es.effective_to IS NULL OR es.effective_to >= ?)
                 AND ? BETWEEN es.effective_from AND COALESCE(es.effective_to, ?)";
 $stmt_shift = $conn->prepare($query_shift);
-$stmt_shift->execute([$employee_id, $today, $today, $today]);
+$stmt_shift->execute([$employee_id, $today, $today]);
 $today_shift = $stmt_shift->fetch(PDO::FETCH_ASSOC);
 
 // Get leave requests history

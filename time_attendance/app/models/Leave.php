@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/Database.php';
 class Leave
 {
     private $conn;
-    private $table = 'ta_leave_requests';
+    private $table = 'leave_requests';
 
     public function __construct()
     {
@@ -17,23 +17,16 @@ class Leave
      */
     public function createRequest($data)
     {
-        $query = "INSERT INTO `ta_leave_requests` 
+        $query = "INSERT INTO `leave_requests` 
                   (employee_id, leave_type_id, start_date, end_date, details, status)
                   VALUES (:employee_id, :leave_type_id, :start_date, :end_date, :details, 'Pending')";
 
         $stmt = $this->conn->prepare($query);
-        
-        $employee_id = $data['employee_id'];
-        $leave_type_id = $data['leave_type_id'];
-        $start_date = $data['start_date'];
-        $end_date = $data['end_date'];
-        $details = $data['details'] ?? $data['reason'] ?? '';
-        
-        $stmt->bindParam(':employee_id', $employee_id, PDO::PARAM_INT);
-        $stmt->bindParam(':leave_type_id', $leave_type_id, PDO::PARAM_INT);
-        $stmt->bindParam(':start_date', $start_date);
-        $stmt->bindParam(':end_date', $end_date);
-        $stmt->bindParam(':details', $details);
+        $stmt->bindParam(':employee_id', $data['employee_id'], PDO::PARAM_INT);
+        $stmt->bindParam(':leave_type_id', $data['leave_type_id'], PDO::PARAM_INT);
+        $stmt->bindParam(':start_date', $data['start_date']);
+        $stmt->bindParam(':end_date', $data['end_date']);
+        $stmt->bindParam(':details', $data['details'] ?? $data['reason'] ?? '');
 
         return $stmt->execute();
     }
@@ -43,11 +36,7 @@ class Leave
      */
     public function getPendingByDepartmentHead($deptHeadUserId)
     {
-        $query = "SELECT lr.*, 
-                         e.full_name, 
-                         e.department, 
-                         lt.leave_type_name,
-                         DATEDIFF(lr.end_date, lr.start_date) + 1 as total_days
+        $query = "SELECT lr.*, e.full_name, e.department, lt.leave_type_name
                   FROM ta_leave_requests lr
                   INNER JOIN employees e ON lr.employee_id = e.employee_id
                   INNER JOIN ta_leave_types lt ON lr.leave_type_id = lt.leave_type_id
@@ -67,13 +56,9 @@ class Leave
      */
     public function getForHRApproval()
     {
-        $query = "SELECT lr.*, 
-                         e.full_name, 
-                         e.department, 
-                         lt.leave_type_name,
-                         DATEDIFF(lr.end_date, lr.start_date) + 1 as total_days
+        $query = "SELECT lr.*, e.full_name, e.department, lt.leave_type_name
                   FROM ta_leave_requests lr
-                  INNER JOIN employees e ON lr.employee_id = e.employee_id
+                  INNER JOIN employees e ON lr.employee_id = e.employee_no
                   INNER JOIN ta_leave_types lt ON lr.leave_type_id = lt.leave_type_id
                   WHERE lr.status IN ('Pending', 'Approved')
                   ORDER BY lr.date_submitted DESC";
@@ -89,7 +74,7 @@ class Leave
      */
     public function updateStatus($leave_request_id, $status, $user_id, $remarks = '')
     {
-        $query = "UPDATE ta_leave_requests 
+        $query = "UPDATE leave_requests 
                   SET status = :status, 
                       reject_reason = :remarks,
                       updated_at = NOW()
@@ -151,7 +136,7 @@ class Leave
      */
     public function deductLeaveBalance($employee_id, $leave_type_id, $days_to_deduct)
     {
-        $query = "UPDATE ta_leave_balances 
+        $query = "UPDATE leave_balances 
                   SET used_days = used_days + :days,
                       remaining_days = remaining_days - :days,
                       updated_at = NOW()

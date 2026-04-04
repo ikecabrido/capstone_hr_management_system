@@ -4,115 +4,18 @@
  * Validates QR token and redirects to login or processes attendance
  */
 
-// Prevent caching
-header("Cache-Control: no-cache, no-store, must-revalidate");
-header("Pragma: no-cache");
-header("Expires: 0");
-
 require_once "../app/controllers/AuthController.php";
 require_once "../app/helpers/QRHelper.php";
 require_once "../app/core/Session.php";
 
 Session::start();
 
-// Handle confirmation action
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['action'] === 'confirm') {
-    header('Content-Type: application/json');
-    
-    if (!isset($_SESSION['qr_pending'])) {
-        echo json_encode(['success' => false, 'message' => 'No pending confirmation']);
-        exit;
-    }
-
-    require_once "../app/config/Database.php";
-    require_once "../app/models/ShiftValidator.php";
-    
-    try {
-        $db = new Database();
-        $conn = $db->getConnection();
-        
-        $pending = $_SESSION['qr_pending'];
-        $employee_id = $pending['employee_id'];
-        $action_type = $pending['action_type'];
-        $now = date('Y-m-d H:i:s');
-        $today = date('Y-m-d');
-        
-        // Validate shift assignment again
-        $shiftValidator = new ShiftValidator();
-        $shiftAssignment = $shiftValidator->hasShiftAssignedToday($employee_id);
-        
-        if (!$shiftAssignment) {
-            echo json_encode([
-                'success' => false,
-                'message' => 'No shift assigned for today. Attendance cannot be recorded.'
-            ]);
-            unset($_SESSION['qr_pending']);
-            exit;
-        }
-        
-        // Check if there's already a record for today
-        $checkQuery = "SELECT attendance_id, time_in, time_out FROM ta_attendance 
-                       WHERE employee_id = :emp_id AND attendance_date = :date";
-        $checkStmt = $conn->prepare($checkQuery);
-        $checkStmt->execute([':emp_id' => $employee_id, ':date' => $today]);
-        $record = $checkStmt->fetch(PDO::FETCH_ASSOC);
-        
-        $result = false;
-        
-        if ($action_type === 'time_in') {
-            if (!$record) {
-                // Create new record with time_in
-                $insertQuery = "INSERT INTO ta_attendance (employee_id, attendance_date, time_in, status, recorded_by) 
-                               VALUES (:emp_id, :date, :time_in, 'PRESENT', 'QR')";
-                $insertStmt = $conn->prepare($insertQuery);
-                $result = $insertStmt->execute([
-                    ':emp_id' => $employee_id,
-                    ':date' => $today,
-                    ':time_in' => $now
-                ]);
-            } else {
-                // Update with time_in
-                $updateQuery = "UPDATE ta_attendance SET time_in = :time_in, recorded_by = 'QR' WHERE attendance_id = :id";
-                $updateStmt = $conn->prepare($updateQuery);
-                $result = $updateStmt->execute([':time_in' => $now, ':id' => $record['attendance_id']]);
-            }
-        } elseif ($action_type === 'time_out') {
-            // Update with time_out
-            $updateQuery = "UPDATE ta_attendance SET time_out = :time_out, recorded_by = 'QR' WHERE attendance_id = :id";
-            $updateStmt = $conn->prepare($updateQuery);
-            $result = $updateStmt->execute([':time_out' => $now, ':id' => $record['attendance_id']]);
-        }
-        
-        if ($result) {
-            // Mark token as used
-            $markQuery = "UPDATE attendance_tokens SET used = 1, used_by = :emp_id, used_at = NOW() WHERE token = :token";
-            $markStmt = $conn->prepare($markQuery);
-            $markStmt->execute([':emp_id' => $employee_id, ':token' => $_POST['token'] ?? '']);
-            
-            echo json_encode([
-                'success' => true,
-                'message' => $pending['message'] . ' recorded successfully for ' . $pending['full_name']
-            ]);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to record attendance']);
-        }
-        
-        // Clear the pending data
-        unset($_SESSION['qr_pending']);
-        
-    } catch (Exception $e) {
-        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
-    }
-    exit;
-}
-
 // Get token from query parameter
 $token = trim($_GET['token'] ?? '');
 
 if (empty($token)) {
     $_SESSION['qr_error'] = 'No token provided';
-    // Redirect to new employee portal instead of old dashboard
-    header("Location: ../../employee_portal/index.php?url=time-attendance");
+    header("Location: employee_dashboard.php");
     exit;
 }
 
@@ -129,36 +32,33 @@ if (!$tokenData) {
         header("Location: ../../login_form.php");
         exit;
     } else {
-        // User is authenticated, send to new employee portal
-        header("Location: ../../employee_portal/index.php?url=time-attendance");
+        // User is authenticated, send to dashboard with error
+        if (AuthController::hasRole('time')) {
+            header("Location: dashboard.php");
+        } else {
+            header("Location: employee_dashboard.php");
+        }
         exit;
     }
 }
 
 // Check if user is authenticated
 if (!AuthController::isAuthenticated()) {
-    // Redirect to unified QR handler with the QR token
-    header("Location: ../../qr_handler.php?qr_token=" . urlencode($token));
+    // Redirect to root login with the QR token
+    header("Location: ../../login_form.php?qr_token=" . urlencode($token));
     exit;
 }
 
 // User is authenticated - process attendance immediately
 require_once "../app/config/Database.php";
 require_once "../app/models/Attendance.php";
-require_once "../app/models/ShiftValidator.php";
 
 $db = new Database();
 $conn = $db->getConnection();
 
 try {
     // Get current logged-in user's employee ID
-    // Support both session formats: $_SESSION['user']['id'] (new) and $_SESSION['user_id'] (old)
-    $userId = null;
-    if (isset($_SESSION['user']) && isset($_SESSION['user']['id'])) {
-        $userId = $_SESSION['user']['id'];
-    } elseif (isset($_SESSION['user_id'])) {
-        $userId = $_SESSION['user_id'];
-    }
+    $userId = $_SESSION['user_id'] ?? null;
     
     if (!$userId) {
         $_SESSION['qr_error'] = 'User session invalid';
@@ -174,20 +74,12 @@ try {
 
     if (!$employee) {
         $_SESSION['qr_error'] = 'Employee record not found';
-        // Redirect to new employee portal
-        header("Location: ../../employee_portal/index.php?url=time-attendance");
-        exit;
-    }
-
-    // Validate shift assignment FIRST
-    $shiftValidator = new ShiftValidator();
-    $employee_id = $employee['employee_id'];
-    $shiftAssignment = $shiftValidator->hasShiftAssignedToday($employee_id);
-    
-    if (!$shiftAssignment) {
-        $_SESSION['qr_error'] = 'No shift assigned for today. Please contact HR to assign a shift before clocking in.';
-        // Redirect to new employee portal
-        header("Location: ../../employee_portal/index.php?url=time-attendance");
+        
+        if (AuthController::hasRole('time')) {
+            header("Location: dashboard.php");
+        } else {
+            header("Location: employee_dashboard.php");
+        }
         exit;
     }
 
@@ -199,51 +91,88 @@ try {
     $checkQuery = "SELECT attendance_id, time_in, time_out FROM ta_attendance 
                    WHERE employee_id = :emp_id AND attendance_date = :date";
     $checkStmt = $conn->prepare($checkQuery);
-    $checkStmt->execute([':emp_id' => $employee_id, ':date' => $today]);
+    $checkStmt->execute([':emp_id' => $employee['employee_id'], ':date' => $today]);
     $existingRecord = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
     $result = false;
     $message = '';
-    $action_type = '';
 
     if ($existingRecord) {
-        if (empty($existingRecord['time_in'])) {
-            // Should record time_in
-            $action_type = 'time_in';
-            $message = 'Time In';
-        } elseif (empty($existingRecord['time_out'])) {
-            // Should record time_out
-            $action_type = 'time_out';
-            $message = 'Time Out';
+        if (!$existingRecord['time_in']) {
+            // Record time_in
+            $updateQuery = "UPDATE attendance SET time_in = :time_in WHERE attendance_id = :id";
+            $updateStmt = $conn->prepare($updateQuery);
+            $result = $updateStmt->execute([':time_in' => $now, ':id' => $existingRecord['attendance_id']]);
+            $message = 'Time In recorded successfully!';
+        } elseif (!$existingRecord['time_out']) {
+            // Record time_out
+            $updateQuery = "UPDATE attendance SET time_out = :time_out WHERE attendance_id = :id";
+            $updateStmt = $conn->prepare($updateQuery);
+            $result = $updateStmt->execute([':time_out' => $now, ':id' => $existingRecord['attendance_id']]);
+            $message = 'Time Out recorded successfully!';
         } else {
             // Attendance already complete for today
             $_SESSION['qr_error'] = 'Attendance already recorded for today';
-            header("Location: ../../employee_portal/index.php?url=time-attendance");
+            
+            if (AuthController::hasRole('time')) {
+                header("Location: dashboard.php");
+            } else {
+                header("Location: employee_dashboard.php");
+            }
             exit;
         }
     } else {
-        // New attendance record - will be time in
-        $action_type = 'time_in';
-        $message = 'Time In';
+        // Create new attendance record
+        $insertQuery = "INSERT INTO ta_attendance (employee_id, attendance_date, time_in, status) 
+                       VALUES (:emp_id, :date, :time_in, 'PRESENT')";
+        $insertStmt = $conn->prepare($insertQuery);
+        $result = $insertStmt->execute([
+            ':emp_id' => $employee['employee_id'],
+            ':date' => $today,
+            ':time_in' => $now
+        ]);
+        $message = 'Time In recorded successfully!';
     }
 
-    // Store data in session for confirmation
-    $_SESSION['qr_pending'] = [
-        'employee_id' => $employee_id,
-        'action_type' => $action_type,
-        'message' => $message,
-        'current_time' => date('H:i:s'),
-        'full_name' => $employee['full_name'],
-        'token' => $token
-    ];
+    // Mark token as used
+    if ($result) {
+        $markUsedQuery = "UPDATE attendance_tokens SET used = 1, used_by = :emp_id, used_at = NOW() WHERE token = :token";
+        $markStmt = $conn->prepare($markUsedQuery);
+        $markStmt->execute([':emp_id' => $employee['employee_id'], ':token' => $token]);
 
-    // Don't process yet - show confirmation page first
-    // The page below will display the modal
-    $showConfirmation = true;
+        // Store success message in session and redirect to dashboard
+        $_SESSION['qr_success'] = $message . ' for ' . $employee['full_name'];
+        
+        if (AuthController::hasRole('time')) {
+            header("Location: dashboard.php");
+        } else {
+            header("Location: employee_dashboard.php");
+        }
+        exit;
+    } else {
+        http_response_code(500);
+        $_SESSION['qr_error'] = 'Failed to record attendance';
+        
+        if (AuthController::hasRole('time')) {
+            header("Location: dashboard.php");
+        } else {
+            header("Location: employee_dashboard.php");
+        }
+        exit;
+    }
 
 } catch (Exception $e) {
     $_SESSION['qr_error'] = 'Error: ' . $e->getMessage();
-    header("Location: ../../employee_portal/index.php?url=time-attendance");
+    
+    if (AuthController::isAuthenticated()) {
+        if (AuthController::hasRole('time')) {
+            header("Location: dashboard.php");
+        } else {
+            header("Location: employee_dashboard.php");
+        }
+    } else {
+        header("Location: ../../login_form.php");
+    }
     exit;
 }
 ?>
@@ -434,179 +363,18 @@ try {
                 padding: 10px;
             }
         }
-
-        /* Modal Styles */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            max-width: 400px;
-            width: 90%;
-            overflow: hidden;
-            animation: slideDown 0.3s ease;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .modal-header {
-            background: linear-gradient(135deg, #003d82 0%, #0066cc 100%);
-            color: white;
-            padding: 20px;
-            text-align: center;
-        }
-
-        .modal-header h2 {
-            margin: 0;
-            font-size: 20px;
-            font-weight: 600;
-        }
-
-        .modal-body {
-            padding: 25px;
-            text-align: center;
-        }
-
-        .modal-body p {
-            margin: 10px 0;
-            color: #333;
-            font-size: 15px;
-            line-height: 1.6;
-        }
-
-        .modal-footer {
-            padding: 20px;
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            border-top: 1px solid #eee;
-        }
-
-        .btn-cancel,
-        .btn-confirm {
-            padding: 12px 30px;
-            border: none;
-            border-radius: 6px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            min-width: 120px;
-        }
-
-        .btn-cancel {
-            background: #f0f0f0;
-            color: #333;
-        }
-
-        .btn-cancel:hover {
-            background: #e0e0e0;
-            transform: translateY(-2px);
-        }
-
-        .btn-confirm {
-            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
-            color: white;
-        }
-
-        .btn-confirm:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
-        }
     </style>
 </head>
 <body>
-    <?php if (isset($showConfirmation) && $showConfirmation && isset($_SESSION['qr_pending'])): ?>
-        <!-- Confirmation Modal -->
-        <div class="modal-overlay" id="confirmationModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Confirm <?php echo $_SESSION['qr_pending']['message']; ?></h2>
-                </div>
-                <div class="modal-body">
-                    <p>Employee: <strong><?php echo htmlspecialchars($_SESSION['qr_pending']['full_name']); ?></strong></p>
-                    <p style="margin-top: 15px;">Are you sure you want to record <strong><?php echo strtolower($_SESSION['qr_pending']['message']); ?></strong>?</p>
-                    <p style="color: #666; font-size: 13px; margin-top: 10px;">
-                        Current time: <strong><?php echo $_SESSION['qr_pending']['current_time']; ?></strong>
-                    </p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn-cancel" onclick="cancelQR()">Cancel</button>
-                    <button type="button" class="btn-confirm" onclick="confirmQR()">Yes, Confirm</button>
-                </div>
-            </div>
+    <div class="container">
+        <div class="header">
+            <h1>Time & Attendance</h1>
+            <p>QR Scan Check-in</p>
         </div>
 
-        <script>
-            function confirmQR() {
-                // Send AJAX request to process attendance
-                fetch('qr_scan.php?action=confirm', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    body: 'token=<?php echo urlencode($_SESSION['qr_pending']['token']); ?>'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Show success message
-                        localStorage.setItem('qr_success', data.message);
-                        window.location.href = '../../employee_portal/index.php?url=time-attendance';
-                    } else {
-                        alert('Error: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred');
-                });
-            }
-
-            function cancelQR() {
-                // Redirect back to employee portal
-                window.location.href = '../../employee_portal/index.php?url=time-attendance';
-            }
-
-            // Show modal on page load
-            window.addEventListener('load', function() {
-                const modal = document.getElementById('confirmationModal');
-                if (modal) {
-                    modal.style.display = 'flex';
-                }
-            });
-        </script>
-    <?php else: ?>
-        <div class="container">
-            <div class="header">
-                <h1>Time & Attendance</h1>
-                <p>QR Scan Check-in</p>
-            </div>
-
-            <div class="info-box">
-                <p>✓ QR code scanned successfully. Please enter your Employee ID or Number to proceed.</p>
-            </div>
+        <div class="info-box">
+            <p>✓ QR code scanned successfully. Please enter your Employee ID or Number to proceed.</p>
+        </div>
 
         <form id="scanForm" method="POST">
             <input type="hidden" name="token" value="<?php echo htmlspecialchars($token); ?>">

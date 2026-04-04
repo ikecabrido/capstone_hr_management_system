@@ -1,4 +1,4 @@
-<!-- TAB: DIVERSITY & INCLUSION -->
+<!-- TAB 3: DIVERSITY & INCLUSION -->
 <div class="wfa-container" id="diversityContainer">
     <div class="wfa-loading">
         <i class="fas fa-spinner fa-spin"></i> Loading Diversity Data...
@@ -7,201 +7,90 @@
 
 <script>
 async function loadDiversityTab() {
-    console.log('loadDiversityTab() called');
     const container = document.getElementById('diversityContainer');
-    
-    if (!container) {
-        console.error('Diversity container not found');
-        return;
-    }
     
     try {
         const basePath = '/capstone_hr_management_system';
-        console.log('Fetching employee data for diversity...');
+        const deptResponse = await fetch(`${basePath}/api/wfa/department_analytics.php`);
+        const deptData = await deptResponse.json();
+        const diversityResponse = await fetch(`${basePath}/api/wfa/diversity_metrics.php`);
+        const diversityData = await diversityResponse.json();
         
-        const response = await fetch(`${basePath}/api/wfa/employees_data.php`);
-        console.log('Response status:', response.status);
-        
-        if (!response.ok) {
-            throw new Error(`API Error: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('Employee data:', data);
-        
-        const employees = data.data?.employees || [];
-        const totalEmployees = employees.length;
-        
-        // Calculate department distribution
-        const deptDist = {};
-        employees.forEach(emp => {
-            if (!deptDist[emp.department]) {
-                deptDist[emp.department] = 0;
-            }
-            deptDist[emp.department]++;
-        });
-        
-        // Calculate position distribution
-        const posDist = {};
-        employees.forEach(emp => {
-            if (!posDist[emp.position]) {
-                posDist[emp.position] = 0;
-            }
-            posDist[emp.position]++;
-        });
-        
-        // Calculate tenure distribution
-        const tenureDist = {};
-        employees.forEach(emp => {
-            const tenure = parseInt(emp.years_employed) || 0;
-            const tenureRange = tenure === 0 ? '0 years' : tenure === 1 ? '1 year' : `${tenure} years`;
-            if (!tenureDist[tenureRange]) {
-                tenureDist[tenureRange] = 0;
-            }
-            tenureDist[tenureRange]++;
-        });
-        
-        // Calculate status distribution
-        const statusDist = {};
-        employees.forEach(emp => {
-            if (!statusDist[emp.employment_status]) {
-                statusDist[emp.employment_status] = 0;
-            }
-            statusDist[emp.employment_status]++;
-        });
-        
-        const activeCount = statusDist['Active'] || 0;
-        const departmentCount = Object.keys(deptDist).length;
+        const departments = deptData.data?.departments || [];
+        const genderData = diversityData.data?.gender_summary || [];
         
         let html = `
             <!-- Diversity Metrics -->
             <div class="wfa-metrics-grid">
                 <div class="wfa-metric-card">
                     <div class="wfa-metric-label">Total Employees</div>
-                    <div class="wfa-metric-value">${totalEmployees}</div>
+                    <div class="wfa-metric-value">${departments.reduce((sum, d) => sum + (d.employee_count || 0), 0)}</div>
                     <div class="wfa-metric-change">Organization</div>
-                </div>
-                
-                <div class="wfa-metric-card success">
-                    <div class="wfa-metric-label">Active Employees</div>
-                    <div class="wfa-metric-value">${activeCount}</div>
-                    <div class="wfa-metric-change">Currently Employed</div>
                 </div>
                 
                 <div class="wfa-metric-card info">
                     <div class="wfa-metric-label">Departments</div>
-                    <div class="wfa-metric-value">${departmentCount}</div>
-                    <div class="wfa-metric-change">Unique Departments</div>
+                    <div class="wfa-metric-value">${departments.length}</div>
+                    <div class="wfa-metric-change">Active units</div>
+                </div>
+                
+                <div class="wfa-metric-card success">
+                    <div class="wfa-metric-label">Avg Department Size</div>
+                    <div class="wfa-metric-value">${departments.length > 0 ? (departments.reduce((sum, d) => sum + (d.employee_count || 0), 0) / departments.length).toFixed(0) : 0}</div>
+                    <div class="wfa-metric-change">Employees</div>
                 </div>
                 
                 <div class="wfa-metric-card warning">
-                    <div class="wfa-metric-label">Positions</div>
-                    <div class="wfa-metric-value">${Object.keys(posDist).length}</div>
-                    <div class="wfa-metric-change">Unique Positions</div>
+                    <div class="wfa-metric-label">Avg Performance</div>
+                    <div class="wfa-metric-value">${departments.length > 0 ? (departments.reduce((sum, d) => sum + (d.average_performance_score || 0), 0) / departments.length).toFixed(1) : 0}/5.0</div>
+                    <div class="wfa-metric-change">Rating</div>
                 </div>
             </div>
             
-            <!-- Distribution Charts -->
+            <!-- Charts -->
             <div class="wfa-charts-grid">
                 <div class="wfa-chart-container">
-                    <div class="wfa-chart-title">Department Distribution</div>
-                    <canvas id="departmentChart"></canvas>
+                    <div class="wfa-chart-title">Gender Distribution</div>
+                    <canvas id="genderChart"></canvas>
                 </div>
                 
                 <div class="wfa-chart-container">
-                    <div class="wfa-chart-title">Employment Status Distribution</div>
-                    <canvas id="statusChart"></canvas>
+                    <div class="wfa-chart-title">Employees by Department</div>
+                    <canvas id="departmentChart"></canvas>
                 </div>
             </div>
             
-            <!-- Department Breakdown Table -->
+            <!-- Department Diversity Table -->
             <div class="wfa-table-container">
-                <h3 style="margin-bottom: 15px;">Department Breakdown</h3>
+                <h3 style="margin-bottom: 15px;">Department Diversity & Statistics</h3>
                 <table class="wfa-table">
                     <thead>
                         <tr>
                             <th>Department</th>
-                            <th>Employee Count</th>
-                            <th>Percentage</th>
+                            <th>Employees</th>
+                            <th>Avg Salary</th>
+                            <th>Avg Performance</th>
+                            <th>Avg Tenure (Years)</th>
                         </tr>
                     </thead>
                     <tbody>
         `;
         
-        Object.keys(deptDist).sort().forEach(dept => {
-            const count = deptDist[dept];
-            const percent = totalEmployees > 0 ? ((count / totalEmployees) * 100).toFixed(1) : 0;
-            html += `
-                <tr>
-                    <td><strong>${dept}</strong></td>
-                    <td>${count}</td>
-                    <td>${percent}%</td>
-                </tr>
-            `;
-        });
-        
-        html += `
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- Position Distribution Table -->
-            <div class="wfa-table-container">
-                <h3 style="margin-bottom: 15px;">Position Breakdown</h3>
-                <table class="wfa-table">
-                    <thead>
-                        <tr>
-                            <th>Position</th>
-                            <th>Employee Count</th>
-                            <th>Percentage</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
-        
-        Object.keys(posDist).sort().forEach(pos => {
-            const count = posDist[pos];
-            const percent = totalEmployees > 0 ? ((count / totalEmployees) * 100).toFixed(1) : 0;
-            html += `
-                <tr>
-                    <td><strong>${pos}</strong></td>
-                    <td>${count}</td>
-                    <td>${percent}%</td>
-                </tr>
-            `;
-        });
-        
-        html += `
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- Tenure Distribution Table -->
-            <div class="wfa-table-container">
-                <h3 style="margin-bottom: 15px;">Tenure Distribution</h3>
-                <table class="wfa-table">
-                    <thead>
-                        <tr>
-                            <th>Tenure</th>
-                            <th>Employee Count</th>
-                            <th>Percentage</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
-        
-        const tenureOrder = ['0 years', '1 year'];
-        Object.keys(tenureDist).sort().forEach(tenure => {
-            const count = tenureDist[tenure];
-            const percent = totalEmployees > 0 ? ((count / totalEmployees) * 100).toFixed(1) : 0;
-            html += `
-                <tr>
-                    <td><strong>${tenure}</strong></td>
-                    <td>${count}</td>
-                    <td>${percent}%</td>
-                </tr>
-            `;
-        });
+        if (departments.length > 0) {
+            departments.forEach(d => {
+                html += `
+                    <tr>
+                        <td><strong>${d.department || 'N/A'}</strong></td>
+                        <td>${d.employee_count || 0}</td>
+                        <td>₱${(d.average_salary || 0).toLocaleString('en-US', {maximumFractionDigits: 0})}</td>
+                        <td>${(d.average_performance_score || 0).toFixed(1)}/5.0</td>
+                        <td>${(d.average_tenure_years || 0).toFixed(1)}</td>
+                    </tr>
+                `;
+            });
+        } else {
+            html += '<tr><td colspan="5" style="text-align: center; padding: 20px;">No department data available</td></tr>';
+        }
         
         html += `
                     </tbody>
@@ -209,91 +98,67 @@ async function loadDiversityTab() {
             </div>
         `;
         
-        console.log('Diversity HTML generated');
         container.innerHTML = html;
-        
-        // Initialize charts
-        initializeDiversityCharts(deptDist, statusDist);
+        initDiversityCharts(genderData, departments);
         
     } catch (error) {
         console.error('Error loading diversity data:', error);
-        container.innerHTML = '<div style="padding: 20px; color: #d32f2f;">Error loading diversity data: ' + error.message + '</div>';
+        container.innerHTML = '<div class="wfa-error">Error loading diversity data</div>';
     }
 }
 
-function initializeDiversityCharts(deptDist, statusDist) {
-    console.log('Initializing diversity charts');
+function initDiversityCharts(genderData, departments) {
+    // Gender Chart
+    if (genderData.length > 0) {
+        const genderCtx = document.getElementById('genderChart')?.getContext('2d');
+        if (genderCtx) {
+            new Chart(genderCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: genderData.map(g => g.category_value),
+                    datasets: [{
+                        data: genderData.map(g => g.employee_count),
+                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+    }
     
     // Department Chart
-    const deptCtx = document.getElementById('departmentChart');
-    if (deptCtx) {
-        const deptLabels = Object.keys(deptDist).sort();
-        const deptCounts = deptLabels.map(d => deptDist[d]);
-        
-        new Chart(deptCtx, {
-            type: 'pie',
-            data: {
-                labels: deptLabels,
-                datasets: [{
-                    data: deptCounts,
-                    backgroundColor: [
-                        '#667eea',
-                        '#764ba2',
-                        '#f093fb',
-                        '#f5576c',
-                        '#00c9ff',
-                        '#92fe9d',
-                        '#ffa751',
-                        '#ffe259'
-                    ],
-                    borderColor: '#fff',
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { padding: 15, font: { size: 12 } }
-                    }
-                }
-            }
-        });
-        console.log('Department chart created');
-    }
-    
-    // Status Chart
-    const statusCtx = document.getElementById('statusChart');
-    if (statusCtx) {
-        const statusLabels = Object.keys(statusDist);
-        const statusCounts = statusLabels.map(s => statusDist[s]);
-        
-        new Chart(statusCtx, {
-            type: 'bar',
-            data: {
-                labels: statusLabels,
-                datasets: [{
-                    label: 'Employees',
-                    data: statusCounts,
-                    backgroundColor: '#667eea',
-                    borderColor: '#764ba2',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: { display: false }
+    if (departments.length > 0) {
+        const deptCtx = document.getElementById('departmentChart')?.getContext('2d');
+        if (deptCtx) {
+            new Chart(deptCtx, {
+                type: 'bar',
+                data: {
+                    labels: departments.map(d => d.department),
+                    datasets: [{
+                        label: 'Employee Count',
+                        data: departments.map(d => d.employee_count),
+                        backgroundColor: '#17a2b8'
+                    }]
                 },
-                scales: {
-                    y: { beginAtZero: true }
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
                 }
-            }
-        });
-        console.log('Status chart created');
+            });
+        }
     }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const diversityTab = document.querySelector('a[href="#diversity"]');
+    if (diversityTab) {
+        diversityTab.addEventListener('click', function() {
+            loadDiversityTab();
+        });
+    }
+});
 </script>

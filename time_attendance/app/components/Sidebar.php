@@ -34,21 +34,21 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         position: fixed;
         top: 0;
-        left: 250px !important;
-        width: calc(100% - 250px) !important; /* 🔥 FIX */
+        left: 250px;
+        right: 0;
         z-index: 990;
-        margin: 0 !important;
         height: 60px;
         padding: 0 20px;
         display: flex;
         align-items: center;
         box-sizing: border-box;
+        width: calc(100% - 250px);
         transition: left 0.3s ease, width 0.3s ease;
     }
 
     body.sidebar-collapsed .main-header.navbar {
-        left: 0 !important;
-        width: 100% !important;
+        left: 0;
+        width: 100%;
     }
 
     .main-sidebar {
@@ -58,7 +58,7 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
         position: fixed;
         left: 0;
         top: 0;
-        bottom: 0;
+        height: 100vh;
         overflow-y: auto;
         z-index: 1000;
         display: flex;
@@ -376,6 +376,21 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
         background: rgba(255, 255, 255, 0.2);
     }
 
+    /* Sidebar collapse animation */
+    .main-sidebar {
+        transition: width 0.3s ease, margin-left 0.3s ease, z-index 0.3s ease;
+    }
+
+    .main-sidebar.collapsed {
+        width: 0;
+        overflow: hidden;
+        z-index: 0;
+    }
+
+    .main-header.navbar {
+        transition: left 0.3s ease;
+    }
+
     .main-header.navbar.sidebar-collapsed {
         left: 0;
     }
@@ -440,7 +455,7 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
 <aside class="main-sidebar" id="mainSidebar">
     <!-- Brand Logo -->
     <a href="<?php echo basename($_SERVER['PHP_SELF']) === 'employee_dashboard.php' ? 'employee_dashboard.php' : 'dashboard.php'; ?>" class="brand-link">
-        <img src="../../assets/pics/bcpLogo.png" alt="BCP Logo" class="brand-image" />
+        <img src="../bcp-logo2.png" alt="BCP Logo" class="brand-image" />
         <span class="brand-text">BCP Bulacan</span>
     </a>
 
@@ -583,13 +598,9 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
     // Toggle Sidebar
     function toggleSidebar() {
         const sidebar = document.getElementById('mainSidebar');
+        const navbar = document.querySelector('.main-header.navbar');
         const mainContent = document.querySelector('.main-content');
         const body = document.body;
-        
-        if (!sidebar) {
-            console.error('Sidebar element not found');
-            return;
-        }
         
         // For mobile
         if (window.innerWidth <= 768) {
@@ -597,9 +608,8 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
         } else {
             // For desktop - collapse/expand animation
             sidebar.classList.toggle('collapsed');
-            if (mainContent) {
-                mainContent.classList.toggle('sidebar-collapsed');
-            }
+            navbar.classList.toggle('sidebar-collapsed');
+            mainContent.classList.toggle('sidebar-collapsed');
             body.classList.toggle('sidebar-collapsed');
         }
     }
