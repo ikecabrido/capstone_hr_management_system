@@ -4,180 +4,221 @@ require_once "../../auth/auth_check.php";
 require_once "../../auth/database.php";
 
 $theme = $_SESSION['user']['theme'] ?? 'light';
-$employee_id = $_SESSION['user']['id'];
+$db = Database::getInstance()->getConnection();
 
-// Get database connection
-$database = Database::getInstance();
-$pdo = $database->getConnection();
+$message = '';
 
-// Handle API requests for goal data
-if (isset($_GET['action']) && $_GET['action'] === 'get_goal' && isset($_GET['id'])) {
-    $stmt = $pdo->prepare("SELECT * FROM goals WHERE goal_id = ? AND employee_id = ?");
-    $stmt->execute([$_GET['id'], $employee_id]);
-    $goal = $stmt->fetch();
-    
-    header('Content-Type: application/json');
-    echo json_encode($goal);
-    exit;
-}
-
-// Handle form submissions
+// Handle form submission (Add, Edit, Delete)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['action'])) {
-        switch ($_POST['action']) {
-            case 'create_goal':
-                $stmt = $pdo->prepare("
-                    INSERT INTO goals (employee_id, department, position, goal_title, goal_description, target_date, priority_level, status) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 'not_started')
-                ");
-                $stmt->execute([
-                    $employee_id,
-                    $_POST['department'],
-                    $_POST['position'],
-                    $_POST['goal_title'],
-                    $_POST['goal_description'],
-                    $_POST['target_date'],
-                    $_POST['priority_level']
-                ]);
-                $_SESSION['toast'] = ['type' => 'success', 'message' => 'Goal created successfully!'];
-                break;
-                
-            case 'update_goal':
-                $stmt = $pdo->prepare("
-                    UPDATE goals 
-                    SET goal_title = ?, goal_description = ?, target_date = ?, priority_level = ?, status = ?
-                    WHERE goal_id = ? AND employee_id = ?
-                ");
-                $stmt->execute([
-                    $_POST['goal_title'],
-                    $_POST['goal_description'],
-                    $_POST['target_date'],
-                    $_POST['priority_level'],
-                    $_POST['status'],
-                    $_POST['goal_id'],
-                    $employee_id
-                ]);
-                $_SESSION['toast'] = ['type' => 'success', 'message' => 'Goal updated successfully!'];
-                break;
-                
-            case 'delete_goal':
-                $stmt = $pdo->prepare("DELETE FROM goals WHERE goal_id = ? AND employee_id = ?");
-                $stmt->execute([$_POST['goal_id'], $employee_id]);
-                $_SESSION['toast'] = ['type' => 'success', 'message' => 'Goal deleted successfully!'];
-                break;
-                
-            case 'update_kpi':
-                $stmt = $pdo->prepare("
-                    UPDATE goals 
-                    SET kpi_current = ?, kpi_target = ?, kpi_unit = ?, status = ?
-                    WHERE goal_id = ? AND employee_id = ?
-                ");
-                $status = $_POST['kpi_current'] >= $_POST['kpi_target'] ? 'completed' : 
-                         ($_POST['kpi_current'] > 0 ? 'in_progress' : 'not_started');
-                $stmt->execute([
-                    $_POST['kpi_current'],
-                    $_POST['kpi_target'],
-                    $_POST['kpi_unit'],
-                    $status,
-                    $_POST['goal_id'],
-                    $employee_id
-                ]);
-                $_SESSION['toast'] = ['type' => 'success', 'message' => 'KPI updated successfully!'];
-                break;
+    // Add Goal
+    if (isset($_POST['add_goal'])) {
+        $employee_id = $_POST['employee_id'];
+        $goal_title = $_POST['goal_title'];
+        $kpi_name = $_POST['kpi_name'];
+        $target_value = $_POST['target_value'];
+        $current_progress = $_POST['current_progress'];
+        $status = $_POST['status'];
+        $priority = $_POST['priority'] ?? 'Medium';
+        $start_date = $_POST['start_date'];
+        $end_date = $_POST['end_date'];
+
+        try {
+            $sql = "INSERT INTO pm_goals (employee_id, goal_title, kpi_name, target_value, current_progress, status, priority, start_date, end_date) 
+                    VALUES (:employee_id, :goal_title, :kpi_name, :target_value, :current_progress, :status, :priority, :start_date, :end_date)";
+            $stmt = $db->prepare($sql);
+            $stmt->execute([
+                'employee_id' => $employee_id,
+                'goal_title' => $goal_title,
+                'kpi_name' => $kpi_name,
+                'target_value' => $target_value,
+                'current_progress' => $current_progress,
+                'status' => $status,
+                'priority' => $priority,
+                'start_date' => $start_date,
+                'end_date' => $end_date
+            ]);
+            $message = '<div class="alert alert-success">Goal added successfully!</div>';
+        } catch (PDOException $e) {
+            $message = '<div class="alert alert-danger">Error: ' . $e->getMessage() . '</div>';
         }
-        header("Location: Goal&KPI.php");
-        exit;
+    }
+
+    // Update Goal
+    if (isset($_POST['update_goal'])) {
+        $goal_id = $_POST['goal_id'];
+        $employee_id = $_POST['employee_id'];
+        $goal_title = $_POST['goal_title'];
+        $kpi_name = $_POST['kpi_name'];
+        $target_value = $_POST['target_value'];
+        $current_progress = $_POST['current_progress'];
+        $status = $_POST['status'];
+        $priority = $_POST['priority'] ?? 'Medium';
+        $start_date = $_POST['start_date'];
+        $end_date = $_POST['end_date'];
+
+        try {
+            $sql = "UPDATE pm_goals SET 
+                    employee_id = :employee_id,
+                    goal_title = :goal_title,
+                    kpi_name = :kpi_name,
+                    target_value = :target_value,
+                    current_progress = :current_progress,
+                    status = :status,
+                    priority = :priority,
+                    start_date = :start_date,
+                    end_date = :end_date
+                    WHERE goal_id = :goal_id";
+            $stmt = $db->prepare($sql);
+            $stmt->execute([
+                'employee_id' => $employee_id,
+                'goal_title' => $goal_title,
+                'kpi_name' => $kpi_name,
+                'target_value' => $target_value,
+                'current_progress' => $current_progress,
+                'status' => $status,
+                'priority' => $priority,
+                'start_date' => $start_date,
+                'end_date' => $end_date,
+                'goal_id' => $goal_id
+            ]);
+            $message = '<div class="alert alert-success">Goal updated successfully!</div>';
+        } catch (PDOException $e) {
+            $message = '<div class="alert alert-danger">Error: ' . $e->getMessage() . '</div>';
+        }
+    }
+
+    // Delete Goal
+    if (isset($_POST['delete_goal'])) {
+        $goal_id = $_POST['goal_id'];
+        try {
+            $sql = "DELETE FROM pm_goals WHERE goal_id = :goal_id";
+            $stmt = $db->prepare($sql);
+            $stmt->execute(['goal_id' => $goal_id]);
+            $message = '<div class="alert alert-success">Goal deleted successfully!</div>';
+        } catch (PDOException $e) {
+            $message = '<div class="alert alert-danger">Error: ' . $e->getMessage() . '</div>';
+        }
     }
 }
 
-// Fetch goals
-$stmt = $pdo->prepare("
-    SELECT * FROM goals 
-    WHERE employee_id = ? 
-    ORDER BY created_at DESC
-");
-$stmt->execute([$employee_id]);
-$goals = $stmt->fetchAll();
+// Fetch employees for dropdown
+$stmt = $db->query("SELECT employee_id as id, full_name FROM employees WHERE employment_status = 'Active' ORDER BY full_name");
+$employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch distinct departments for filter
+$stmt = $db->query("SELECT DISTINCT department FROM employees WHERE employment_status = 'Active' AND department IS NOT NULL ORDER BY department");
+$departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch goals list with search and filters
+$search = $_GET['search'] ?? '';
+$filter_status = $_GET['filter_status'] ?? '';
+$filter_department = $_GET['filter_department'] ?? '';
+$filter_priority = $_GET['filter_priority'] ?? '';
+$filter_start_date = $_GET['filter_start_date'] ?? '';
+$filter_end_date = $_GET['filter_end_date'] ?? '';
+
+$query = "
+    SELECT g.*, e.full_name, e.department
+    FROM pm_goals g 
+    JOIN employees e ON g.employee_id = e.employee_id 
+    WHERE 1=1
+";
+$params = [];
+
+if (!empty($search)) {
+    $query .= " AND (e.full_name LIKE :search OR g.goal_title LIKE :search)";
+    $params['search'] = "%$search%";
+}
+
+if (!empty($filter_status)) {
+    $query .= " AND g.status = :status";
+    $params['status'] = $filter_status;
+}
+
+if (!empty($filter_department)) {
+    $query .= " AND e.department = :department";
+    $params['department'] = $filter_department;
+}
+
+if (!empty($filter_priority)) {
+    $query .= " AND g.priority = :priority";
+    $params['priority'] = $filter_priority;
+}
+
+if (!empty($filter_start_date)) {
+    $query .= " AND g.start_date >= :start_date";
+    $params['start_date'] = $filter_start_date;
+}
+
+if (!empty($filter_end_date)) {
+    $query .= " AND g.end_date <= :end_date";
+    $params['end_date'] = $filter_end_date;
+}
+
+$query .= " ORDER BY g.end_date ASC";
+
+$stmt = $db->prepare($query);
+$stmt->execute($params);
+$goals_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Calculate statistics
-$stats = [
-    'total' => count($goals),
-    'not_started' => 0,
-    'in_progress' => 0,
-    'completed' => 0
-];
+$total_goals = count($goals_list);
+$completed_goals = 0;
+$on_track_goals = 0;
+$delayed_goals = 0;
+$overdue_goals = 0;
+$near_due_goals = 0; // Goals ending within 7 days
 
-foreach ($goals as $goal) {
-    $status = $goal['status'] ?? 'not_started';
-    if (isset($stats[$status])) {
-        $stats[$status]++;
+$today = new DateTime();
+
+foreach ($goals_list as $goal) {
+    if ($goal['status'] == 'Completed') {
+        $completed_goals++;
+    } elseif ($goal['status'] == 'On Track') {
+        $on_track_goals++;
+    } elseif ($goal['status'] == 'Delayed') {
+        $delayed_goals++;
+    }
+    
+    // Check for overdue and near due
+    $end_date = new DateTime($goal['end_date']);
+    $days_remaining = $today->diff($end_date)->days;
+    $is_overdue = $today > $end_date;
+    
+    if ($is_overdue && $goal['status'] != 'Completed') {
+        $overdue_goals++;
+    } else if ($days_remaining <= 7 && $days_remaining > 0) {
+        $near_due_goals++;
     }
 }
 
-// Get user info for form defaults - using a simpler approach since users table doesn't have dept/position
-$user_info = [
-    'department' => 'Not specified',
-    'position' => 'Not specified'
-];
-
+$completed_percentage = ($total_goals > 0) ? round(($completed_goals / $total_goals) * 100) : 0;
+$on_track_percentage = ($total_goals > 0) ? round(($on_track_goals / $total_goals) * 100) : 0;
+$delayed_percentage = ($total_goals > 0) ? round(($delayed_goals / $total_goals) * 100) : 0;
 ?>
 
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Goal & KPI Management</title>
-  
+  <title>Goal & KPI Progress Tracking | Performance Management</title>
+
   <!-- Google Font: Source Sans Pro -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback" />
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="../../assets/plugins/fontawesome-free/css/all.min.css" />
-  <!-- overlayScrollbars -->
-  <link rel="stylesheet" href="../../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css" />
+  <!-- Select2 -->
+  <link rel="stylesheet" href="../../assets/plugins/select2/css/select2.min.css" />
+  <link rel="stylesheet" href="../../assets/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css" />
   <!-- Theme style -->
   <link rel="stylesheet" href="../../assets/dist/css/adminlte.min.css" />
   <link rel="stylesheet" href="../custom.css" />
-  <link rel="stylesheet" href="../../layout/toast.css" />
-  
-  <style>
-    .goal-card {
-      transition: all 0.3s ease;
-      border-left: 4px solid transparent;
-    }
-    .goal-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    .goal-card.not-started { border-left-color: #6c757d; }
-    .goal-card.in-progress { border-left-color: #ffc107; }
-    .goal-card.completed { border-left-color: #28a745; }
-    
-    .progress-ring {
-      transform: rotate(-90deg);
-    }
-    
-    .kpi-progress {
-      background: linear-gradient(90deg, #e9ecef 0%, #e9ecef var(--progress), #28a745 var(--progress), #28a745 100%);
-    }
-    
-    .stat-card {
-      transition: all 0.3s ease;
-    }
-    .stat-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-    }
-  </style>
 </head>
 
-<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed <?= $theme === 'dark' ? 'dark-mode' : '' ?>">
+<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed <?= $theme === 'dark' ? 'dark-mode' : '' ?>">
   <div class="wrapper">
-    <!-- Preloader -->
-    <div class="preloader flex-column justify-content-center align-items-center">
-      <img class="animation__wobble" src="../../assets/pics/bcpLogo.png" alt="AdminLTELogo" height="60" width="60" />
-    </div>
-
     <!-- Navbar -->
     <nav class="main-header navbar navbar-expand navbar-dark">
       <ul class="navbar-nav">
@@ -188,42 +229,17 @@ $user_info = [
           <a href="../performance.php" class="nav-link">Home</a>
         </li>
       </ul>
-
-      <ul class="navbar-nav ml-auto">
-        <li class="nav-item">
-          <div class="nav-link" id="clock">--:--:--</div>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" data-widget="fullscreen" href="#" role="button">
-            <i class="fas fa-expand-arrows-alt"></i>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#" id="darkToggle" role="button" title="Toggle Dark Mode">
-            <i class="fas fa-moon" id="themeIcon"></i>
-          </a>
-        </li>
-      </ul>
     </nav>
 
-    <!-- Main Sidebar Container -->
+    <!-- Sidebar -->
     <aside class="main-sidebar sidebar-dark-primary elevation-4">
       <a href="../performance.php" class="brand-link">
         <img src="../../assets/pics/bcpLogo.png" alt="AdminLTE Logo" class="brand-image elevation-3" style="opacity: 0.9" />
-        <span class="brand-text font-weight-light">BCP Bulacan</span>
+        <span class="brand-text font-weight-light">BCP Bulacan </span>
       </a>
-
       <div class="sidebar">
-        <div class="user-panel mt-3 pb-3 mb-3 d-flex align-items-center">
-          <div class="info">
-            <a href="#" onclick="openGlobalModal('Profile Settings','../../user_profile/profile_form.php')" class="d-block">
-              <?= htmlspecialchars($_SESSION['user']['name']) ?>
-            </a>
-          </div>
-        </div>
-
         <nav class="mt-2">
-          <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+          <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
             <li class="nav-item">
               <a href="../performance.php" class="nav-link">
                 <i class="nav-icon fas fa-tachometer-alt"></i>
@@ -249,9 +265,15 @@ $user_info = [
               </a>
             </li>
             <li class="nav-item">
-              <a href="../logout.php" class="nav-link">
-                <i class="nav-icon fas fa-sign-out-alt"></i>
-                <p>Logout</p>
+              <a href="Performancereport.php" class="nav-link">
+                <i class="nav-icon fas fa-table"></i>
+                <p>Performance Report</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="Training.php" class="nav-link">
+                <i class="nav-icon fas fa-graduation-cap"></i>
+                <p>Training</p>
               </a>
             </li>
           </ul>
@@ -265,11 +287,11 @@ $user_info = [
         <div class="container-fluid">
           <div class="row mb-2">
             <div class="col-sm-6">
-              <h1 class="m-0">Goal & KPI Management</h1>
+              <h1 class="m-0">Goal & KPI Progress Tracking</h1>
             </div>
-            <div class="col-sm-6">
-              <button class="btn btn-primary float-right" onclick="openGoalModal()">
-                <i class="fas fa-plus"></i> New Goal
+            <div class="col-sm-6 text-right">
+              <button class="btn btn-primary" type="button" data-toggle="modal" data-target="#addGoalModal">
+                <i class="fas fa-plus"></i> Add New Goal
               </button>
             </div>
           </div>
@@ -279,349 +301,479 @@ $user_info = [
       <!-- Main content -->
       <section class="content">
         <div class="container-fluid">
-          <!-- Statistics Cards -->
+          <?= $message ?>
+
+          <!-- Dashboard Stats Cards -->
           <div class="row mb-4">
-            <div class="col-lg-3 col-6">
-              <div class="small-box bg-info stat-card">
+            <div class="col-lg-3 col-md-6">
+              <div class="small-box bg-info">
                 <div class="inner">
-                  <h3><?= $stats['total'] ?></h3>
+                  <h3><?= $total_goals ?></h3>
                   <p>Total Goals</p>
                 </div>
                 <div class="icon">
                   <i class="fas fa-bullseye"></i>
                 </div>
+                <a href="#" class="small-box-footer">
+                  All active goals
+                </a>
               </div>
             </div>
-            <div class="col-lg-3 col-6">
-              <div class="small-box bg-secondary stat-card">
+
+            <div class="col-lg-3 col-md-6">
+              <div class="small-box bg-success">
                 <div class="inner">
-                  <h3><?= $stats['not_started'] ?></h3>
-                  <p>Not Started</p>
-                </div>
-                <div class="icon">
-                  <i class="fas fa-clock"></i>
-                </div>
-              </div>
-            </div>
-            <div class="col-lg-3 col-6">
-              <div class="small-box bg-warning stat-card">
-                <div class="inner">
-                  <h3><?= $stats['in_progress'] ?></h3>
-                  <p>In Progress</p>
-                </div>
-                <div class="icon">
-                  <i class="fas fa-spinner"></i>
-                </div>
-              </div>
-            </div>
-            <div class="col-lg-3 col-6">
-              <div class="small-box bg-success stat-card">
-                <div class="inner">
-                  <h3><?= $stats['completed'] ?></h3>
-                  <p>Completed</p>
+                  <h3><?= $completed_goals ?><sup style="font-size: 20px">(<?= $completed_percentage ?>%)</sup></h3>
+                  <p>Completed Goals</p>
                 </div>
                 <div class="icon">
                   <i class="fas fa-check-circle"></i>
                 </div>
+                <a href="#" class="small-box-footer">
+                  Successfully completed
+                </a>
+              </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6">
+              <div class="small-box bg-warning">
+                <div class="inner">
+                  <h3><?= $on_track_goals ?><sup style="font-size: 20px">(<?= $on_track_percentage ?>%)</sup></h3>
+                  <p>On Track Goals</p>
+                </div>
+                <div class="icon">
+                  <i class="fas fa-tasks"></i>
+                </div>
+                <a href="#" class="small-box-footer">
+                  Progressing well
+                </a>
+              </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6">
+              <div class="small-box bg-danger">
+                <div class="inner">
+                  <h3><?= $delayed_goals ?><sup style="font-size: 20px">(<?= $delayed_percentage ?>%)</sup></h3>
+                  <p>Delayed Goals</p>
+                </div>
+                <div class="icon">
+                  <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <a href="#" class="small-box-footer">
+                  Requires attention
+                </a>
               </div>
             </div>
           </div>
 
-          <!-- Goals List -->
-          <div class="row">
-            <div class="col-12">
-              <div class="card">
-                <div class="card-header">
-                  <h3 class="card-title">Your Goals</h3>
-                  <div class="card-tools">
-                    <div class="btn-group">
-                      <button type="button" class="btn btn-default btn-sm" onclick="filterGoals('all')">All</button>
-                      <button type="button" class="btn btn-default btn-sm" onclick="filterGoals('not_started')">Not Started</button>
-                      <button type="button" class="btn btn-default btn-sm" onclick="filterGoals('in_progress')">In Progress</button>
-                      <button type="button" class="btn btn-default btn-sm" onclick="filterGoals('completed')">Completed</button>
+          <!-- Alerts for Overdue & Near Due Goals -->
+          <?php if ($overdue_goals > 0): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+              <i class="fas fa-clock"></i> <strong><?= $overdue_goals ?> goal(s)</strong> are overdue and need immediate attention!
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+          <?php endif; ?>
+
+          <?php if ($near_due_goals > 0 && $overdue_goals === 0): ?>
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+              <i class="fas fa-calendar-alt"></i> <strong><?= $near_due_goals ?> goal(s)</strong> are due within the next 7 days.
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+          <?php endif; ?>
+
+          <!-- Add Goal Modal -->
+          <div class="modal fade" id="addGoalModal" tabindex="-1" role="dialog" aria-labelledby="addGoalModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header bg-primary">
+                  <h5 class="modal-title" id="addGoalModalLabel">Add New Goal</h5>
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+                <form action="" method="POST">
+                  <div class="modal-body">
+                    <div class="row">
+                      <div class="col-md-4">
+                        <div class="form-group">
+                          <label for="add_employee_id">Assigned Employee</label>
+                          <select name="employee_id" id="add_employee_id" class="form-control" required>
+                            <option value="">Select Employee</option>
+                            <?php foreach ($employees as $employee): ?>
+                              <option value="<?= $employee['id'] ?>"><?= htmlspecialchars($employee['full_name']) ?></option>
+                            <?php endforeach; ?>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group">
+                          <label for="goal_title">Goal Title</label>
+                          <input type="text" name="goal_title" id="goal_title" class="form-control" placeholder="Enter goal title" required>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group">
+                          <label for="kpi_name">KPI Name</label>
+                          <input type="text" name="kpi_name" id="kpi_name" class="form-control" placeholder="Enter KPI name" required>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row">
+                      <div class="col-md-3">
+                        <div class="form-group">
+                          <label for="target_value">Target Value (%)</label>
+                          <input type="number" name="target_value" id="target_value" class="form-control" value="100" step="0.01" required>
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group">
+                          <label for="current_progress">Current Progress (%)</label>
+                          <input type="number" name="current_progress" id="current_progress" class="form-control" value="0" step="0.01" required>
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group">
+                          <label for="status">Status</label>
+                          <select name="status" id="status" class="form-control" required>
+                            <option value="On Track">On Track</option>
+                            <option value="Delayed">Delayed</option>
+                            <option value="Completed">Completed</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group">
+                          <label for="start_date">Start Date</label>
+                          <input type="date" name="start_date" id="start_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="end_date">End Date</label>
+                          <input type="date" name="end_date" id="end_date" class="form-control" required>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="priority">Priority Level</label>
+                          <select name="priority" id="priority" class="form-control" required>
+                            <option value="Low">Low</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" name="add_goal" class="btn btn-primary">Add Goal</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Search and Filter Form -->
+          <div class="card card-outline card-secondary mb-3">
+            <div class="card-body">
+              <form action="" method="GET">
+                <!-- Row 1: Search and Status Filter -->
+                <div class="row mb-3">
+                  <div class="col-md-5">
+                    <div class="form-group mb-0">
+                      <label for="search">Search Goal/Employee</label>
+                      <input type="text" name="search" id="search" class="form-control" placeholder="Search by title or name..." value="<?= htmlspecialchars($search) ?>">
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="form-group mb-0">
+                      <label for="filter_status">Status</label>
+                      <select name="filter_status" id="filter_status" class="form-control">
+                        <option value="">All Statuses</option>
+                        <option value="On Track" <?= $filter_status == 'On Track' ? 'selected' : '' ?>>On Track</option>
+                        <option value="Delayed" <?= $filter_status == 'Delayed' ? 'selected' : '' ?>>Delayed</option>
+                        <option value="Completed" <?= $filter_status == 'Completed' ? 'selected' : '' ?>>Completed</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="form-group mb-0">
+                      <label for="filter_priority">Priority</label>
+                      <select name="filter_priority" id="filter_priority" class="form-control">
+                        <option value="">All Priorities</option>
+                        <option value="Low" <?= $filter_priority == 'Low' ? 'selected' : '' ?>>Low</option>
+                        <option value="Medium" <?= $filter_priority == 'Medium' ? 'selected' : '' ?>>Medium</option>
+                        <option value="High" <?= $filter_priority == 'High' ? 'selected' : '' ?>>High</option>
+                      </select>
                     </div>
                   </div>
                 </div>
-                <div class="card-body">
-                  <?php if (empty($goals)): ?>
-                    <div class="text-center py-4">
-                      <i class="fas fa-bullseye fa-3x text-muted mb-3"></i>
-                      <h5>No goals yet</h5>
-                      <p class="text-muted">Start by creating your first goal!</p>
+
+                <!-- Row 2: Department and Date Range -->
+                <div class="row mb-3">
+                  <div class="col-md-3">
+                    <div class="form-group mb-0">
+                      <label for="filter_department">Department</label>
+                      <select name="filter_department" id="filter_department" class="form-control">
+                        <option value="">All Departments</option>
+                        <?php foreach ($departments as $dept): ?>
+                          <option value="<?= htmlspecialchars($dept['department']) ?>" <?= $filter_department == $dept['department'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($dept['department']) ?>
+                          </option>
+                        <?php endforeach; ?>
+                      </select>
                     </div>
-                  <?php else: ?>
-                    <div class="row" id="goalsContainer">
-                      <?php foreach ($goals as $goal): ?>
-                        <?php 
-                        $status = $goal['status'] ?? 'not_started';
-                        $statusClass = str_replace('_', '-', $status);
-                        $progress = 0;
-                        if (!empty($goal['kpi_target']) && $goal['kpi_target'] > 0) {
-                          $progress = min(100, ($goal['kpi_current'] ?? 0) / $goal['kpi_target'] * 100);
-                        }
-                        ?>
-                        <div class="col-md-6 col-lg-4 mb-4 goal-item" data-status="<?= $status ?>">
-                          <div class="card goal-card <?= $statusClass ?>">
-                            <div class="card-header">
-                              <div class="d-flex justify-content-between align-items-center">
-                                <span class="badge badge-<?= $status === 'completed' ? 'success' : ($status === 'in_progress' ? 'warning' : 'secondary') ?>">
-                                  <?= ucwords(str_replace('_', ' ', $status)) ?>
-                                </span>
-                                <div class="btn-group">
-                                  <button class="btn btn-sm btn-outline-primary" onclick="editGoal(<?= $goal['goal_id'] ?>)">
-                                    <i class="fas fa-edit"></i>
-                                  </button>
-                                  <button class="btn btn-sm btn-outline-danger" onclick="deleteGoal(<?= $goal['goal_id'] ?>)">
-                                    <i class="fas fa-trash"></i>
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                            <div class="card-body">
-                              <h5 class="card-title"><?= htmlspecialchars($goal['goal_title']) ?></h5>
-                              <p class="card-text text-muted"><?= htmlspecialchars($goal['goal_description'] ?? '') ?></p>
-                              
-                              <div class="mb-2">
-                                <small class="text-muted">Target Date:</small>
-                                <span class="float-right"><?= date('M d, Y', strtotime($goal['target_date'])) ?></span>
-                              </div>
-                              
-                              <div class="mb-2">
-                                <small class="text-muted">Priority:</small>
-                                <span class="float-right badge badge-<?= $goal['priority_level'] === 'critical' ? 'danger' : ($goal['priority_level'] === 'high' ? 'warning' : 'info') ?>">
-                                  <?= ucfirst($goal['priority_level']) ?>
-                                </span>
-                              </div>
-                              
-                              <?php if (!empty($goal['kpi_target'])): ?>
-                                <div class="mt-3">
-                                  <div class="d-flex justify-content-between mb-1">
-                                    <small class="text-muted">KPI Progress</small>
-                                    <small><?= round($progress) ?>%</small>
-                                  </div>
-                                  <div class="progress">
-                                    <div class="progress-bar bg-<?= $progress >= 100 ? 'success' : ($progress >= 50 ? 'info' : 'warning') ?>" 
-                                         style="width: <?= $progress ?>%"></div>
-                                  </div>
-                                  <div class="text-center mt-1">
-                                    <small><?= $goal['kpi_current'] ?? 0 ?> / <?= $goal['kpi_target'] ?> <?= $goal['kpi_unit'] ?? '' ?></small>
-                                  </div>
-                                </div>
-                              <?php endif; ?>
-                              
-                              <button class="btn btn-sm btn-outline-info mt-2 btn-block" onclick="updateKPI(<?= $goal['goal_id'] ?>)">
-                                <i class="fas fa-chart-line"></i> Update KPI
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      <?php endforeach; ?>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="form-group mb-0">
+                      <label for="filter_start_date">Start Date From</label>
+                      <input type="date" name="filter_start_date" id="filter_start_date" class="form-control" value="<?= htmlspecialchars($filter_start_date) ?>">
                     </div>
-                  <?php endif; ?>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="form-group mb-0">
+                      <label for="filter_end_date">End Date To</label>
+                      <input type="date" name="filter_end_date" id="filter_end_date" class="form-control" value="<?= htmlspecialchars($filter_end_date) ?>">
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="form-group mb-0 d-flex gap-2">
+                      <button type="submit" class="btn btn-secondary flex-grow-1">
+                        <i class="fas fa-search"></i> Filter
+                      </button>
+                      <a href="Goal&KPI.php" class="btn btn-outline-secondary">
+                        <i class="fas fa-redo"></i> Reset
+                      </a>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Goals List Table -->
+          <div class="card card-secondary">
+            <div class="card-header">
+              <h3 class="card-title">Goals Progress</h3>
+            </div>
+            <div class="card-body table-responsive p-0">
+              <table class="table table-hover text-nowrap">
+                <thead>
+                  <tr>
+                    <th>Goal Title</th>
+                    <th>KPI Name</th>
+                    <th>Employee</th>
+                    <th>Department</th>
+                    <th>Progress</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Dates</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php if (empty($goals_list)): ?>
+                    <tr>
+                      <td colspan="7" class="text-center">No goals found.</td>
+                    </tr>
+                  <?php else: ?>
+                    <?php foreach ($goals_list as $goal): ?>
+                      <?php 
+                        $percent = ($goal['target_value'] > 0) ? ($goal['current_progress'] / $goal['target_value']) * 100 : 0;
+                        $percent = min(100, max(0, $percent));
+                        
+                        $badge_class = 'badge-primary';
+                        if ($goal['status'] == 'Delayed') $badge_class = 'badge-danger';
+                        if ($goal['status'] == 'Completed') $badge_class = 'badge-success';
+                        
+                        $priority_badge = 'badge-secondary';
+                        if ($goal['priority'] == 'High') $priority_badge = 'badge-danger';
+                        if ($goal['priority'] == 'Medium') $priority_badge = 'badge-warning';
+                        if ($goal['priority'] == 'Low') $priority_badge = 'badge-info';
+                      ?>
+                      <tr>
+                        <td><?= htmlspecialchars($goal['goal_title']) ?></td>
+                        <td><?= htmlspecialchars($goal['kpi_name']) ?></td>
+                        <td><?= htmlspecialchars($goal['full_name']) ?></td>
+                        <td><?= htmlspecialchars($goal['department'] ?? 'N/A') ?></td>
+                        <td style="width: 200px;">
+                          <div class="progress progress-xs">
+                            <div class="progress-bar progress-bar-<?= ($percent >= 100) ? 'success' : 'primary' ?>" style="width: <?= $percent ?>%"></div>
+                          </div>
+                          <small><?= number_format($goal['current_progress'], 2) ?> / <?= number_format($goal['target_value'], 2) ?> (<?= number_format($percent, 0) ?>%)</small>
+                        </td>
+                        <td><span class="badge <?= $priority_badge ?>"><?= htmlspecialchars($goal['priority'] ?? 'Medium') ?></span></td>
+                        <td><span class="badge <?= $badge_class ?>"><?= $goal['status'] ?></span></td>
+                        <td>
+                          <small>
+                            S: <?= date('M d, Y', strtotime($goal['start_date'])) ?><br>
+                            E: <?= date('M d, Y', strtotime($goal['end_date'])) ?>
+                          </small>
+                        </td>
+                        <td>
+                          <button type="button" class="btn btn-sm btn-info edit-goal-btn" 
+                                  data-id="<?= $goal['goal_id'] ?>"
+                                  data-employee="<?= $goal['employee_id'] ?>"
+                                  data-title="<?= htmlspecialchars($goal['goal_title']) ?>"
+                                  data-kpi="<?= htmlspecialchars($goal['kpi_name']) ?>"
+                                  data-target="<?= $goal['target_value'] ?>"
+                                  data-current="<?= $goal['current_progress'] ?>"
+                                  data-status="<?= $goal['status'] ?>"
+                                  data-priority="<?= htmlspecialchars($goal['priority'] ?? 'Medium') ?>"
+                                  data-start="<?= $goal['start_date'] ?>"
+                                  data-end="<?= $goal['end_date'] ?>">
+                            <i class="fas fa-edit"></i>
+                          </button>
+                          <form action="" method="POST" style="display:inline-block;" onsubmit="return confirm('Are you sure?');">
+                            <input type="hidden" name="goal_id" value="<?= $goal['goal_id'] ?>">
+                            <button type="submit" name="delete_goal" class="btn btn-sm btn-danger">
+                              <i class="fas fa-trash"></i>
+                            </button>
+                          </form>
+                        </td>
+                      </tr>
+                    <?php endforeach; ?>
+                  <?php endif; ?>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       </section>
     </div>
-
-    <?php include "../../layout/global_modal.php"; ?>
   </div>
 
-  <!-- Goal Modal -->
-  <div class="modal fade" id="goalModal" tabindex="-1">
-    <div class="modal-dialog">
+  <!-- Edit Goal Modal -->
+  <div class="modal fade" id="editGoalModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg">
       <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="goalModalTitle">Create New Goal</h5>
-          <button type="button" class="close" data-dismiss="modal">
-            <span>&times;</span>
-          </button>
+        <div class="modal-header bg-info">
+          <h5 class="modal-title">Edit Goal</h5>
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
         </div>
-        <form id="goalForm" method="POST">
-          <input type="hidden" name="action" value="create_goal">
-          <input type="hidden" name="goal_id" id="goalId">
+        <form action="" method="POST">
           <div class="modal-body">
-            <div class="form-group">
-              <label>Goal Title</label>
-              <input type="text" class="form-control" name="goal_title" required>
-            </div>
-            <div class="form-group">
-              <label>Description</label>
-              <textarea class="form-control" name="goal_description" rows="3"></textarea>
+            <input type="hidden" name="goal_id" id="edit_goal_id">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label>Assigned Employee</label>
+                  <select name="employee_id" id="edit_employee_id" class="form-control" required>
+                    <?php foreach ($employees as $employee): ?>
+                      <option value="<?= $employee['id'] ?>"><?= htmlspecialchars($employee['full_name']) ?></option>
+                    <?php endforeach; ?>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label>Goal Title</label>
+                  <input type="text" name="goal_title" id="edit_goal_title" class="form-control" required>
+                </div>
+              </div>
             </div>
             <div class="row">
               <div class="col-md-6">
                 <div class="form-group">
-                  <label>Department</label>
-                  <input type="text" class="form-control" name="department" value="<?= htmlspecialchars($user_info['department'] ?? '') ?>" readonly>
+                  <label>KPI Name</label>
+                  <input type="text" name="kpi_name" id="edit_kpi_name" class="form-control" required>
                 </div>
               </div>
-              <div class="col-md-6">
+              <div class="col-md-3">
                 <div class="form-group">
-                  <label>Position</label>
-                  <input type="text" class="form-control" name="position" value="<?= htmlspecialchars($user_info['position'] ?? '') ?>" readonly>
+                  <label>Status</label>
+                  <select name="status" id="edit_status" class="form-control" required>
+                    <option value="On Track">On Track</option>
+                    <option value="Delayed">Delayed</option>
+                    <option value="Completed">Completed</option>
+                  </select>
                 </div>
               </div>
-            </div>
-            <div class="row">
-              <div class="col-md-6">
+              <div class="col-md-3">
                 <div class="form-group">
-                  <label>Target Date</label>
-                  <input type="date" class="form-control" name="target_date" required>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label>Priority Level</label>
-                  <select class="form-control" name="priority_level">
-                    <option value="low">Low</option>
-                    <option value="medium" selected>Medium</option>
-                    <option value="high">High</option>
-                    <option value="critical">Critical</option>
+                  <label>Priority</label>
+                  <select name="priority" id="edit_priority" class="form-control" required>
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
                   </select>
                 </div>
               </div>
             </div>
+            <div class="row">
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label>Target (%)</label>
+                  <input type="number" name="target_value" id="edit_target_value" class="form-control" step="0.01" required>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label>Current (%)</label>
+                  <input type="number" name="current_progress" id="edit_current_progress" class="form-control" step="0.01" required>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label>Start Date</label>
+                  <input type="date" name="start_date" id="edit_start_date" class="form-control" required>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label>End Date</label>
+                  <input type="date" name="end_date" id="edit_end_date" class="form-control" required>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save Goal</button>
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <button type="submit" name="update_goal" class="btn btn-info">Update Goal</button>
           </div>
         </form>
       </div>
     </div>
   </div>
 
-  <!-- KPI Update Modal -->
-  <div class="modal fade" id="kpiModal" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Update KPI Progress</h5>
-          <button type="button" class="close" data-dismiss="modal">
-            <span>&times;</span>
-          </button>
-        </div>
-        <form id="kpiForm" method="POST">
-          <input type="hidden" name="action" value="update_kpi">
-          <input type="hidden" name="goal_id" id="kpiGoalId">
-          <div class="modal-body">
-            <div class="form-group">
-              <label>KPI Target</label>
-              <input type="number" class="form-control" name="kpi_target" step="0.01" required>
-            </div>
-            <div class="form-group">
-              <label>KPI Unit</label>
-              <input type="text" class="form-control" name="kpi_unit" placeholder="e.g., %, units, hours">
-            </div>
-            <div class="form-group">
-              <label>Current Progress</label>
-              <input type="number" class="form-control" name="kpi_current" step="0.01" required>
-            </div>
-            <div class="form-group">
-              <label>Status</label>
-              <select class="form-control" name="status" id="kpiStatus">
-                <option value="not_started">Not Started</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
-              </select>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary">Update KPI</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- REQUIRED SCRIPTS -->
   <script src="../../assets/plugins/jquery/jquery.min.js"></script>
   <script src="../../assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <script src="../../assets/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
+  <!-- Select2 -->
+  <script src="../../assets/plugins/select2/js/select2.full.min.js"></script>
   <script src="../../assets/dist/js/adminlte.js"></script>
-  <script src="../../assets/dist/js/theme.js"></script>
-  <script src="../../assets/dist/js/time.js"></script>
-  <script src="../../assets/dist/js/global_modal.js"></script>
-
   <script>
-    // Goal management functions
-    function openGoalModal() {
-      document.getElementById('goalModalTitle').textContent = 'Create New Goal';
-      document.getElementById('goalForm').reset();
-      document.querySelector('#goalForm input[name="action"]').value = 'create_goal';
-      $('#goalModal').modal('show');
-    }
-
-    function editGoal(goalId) {
-      // Load goal data and populate form
-      fetch('Goal&KPI.php?action=get_goal&id=' + goalId)
-        .then(response => response.json())
-        .then(data => {
-          document.getElementById('goalModalTitle').textContent = 'Edit Goal';
-          document.querySelector('#goalForm input[name="action"]').value = 'update_goal';
-          document.getElementById('goalId').value = data.goal_id;
-          document.querySelector('#goalForm input[name="goal_title"]').value = data.goal_title;
-          document.querySelector('#goalForm textarea[name="goal_description"]').value = data.goal_description || '';
-          document.querySelector('#goalForm input[name="target_date"]').value = data.target_date;
-          document.querySelector('#goalForm select[name="priority_level"]').value = data.priority_level;
-          $('#goalModal').modal('show');
-        });
-    }
-
-    function deleteGoal(goalId) {
-      if (confirm('Are you sure you want to delete this goal?')) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.innerHTML = `
-          <input type="hidden" name="action" value="delete_goal">
-          <input type="hidden" name="goal_id" value="${goalId}">
-        `;
-        document.body.appendChild(form);
-        form.submit();
-      }
-    }
-
-    function updateKPI(goalId) {
-      document.getElementById('kpiGoalId').value = goalId;
-      document.getElementById('kpiForm').reset();
-      $('#kpiModal').modal('show');
-    }
-
-    function filterGoals(status) {
-      const items = document.querySelectorAll('.goal-item');
-      items.forEach(item => {
-        if (status === 'all' || item.dataset.status === status) {
-          item.style.display = 'block';
-        } else {
-          item.style.display = 'none';
-        }
+    $(document).ready(function() {
+      // Initialize Select2 Elements
+      $('#add_employee_id, #edit_employee_id').select2({
+        theme: 'bootstrap4',
+        placeholder: 'Select Employee',
+        allowClear: true
       });
-    }
 
-    // Auto-update status based on KPI progress
-    document.querySelector('#kpiForm input[name="kpi_current"]')?.addEventListener('input', function() {
-      const current = parseFloat(this.value) || 0;
-      const target = parseFloat(document.querySelector('#kpiForm input[name="kpi_target"]').value) || 0;
-      const statusSelect = document.getElementById('kpiStatus');
-      
-      if (current >= target && target > 0) {
-        statusSelect.value = 'completed';
-      } else if (current > 0) {
-        statusSelect.value = 'in_progress';
-      } else {
-        statusSelect.value = 'not_started';
-      }
+      $('.edit-goal-btn').on('click', function() {
+        $('#edit_goal_id').val($(this).data('id'));
+        $('#edit_employee_id').val($(this).data('employee'));
+        $('#edit_goal_title').val($(this).data('title'));
+        $('#edit_kpi_name').val($(this).data('kpi'));
+        $('#edit_target_value').val($(this).data('target'));
+        $('#edit_current_progress').val($(this).data('current'));
+        $('#edit_status').val($(this).data('status'));
+        $('#edit_priority').val($(this).data('priority'));
+        $('#edit_start_date').val($(this).data('start'));
+        $('#edit_end_date').val($(this).data('end'));
+        $('#editGoalModal').modal('show');
+      });
     });
-
-    // Show toast notifications
-    <?php if (isset($_SESSION['toast'])): ?>
-      showToast('<?= $_SESSION['toast']['type'] ?>', '<?= $_SESSION['toast']['message'] ?>');
-      <?php unset($_SESSION['toast']); ?>
-    <?php endif; ?>
   </script>
 </body>
+
 </html>

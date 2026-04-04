@@ -12,29 +12,18 @@ $db = Database::getInstance()->getConnection();
 $action = $_GET['action'] ?? 'list';
 $id = $_GET['id'] ?? null;
 
-// Handle DELETE via GET request
-if ($action === 'delete' && $id) {
-    try {
-        $stmt = $db->prepare("DELETE FROM employees WHERE employee_id = ?");
-        $stmt->execute([$id]);
-        
-        if ($stmt->rowCount() > 0) {
-            $_SESSION['success'] = "Employee deleted successfully!";
-        } else {
-            $_SESSION['error'] = "Employee not found or already deleted.";
-        }
-    } catch (Exception $e) {
-        $_SESSION['error'] = "Error deleting employee: " . $e->getMessage();
-    }
-    header("Location: " . basename(__FILE__));
-    exit;
-}
-
 // Process form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? $action;
     
     if ($action === 'create') {
+        // Validate required fields
+        if (empty($_POST['employee_id']) || empty($_POST['full_name'])) {
+            $_SESSION['error'] = "Employee ID and Full Name are required fields!";
+            header("Location: " . basename(__FILE__));
+            exit;
+        }
+        
         $stmt = $db->prepare("
             INSERT INTO employees (employee_id, full_name, address, contact_number, email, department, position, date_hired, employment_status)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -56,6 +45,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     if ($action === 'update' && $id) {
+        // Validate required fields
+        if (empty($_POST['employee_id']) || empty($_POST['full_name'])) {
+            $_SESSION['error'] = "Employee ID and Full Name are required fields!";
+            header("Location: " . basename(__FILE__));
+            exit;
+        }
+        
         $stmt = $db->prepare("
             UPDATE employees 
             SET full_name = ?, address = ?, contact_number = ?, email = ?, department = ?, position = ?, date_hired = ?, employment_status = ?
