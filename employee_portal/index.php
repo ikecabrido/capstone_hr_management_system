@@ -9,6 +9,7 @@ require 'app/controllers/OnlineMeetingController.php';
 require 'app/controllers/EmployeePortalController.php';
 require 'app/controllers/EmployeeDocumentsController.php';
 require 'app/controllers/EmployeeGrievanceController.php';
+require 'app/controllers/PerformanceFeedbackController.php';
 
 $url = $_GET['url'] ?? 'auth-index';
 
@@ -123,9 +124,13 @@ switch ($url) {
         (new AnnouncementController)->index();
         break;
 
-    //ThreeSixtyDegreeFeedback
-    case 'three-sixty-degree-feedback-index':
-        (new ThreeSixtyDegreeFeedbackController)->index();
+    //Performance Feedback
+    case 'performance-feedback':
+        (new PerformanceFeedbackController)->index();
+        break;
+
+    case 'performance-feedback-create':
+        (new PerformanceFeedbackController)->create();
         break;
 
     default:

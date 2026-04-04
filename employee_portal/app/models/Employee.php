@@ -40,7 +40,6 @@ class Employee
      */
     public function getById($employee_no)
     {
-        var_dump($employee_no);
         die;
         $query = "SELECT e.*, u.username, u.role 
                   FROM " . $this->table . " e
@@ -146,7 +145,7 @@ class Employee
 
     public function findByUserId($user_id)
     {
-        $query = "SELECT * FROM employees WHERE user_id = :user_id LIMIT 1";
+        $query = "SELECT * FROM $this->table WHERE user_id = :user_id LIMIT 1";
 
         $stmt = $this->conn->prepare($query);
         $stmt->execute([':user_id' => $user_id]);

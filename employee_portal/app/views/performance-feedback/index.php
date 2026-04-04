@@ -35,7 +35,7 @@ $content = $content ?? __DIR__ . '/main-content.php';
 
         <?php require $partials . 'navbar.php'; ?>
 
-        <?php require $partials . 'adminSidebar.php'; ?>
+        <?php require $partials . 'sidebar.php'; ?>
 
 
         <?php

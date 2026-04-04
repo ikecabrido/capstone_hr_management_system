@@ -1,19 +1,24 @@
 <?php
 
 require_once __DIR__ . '/../models/Grievance.php';
+require_once __DIR__ . '/../models/Employee.php';
 
 class EmployeeGrievanceController
 {
     private $grievanceModel;
+    private $employeeModel;
 
     public function __construct()
     {
         $this->grievanceModel = new Grievance();
+        $this->employeeModel = new Employee();
     }
 
     public function index()
     {
-        $employee_id = Session::get('employee_id');
+        $user_id = $_SESSION['user_id'] ?? null;
+        $employee = $this->employeeModel->findByUserId($user_id);
+        $employee_id = $employee['id'] ?? null;
 
         $content = __DIR__ . '/../views/engagement-relations/main-content.php';
         require __DIR__ . '/../views/engagement-relations/index.php';

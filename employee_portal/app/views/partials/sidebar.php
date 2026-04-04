@@ -71,6 +71,24 @@
 
                 <li class="nav-item has-treeview">
                     <a href="#" class="nav-link">
+                        <i class="nav-icon fas fa-chart-line"></i>
+                        <p>
+                            Performance
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="index.php?url=performance-feedback" class="nav-link">
+                                <i class="fas fa-comments nav-icon"></i>
+                                <p>360 Degree Feedback</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="nav-item has-treeview">
+                    <a href="#" class="nav-link">
                         <i class="nav-icon fas fa-clinic-medical"></i>
                         <p>
                             Clinic
@@ -79,7 +97,7 @@
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="#" class="nav-link">
+                            <a href="index.php?url=three-sixty-degree-feedback-index" class="nav-link">
                                 <i class="fas fa-notes-medical nav-icon"></i>
                                 <p>Records</p>
                             </a>
@@ -100,24 +118,6 @@
                             <a href="#" class="nav-link">
                                 <i class="fas fa-book nav-icon"></i>
                                 <p>Courses</p>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-
-                <li class="nav-item has-treeview">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-chart-line"></i>
-                        <p>
-                            Performance
-                            <i class="right fas fa-angle-left"></i>
-                        </p>
-                    </a>
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="#" class="nav-link">
-                                <i class="fas fa-chart-bar nav-icon"></i>
-                                <p>Reports</p>
                             </a>
                         </li>
                     </ul>

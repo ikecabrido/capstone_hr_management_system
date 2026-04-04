@@ -25,3 +25,4 @@ CREATE TABLE ep_online_meetings (
     scheduled_at DATETIME,
     status ENUM('scheduled','completed','cancelled') DEFAULT 'scheduled'
 );
+
