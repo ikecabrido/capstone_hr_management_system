@@ -30,7 +30,6 @@ class PayslipController
 
 
         $payslip = $this->payslipModel->viewPayslip($payslipId);
-
         if (!$payslip) {
             die("Payslip not found.");
         }

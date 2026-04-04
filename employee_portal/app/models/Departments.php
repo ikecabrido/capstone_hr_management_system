@@ -17,7 +17,7 @@ class Departments
      */
     public function all()
     {
-        $query = "SELECT * FROM " . $this->table . " ORDER BY department_name ASC";
+        $query = "SELECT * FROM " . $this->table . " ORDER BY created_at ASC";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
 

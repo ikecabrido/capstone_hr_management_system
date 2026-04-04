@@ -31,7 +31,7 @@
                             </tr>
                             <tr>
                                 <td class="font-semibold">Date:</td>
-                                <td><?= date("M d, Y", strtotime($payslip['created_at'] ?? '')) ?></td>
+                                <td><?= date("M d, Y", strtotime($payslip['generated_at'] ?? ''))  ?></td>
                             </tr>
                         </table>
                     </div>

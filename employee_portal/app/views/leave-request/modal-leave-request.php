@@ -14,7 +14,7 @@
                         <label class="form-label fw-semibold">Leave Type</label>
                         <select name="leave_type_id" class="form-select shadow-sm" required>
                             <option value="" disabled selected>Choose leave type...</option>
-                            <?php foreach ($leaveTypes as $type): ?>
+                            <?php foreach ($allLeaveTypes as $type): ?>
                                 <option value="<?= $type['leave_type_id'] ?>"><?= htmlspecialchars($type['leave_type_name']) ?></option>
                             <?php endforeach; ?>
                         </select>

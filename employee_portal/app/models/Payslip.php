@@ -13,8 +13,7 @@ class Payslip
     }
     public function all()
     {
-        $query = "SELECT p.*, 
-                     CONCAT(e.first_name, ' ', e.last_name) AS full_name
+        $query = "SELECT p.*, full_name
               FROM {$this->table} p
               JOIN employees e ON p.employee_id = e.id
               ORDER BY p.id DESC";
