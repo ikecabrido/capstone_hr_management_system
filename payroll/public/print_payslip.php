@@ -16,7 +16,7 @@ if (!$payslip) {
 }
 
 // Now $payslip is defined and ready to use
-$employeeName = htmlspecialchars($payslip['first_name'] . ' ' . $payslip['last_name']);
+$employeeName = htmlspecialchars($payslip['full_name']);
 $position = htmlspecialchars($payslip['position']);
 $generatedAt = date("M d, Y", strtotime($payslip['generated_at']));
 $grossPay = number_format($payslip['gross_pay'], 2);
@@ -89,7 +89,7 @@ $netPay = number_format($payslip['net_pay'], 2);
 
                 <?php if (!empty($payslip['earnings'])): ?>
                     <tr>
-                        <td colspan="2"><strong>Allowances / Earnings</strong></td>
+                        <td colspan="2"><strong>Benefits / Earnings</strong></td>
                     </tr>
                     <?php foreach ($payslip['earnings'] as $earning): ?>
                         <tr>

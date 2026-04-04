@@ -209,7 +209,7 @@ if (isset($_GET['error'])) {
                         <li class="nav-item">
                             <a href="allowance.php" class="nav-link">
                                 <i class="nav-icon fas fa-file-invoice-dollar"></i>
-                                <p>Allowance & Deductions</p>
+                                <p>Benefits & Deductions</p>
                             </a>
                         </li>
 
@@ -256,70 +256,111 @@ if (isset($_GET['error'])) {
             <!-- Main content -->
             <section class="content">
                 <div class="container-fluid">
-                    <div class="row">
-                        <!-- Left Sidebar: Employee List -->
-                        <div class="col-md-3">
-                            <div class="card card-primary card-outline">
-                                <div class="card-header">
-                                    <h3 class="card-title">
-                                        <i class="fas fa-users"></i> Staff List
-                                    </h3>
-                                </div>
-                                <div class="card-body p-0" style="max-height: 600px; overflow-y: auto;">
-                                    <form method="POST" id="employeeForm">
-                                        <div class="list-group list-group-flush">
-                                            <?php if (!empty($previewData)): ?>
-                                                <?php foreach ($previewData as $idx => $row): ?>
-                                                    <button type="button"
-                                                        class="list-group-item list-group-item-action employee-item"
-                                                        onclick="selectEmployee(<?= $idx ?>, '<?= htmlspecialchars($row['name']) ?>')"
-                                                        data-employee-idx="<?= $idx ?>">
-                                                        <div class="d-flex justify-content-between">
-                                                            <strong><?= htmlspecialchars($row['name']) ?></strong>
-                                                        </div>
-                                                        <small class="text-muted"><?= htmlspecialchars($row['position'] ?? '-') ?></small>
-                                                    </button>
-                                                <?php endforeach; ?>
-                                            <?php else: ?>
-                                                <div class="p-3 text-center text-muted">
-                                                    <small>No employees to display. Select a period first.</small>
-                                                </div>
-                                            <?php endif; ?>
-                                        </div>
-                                    </form>
+                    <!-- Period Selection (Full Width) -->
+                    <form method="POST" class="mb-4">
+                        <div class="card card-info">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-calendar-alt"></i> Payroll Period</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <label><strong>Select Period</strong></label>
+                                        <select name="period_id" class="form-control" required onchange="this.form.submit();">
+                                            <option value="">-- Select Payroll Period --</option>
+                                            <?php foreach ($periods as $p): ?>
+                                                <option value="<?= $p['period_id'] ?>"
+                                                    <?= ($selectedPeriodId !== '' && (int)$selectedPeriodId === $p['period_id']) ? 'selected' : '' ?>>
+                                                    <?= htmlspecialchars($p['period_name']) ?>
+                                                    (<?= ucfirst($p['status']) ?>)
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                    </form>
 
-                        <!-- Main Content: Period Selection & Calculator -->
-                        <div class="col-md-9">
-                            <!-- Period Selection -->
-                            <form method="POST" class="mb-4">
-                                <div class="card card-info">
-                                    <div class="card-header">
-                                        <h3 class="card-title"><i class="fas fa-calendar-alt"></i> Payroll Period</h3>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-md-8">
-                                                <label><strong>Select Period</strong></label>
-                                                <select name="period_id" class="form-control" required onchange="this.form.submit();">
-                                                    <option value="">-- Select Payroll Period --</option>
-                                                    <?php foreach ($periods as $p): ?>
-                                                        <option value="<?= $p['period_id'] ?>"
-                                                            <?= ($selectedPeriodId !== '' && (int)$selectedPeriodId === $p['period_id']) ? 'selected' : '' ?>>
-                                                            <?= htmlspecialchars($p['period_name']) ?>
-                                                            (<?= ucfirst($p['status']) ?>)
-                                                        </option>
-                                                    <?php endforeach; ?>
-                                                </select>
+                    <div class="row">
+                        <!-- Left Sidebar: Employee Search & Info -->
+                        <div class="col-md-3">
+                            <!-- Search Card -->
+                            <div class="card card-primary card-outline">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-search"></i> Find Employee
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-group">
+                                        <label><strong>Employee Name or ID</strong></label>
+                                        <div class="input-group">
+                                            <input
+                                                type="text"
+                                                id="employeeSearchInput"
+                                                class="form-control"
+                                                placeholder="Start typing to search employees..."
+                                                <?= empty($previewData) ? 'disabled' : '' ?>>
+                                            <div class="input-group-append">
+                                                <button class="btn btn-primary" type="button" id="searchBtn" onclick="triggerSearch()" <?= empty($previewData) ? 'disabled' : '' ?>>
+                                                    <i class="fas fa-search"></i>
+                                                </button>
                                             </div>
                                         </div>
+                                        <small class="form-text text-muted d-block mt-2">
+                                            <?= empty($previewData) ? '⚠️ Select a period first.' : '✓ Search by name, ID, position, or department. Results appear as you type.' ?>
+                                        </small>
+                                    </div>
+
+                                    <!-- Search Results Dropdown -->
+                                    <div id="employeeSearchResults" class="bg-light border rounded mt-2" style="display: none; max-height: 300px; overflow-y: auto;">
+                                        <div id="employeeResultsList" class="list-group list-group-flush"></div>
                                     </div>
                                 </div>
-                            </form>
+                            </div>
 
-                            <!-- Salary Details Card (Shown when employee is selected) -->
+                            <!-- Selected Employee Info Card (Shown after selection) -->
+                            <div id="selectedEmployeeCard" class="card card-success" style="display: none;">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-user"></i> Selected Employee
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-group mb-3">
+                                        <label class="text-muted small">Employee Name</label>
+                                        <p class="m-0 font-weight-bold" id="selectedEmployeeName" style="font-size: 16px;">-</p>
+                                    </div>
+                                    <div class="form-group mb-3">
+                                        <label class="text-muted small">Employee ID</label>
+                                        <p class="m-0" id="selectedEmployeeID">-</p>
+                                    </div>
+                                    <div class="form-group mb-3">
+                                        <label class="text-muted small">Position</label>
+                                        <p class="m-0" id="selectedEmployeePosition">-</p>
+                                    </div>
+                                    <div class="form-group mb-3">
+                                        <label class="text-muted small">Department</label>
+                                        <p class="m-0" id="selectedEmployeeDepartment">-</p>
+                                    </div>
+                                    <div class="form-group mb-0">
+                                        <label class="text-muted small">Position Type</label>
+                                        <p class="m-0"><span id="selectedEmployeeType" class="badge badge-info">-</span></p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <?php if (empty($previewData)): ?>
+                                <div class="alert alert-warning mt-3 mb-0">
+                                    <small><i class="fas fa-info-circle"></i> No employees available. Select a payroll period first.</small>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Right Side: Salary Calculation Details -->
+                        <div class="col-md-9">
+                            <!-- Salary Details Container (Shown when employee is selected) -->
                             <div id="salaryDetailsContainer" style="display: none;">
                                 <!-- Period Info -->
                                 <div class="card card-secondary mb-3">
@@ -471,11 +512,12 @@ if (isset($_GET['error'])) {
 
                             <!-- Initial Message -->
                             <div id="initialMessage" class="alert alert-info">
-                                <i class="fas fa-info-circle"></i> Select a payroll period and an employee to view salary details.
+                                <i class="fas fa-info-circle"></i> Select an employee from the search bar to view salary details.
                             </div>
                         </div>
                     </div>
-                    <!--/. container-fluid -->
+                </div>
+                <!--/. container-fluid -->
             </section>
             <!-- /.content -->
         </div>
@@ -629,47 +671,229 @@ if (isset($_GET['error'])) {
         const payrollData = <?php echo json_encode($previewData); ?>;
         const periodData = <?php echo json_encode($periods); ?>;
         const selectedPeriodId = <?php echo $selectedPeriodId ?? 'null'; ?>;
+        let currentSelectedIndex = -1;
+
+        // Debug logging
+        console.log('Payroll Data Count:', payrollData ? payrollData.length : 0);
+        console.log('Selected Period ID:', selectedPeriodId);
+        if (payrollData && payrollData.length > 0) {
+            console.log('First Employee Data:', payrollData[0]);
+        }
+
+        // Trigger Search Function
+        function triggerSearch() {
+            const searchInput = document.getElementById('employeeSearchInput');
+            const query = searchInput.value.trim().toLowerCase();
+
+            if (query.length === 0) {
+                showAllEmployees();
+                return;
+            }
+
+            // Filter employees
+            const filtered = payrollData.filter(emp => {
+                const name = (emp.name || '').toLowerCase();
+                const position = (emp.position || '').toLowerCase();
+                const empId = (emp.employee_id || '').toLowerCase();
+                const department = (emp.department || '').toLowerCase();
+                return name.includes(query) || position.includes(query) || empId.includes(query) || department.includes(query);
+            });
+
+            displaySearchResults(filtered);
+        }
+
+        // Show All Employees
+        function showAllEmployees() {
+            if (!payrollData || payrollData.length === 0) return;
+
+            const resultsList = document.getElementById('employeeResultsList');
+            resultsList.innerHTML = payrollData.map((emp, idx) => {
+                return `
+                    <button type="button" 
+                        class="list-group-item list-group-item-action text-left"
+                        onclick="selectEmployee(${idx}, '${emp.name.replace(/'/g, "\\'")}')">
+                        <div class="d-flex justify-content-between">
+                            <strong>${emp.name}</strong>
+                            <small class="text-muted">${emp.employee_id || 'N/A'}</small>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <small class="text-muted">${emp.position || 'Position not specified'}</small>
+                            <small class="text-muted">${emp.department || 'No department'}</small>
+                        </div>
+                    </button>
+                `;
+            }).join('');
+
+            document.getElementById('employeeSearchResults').style.display = 'block';
+        }
+
+        // Display Search Results
+        function displaySearchResults(filtered) {
+            const resultsList = document.getElementById('employeeResultsList');
+
+            if (filtered.length > 0) {
+                resultsList.innerHTML = filtered.map((emp) => {
+                    const empIdx = payrollData.findIndex(e =>
+                        e.employee_id === emp.employee_id && e.name === emp.name
+                    );
+                    return `
+                        <button type="button" 
+                            class="list-group-item list-group-item-action text-left"
+                            onclick="selectEmployee(${empIdx}, '${emp.name.replace(/'/g, "\\'")}')">
+                            <div class="d-flex justify-content-between">
+                                <strong>${emp.name}</strong>
+                                <small class="text-muted">${emp.employee_id || 'N/A'}</small>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <small class="text-muted">${emp.position || 'Position not specified'}</small>
+                                <small class="text-muted">${emp.department || 'No department'}</small>
+                            </div>
+                        </button>
+                    `;
+                }).join('');
+            } else {
+                resultsList.innerHTML = '<div class="p-3 text-center text-muted"><small><i class="fas fa-search"></i> No employees found matching your search</small></div>';
+            }
+
+            document.getElementById('employeeSearchResults').style.display = 'block';
+        }
+
+        // Employee Search Functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('employeeSearchInput');
+            const searchResults = document.getElementById('employeeSearchResults');
+            const resultsList = document.getElementById('employeeResultsList');
+
+            if (searchInput) {
+                // Live search as user types
+                searchInput.addEventListener('input', function() {
+                    const query = this.value.trim().toLowerCase();
+
+                    if (query.length === 0) {
+                        // Show all employees when input is empty
+                        if (payrollData && payrollData.length > 0) {
+                            showAllEmployees();
+                        } else {
+                            searchResults.style.display = 'none';
+                        }
+                    } else {
+                        // Filter and show results as user types
+                        const filtered = payrollData.filter(emp => {
+                            const name = (emp.name || '').toLowerCase();
+                            const position = (emp.position || '').toLowerCase();
+                            const empId = (emp.employee_id || '').toLowerCase();
+                            const department = (emp.department || '').toLowerCase();
+                            return name.includes(query) ||
+                                position.includes(query) ||
+                                empId.includes(query) ||
+                                department.includes(query);
+                        });
+                        displaySearchResults(filtered);
+                    }
+                });
+
+                // Trigger search when pressing Enter (for backward compatibility)
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const query = this.value.trim().toLowerCase();
+                        if (query.length > 0) {
+                            const filtered = payrollData.filter(emp => {
+                                const name = (emp.name || '').toLowerCase();
+                                const position = (emp.position || '').toLowerCase();
+                                const empId = (emp.employee_id || '').toLowerCase();
+                                const department = (emp.department || '').toLowerCase();
+                                return name.includes(query) ||
+                                    position.includes(query) ||
+                                    empId.includes(query) ||
+                                    department.includes(query);
+                            });
+                            displaySearchResults(filtered);
+                        }
+                    }
+                });
+
+                // Show all results on focus if input is empty
+                searchInput.addEventListener('focus', function() {
+                    if (this.value.trim().length === 0 && payrollData && payrollData.length > 0) {
+                        showAllEmployees();
+                    }
+                });
+
+                // Close results when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (searchInput && !searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                        searchResults.style.display = 'none';
+                    }
+                });
+            }
+        });
 
         function selectEmployee(index, name) {
             if (!payrollData || payrollData.length === 0) {
-                console.log('No payroll data available');
+                console.error('No payroll data available');
+                showErrorMessage('No calculation data found. Please run the payroll diagnostics.');
                 return;
             }
 
             const employee = payrollData[index];
             if (!employee) {
-                console.log('Invalid employee index:', index);
+                console.error('Invalid employee index:', index);
                 return;
             }
 
-            // Update active state
-            document.querySelectorAll('.employee-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            const activeBtn = document.querySelector(`[data-employee-idx="${index}"]`);
-            if (activeBtn) {
-                activeBtn.classList.add('active');
+            // Validate employee has calculation data
+            if (!employee.gross_pay && employee.gross_pay !== 0) {
+                console.error('Employee missing gross_pay:', employee);
+                showErrorMessage(`Employee ${name} has incomplete payroll data. Visit diagnostics.php to fix configuration.`);
+                return;
             }
 
-            // Find period data
-            const period = periodData.find(p => p.id == selectedPeriodId);
+            currentSelectedIndex = index;
+
+            // Update search input with selected employee
+            const searchInput = document.getElementById('employeeSearchInput');
+            if (searchInput) {
+                searchInput.value = name;
+                document.getElementById('employeeSearchResults').style.display = 'none';
+            }
+
+            // Show selected employee card with detailed info
+            const selectedCard = document.getElementById('selectedEmployeeCard');
+            if (selectedCard) {
+                document.getElementById('selectedEmployeeName').textContent = employee.name || '-';
+                document.getElementById('selectedEmployeeID').textContent = employee.employee_id || '-';
+                document.getElementById('selectedEmployeePosition').textContent = employee.position || 'Position not specified';
+                document.getElementById('selectedEmployeeDepartment').textContent = employee.department || '-';
+                document.getElementById('selectedEmployeeType').textContent = employee.position_type || 'N/A';
+                selectedCard.style.display = 'block';
+            }
+
+            // Find period data by period_id
+            let period = null;
+            if (periodData && periodData.length > 0) {
+                period = periodData.find(p => p.period_id == selectedPeriodId);
+            }
 
             // Update period info
             if (period) {
-                document.getElementById('periodStart').textContent = period.start_date;
-                document.getElementById('periodEnd').textContent = period.end_date;
-                document.getElementById('payDate').textContent = period.pay_date;
+                document.getElementById('periodStart').textContent = period.start_date || '-';
+                document.getElementById('periodEnd').textContent = period.end_date || '-';
+                document.getElementById('payDate').textContent = period.pay_date || '-';
             }
 
-            // Update earnings
-            const earningsHtml = employee.earnings.map(e => `
-                <tr>
-                    <td>${e.description}</td>
-                    <td class="text-right">₱${parseFloat(e.amount).toFixed(2)}</td>
-                </tr>
-            `).join('');
+            // Update earnings - safely handle missing data
+            let earningsHtml = '';
+            if (employee.earnings && Array.isArray(employee.earnings) && employee.earnings.length > 0) {
+                earningsHtml = employee.earnings.map(e => `
+                    <tr>
+                        <td>${e.description || 'N/A'}</td>
+                        <td class="text-right">₱${parseFloat(e.amount || 0).toFixed(2)}</td>
+                    </tr>
+                `).join('');
+            }
             document.getElementById('earningsTable').innerHTML = earningsHtml || '<tr><td colspan="2" class="text-muted text-center py-3">No earnings</td></tr>';
-            document.getElementById('totalEarnings').textContent = `₱${parseFloat(employee.gross_pay).toFixed(2)}`;
+            document.getElementById('totalEarnings').textContent = `₱${parseFloat(employee.gross_pay || 0).toFixed(2)}`;
 
             // Update hours and attendance
             document.getElementById('hoursWorked').textContent = (employee.hours_worked || 0).toFixed(2);
@@ -677,29 +901,49 @@ if (isset($_GET['error'])) {
             document.getElementById('overtimePay').textContent = `₱${parseFloat(employee.overtime_pay || 0).toFixed(2)}`;
             document.getElementById('overtimeMultiplier').textContent = `${employee.overtime_multiplier || 1.25}x (${(employee.overtime_hours || 0).toFixed(2)} hrs)`;
 
-            // Update deductions
-            const deductionsHtml = employee.deductions.map(d => `
-                <tr>
-                    <td>${d.description}</td>
-                    <td class="text-right">₱${parseFloat(d.amount).toFixed(2)}</td>
-                </tr>
-            `).join('');
+            // Update deductions - safely handle missing data
+            let deductionsHtml = '';
+            if (employee.deductions && Array.isArray(employee.deductions) && employee.deductions.length > 0) {
+                deductionsHtml = employee.deductions.map(d => `
+                    <tr>
+                        <td>${d.description || 'N/A'}</td>
+                        <td class="text-right">₱${parseFloat(d.amount || 0).toFixed(2)}</td>
+                    </tr>
+                `).join('');
+            }
             document.getElementById('deductionsTable').innerHTML = deductionsHtml || '<tr><td colspan="2" class="text-muted text-center py-3">No deductions</td></tr>';
-            document.getElementById('totalDeductions').textContent = `₱${parseFloat(employee.total_deductions).toFixed(2)}`;
+            document.getElementById('totalDeductions').textContent = `₱${parseFloat(employee.total_deductions || 0).toFixed(2)}`;
 
             // Update summary
-            document.getElementById('grossPay').textContent = `₱${parseFloat(employee.gross_pay).toFixed(2)}`;
-            document.getElementById('netPay').textContent = `₱${parseFloat(employee.net_pay).toFixed(2)}`;
+            document.getElementById('grossPay').textContent = `₱${parseFloat(employee.gross_pay || 0).toFixed(2)}`;
+            document.getElementById('netPay').textContent = `₱${parseFloat(employee.net_pay || 0).toFixed(2)}`;
 
             // Show details and hide initial message
             document.getElementById('salaryDetailsContainer').style.display = 'block';
             document.getElementById('initialMessage').style.display = 'none';
         }
 
+        function showErrorMessage(message) {
+            const errorHtml = `<div class="alert alert-danger alert-dismissible">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                <strong>Error:</strong> ${message}<br>
+                <a href="../diagnostics.php" class="btn btn-sm btn-warning mt-2">Run Diagnostics</a>
+            </div>`;
+            const initialMsg = document.getElementById('initialMessage');
+            if (initialMsg) {
+                initialMsg.innerHTML = errorHtml;
+                initialMsg.style.display = 'block';
+            }
+        }
+
         // Auto-select first employee if payroll data exists
         document.addEventListener('DOMContentLoaded', function() {
             if (payrollData && payrollData.length > 0 && selectedPeriodId) {
                 selectEmployee(0, payrollData[0].name);
+            } else if (!payrollData || payrollData.length === 0) {
+                if (selectedPeriodId) {
+                    showErrorMessage('No employees with payroll configuration found for this period.');
+                }
             }
         });
     </script>

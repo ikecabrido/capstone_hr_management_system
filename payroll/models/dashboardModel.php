@@ -294,7 +294,7 @@ class DashboardModel
         $sql = "
             SELECT SUM(amount)
             FROM pr_employee_adjustments
-            WHERE type = 'allowance'
+            WHERE type IN ('allowance','benefit')
         ";
 
         $params = [];

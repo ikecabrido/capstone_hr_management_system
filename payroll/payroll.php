@@ -159,7 +159,14 @@ $stats = $controller->getStats();
             <li class="nav-item">
               <a href="views/allowance.php" class="nav-link">
                 <i class="nav-icon fas fa-file-invoice-dollar"></i>
-                <p>Allowance & Deductions</p>
+                <p>Benefits & Deductions</p>
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a href="views/payrollClearance.php" class="nav-link">
+                <i class="nav-icon fas fa-file-signature"></i>
+                <p>Payroll Clearance</p>
               </a>
             </li>
 
@@ -286,7 +293,7 @@ $stats = $controller->getStats();
                 <span class="info-box-icon bg-success elevation-1"><i class="fas fa-plus-circle"></i></span>
 
                 <div class="info-box-content">
-                  <span class="info-box-text">Total Allowances</span>
+                  <span class="info-box-text">Total Benefits</span>
                   <span class="info-box-number">
                     ₱<?= number_format($stats['total_allowances'], 2) ?>
                   </span>
@@ -508,7 +515,7 @@ $stats = $controller->getStats();
   <script src="../assets/dist/js/time.js"></script>
   <script src="../assets/dist/js/global_modal.js"></script>
   <script src="../assets/dist/js/profile.js"></script>
-  <script src="custom.js"></script>
+  <!-- <script src="custom.js"></script> -->
 
   <script>
     const chartData = <?= json_encode($stats['chart']) ?>;

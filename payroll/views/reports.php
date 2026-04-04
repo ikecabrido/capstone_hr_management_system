@@ -174,7 +174,7 @@ $payroll = $data['payroll'];
                         <li class="nav-item">
                             <a href="allowance.php" class="nav-link">
                                 <i class="nav-icon fas fa-file-invoice-dollar"></i>
-                                <p>Allowance & Deductions</p>
+                                <p>Benefits & Deductions</p>
                             </a>
                         </li>
 
@@ -240,8 +240,8 @@ $payroll = $data['payroll'];
                                         <option value="">-- Select Period --</option>
 
                                         <?php foreach ($periods as $p): ?>
-                                            <option value="<?= $p['id'] ?>"
-                                                <?= $p['id'] == $periodId ? 'selected' : '' ?>>
+                                            <option value="<?= $p['period_id'] ?>"
+                                                <?= $p['period_id'] == $periodId ? 'selected' : '' ?>>
 
                                                 <?= $p['period_name'] ?>
                                                 (<?= $p['start_date'] ?> - <?= $p['end_date'] ?>)

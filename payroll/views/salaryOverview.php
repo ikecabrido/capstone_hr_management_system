@@ -176,7 +176,7 @@ $employmentTypes = $payrollModel->getEmploymentTypes();
                         <li class="nav-item">
                             <a href="allowance.php" class="nav-link">
                                 <i class="nav-icon fas fa-file-invoice-dollar"></i>
-                                <p>Allowance & Deductions</p>
+                                <p>Benefits & Deductions</p>
                             </a>
                         </li>
 
@@ -186,6 +186,12 @@ $employmentTypes = $payrollModel->getEmploymentTypes();
                                 <p>
                                     Reports
                                 </p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="views/payrollClearance.php" class="nav-link">
+                                <i class="nav-icon fas fa-file-signature"></i>
+                                <p>Payroll Clearance</p>
                             </a>
                         </li>
                         <li class="nav-item">
@@ -237,7 +243,7 @@ $employmentTypes = $payrollModel->getEmploymentTypes();
                                             <select name="period" class="form-control">
                                                 <option value="">All Periods</option>
                                                 <?php foreach ($periods as $period): ?>
-                                                    <option value="<?= $period['id'] ?>" <?= ($selectedPeriodId == $period['id']) ? 'selected' : '' ?>>
+                                                    <option value="<?= $period['period_id'] ?>" <?= ($selectedPeriodId == $period['period_id']) ? 'selected' : '' ?>>
                                                         <?= htmlspecialchars($period['period_name']) ?>
                                                     </option>
                                                 <?php endforeach; ?>

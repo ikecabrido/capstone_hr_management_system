@@ -30,7 +30,7 @@ $controller->handleRequest();
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Payroll management system - Allowance & Deductions</title>
+    <title>Payroll management system - Benefits & Deductions</title>
 
     <!-- Google Font: Source Sans Pro -->
     <link
@@ -173,7 +173,7 @@ $controller->handleRequest();
                         <li class="nav-item">
                             <a href="allowance.php" class="nav-link active">
                                 <i class="nav-icon fas fa-file-invoice-dollar"></i>
-                                <p>Allowance & Deductions</p>
+                                <p>Benefits & Deductions</p>
                             </a>
                         </li>
 
@@ -205,7 +205,7 @@ $controller->handleRequest();
                 <div class="container-fluid">
                     <div class="row mb-2">
                         <div class="col-sm-6">
-                            <h1 class="m-0">Allowance and Deductions</h1>
+                            <h1 class="m-0">Benefits and Deductions</h1>
                         </div>
                         <!-- /.col -->
 
@@ -232,7 +232,7 @@ $controller->handleRequest();
                                     <select name="period_id" class="form-control">
                                         <option value="">All Periods</option>
                                         <?php foreach ($periods as $p): ?>
-                                            <option value="<?= $p['id'] ?>" <?= ($periodId == $p['id']) ? 'selected' : '' ?>>
+                                            <option value="<?= $p['period_id'] ?>" <?= ($periodId == $p['period_id']) ? 'selected' : '' ?>>
                                                 <?= htmlspecialchars($p['period_name']) ?>
                                             </option>
                                         <?php endforeach; ?>
@@ -263,7 +263,7 @@ $controller->handleRequest();
                             <div class="info-box bg-success">
                                 <span class="info-box-icon"><i class="fas fa-plus"></i></span>
                                 <div class="info-box-content">
-                                    <span class="info-box-text">Total Allowances</span>
+                                    <span class="info-box-text">Total Benefits</span>
                                     <span class="info-box-number">₱<?= number_format($totals['total_allowance'], 2) ?></span>
                                 </div>
                             </div>
@@ -309,7 +309,7 @@ $controller->handleRequest();
                                         <?php foreach ($records as $r): ?>
                                             <tr>
                                                 <td><?= htmlspecialchars($r['employee_name']) ?></td>
-                                                <td><?= ucfirst($r['type']) ?></td>
+                                                <td><?= ucfirst(htmlspecialchars($r['display_type'] ?? $r['type'])) ?></td>
                                                 <td><?= htmlspecialchars($r['description']) ?></td>
                                                 <td>₱<?= number_format($r['amount'], 2) ?></td>
                                                 <td><?= htmlspecialchars($r['period_name']) ?></td>
@@ -388,7 +388,7 @@ $controller->handleRequest();
                     <form method="POST" action="allowance.php">
                         <div class="modal-content">
                             <div class="modal-header bg-success">
-                                <h5 class="modal-title">Add Allowance / Deduction</h5>
+                                <h5 class="modal-title">Add Benefit / Deduction</h5>
                                 <button type="button" class="close" data-dismiss="modal">&times;</button>
                             </div>
                             <div class="modal-body">
@@ -404,7 +404,7 @@ $controller->handleRequest();
                                 <div class="form-group">
                                     <label>Type</label>
                                     <select name="type" class="form-control" required>
-                                        <option value="allowance">Allowance</option>
+                                        <option value="benefit">Benefit</option>
                                         <option value="deduction">Deduction</option>
                                     </select>
                                 </div>

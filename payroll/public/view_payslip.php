@@ -15,8 +15,19 @@ if (!$payslip) {
     die("Payslip not found.");
 }
 
+function sanitizePayslipDescription(string $description): string
+{
+    if (preg_match('/^(Basic Salary|Overtime|Unexcused Absence|Late|SSS|PhilHealth|Pag-IBIG|Withholding Tax|Other Deduction)/i', $description, $matches)) {
+        return $matches[1];
+    }
+
+    // Remove formula details inside parentheses for more compact display
+    $clean = preg_replace('/\s*\([^)]*\)/', '', $description);
+    return trim($clean);
+}
+
 // Now $payslip is defined and ready to use
-$employeeName = htmlspecialchars($payslip['first_name'] . ' ' . $payslip['last_name']);
+$employeeName = htmlspecialchars($payslip['full_name']);
 $position = htmlspecialchars($payslip['position']);
 $generatedAt = date("M d, Y", strtotime($payslip['generated_at']));
 $grossPay = number_format($payslip['gross_pay'], 2);
@@ -109,11 +120,11 @@ $netPay = number_format($payslip['net_pay'], 2);
 
                 <?php if (!empty($payslip['earnings'])): ?>
                     <tr>
-                        <td colspan="2"><strong>Allowances / Earnings</strong></td>
+                        <td colspan="2"><strong>Benefits / Earnings</strong></td>
                     </tr>
                     <?php foreach ($payslip['earnings'] as $earning): ?>
                         <tr>
-                            <td><?= htmlspecialchars($earning['description']) ?></td>
+                            <td><?= htmlspecialchars(sanitizePayslipDescription($earning['description'])) ?></td>
                             <td class="text-right">₱<?= number_format($earning['amount'], 2) ?></td>
                         </tr>
                     <?php endforeach; ?>
@@ -125,7 +136,7 @@ $netPay = number_format($payslip['net_pay'], 2);
                     </tr>
                     <?php foreach ($payslip['deductions'] as $deduction): ?>
                         <tr>
-                            <td><?= htmlspecialchars($deduction['description']) ?></td>
+                            <td><?= htmlspecialchars(sanitizePayslipDescription($deduction['description'])) ?></td>
                             <td class="text-right">₱<?= number_format($deduction['amount'], 2) ?></td>
                         </tr>
                     <?php endforeach; ?>

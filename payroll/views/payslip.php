@@ -172,7 +172,7 @@ $payslips = $payslipController->index($periodId, $employeeId);
                         <li class="nav-item">
                             <a href="allowance.php" class="nav-link">
                                 <i class="nav-icon fas fa-file-invoice-dollar"></i>
-                                <p>Allowance & Deductions</p>
+                                <p>Benefits & Deductions</p>
                             </a>
                         </li>
 
@@ -236,8 +236,8 @@ $payslips = $payslipController->index($periodId, $employeeId);
                                     <select name="period_id" class="form-control">
                                         <option value="">All Periods</option>
                                         <?php foreach ($periods as $p): ?>
-                                            <option value="<?= $p['id'] ?>"
-                                                <?= ($periodId == $p['id']) ? 'selected' : '' ?>>
+                                            <option value="<?= $p['period_id'] ?>"
+                                                <?= ($periodId == $p['period_id']) ? 'selected' : '' ?>>
                                                 <?= htmlspecialchars($p['period_name']) ?>
                                             </option>
                                         <?php endforeach; ?>
@@ -288,7 +288,7 @@ $payslips = $payslipController->index($periodId, $employeeId);
                                         <th>Gross Pay</th>
                                         <th>Deductions</th>
                                         <th>Net Pay</th>
-                                        <th>Date Generated</th>
+                                        <th>Finalized By</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -313,7 +313,7 @@ $payslips = $payslipController->index($periodId, $employeeId);
                                                     ₱<?= number_format($p['net_pay'], 2) ?>
                                                 </strong>
                                             </td>
-                                            <td><?= date('M d, Y', strtotime($p['generated_at'])) ?></td>
+                                            <td><?= htmlspecialchars($_SESSION['user']['name'] ?? 'N/A') ?></td>
                                             <td>
                                                 <a href="../public/view_payslip.php?id=<?= $p['id'] ?>"
                                                     class="btn btn-sm btn-info">

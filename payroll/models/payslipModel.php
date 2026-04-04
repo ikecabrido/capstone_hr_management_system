@@ -22,11 +22,13 @@ class PayslipModel
             p.total_deductions, 
             p.net_pay,
             prun.status AS payroll_status,
-            p.generated_at
+            p.generated_at,
+            u.full_name AS finalized_by_name
         FROM pr_payslips p
         JOIN employees e ON p.employee_id = e.employee_id
         LEFT JOIN pr_runs prun ON p.payroll_run_id = prun.run_id
         LEFT JOIN pr_periods pp ON prun.payroll_period_id = pp.period_id
+        LEFT JOIN users u ON prun.finalized_by = u.user_id
         WHERE 1=1
     ";
 

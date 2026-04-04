@@ -161,7 +161,7 @@ $nextPeriod = $controller->getNextPeriod();
                         <li class="nav-item">
                             <a href="allowance.php" class="nav-link">
                                 <i class="nav-icon fas fa-file-invoice-dollar"></i>
-                                <p>Allowance & Deductions</p>
+                                <p>Benefits & Deductions</p>
                             </a>
                         </li>
 
@@ -319,7 +319,7 @@ $nextPeriod = $controller->getNextPeriod();
                         </div>
                     </div>
                     <?php foreach ($periods as $period): ?>
-                        <div class="modal fade" id="editModal<?= $period['id'] ?>" tabindex="-1">
+                        <div class="modal fade" id="editModal<?= $period['period_id'] ?>" tabindex="-1">
                             <div class="modal-dialog">
                                 <div class="modal-content">
 
@@ -333,7 +333,7 @@ $nextPeriod = $controller->getNextPeriod();
                                         <div class="modal-body">
 
                                             <input type="hidden" name="action" value="update_status">
-                                            <input type="hidden" name="id" value="<?= $period['id'] ?>">
+                                            <input type="hidden" name="id" value="<?= $period['period_id'] ?>">
 
                                             <div class="form-group">
                                                 <label>Status</label>
@@ -464,6 +464,34 @@ $nextPeriod = $controller->getNextPeriod();
                 .appendTo('#example1_wrapper .col-md-6:eq(0)');
 
         });
+
+        // Auto-calculate pay date as 5 days after period end date
+        document.addEventListener('DOMContentLoaded', function() {
+            const endDateInput = document.querySelector('input[name="end_date"]');
+            const payDateInput = document.querySelector('input[name="pay_date"]');
+
+            function calculatePayDate() {
+                if (endDateInput && endDateInput.value && payDateInput) {
+                    const endDate = new Date(endDateInput.value);
+                    const payDate = new Date(endDate);
+                    payDate.setDate(payDate.getDate() + 5);
+
+                    // Format date as YYYY-MM-DD for input[type="date"]
+                    const year = payDate.getFullYear();
+                    const month = String(payDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(payDate.getDate()).padStart(2, '0');
+                    payDateInput.value = `${year}-${month}-${day}`;
+                }
+            }
+
+            // Calculate on page load
+            calculatePayDate();
+
+            // Calculate when end date changes
+            if (endDateInput) {
+                endDateInput.addEventListener('change', calculatePayDate);
+            }
+        });
     </script>
     <script>
         $(document).on('submit', '.period-form', function(e) {
@@ -497,19 +525,34 @@ $nextPeriod = $controller->getNextPeriod();
                         $(document).Toasts('create', {
                             class: 'bg-danger',
                             title: 'Error',
-                            body: res.message
+                            body: res.message || 'Unknown error occurred'
                         });
                     }
                 },
 
-                error: function() {
+                error: function(xhr, status, error) {
+                    let errorMessage = 'Server error';
+
+                    try {
+                        let response = JSON.parse(xhr.responseText);
+                        errorMessage = response.message || errorMessage;
+                    } catch (e) {
+                        if (xhr.responseText) {
+                            errorMessage = xhr.responseText.substring(0, 300);
+                        }
+                    }
 
                     $(document).Toasts('create', {
                         class: 'bg-danger',
                         title: 'Error',
-                        body: 'Server error. Please try again.'
+                        body: errorMessage
                     });
 
+                    console.error('AJAX Error:', {
+                        xhr,
+                        status,
+                        error
+                    });
                 }
             });
         });
