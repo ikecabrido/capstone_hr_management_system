@@ -21,7 +21,7 @@ class PerformanceFeedbackController
         $employee = $this->employeeModel->findByUserId($user_id);
         $employee_id = $employee['id'] ?? null;
 
-
+        $title = "Performance Feedback";
         $content = __DIR__ . '/../views/performance-feedback/main-content.php';
         require __DIR__ . '/../views/performance-feedback/index.php';
     }

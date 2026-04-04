@@ -97,9 +97,9 @@
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="index.php?url=three-sixty-degree-feedback-index" class="nav-link">
+                            <a href="index.php?url=employee-medical-records" class="nav-link">
                                 <i class="fas fa-notes-medical nav-icon"></i>
-                                <p>Records</p>
+                                <p>Medical Records</p>
                             </a>
                         </li>
                     </ul>

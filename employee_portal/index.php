@@ -5,6 +5,7 @@ require 'app/controllers/AuthController.php';
 require 'app/controllers/PayslipController.php';
 require 'app/controllers/LeaveRequestController.php';
 require 'app/controllers/AnnouncementController.php';
+require 'app/controllers/MedicalRecordController.php';
 require 'app/controllers/OnlineMeetingController.php';
 require 'app/controllers/EmployeePortalController.php';
 require 'app/controllers/EmployeeDocumentsController.php';
@@ -131,6 +132,11 @@ switch ($url) {
 
     case 'performance-feedback-create':
         (new PerformanceFeedbackController)->create();
+        break;
+
+    //Clinic / Medical Records
+    case 'employee-medical-records':
+        (new MedicalRecordController)->index();
         break;
 
     default:
