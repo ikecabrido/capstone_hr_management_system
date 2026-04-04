@@ -187,6 +187,12 @@ $payroll = $data['payroll'];
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a href="payrollClearance.php" class="nav-link">
+                                <i class="nav-icon fas fa-file-signature"></i>
+                                <p>Payroll Clearance</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a href="../../logout.php" class="nav-link">
                                 <i class="nav-icon fas fa-sign-out-alt"></i>
                                 <p>Logout</p>

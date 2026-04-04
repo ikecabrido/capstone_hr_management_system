@@ -26,6 +26,10 @@ class User
     }
     public function findById($id)
     {
+        if (!$id) {
+            return null;
+        }
+
         $sql = "SELECT * FROM users WHERE id = :id LIMIT 1";
 
         $stmt = $this->db->prepare($sql);

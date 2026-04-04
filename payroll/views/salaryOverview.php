@@ -189,7 +189,7 @@ $employmentTypes = $payrollModel->getEmploymentTypes();
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="views/payrollClearance.php" class="nav-link">
+                            <a href="payrollClearance.php" class="nav-link">
                                 <i class="nav-icon fas fa-file-signature"></i>
                                 <p>Payroll Clearance</p>
                             </a>

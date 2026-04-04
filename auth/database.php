@@ -6,7 +6,7 @@ class Database
     private $conn;
 
     private $host = "localhost";
-    private $db   = "hr_management";
+    private $db   = "data_hr";
     private $user = "root";
     private $pass = "";
 

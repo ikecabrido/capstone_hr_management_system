@@ -4,6 +4,14 @@ require_once "../auth/user.php";
 
 $userModel = new User();
 $user = $userModel->findById($_SESSION['user']['id']);
+
+if (!$user) {
+    // Fallback: use session data if database lookup fails
+    $user = [
+        'full_name' => $_SESSION['user']['name'] ?? 'User',
+        'id' => $_SESSION['user']['user_id'] ?? 0
+    ];
+}
 ?>
 
 <form id="passwordForm" action="update_user.php" method="POST">
