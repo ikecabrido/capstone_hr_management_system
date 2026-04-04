@@ -3,7 +3,7 @@
         <form method="POST" action="index.php?url=admin-online-meeting-store">
             <div class="modal-content">
                 <input type="hidden" value="<?= $user_id ?? '' ?>" name="created_by">
-                <input type="hidden" value="<?= $employee_no ?? '' ?>" name="employee_no">
+                <input type="hidden" value="<?= $employee_id ?? '' ?>" name="employee_id">
                 <div class="modal-header">
                     <h5 class="modal-title text-4xl">Create Meeting</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>

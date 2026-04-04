@@ -15,7 +15,6 @@ class LeaveRequestController
         $this->employeeModel = new Employee();
         $this->leaveTypeModel = new LeaveType();
     }
-
     public function index()
     {
         $user_id = $_SESSION['user_id'] ?? null;
@@ -52,7 +51,6 @@ class LeaveRequestController
         $content = __DIR__ . '/../views/leave-request/main-content.php';
         require __DIR__ . '/../views/leave-request/index.php';
     }
-
     public function indexAdmin()
     {
         $user_id = $_SESSION['user_id'] ?? null;
@@ -77,7 +75,6 @@ class LeaveRequestController
         $content = __DIR__ . '/../views/leave-request/main-content.php';
         require __DIR__ . '/../views/leave-request/index.php';
     }
-
     public function store()
     {
         $user_id = $_POST['user_id'] ?? null;

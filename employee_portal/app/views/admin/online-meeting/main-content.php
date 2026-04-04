@@ -34,15 +34,8 @@
                 <p class="text-muted mb-3">Create your first online meeting to get started.</p>
             </div>
         <?php endif; ?>
-
-        <button class="btn btn-outline-success px-4"
-            data-bs-toggle="modal"
-            data-bs-target="#createMeetingModal">
-            <i class="fas fa-plus me-1"></i> Create Meeting
-        </button>
     </div>
 
-</div>
 </div>
 
 <?php require __DIR__ . '/modal-online-meeting.php'; ?>

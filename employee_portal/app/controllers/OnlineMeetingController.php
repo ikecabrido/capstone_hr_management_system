@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../models/Meeting.php';
+require_once __DIR__ . '/../models/OnlineMeeting.php';
 require_once __DIR__ . '/../models/Employee.php';
 
 
@@ -10,7 +10,7 @@ class OnlineMeetingController
 
     public function __construct()
     {
-        $this->meetingModel = new Meeting();
+        $this->meetingModel = new OnlineMeeting();
         $this->employeeModel = new Employee();
     }
     public function index()
@@ -34,7 +34,7 @@ class OnlineMeetingController
         }
         $meetings = $this->meetingModel->getAll();
         $employee = $this->employeeModel->findByUserId($user_id);
-        $employee_no = $employee['employee_no'] ?? null;
+        $employee_id = $employee['id'] ?? null;
 
         $title = "Admin Online Meeting";
         $content = __DIR__ . '/../views/admin/online-meeting/main-content.php';
@@ -48,11 +48,11 @@ class OnlineMeetingController
         }
 
         $title = $_POST['title'] ?? '';
-        $employee_no = $_POST['employee_no'] ?? '';
+        $employee_id = $_POST['employee_id'] ?? '';
         $scheduled_at = $_POST['scheduled_at'] ?? '';
         $user = $_POST['created_by'] ?? '';
 
-        if (!$title || !$employee_no || !$scheduled_at) {
+        if (!$title || !$employee_id || !$scheduled_at) {
             $_SESSION['error'] = "All fields are required.";
             header("Location: index.php?url=admin-dashboard");
             exit;
@@ -60,13 +60,12 @@ class OnlineMeetingController
 
         $meeting_id = uniqid("hr_meeting_");
         $meeting_link = "https://meet.jit.si/" . $meeting_id;
-
         try {
             $this->meetingModel->create([
                 'title' => $title,
                 'meeting_link' => $meeting_link,
                 'created_by' => $_POST['created_by'] ?? '',
-                'employee_no' => $employee_no,
+                'employee_id' => $employee_id,
                 'scheduled_at' => $scheduled_at
             ]);
 

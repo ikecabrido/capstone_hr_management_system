@@ -2,11 +2,11 @@
 require_once __DIR__ . '/../config/Database.php';
 
 
-class Meeting
+class OnlineMeeting
 {
 
     private $conn;
-    private $table = 'ep_meetings';
+    private $table = 'ep_online_meetings';
 
     public function __construct()
     {
@@ -24,9 +24,9 @@ class Meeting
     public function create($data)
     {
         $query = "INSERT INTO {$this->table}  
-        (title, meeting_link, created_by, employee_no, scheduled_at)
+        (title, meeting_link, created_by, employee_id, scheduled_at)
         VALUES 
-        (:title, :meeting_link, :created_by, :employee_no, :scheduled_at)";
+        (:title, :meeting_link, :created_by, :employee_id, :scheduled_at)";
 
         $stmt = $this->conn->prepare($query);
 
@@ -34,7 +34,7 @@ class Meeting
             ':title' => $data['title'],
             ':meeting_link' => $data['meeting_link'],
             ':created_by' => $data['created_by'],
-            ':employee_no' => $data['employee_no'],
+            ':employee_id' => $data['employee_id'],
             ':scheduled_at' => $data['scheduled_at']
         ]);
     }

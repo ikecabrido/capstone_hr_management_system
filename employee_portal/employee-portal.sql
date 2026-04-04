@@ -16,7 +16,7 @@ CREATE TABLE `ep_employee_documents` (
   KEY `submit_by` (`submit_by`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE ep_meetings (
+CREATE TABLE ep_online_meetings (
     meetings_id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255),
     meeting_link TEXT,
