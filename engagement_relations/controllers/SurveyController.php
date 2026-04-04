@@ -2,63 +2,56 @@
 namespace App\Controllers;
 
 use App\Models\Survey;
-use App\Models\SurveyQuestion;
-use App\Models\SurveyResponse;
 
 class SurveyController
 {
-    private $survey;
-    private $surveyResponse;
+    private $surveyModel;
 
     public function __construct()
     {
-        $this->survey = new Survey();
-        $this->surveyResponse = new SurveyResponse();
+        $this->surveyModel = new Survey();
     }
 
-    public function create()
+    public function show($surveyId)
     {
-        // Return data required for form (if any) to create survey
-        return [
-            'title' => '',
-            'questions' => [],
-        ];
+        return $this->surveyModel->getSurveyById($surveyId);
     }
 
-    public function store($title, $created_by, $questions = [])
+    public function getSurveyResults($surveyId)
     {
-        $surveyId = $this->survey->createSurvey($title, $created_by);
+        return $this->surveyModel->getSurveyResponses($surveyId);
+    }
 
-        foreach ($questions as $q) {
-            $this->survey->addQuestion($surveyId, $q['question_text'], $q['type'] ?? 'text');
+    public function calculateAverageRating($surveyId)
+    {
+        $responses = $this->getSurveyResults($surveyId);
+        $total = 0;
+        $count = 0;
+
+        foreach ($responses as $response) {
+            $answers = json_decode($response['answers'], true);
+            foreach ($answers as $answer) {
+                if (is_numeric($answer)) {
+                    $total += $answer;
+                    $count++;
+                }
+            }
         }
 
-        return $surveyId;
+        return $count > 0 ? $total / $count : null;
     }
 
     public function index()
     {
-        return $this->survey->getSurveys();
+        return $this->surveyModel->getSurveys();
     }
 
-    public function show($id)
+    public function store($title, $created_by, $questions)
     {
-        return $this->survey->getWithQuestions($id);
-    }
-
-    public function delete($id)
-    {
-        return $this->survey->deleteSurvey($id);
-    }
-
-    public function getResponses($survey_id)
-    {
-        return $this->surveyResponse->getBySurvey($survey_id);
-    }
-
-    public function submit($survey_id, $employee_id, $answers)
-    {
-        return $this->survey->submitResponse($survey_id, $employee_id, $answers);
+        $surveyId = $this->surveyModel->createSurvey($title, $created_by);
+        foreach ($questions as $question) {
+            $this->surveyModel->addQuestion($surveyId, $question['question_text']);
+        }
+        return $surveyId;
     }
 }
-

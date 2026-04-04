@@ -2,8 +2,20 @@
 session_start();
 require_once "../auth/user.php";
 
+// Debugging output for session data
+if (!isset($_SESSION['user']['id'])) {
+    echo "<p>Error: User session ID is not set. Please log in again.</p>";
+    exit;
+}
+
 $userModel = new User();
 $user = $userModel->findById($_SESSION['user']['id']);
+
+if (!$user) {
+    echo "<p>Error: User not found. Please contact the administrator.</p>";
+    echo "<p>Debug: User ID from session: " . htmlspecialchars($_SESSION['user']['id']) . "</p>";
+    exit;
+}
 ?>
 
 <form id="passwordForm" action="update_user.php" method="POST">

@@ -22,6 +22,8 @@ class BaseModel
 
     protected function execute($sql, $params = [])
     {
+        // ✅ Removed debug logs (no more output issues)
+
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
         return $stmt;
@@ -32,22 +34,21 @@ class BaseModel
         $columns = $this->execute('SHOW COLUMNS FROM employees')->fetchAll(PDO::FETCH_ASSOC);
         $columnNames = array_column($columns, 'Field');
 
+        if (in_array('full_name', $columnNames, true)) {
+            return "$employeeAlias.full_name AS $alias";
+        }
         if (in_array('name', $columnNames, true)) {
             return "$employeeAlias.name AS $alias";
         }
-
         if (in_array('first_name', $columnNames, true) && in_array('last_name', $columnNames, true)) {
             return "CONCAT($employeeAlias.first_name, ' ', $employeeAlias.last_name) AS $alias";
         }
-
         if (in_array('first_name', $columnNames, true)) {
             return "$employeeAlias.first_name AS $alias";
         }
-
         if (in_array('last_name', $columnNames, true)) {
             return "$employeeAlias.last_name AS $alias";
         }
-
         return "'' AS $alias";
     }
 }

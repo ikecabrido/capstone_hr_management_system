@@ -6,16 +6,68 @@ require_once "../../auth/auth_check.php";
 
 require_once __DIR__ . '/../autoload.php';
 
+
 use App\Controllers\SurveyController;
+use App\Controllers\GrievanceController;
+use App\Controllers\RecognitionController;
+use App\Controllers\SocialController;
 use App\Controllers\FeedbackController;
+use App\Controllers\CommunicationController;
+use App\Controllers\SurveyAnswerController;
 
 $theme = $_SESSION['user']['theme'] ?? 'light';
 
 $surveyCtrl = new SurveyController();
+$grievanceCtrl = new GrievanceController();
+$recognitionCtrl = new RecognitionController();
+$socialCtrl = new SocialController();
 $feedbackCtrl = new FeedbackController();
+$communicationCtrl = new CommunicationController();
+$surveyAnswerCtrl = new SurveyAnswerController();
+
 $payload = $payload ?? [];
 $payload['surveys'] = $surveyCtrl->index();
+$payload['grievances'] = $grievanceCtrl->getGrievances();
+$payload['recognitions'] = $recognitionCtrl->getRecognitions();
+$payload['social'] = $socialCtrl->getPosts();
 $payload['feedback'] = $feedbackCtrl->index();
+$payload['announcements'] = $communicationCtrl->getAnnouncements();
+$payload['survey_answers'] = $payload['survey_answers'] ?? [];
+
+// Debug log to verify the structure of survey_answers data
+error_log('Survey Answers Data: ' . print_r($payload['survey_answers'], true));
+
+// Debug log to verify survey_answers data
+error_log('Survey Answers Payload: ' . print_r($payload['survey_answers'], true));
+
+// Fetch survey answers for a specific survey or response
+$surveyId = null;
+$responseId = null;
+$apiUrl = '';
+if (isset($_GET['response_id']) && is_numeric($_GET['response_id'])) {
+    $responseId = (int)$_GET['response_id'];
+} elseif (isset($_GET['survey_id']) && is_numeric($_GET['survey_id'])) {
+    $surveyId = (int)$_GET['survey_id'];
+} elseif (isset($_GET['id']) && is_numeric($_GET['id'])) {
+    $surveyId = (int)$_GET['id'];
+}
+
+$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+if ($responseId !== null) {
+    $payload['survey_answers'] = $surveyAnswerCtrl->getByResponse($responseId);
+} elseif ($surveyId !== null) {
+    $payload['survey_answers'] = $surveyAnswerCtrl->getBySurvey($surveyId);
+} else {
+    $payload['survey_answers'] = $surveyAnswerCtrl->getAll();
+}
+
+// Fetch survey results for a specific survey
+if (isset($_GET['action']) && $_GET['action'] === 'view_results' && isset($_GET['survey_id'])) {
+    $surveyId = (int)$_GET['survey_id'];
+    $results = $surveyCtrl->getSurveyResults($surveyId);
+    $payload['survey_results'] = $results;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $flashSuccess = '';
@@ -44,8 +96,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($employeeId > 0) {
             $surveyCtrl->store($_POST['title'], $employeeId, $formatted);
             $_SESSION['flash_success'] = 'Survey created successfully.';
-        } else {
-            $_SESSION['flash_error'] = 'Your account is not linked to an employee record.';
         }
     } else {
         $_SESSION['flash_error'] = 'Title and at least one question are required.';
@@ -234,7 +284,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
         <div class="container-fluid">
           <div class="row mb-2">
             <div class="col-sm-6">
-              <h1 class="m-0">Surveys & Feedback</h1>
+              <h3>Surveys & Feedback</h3>
               <p class="text-muted">Use the sidebar to manage surveys and feedback workflow.</p>
             </div>
           </div>
@@ -284,7 +334,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                   <li class="list-group-item d-flex justify-content-between align-items-center">
                     <div>
                       <strong><?=htmlspecialchars($survey['title'])?></strong><br>
-                      <small><?=htmlspecialchars($survey['date_created'])?></small>
+                      <small>Survey ID: <?=htmlspecialchars($survey['eer_survey_id'])?></small>
                     </div>
                     <div class="btn-group" role="group" aria-label="Survey actions">
                       <a class="btn btn-sm btn-info" href="survey_view.php?module=survey&action=view&id=<?=$survey['eer_survey_id']?>">View</a>
@@ -314,7 +364,9 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                     <p><?=nl2br(htmlspecialchars($feedback['comment']))?></p>
                     <small>
                       Rating: <?= $feedback['rating'] !== null ? (int)$feedback['rating'] . '/5' : 'n/a' ?>
-                      &bull; <?=htmlspecialchars($feedback['created_at'])?> 
+                      <?php if (isset($feedback['created_at'])): ?>
+                        &bull; <?=htmlspecialchars($feedback['created_at'])?>
+                      <?php endif; ?>
                     </small>
                   </li>
                 <?php endforeach; ?>
@@ -326,6 +378,59 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
         </div>
       </div>
     </div>
+
+
+    <!-- Survey Answers Section -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card card-primary card-outline">
+        <div class="card-header">
+          <h3 class="card-title">Survey Answers</h3>
+        </div>
+        <div class="card-body">
+          <?php if (!empty($payload['survey_answers'])): ?>
+            <ul class="list-group">
+              <?php foreach ($payload['survey_answers'] as $answer): ?>
+                <li class="list-group-item">
+                  <strong>Question ID:</strong> <?= htmlspecialchars($answer['question_id'] ?? 'N/A') ?><br>
+                  <strong>Answer:</strong> <?= htmlspecialchars($answer['answer'] ?? 'N/A') ?><br>
+                  <small><strong>Answer Record:</strong> <?= htmlspecialchars($answer['eer_survey_answer_id'] ?? 'N/A') ?> | <strong>Response:</strong> <?= htmlspecialchars($answer['response_id'] ?? 'N/A') ?></small>
+                </li>
+              <?php endforeach; ?>
+            </ul>
+          <?php else: ?>
+            <p class="text-muted">No answers available for this survey.</p>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <?php
+    $surveyChartLabels = [];
+    $surveyChartValues = [];
+    if (!empty($payload['survey_answers'])) {
+        $answerCounts = [];
+        foreach ($payload['survey_answers'] as $answer) {
+            $label = 'Question ' . ($answer['question_id'] ?? 'N/A');
+            $answerCounts[$label] = ($answerCounts[$label] ?? 0) + 1;
+        }
+        $surveyChartLabels = array_keys($answerCounts);
+        $surveyChartValues = array_values($answerCounts);
+    }
+  ?>
+
+  <!-- Survey Results Section -->
+  <div class="card card-info card-outline">
+    <div class="card-header"><h3 class="card-title">Survey Results</h3></div>
+    <div class="card-body">
+      <canvas
+        id="surveyResultsChart"
+        data-survey-labels='<?= json_encode($surveyChartLabels) ?>'
+        data-survey-values='<?= json_encode($surveyChartValues) ?>'
+      ></canvas>
+    </div>
+  </div>
 
         </div>
     </div>
@@ -372,8 +477,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
   <script src="../../assets/dist/js/global_modal.js"></script>
   <script src="../../assets/dist/js/profile.js"></script>
 
-  <script></script>
-    <script src="../../views/js/survey.js"></script>
+  <script src="js/survey.js"></script>
 </body>
 
 </html>

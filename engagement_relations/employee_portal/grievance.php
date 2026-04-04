@@ -210,7 +210,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               <div class="form-group form-check"><input type="checkbox" id="anonymous" name="anonymous" class="form-check-input" value="1"><label class="form-check-label" for="anonymous">Submit anonymously</label></div>
               <div class="form-group"><label for="attachment">Attachment (optional)</label><input type="file" id="attachment" name="attachment" class="form-control-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt" /></div>
               <?php if (!$employeeId): ?>
-                <div class="form-group"><label for="employee_id">Employee</label><select id="employee_id" name="employee_id" class="form-control" required><option value="">Select employee</option><?php foreach ($employees as $emp): ?><option value="<?= (int)$emp['eer_employee_id'] ?>"><?= htmlspecialchars($emp['name']) ?></option><?php endforeach; ?></select></div>
+                <div class="form-group"><label for="employee_id">Employee</label><select id="employee_id" name="employee_id" class="form-control" required><option value="">Select employee</option><?php foreach ($employees as $emp): ?><option value="<?= (int)$emp['employee_id'] ?>"><?= htmlspecialchars($emp['name']) ?></option><?php endforeach; ?></select></div>
               <?php endif; ?>
               <button type="submit" class="btn btn-warning">Submit Complaint</button>
             </form>

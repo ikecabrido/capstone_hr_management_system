@@ -11,9 +11,8 @@
   .form-row { display: flex; flex-direction: column; gap: 12px; }
   .form-group, .form-control { width: 100% !important; max-width: 100% !important; }
 }
-.content-wrapper .container-fluid { max-width: 1150px; margin: 0 auto; }
-.survey-area { background: transparent; margin: 20px auto; max-width: 900px; padding: 16px; }
-.survey-area .card { border: 1px solid #dfe6ef; border-radius: 8px; margin-bottom: 16px; }
+.survey-area { background: transparent; margin: 0; max-width: none; padding: 0; }
+.survey-area .card { border: 1px solid #dfe6ef; border-radius: 8px; margin: 0; max-width: none; width: 100%; }
 .survey-area .card-header { border-bottom: 1px solid #e7eef8; background: #ffffff; }
 .card .card-title { font-weight: 700; color: #0b78d0; }
 
@@ -34,3 +33,6 @@
 .form-control:focus { border-color: #3c8dbc; box-shadow: 0 0 0 .2rem rgba(60, 141, 188, 0.2); }
 .table th, .table td { padding: .72rem; }
 .text-clamp-3 { line-height: 1.5; }
+.col-sm-6 h1, .col-sm-6 h3 { margin-left: -22%;margin-top: -4%; }
+.text-muted{ margin-left: -22%;margin-top: 0%; }
+.col-sm-6{margin-bottom: -0%;}

@@ -6,24 +6,33 @@ require_once "../../auth/auth_check.php";
 
 require_once __DIR__ . '/../autoload.php';
 
+
 use App\Controllers\GrievanceController;
-use App\Models\Employee;
 
 $theme = $_SESSION['user']['theme'] ?? 'light';
 
 $ctrl = new GrievanceController();
-$employeeModel = new Employee();
-$employees = $employeeModel->all();
-$payload = $payload ?? [];
-$payload['grievances'] = $ctrl->getGrievances();
+
+$grievances = [];
+$employees = [];
+$grievanceUpdates = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($_POST['id']) && !empty($_POST['status']) && isset($_POST['update_status'])) {
         $ctrl->updateStatus((int)$_POST['id'], $_POST['status']);
         $_SESSION['flash_success'] = 'Grievance status updated.';
     } elseif (!empty($_POST['id']) && !empty($_POST['assign_to']) && isset($_POST['assign_grievance'])) {
-        $ctrl->assignTo((int)$_POST['id'], (int)$_POST['assign_to']);
+        $ctrl->assignTo((int)$_POST['id'], $_POST['assign_to']);
         $_SESSION['flash_success'] = 'Grievance assigned.';
+    } elseif (!empty($_POST['id']) && !empty($_POST['notes']) && isset($_POST['add_notes'])) {
+        $ctrl->addInvestigationNotes((int)$_POST['id'], $_POST['notes'], $_SESSION['user']['id']);
+        $_SESSION['flash_success'] = 'Investigation notes added.';
+    } elseif (!empty($_POST['id']) && isset($_POST['mark_confidential'])) {
+        $ctrl->markConfidential((int)$_POST['id'], (bool)$_POST['confidential']);
+        $_SESSION['flash_success'] = 'Grievance marked as confidential.';
+    } elseif (!empty($_POST['id']) && !empty($_POST['resolution']) && isset($_POST['resolve_grievance'])) {
+        $ctrl->resolveGrievance((int)$_POST['id'], $_POST['resolution'], $_SESSION['user']['id']);
+        $_SESSION['flash_success'] = 'Grievance resolved.';
     } else {
         $_SESSION['flash_error'] = 'Invalid action or missing fields.';
     }
@@ -210,7 +219,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
         <div class="container-fluid">
           <div class="row mb-2">
             <div class="col-sm-6">
-              <h1 class="m-0">Grievances</h1>
+              <h1>Grievances</h1>
                 <p class="text-muted">Submit and manage employee grievances</p>
             </div>
           </div>
@@ -218,69 +227,25 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 
     <div class="row">
       <div class="col-12">
-        <?php if (!empty($flashSuccess)): ?>
-          <div class="alert alert-success"><?=htmlspecialchars($flashSuccess)?></div>
+        <!-- Flash Messages -->
+        <?php if ($flashSuccess): ?>
+          <div class="alert alert-success"> <?= htmlspecialchars($flashSuccess) ?> </div>
         <?php endif; ?>
-        <?php if (!empty($flashError)): ?>
-          <div class="alert alert-danger"><?=htmlspecialchars($flashError)?></div>
+        <?php if ($flashError): ?>
+          <div class="alert alert-danger"> <?= htmlspecialchars($flashError) ?> </div>
         <?php endif; ?>
       </div>
     </div>
 
-    <div class="row">
-      <div class="col-12">
+
         <div class="card card-warning card-outline">
           <div class="card-header"><h3 class="card-title">All Grievances</h3></div>
           <div class="card-body">
-            <?php if (empty($payload['grievances'])): ?>
-              <p class="text-muted">No grievances submitted yet.</p>
-            <?php endif; ?>
+            <div id="grievances-container">
+              <div class="alert alert-info">Loading grievances...</div>
+            </div>
+          </div>
 
-            <?php foreach ($payload['grievances'] as $g): ?>
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                          <h5 class="card-title mb-0"><?=htmlspecialchars($g['subject'])?></h5>
-                          <?php $status = strtolower($g['status']); ?>
-                          <?php $badgeClass = $status==='resolved' ? 'success' : ($status==='for investigation' ? 'warning' : ($status==='under review' ? 'info' : ($status==='closed' ? 'dark' : 'secondary'))); ?>
-                          <span class="badge badge-pill badge-<?= $badgeClass ?>"><?=htmlspecialchars($g['status'])?></span>
-                        </div>
-                        <p class="card-text mt-2 text-clamp-3"><?=nl2br(htmlspecialchars($g['description']))?></p>
-                        <small class="text-muted">Filed by <?=htmlspecialchars($g['employee_name'])?> on <?=htmlspecialchars($g['created_at'])?></small>
-                        <?php if (!empty($g['attachment_path'])): ?>
-                          <div class="mt-2"><a href="../../<?=htmlspecialchars($g['attachment_path'])?>" target="_blank" class="badge badge-primary"><i class="fas fa-download"></i> Download Attachment</a></div>
-                        <?php endif; ?>
-                        <form method="post" class="form-inline">
-                            <input type="hidden" name="id" value="<?=htmlspecialchars($g['eer_grievance_id'])?>">
-                            <div class="form-group mr-2">
-                                <select class="form-control form-control-sm" name="status">
-                                    <?php $status = strtolower($g['status']); ?>
-                                    <option value="Submitted" <?= $status==='submitted' ? 'selected' : '' ?>>Submitted</option>
-                                    <option value="Under Review" <?= $status==='under review' ? 'selected' : '' ?>>Under Review</option>
-                                    <option value="For Investigation" <?= $status==='for investigation' ? 'selected' : '' ?>>For Investigation</option>
-                                    <option value="Resolved" <?= $status==='resolved' ? 'selected' : '' ?>>Resolved</option>
-                                    <option value="Closed" <?= $status==='closed' ? 'selected' : '' ?>>Closed</option>
-                                </select>
-                            </div>
-                            <button class="btn btn-sm btn-primary" type="submit" name="update_status">Update</button>
-                        </form>
-                        <form method="post" class="form-inline mt-2">
-                            <input type="hidden" name="id" value="<?=htmlspecialchars($g['eer_grievance_id'])?>">
-                            <div class="form-group mr-2">
-                                <select class="form-control form-control-sm" name="assign_to" required>
-                                    <option value="">Assign to...</option>
-                                    <?php foreach ($employees as $emp): ?>
-                                        <option value="<?= (int)$emp['eer_employee_id'] ?>" <?= $g['assigned_to'] == $emp['eer_employee_id'] ? 'selected' : '' ?>><?= htmlspecialchars($emp['name']) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <button class="btn btn-sm btn-outline-success" type="submit" name="assign_grievance">Assign</button>
-                        </form>
-                    </div>
-                </div>
-            <?php endforeach; ?>
-      </div>
-    </div>
   <!-- CONTENT -->
 
     </div>
@@ -324,8 +289,12 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
   <script src="../../assets/dist/js/global_modal.js"></script>
   <script src="../../assets/dist/js/profile.js"></script>
 
-  <script></script>
-  <script src="views/js/grievance.js"></script>
+  <script src="../../assets/dist/js/theme.js"></script>
+  <script src="../../assets/dist/js/time.js"></script>
+  <script src="../../assets/dist/js/global_modal.js"></script>
+  <script src="../../assets/dist/js/profile.js"></script>
+
+  <script src="js/grievance.js"></script>
 </body>
 
 </html>

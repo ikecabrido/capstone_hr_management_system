@@ -21,4 +21,24 @@ class RecognitionController
     {
         return $this->recognition->sendRecognition($sender_id, $receiver_id, $message, $points);
     }
+
+    public function getLeaderboard()
+    {
+        return $this->recognition->getTopRecognizedEmployees();
+    }
+
+    public function getRecognitionHistory($employeeId)
+    {
+        return $this->recognition->getHistoryByEmployee($employeeId);
+    }
+
+    public function manageRewardsCatalog($action, $data)
+    {
+        return $this->recognition->updateRewardsCatalog($action, $data);
+    }
+
+    public function assignAchievementBadge($employeeId, $badgeId)
+    {
+        return $this->recognition->assignBadge($employeeId, $badgeId);
+    }
 }

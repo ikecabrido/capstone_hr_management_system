@@ -16,7 +16,7 @@ $database = new Database();
 $pdo = $database->connect();
 
 /* update theme */
-$stmt = $pdo->prepare("UPDATE users SET theme = ? WHERE id = ?");
+$stmt = $pdo->prepare("UPDATE users SET theme = ? WHERE user_id = ?");
 $stmt->execute([$theme, $userId]);
 
 /* update session so refresh keeps theme */

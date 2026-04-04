@@ -3,10 +3,10 @@ require_once __DIR__ . '/../autoload.php';
 require_once __DIR__ . '/utils.php';
 
 use App\Controllers\SurveyController;
-
 session_start();
-if (!isset($_SESSION['user'])) {
-    jsonResponse(['error' => 'Unauthorized'], 401);
+$action = $_GET['action'] ?? 'list';
+if (!isset($_SESSION['user']) && $action !== 'list') {
+   jsonResponse(['error' => 'Unauthorized'], 401);
 }
 
 $ctrl = new SurveyController();
@@ -38,6 +38,11 @@ try {
             }
             $id = $ctrl->submit((int)$data['survey_id'], $_SESSION['user']['id'], $data['answers']);
             jsonResponse(['id' => $id], 201);
+            break;
+        case 'results':
+            $surveyId = $data['id'] ?? null;
+            if (empty($surveyId)) jsonResponse(['error' => 'id is required'], 400);
+            jsonResponse($ctrl->getSurveyAnalytics((int)$surveyId));
             break;
         default:
             jsonResponse(['error' => 'unknown action'], 400);

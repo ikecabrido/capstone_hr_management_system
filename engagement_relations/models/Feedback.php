@@ -9,17 +9,17 @@ class Feedback extends BaseModel
 
         if ($survey_id !== null) {
             $sql = "SELECT f.*, $empNameSql, s.title as survey_title FROM eer_survey_feedback f 
-                    JOIN employees e ON f.employee_id = e.eer_employee_id 
-                    LEFT JOIN eer_surveys s ON f.survey_id = s.eer_survey_id 
-                    WHERE f.survey_id = :survey_id 
-                    ORDER BY f.created_at DESC";
+                JOIN employees e ON f.employee_id = e.employee_id 
+                LEFT JOIN eer_surveys s ON f.survey_id = s.eer_survey_id 
+                WHERE f.survey_id = :survey_id 
+                ORDER BY f.eer_survey_feedback_id DESC";
             return $this->execute($sql, ['survey_id' => $survey_id])->fetchAll();
         }
 
         $sql = "SELECT f.*, $empNameSql, s.title as survey_title FROM eer_survey_feedback f 
-                JOIN employees e ON f.employee_id = e.eer_employee_id 
-                LEFT JOIN eer_surveys s ON f.survey_id = s.eer_survey_id 
-                ORDER BY f.created_at DESC";
+            JOIN employees e ON f.employee_id = e.employee_id 
+            LEFT JOIN eer_surveys s ON f.survey_id = s.eer_survey_id 
+            ORDER BY f.eer_survey_feedback_id DESC";
         return $this->execute($sql)->fetchAll();
     }
 

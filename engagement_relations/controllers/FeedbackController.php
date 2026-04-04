@@ -21,4 +21,14 @@ class FeedbackController
     {
         return $this->feedback->createFeedback($survey_id, $employee_id, $comment, $rating);
     }
+
+    public function generateSurveyResults($surveyId)
+    {
+        return $this->feedback->getSurveyResults($surveyId);
+    }
+
+    public function performSentimentAnalysis($surveyId)
+    {
+        return $this->feedback->analyzeSentiment($surveyId);
+    }
 }

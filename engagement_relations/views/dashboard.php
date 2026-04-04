@@ -1,9 +1,12 @@
 <?php
 session_start();
-require_once "../../auth/database.php";
+
 require_once "../../auth/auth_check.php";
 
+
 require_once __DIR__ . '/../autoload.php';
+
+use App\Controllers\EmployeeController;
 
 
 use App\Controllers\SurveyController;
@@ -12,8 +15,10 @@ use App\Controllers\GrievanceController;
 use App\Controllers\CommunicationController;
 use App\Controllers\SocialController;
 use App\Controllers\FeedbackController;
+use App\Controllers\GroupController;
 
 $theme = $_SESSION['user']['theme'] ?? 'light';
+
 
 $surveyCtrl = new SurveyController();
 $recognitionCtrl = new RecognitionController();
@@ -21,15 +26,24 @@ $grievanceCtrl = new GrievanceController();
 $communicationCtrl = new CommunicationController();
 $socialCtrl = new SocialController();
 $feedbackCtrl = new FeedbackController();
+$employeeCtrl = new EmployeeController();
+$groupCtrl = new GroupController();
 
 $payload = $payload ?? [];
 $payload['surveys'] = $surveyCtrl->index();
 $payload['recognitions'] = $recognitionCtrl->getRecognitions();
 $payload['grievances'] = $grievanceCtrl->getGrievances();
+$payload['feedback'] = $feedbackCtrl->index();
 $payload['announcements'] = $communicationCtrl->getAnnouncements();
 $payload['feed'] = $socialCtrl->getPosts();
-$payload['feedback'] = $feedbackCtrl->index();
+$payload['employees'] = $employeeCtrl->index();
+$payload['groups'] = $groupCtrl->getGroups();
+$payload['notifications'] = [];
+$payload['notifications'] = $communicationCtrl->getNotifications();
 
+
+// Data will be loaded via API using JavaScript
+// var_dump($payload);
 ?>
 <!doctype html>
 <html lang="en">
@@ -172,13 +186,13 @@ $payload['feedback'] = $feedbackCtrl->index();
             </li>
             <li class="nav-item">
               <a href="grievance.php" class="nav-link">
-                <i class="nav-icon fas fa-table"></i>
+                <i class="nav-icon fas fa-exclamation-triangle"></i>
                 <p> Grievances</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="social.php" class="nav-link">
-                <i class="nav-icon fas fa-table"></i>
+                <i class="nav-icon fas fa-users"></i>
                 <p> Social</p>
               </a>
             </li>
@@ -214,77 +228,142 @@ $payload['feedback'] = $feedbackCtrl->index();
       <section class="content">
         <div class="container-fluid">
           <div class="row">
-      <div class="col-lg-3 col-6">
+      <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
         <div class="small-box bg-info">
           <div class="inner">
-            <h3><?=count($payload['surveys'] ?? [])?></h3>
+            <h3 id="count-surveys"><?= count($payload['surveys'] ?? []) ?></h3>
             <p>Surveys</p>
           </div>
           <div class="icon"><i class="fas fa-poll"></i></div>
         </div>
       </div>
-      <div class="col-lg-3 col-6">
+
+      <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
         <div class="small-box bg-success">
           <div class="inner">
-            <h3><?=count($payload['recognitions'] ?? [])?></h3>
+            <h3 id="count-recognitions"><?= count($payload['recognitions'] ?? []) ?></h3>
             <p>Recognitions</p>
           </div>
           <div class="icon"><i class="fas fa-award"></i></div>
         </div>
       </div>
-      <div class="col-lg-3 col-6">
+      <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
         <div class="small-box bg-warning">
           <div class="inner">
-            <h3><?=count($payload['grievances'] ?? [])?></h3>
+            <h3 id="count-grievances"><?= count($payload['grievances'] ?? []) ?></h3>
             <p>Grievances</p>
           </div>
           <div class="icon"><i class="fas fa-exclamation-triangle"></i></div>
         </div>
       </div>
-      <div class="col-lg-3 col-6">
+      <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
         <div class="small-box bg-primary">
           <div class="inner">
-            <h3><?=count($payload['announcements'] ?? [])?></h3>
+            <h3 id="count-announcements"><?= count($payload['announcements'] ?? []) ?></h3>
             <p>Announcements</p>
           </div>
           <div class="icon"><i class="fas fa-bullhorn"></i></div>
         </div>
       </div>
-           <div class="col-lg-3 col-6">
+           <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
         <div class="small-box bg-danger">
-          <div class="inner">            <h3><?=count($payload['feedback'] ?? [])?></h3>
+          <div class="inner">
+            <h3 id="count-feedback"><?= count($payload['feedback'] ?? []) ?></h3>
             <p>Feedback</p>
           </div>
           <div class="icon"><i class="fas fa-comments"></i></div>
         </div>
       </div>
-      <div class="col-lg-3 col-6">
+      <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
         <div class="small-box bg-secondary">
-          <div class="inner">            <h3><?=count($payload['feed'] ?? [])?></h3>
+          <div class="inner">
+            <h3 id="count-feed"><?= count($payload['feed'] ?? []) ?></h3>
             <p>Social posts</p>
           </div>
           <div class="icon"><i class="fas fa-users"></i></div>
         </div>
       </div>
+      <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
+        <div class="small-box bg-indigo">
+          <div class="inner">
+            <h3 id="count-employees"><?= count($payload['employees'] ?? []) ?></h3>
+            <p>Employees</p>
+          </div>
+          <div class="icon"><i class="fas fa-user-friends"></i></div>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
+        <div class="small-box bg-teal">
+          <div class="inner">
+            <h3 id="count-groups"><?= count($payload['groups'] ?? []) ?></h3>
+            <p>Groups</p>
+          </div>
+          <div class="icon"><i class="fas fa-object-group"></i></div>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
+        <div class="small-box bg-purple">
+          <div class="inner">
+            <h3 id="count-notifications"><?= count($payload['notifications'] ?? []) ?></h3>
+            <p>Notifications</p>
+          </div>
+          <div class="icon"><i class="fas fa-bell"></i></div>
+        </div>
+      </div>
     </div>
 
     <!-- Quick Overviews -->
+    <?php
+      $latestGrievances = array_slice($payload['grievances'] ?? [], 0, 3);
+      $latestFeed = array_slice($payload['feed'] ?? [], 0, 3);
+      $latestSurveys = array_slice($payload['surveys'] ?? [], 0, 3);
+    ?>
+
     <div class="row mt-4">
-      <div class="col-md-4">
+      <div class="col-12">
         <div class="card">
-          <div class="card-header">
-            <h5 class="card-title">Latest Grievances</h5>
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Notifications</h5>
+            <span class="badge badge-primary"><?= count($payload['notifications'] ?? []) ?> total</span>
           </div>
           <div class="card-body">
-            <?php if (!empty($payload['grievances'])): ?>
+            <?php if (!empty($payload['notifications'])): ?>
               <ul class="list-group list-group-flush">
-                <?php foreach (array_slice($payload['grievances'], 0, 3) as $g): ?>
+                <?php foreach ($payload['notifications'] as $notification): ?>
                   <li class="list-group-item">
-                    <strong><?php echo htmlspecialchars($g['subject']); ?></strong><br>
-                    <small>Status: <?php echo htmlspecialchars($g['status']); ?> | Filed by: <?php echo htmlspecialchars($g['employee_name'] ?? 'Unknown'); ?></small>
+                    <strong><?= htmlspecialchars($notification['title'] ?? $notification['message'] ?? 'Notification') ?></strong><br>
+                    <small><?= htmlspecialchars($notification['created_at'] ?? '') ?> | <?= htmlspecialchars($notification['created_by_name'] ?? $notification['created_by'] ?? '') ?></small>
                   </li>
                 <?php endforeach; ?>
               </ul>
+            <?php else: ?>
+              <p class="text-muted mb-0">No notifications available.</p>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mt-4">
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Latest Grievances</h5>
+            <span class="badge badge-primary"><?= count($payload['grievances'] ?? []) ?> total</span>
+          </div>
+          <div class="card-body">
+            <?php if (!empty($latestGrievances)): ?>
+              <ul class="list-group list-group-flush">
+                <?php foreach ($latestGrievances as $grievance): ?>
+                  <li class="list-group-item">
+                    <strong><?= htmlspecialchars($grievance['subject'] ?? 'No title') ?></strong><br>
+                    <small>Status: <?= htmlspecialchars($grievance['status'] ?? 'Unknown') ?> | Filed by: <?= htmlspecialchars($grievance['employee_name'] ?? 'Unknown') ?></small>
+                  </li>
+                <?php endforeach; ?>
+              </ul>
+              <?php if (count($payload['grievances'] ?? []) > 3): ?>
+                <div class="mt-3 text-right"><small>Showing latest 3 of <?= count($payload['grievances']) ?></small></div>
+              <?php endif; ?>
             <?php else: ?>
               <p class="text-muted">No grievances yet.</p>
             <?php endif; ?>
@@ -294,19 +373,23 @@ $payload['feedback'] = $feedbackCtrl->index();
 
       <div class="col-md-4">
         <div class="card">
-          <div class="card-header">
-            <h5 class="card-title">Latest Social Posts</h5>
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Latest Social Posts</h5>
+            <span class="badge badge-primary"><?= count($payload['feed'] ?? []) ?> total</span>
           </div>
           <div class="card-body">
-            <?php if (!empty($payload['feed'])): ?>
+            <?php if (!empty($latestFeed)): ?>
               <ul class="list-group list-group-flush">
-                <?php foreach (array_slice($payload['feed'], 0, 3) as $post): ?>
+                <?php foreach ($latestFeed as $post): ?>
                   <li class="list-group-item">
-                    <strong><?php echo htmlspecialchars($post['title'] ?? 'Post'); ?></strong><br>
-                    <small>By: <?php echo htmlspecialchars($post['owner_name'] ?? 'Unknown'); ?> | <?php echo htmlspecialchars($post['created_at']); ?></small>
+                    <?= htmlspecialchars(mb_strimwidth($post['content'] ?? 'No content', 0, 80, '...')) ?><br>
+                    <small>By: <?= htmlspecialchars($post['author_name'] ?? $post['employee_name'] ?? 'Unknown') ?></small>
                   </li>
                 <?php endforeach; ?>
               </ul>
+              <?php if (count($payload['feed'] ?? []) > 3): ?>
+                <div class="mt-3 text-right"><small>Showing latest 3 of <?= count($payload['feed']) ?></small></div>
+              <?php endif; ?>
             <?php else: ?>
               <p class="text-muted">No social posts yet.</p>
             <?php endif; ?>
@@ -316,19 +399,23 @@ $payload['feedback'] = $feedbackCtrl->index();
 
       <div class="col-md-4">
         <div class="card">
-          <div class="card-header">
-            <h5 class="card-title">Latest Surveys</h5>
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Latest Surveys</h5>
+            <span class="badge badge-primary"><?= count($payload['surveys'] ?? []) ?> total</span>
           </div>
           <div class="card-body">
-            <?php if (!empty($payload['surveys'])): ?>
+            <?php if (!empty($latestSurveys)): ?>
               <ul class="list-group list-group-flush">
-                <?php foreach (array_slice($payload['surveys'], 0, 3) as $survey): ?>
+                <?php foreach ($latestSurveys as $survey): ?>
                   <li class="list-group-item">
-                    <strong><?php echo htmlspecialchars($survey['title']); ?></strong><br>
-                    <small>Created: <?php echo htmlspecialchars($survey['date_created'] ?? $survey['created_at']); ?></small>
+                    <strong><?= htmlspecialchars($survey['title'] ?? 'No title') ?></strong><br>
+                    <small>Created by: <?= htmlspecialchars($survey['created_by_name'] ?? $survey['created_by'] ?? 'Unknown') ?></small>
                   </li>
                 <?php endforeach; ?>
               </ul>
+              <?php if (count($payload['surveys'] ?? []) > 3): ?>
+                <div class="mt-3 text-right"><small>Showing latest 3 of <?= count($payload['surveys']) ?></small></div>
+              <?php endif; ?>
             <?php else: ?>
               <p class="text-muted">No surveys yet.</p>
             <?php endif; ?>
@@ -337,6 +424,7 @@ $payload['feedback'] = $feedbackCtrl->index();
       </div>
     </div>
 
+    <!-- Latest Survey Feedback -->
     <div class="row mt-4">
       <div class="col-md-4">
         <div class="card">
@@ -346,10 +434,10 @@ $payload['feedback'] = $feedbackCtrl->index();
           <div class="card-body">
             <?php if (!empty($payload['feedback'])): ?>
               <ul class="list-group list-group-flush">
-                <?php foreach (array_slice($payload['feedback'], 0, 3) as $fb): ?>
+                <?php foreach ($payload['feedback'] as $feedback): ?>
                   <li class="list-group-item">
-                    <strong><?php echo htmlspecialchars($fb['survey_title'] ?? 'Survey'); ?></strong><br>
-                    <small>By: <?php echo htmlspecialchars($fb['employee_name'] ?? 'Unknown'); ?> | <?php echo htmlspecialchars($fb['comment']); ?></small>
+                    <?= htmlspecialchars($feedback['survey_title'] ?? 'No title available') ?><br>
+                    <small>By: <?= htmlspecialchars($feedback['employee_name'] ?? 'Unknown') ?> | <?= htmlspecialchars($feedback['comment'] ?? 'No comments available') ?></small>
                   </li>
                 <?php endforeach; ?>
               </ul>
@@ -360,6 +448,7 @@ $payload['feedback'] = $feedbackCtrl->index();
         </div>
       </div>
 
+      <!-- Latest Communications -->
       <div class="col-md-4">
         <div class="card">
           <div class="card-header">
@@ -368,10 +457,10 @@ $payload['feedback'] = $feedbackCtrl->index();
           <div class="card-body">
             <?php if (!empty($payload['announcements'])): ?>
               <ul class="list-group list-group-flush">
-                <?php foreach (array_slice($payload['announcements'], 0, 3) as $ann): ?>
+                <?php foreach ($payload['announcements'] as $announcement): ?>
                   <li class="list-group-item">
-                    <strong><?php echo htmlspecialchars($ann['title']); ?></strong><br>
-                    <small>By: <?php echo htmlspecialchars($ann['author_name'] ?? 'Unknown'); ?> | <?php echo htmlspecialchars($ann['created_at']); ?></small>
+                    <?= htmlspecialchars($announcement['title'] ?? 'No title available') ?><br>
+                    <small>By: <?= htmlspecialchars($announcement['created_by_name'] ?? $announcement['created_by'] ?? 'Unknown') ?> | <?= htmlspecialchars($announcement['created_at'] ?? 'Unknown') ?></small>
                   </li>
                 <?php endforeach; ?>
               </ul>
@@ -382,6 +471,7 @@ $payload['feedback'] = $feedbackCtrl->index();
         </div>
       </div>
 
+      <!-- Latest Recognitions -->
       <div class="col-md-4">
         <div class="card">
           <div class="card-header">
@@ -390,10 +480,10 @@ $payload['feedback'] = $feedbackCtrl->index();
           <div class="card-body">
             <?php if (!empty($payload['recognitions'])): ?>
               <ul class="list-group list-group-flush">
-                <?php foreach (array_slice($payload['recognitions'], 0, 3) as $rec): ?>
+                <?php foreach ($payload['recognitions'] as $recognition): ?>
                   <li class="list-group-item">
-                    <strong><?php echo htmlspecialchars($rec['sender_name'] ?? 'Unknown'); ?> → <?php echo htmlspecialchars($rec['receiver_name'] ?? 'Unknown'); ?></strong><br>
-                    <small><?php echo htmlspecialchars($rec['message']); ?> | Points: <?php echo htmlspecialchars($rec['points']); ?></small>
+                    <?= htmlspecialchars($recognition['message'] ?? 'No message available') ?><br>
+                    <small>From: <?= htmlspecialchars($recognition['sender_name'] ?? 'Unknown') ?> | To: <?= htmlspecialchars($recognition['receiver_name'] ?? 'Unknown') ?> | Points: <?= htmlspecialchars($recognition['points'] ?? '0') ?></small>
                   </li>
                 <?php endforeach; ?>
               </ul>
@@ -404,11 +494,14 @@ $payload['feedback'] = $feedbackCtrl->index();
         </div>
       </div>
     </div>
+    
 
           </div>
         </div>
       </section>
     </div>
+
+    
   <!-- CONTENT -->
 
     </div>
@@ -452,7 +545,7 @@ $payload['feedback'] = $feedbackCtrl->index();
   <script src="../../assets/dist/js/global_modal.js"></script>
   <script src="../../assets/dist/js/profile.js"></script>
 
-  <script></script>
+  <script src="js/dashboard.js"></script>
 </body>
 
 </html>

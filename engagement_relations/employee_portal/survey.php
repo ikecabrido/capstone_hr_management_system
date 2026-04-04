@@ -108,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               <form method="post"><input type="hidden" name="action" value="feedback" />
                 <div class="form-group"><label>Survey</label><select name="survey_id" class="form-control" required><option value="">Choose</option><?php foreach ($surveys as $survey): ?><option value="<?= (int)$survey['eer_survey_id'] ?>"><?= htmlspecialchars($survey['title']) ?></option><?php endforeach; ?></select></div>
                 <div class="form-group"><label>Comment</label><textarea name="comment" class="form-control" rows="3" required></textarea></div>
-                <?php if (!$employeeId): ?><div class="form-group"><label>Employee</label><select name="employee_id" class="form-control" required><option value="">Choose</option><?php foreach ($employees as $emp): ?><option value="<?= (int)$emp['eer_employee_id'] ?>"><?= htmlspecialchars($emp['name']) ?></option><?php endforeach; ?></select></div><?php endif; ?>
+                <?php if (!$employeeId): ?><div class="form-group"><label>Employee</label><select name="employee_id" class="form-control" required><option value="">Choose</option><?php foreach ($employees as $emp): ?><option value="<?= (int)$emp['employee_id'] ?>"><?= htmlspecialchars($emp['name']) ?></option><?php endforeach; ?></select></div><?php endif; ?>
                 <button type="submit" class="btn btn-success">Submit Feedback</button>
               </form>
             </div></div>

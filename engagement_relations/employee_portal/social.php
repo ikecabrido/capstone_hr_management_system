@@ -99,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="form-group"><label>Title</label><input type="text" name="title" class="form-control" required></div>
             <div class="form-group"><label>Content</label><textarea name="content" class="form-control" rows="3" required></textarea></div>
             <?php if (!$employeeId): ?>
-            <div class="form-group"><label>Employee</label><select name="employee_id" class="form-control" required><option value="">Choose</option><?php foreach ($employees as $emp): ?><option value="<?= (int)$emp['eer_employee_id'] ?>"><?= htmlspecialchars($emp['name']) ?></option><?php endforeach; ?></select></div>
+            <div class="form-group"><label>Employee</label><select name="employee_id" class="form-control" required><option value="">Choose</option><?php foreach ($employees as $emp): ?><option value="<?= (int)$emp['employee_id'] ?>"><?= htmlspecialchars($emp['name']) ?></option><?php endforeach; ?></select></div>
             <?php endif; ?>
             <button type="submit" class="btn btn-primary">Post</button>
           </form>

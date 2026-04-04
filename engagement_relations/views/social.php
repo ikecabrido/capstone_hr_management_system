@@ -5,34 +5,101 @@ require_once "../../auth/database.php";
 require_once "../../auth/auth_check.php";
 require_once __DIR__ . '/../autoload.php';
 
+
 use App\Controllers\SocialController;
+use App\Controllers\GrievanceController;
+use App\Controllers\RecognitionController;
+use App\Controllers\SurveyController;
+use App\Controllers\FeedbackController;
+use App\Controllers\CommunicationController;
+use App\Controllers\ReactionController;
+use App\Controllers\GroupController;
+use App\Controllers\GroupMemberController;
 
 $theme = $_SESSION['user']['theme'] ?? 'light';
+$role = strtolower(trim($_SESSION['user']['role'] ?? ''));
+$isHrAdmin = $role === 'admin' || $role === 'hr_admin' || strpos($role, 'hr') !== false || strpos($role, 'admin') !== false;
 
 $ctrl = new SocialController();
+$grievanceCtrl = new GrievanceController();
+$recognitionCtrl = new RecognitionController();
+$surveyCtrl = new SurveyController();
+$feedbackCtrl = new FeedbackController();
+$communicationCtrl = new CommunicationController();
+$reactionCtrl = new ReactionController();
+$groupCtrl = new GroupController();
+$groupMemberCtrl = new GroupMemberController();
+
 $payload = $payload ?? [];
-$payload['feed'] = $ctrl->getPosts();
+$payload['grievances'] = $grievanceCtrl->getGrievances();
+$payload['recognitions'] = $recognitionCtrl->getRecognitions();
+$payload['surveys'] = $surveyCtrl->index();
+$payload['feedback'] = $feedbackCtrl->index();
+$payload['announcements'] = $communicationCtrl->getAnnouncements();
+$payload['groups'] = $groupCtrl->getGroups();
+$payload['group_members'] = [];
+foreach ($payload['groups'] as $group) {
+    $groupId = (int)($group['eer_group_id'] ?? 0);
+    $payload['group_members'][$groupId] = $groupMemberCtrl->getMembersByGroup($groupId);
+}
+
+$db = Database::getInstance()->getConnection();
+$employeeStmt = $db->query('SELECT employee_id, full_name FROM employees ORDER BY full_name');
+$payload['employees'] = $employeeStmt->fetchAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $employeeId = (int)($_SESSION['user']['id'] ?? 0);
+    $employeeId = $_SESSION['user']['employee_id'] ?? null;
+    $userId = $_SESSION['user']['id'] ?? null;
 
-    if ($employeeId <= 0) {
-        $_SESSION['flash_error'] = 'Your account is not linked to an employee record.';
-    } else {
-        if (!empty($_POST['content'])) {
-            $ctrl->createPost($employeeId, $_POST['content']);
+    if (!empty($_POST['content'])) {
+        $authorId = $employeeId ?? $userId;
+        $userType = $employeeId ? 'employee' : 'user';
+        if ($authorId) {
+            $ctrl->createPost($authorId, $_POST['content'], $userType);
             $_SESSION['flash_success'] = 'Post published successfully.';
-        } elseif (!empty($_POST['comment']) && !empty($_POST['post_id'])) {
-            $commentText = trim($_POST['comment']);
-            $replyTo = (int)($_POST['reply_to'] ?? 0);
-            if ($replyTo > 0) {
-                $commentText = '(Reply to #' . $replyTo . ') ' . $commentText;
-            }
-            $ctrl->addComment((int)$_POST['post_id'], $employeeId, $commentText);
-            $_SESSION['flash_success'] = 'Comment added successfully.';
         } else {
-            $_SESSION['flash_error'] = 'Post or comment content is required.';
+            $_SESSION['flash_error'] = 'Unable to determine author.';
         }
+    } elseif (!empty($_POST['comment']) && !empty($_POST['post_id'])) {
+        $commentText = trim($_POST['comment']);
+        $replyTo = (int)($_POST['reply_to'] ?? 0);
+        if ($replyTo > 0) {
+          $commentText = '(Reply to #' . $replyTo . ') ' . $commentText;
+        }
+        $authorId = $employeeId ?? $userId;
+        $userType = $employeeId ? 'employee' : 'user';
+        if ($authorId) {
+            $ctrl->addComment((int)$_POST['post_id'], $authorId, $commentText, $userType);
+            $_SESSION['flash_success'] = $replyTo > 0 ? 'Reply added successfully.' : 'Comment added successfully.';
+        } else {
+            $_SESSION['flash_error'] = 'Unable to determine author.';
+        }
+    }
+
+    if (!empty($_POST['reaction_type']) && !empty($_POST['post_id'])) {
+        $reactionType = $_POST['reaction_type'];
+        $postId = (int)$_POST['post_id'];
+
+        $authorId = $employeeId ?? $userId;
+        $userType = $employeeId ? 'employee' : 'user';
+        if ($userType === 'employee') {
+            $reactionCtrl->addReaction($postId, $authorId, null, $reactionType);
+        } else {
+            $reactionCtrl->addReaction($postId, null, $authorId, $reactionType);
+        }
+        $_SESSION['flash_success'] = 'Reaction added successfully.';
+    }
+
+    if (!empty($_POST['group_name'])) {
+        $groupName = trim($_POST['group_name']);
+        $createdBy = $_SESSION['user']['employee_id'] ?? null;
+        $groupCtrl->createGroup($groupName, null, $createdBy);
+        $_SESSION['flash_success'] = 'Group created successfully.';
+    } elseif (!empty($_POST['group_id']) && !empty($_POST['employee_id'])) {
+        $groupId = (int)$_POST['group_id'];
+        $employeeIdValue = $_POST['employee_id'];
+        $groupMemberCtrl->addMember($groupId, $employeeIdValue);
+        $_SESSION['flash_success'] = 'Member added to group successfully.';
     }
 
     header('Location: ' . $_SERVER['REQUEST_URI']);
@@ -217,11 +284,12 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
         <div class="container-fluid">
           <div class="row mb-2">
             <div class="col-sm-6">
-              <h1 class="m-0">Social</h1>
+              <h3>Social</h3>
                 <p class="text-muted">Employee social feed and interactions</p>
             </div>
           </div>
         </div>
+      </div> <!-- /.content-header -->
 
     <div class="social-area">
       <div class="row">
@@ -235,123 +303,217 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
         </div>
       </div>
 
-      <div class="card card-info card-outline">
-      <div class="card-header"><h3 class="card-title">Post Something</h3></div>
-      <div class="card-body">
-        <form method="post" class="post-form">
-          <div class="form-group">
-            <textarea class="form-control" name="content" rows="3" placeholder="Share something with your team..." required></textarea>
+      <div class="row">
+      <div class="col-12">
+        <div class="card card-info card-outline">
+          <div class="card-header"><h3 class="card-title">Post Something</h3></div>
+          <div class="card-body">
+            <form method="post" class="post-form">
+              <div class="form-group">
+                <textarea class="form-control" name="content" rows="3" placeholder="Share something with your team..." required></textarea>
+              </div>
+              <button class="btn btn-primary" type="submit">Post</button>
+            </form>
           </div>
-          <button class="btn btn-primary" type="submit">Post</button>
-        </form>
+        </div>
+      </div>
+      </div>
+
+      <div class="row">
+      <div class="col-12">
+        <div class="card card-info card-outline">
+          <div class="card-header"><h3 class="card-title">File Sharing</h3></div>
+          <div class="card-body">
+            <form method="post" enctype="multipart/form-data" class="file-sharing-form">
+              <div class="form-group">
+                <label for="file-upload">Upload File</label>
+                <input id="file-upload" type="file" name="shared_file" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label for="file-description">Description (optional)</label>
+                <textarea id="file-description" name="description" class="form-control" rows="2" placeholder="Add a description for the file..."></textarea>
+              </div>
+              <button class="btn btn-success" type="submit">Share File</button>
+            </form>
+            <div id="file-share-status" class="mt-3"></div>
+          </div>
+        </div>
+      </div>
+      </div>
+
+
+
+    <div class="row">
+      <div class="col-12">
+        <div class="card card-info card-outline">
+          <div class="card-header p-0 pt-1">
+            <ul class="nav nav-tabs" id="social-tabs" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active" id="feed-tab" data-toggle="pill" href="#feed" role="tab" aria-controls="feed" aria-selected="true">Social Feed</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" id="files-tab" data-toggle="pill" href="#files" role="tab" aria-controls="files" aria-selected="false">Shared Files</a>
+              </li>
+            </ul>
+          </div>
+          <div class="card-body">
+            <div class="tab-content" id="social-tabs-content">
+              <div class="tab-pane fade show active" id="feed" role="tabpanel" aria-labelledby="feed-tab">
+                <div id="social-feed">
+                  <div class="alert alert-info">Loading posts...</div>
+                </div>
+              </div>
+              <div class="tab-pane fade" id="files" role="tabpanel" aria-labelledby="files-tab">
+                <div id="shared-files-list">
+                  <div class="alert alert-info">Loading shared files...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="card card-secondary card-outline">
-      <div class="card-header"><h3 class="card-title">Activity Feed</h3></div>
-      <div class="card-body">
-        <?php if (empty($payload['feed'])): ?>
-          <p class="text-muted">No posts yet. Be the first to post!</p>
-        <?php endif; ?>
-
-        <?php foreach ($payload['feed'] as $p): ?>
-          <article class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-              <strong><?= htmlspecialchars($p['employee_name']) ?></strong>
-              <small class="text-muted"><?= htmlspecialchars($p['created_at']) ?></small>
+    <div class="row">
+      <div class="col-12">
+        <div class="card card-primary card-outline">
+          <div class="card-header"><h3 class="card-title">Manage Groups</h3></div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-12">
+                <form method="post" class="group-create-form">
+                  <div class="form-group">
+                    <label for="group-name">Group Name</label>
+                    <input id="group-name" type="text" name="group_name" class="form-control" placeholder="Enter group name" required>
+                  </div>
+                  <button class="btn btn-primary" type="submit">Create Group</button>
+                </form>
+              </div>
             </div>
-            <div class="card-body">
-              <p><?= nl2br(htmlspecialchars($p['content'])) ?></p>
-              <div class="mb-3">
-                <?php foreach ($p['comments'] as $c): ?>
-                  <div class="pl-3 py-1 border-bottom">
-                    <small>
-                      <strong><?= htmlspecialchars($c['employee_name']) ?></strong>: <?= htmlspecialchars($c['comment']) ?>
-                      <span class="text-muted"><?= htmlspecialchars($c['created_at'] ?? '') ?></span>
-                    </small>
-                    <button type="button" class="btn btn-link btn-sm reply-trigger" data-post-id="<?= (int)$p['eer_social_post_id'] ?>" data-reply-to="<?= (int)$c['eer_comment_id'] ?>" data-reply-to-name="<?= htmlspecialchars($c['employee_name']) ?>">Reply</button>
+
+            <div class="row">
+              <div class="col-12">
+                <?php if (!empty($payload['groups'])): ?>
+                  <form id="group-member-form" class="group-member-form">
+                    <div class="form-group">
+                      <label for="group-id">Group</label>
+                      <select id="group-id" name="group_id" class="form-control" required>
+                        <option value="">Choose group</option>
+                        <?php foreach ($payload['groups'] as $group): ?>
+                          <option value="<?= htmlspecialchars($group['eer_group_id']) ?>"><?= htmlspecialchars($group['name'] . ' (ID: ' . $group['eer_group_id'] . ')') ?></option>
+                        <?php endforeach; ?>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="employee-id">Employee</label>
+                      <select id="employee-id" name="employee_id" class="form-control" required>
+                        <option value="">Choose employee</option>
+                        <?php foreach ($payload['employees'] as $employee): ?>
+                          <option value="<?= htmlspecialchars($employee['employee_id']) ?>"><?= htmlspecialchars($employee['employee_id'] . ' - ' . ($employee['full_name'] ?? 'No name')) ?></option>
+                        <?php endforeach; ?>
+                      </select>
+                    </div>
+                    <button class="btn btn-primary" type="submit">Add Member</button>
+                  </form>
+                <?php else: ?>
+                  <div class="alert alert-warning">
+                    Create a group first before adding members.
+                  </div>
+                <?php endif; ?>
+              </div>
+            </div>
+
+            <?php if (!empty($payload['employees'])): ?>
+              <div class="mt-4">
+                <h5 class="mb-2">Employee list</h5>
+                <ul class="list-group">
+                  <?php foreach ($payload['employees'] as $employee): ?>
+                    <li class="list-group-item py-1"><?= htmlspecialchars($employee['employee_id'] . ' - ' . ($employee['full_name'] ?? 'No name')) ?></li>
+                  <?php endforeach; ?>
+                </ul>
+              </div>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-12">
+        <div class="card card-success card-outline">
+          <div class="card-header"><h3 class="card-title">Existing Groups</h3></div>
+          <div class="card-body">
+            <?php if (!empty($payload['groups'])): ?>
+              <div class="list-group">
+                <?php foreach ($payload['groups'] as $group): ?>
+                  <div class="list-group-item" data-group-id="<?= htmlspecialchars($group['eer_group_id']) ?>">
+                    <h5 class="mb-1"><?= htmlspecialchars($group['name'] ?? 'Untitled Group') ?></h5>
+                    <p class="mb-1 text-muted">ID: <?= htmlspecialchars($group['eer_group_id'] ?? 'N/A') ?></p>
+                    <?php $members = $payload['group_members'][(int)($group['eer_group_id'] ?? 0)] ?? []; ?>
+                    <p class="mb-1"><strong>Members:</strong></p>
+                    <div id="group-members-<?= htmlspecialchars($group['eer_group_id']) ?>">
+                      <?php if (!empty($members)): ?>
+                        <ul class="list-group list-group-flush">
+                          <?php foreach ($members as $member): ?>
+                            <li class="list-group-item py-1">
+                            Employee ID: <?= htmlspecialchars($member['employee_id'] ?? 'N/A') ?>
+                            <?php if (!empty($member['full_name'])): ?>
+                              - <?= htmlspecialchars($member['full_name']) ?>
+                            <?php endif; ?>
+                          </li>
+                          <?php endforeach; ?>
+                        </ul>
+                      <?php else: ?>
+                        <p class="text-muted mb-0">No members yet.</p>
+                      <?php endif; ?>
+                    </div>
                   </div>
                 <?php endforeach; ?>
               </div>
-              <form method="post" class="reply-form">
-                <input type="hidden" name="post_id" value="<?= (int)$p['eer_social_post_id'] ?>" />
-                <input type="hidden" name="reply_to" class="reply_to_input" value="0" />
-                <div class="form-group">
-                  <input type="text" name="comment" class="form-control" placeholder="Reply to this post..." required />
-                </div>
-                <button type="submit" class="btn btn-secondary btn-sm">Reply</button>
-              </form>
-            </div>
-          </article>
-        <?php endforeach; ?>
+            <?php else: ?>
+              <p class="text-muted">No groups created yet.</p>
+            <?php endif; ?>
+          </div>
+        </div>
       </div>
     </div>
 
-    <script>
-      document.querySelectorAll('.reply-trigger').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-          var postId = btn.getAttribute('data-post-id');
-          var replyTo = btn.getAttribute('data-reply-to');
-          var replyName = btn.getAttribute('data-reply-to-name');
-          var postCard = btn.closest('article');
-          var replyInput = postCard.querySelector('.reply_to_input');
-          if (replyInput) {
-            replyInput.value = replyTo;
-          }
-          var textInput = postCard.querySelector('input[name="comment"]');
-          if (textInput) {
-            textInput.value = '@' + replyName + ' ';
-            textInput.focus();
-          }
-        });
-      });
-    </script>
-  </div>
-  <!-- CONTENT -->
 
+
+    <!-- Sentiment Analysis -->
+    <div class="card card-info card-outline">
+      <div class="card-header"><h3 class="card-title">Sentiment Analysis</h3></div>
+      <div class="card-body" id="sentiment-analysis">
+        <p class="text-muted">Sentiment analysis for posts and comments will be displayed here.</p>
+      </div>
     </div>
-    <?php include "../../layout/global_modal.php"; ?>
-    <!-- Control Sidebar -->
-    <aside class="control-sidebar control-sidebar-dark">
-      <!-- Control sidebar content goes here -->
-    </aside>
-    <!-- /.control-sidebar -->
 
-    <!-- Main Footer -->
+    <!-- Engagement Analytics -->
+    <div class="card card-secondary card-outline">
+      <div class="card-header"><h3 class="card-title">Engagement Analytics</h3></div>
+      <div class="card-body" id="engagement-analytics">
+        <p class="text-muted">Analytics for user engagement, reactions, and activity trends will be displayed here.</p>
+      </div>
+    </div>
 
-  </div>
-  <!-- ./wrapper -->
+    <!-- Social Collaboration Tools -->
+
+    </div> <!-- /.social-area -->
+  </div> <!-- /.content-wrapper -->
+  </div> <!-- /.wrapper -->
 
   <!-- REQUIRED SCRIPTS -->
-  <!-- jQuery -->
   <script src="../../assets/plugins/jquery/jquery.min.js"></script>
-  <!-- Bootstrap -->
   <script src="../../assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <!-- overlayScrollbars -->
   <script src="../../assets/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
-  <!-- AdminLTE App -->
   <script src="../../assets/dist/js/adminlte.js"></script>
 
-  <!-- PAGE PLUGINS -->
-  <!-- jQuery Mapael -->
-  <script src="../../assets/plugins/jquery-mousewheel/jquery.mousewheel.js"></script>
-  <script src="../../assets/plugins/raphael/raphael.min.js"></script>
-  <script src="../../assets/plugins/jquery-mapael/jquery.mapael.min.js"></script>
-  <script src="../../assets/plugins/jquery-mapael/maps/usa_states.min.js"></script>
-  <!-- ChartJS -->
-  <script src="../../assets/plugins/chart.js/Chart.min.js"></script>
-
-  <!-- AdminLTE for demo purposes -->
-  <!-- <script src="assets/dist/js/demo.js"></script> -->
-  <!-- AdminLTE dashboard demo (This is only for demo purposes) -->
-  <!-- <script src="assets/dist/js/pages/dashboard2.js"></script> -->
   <script src="../../assets/dist/js/theme.js"></script>
   <script src="../../assets/dist/js/time.js"></script>
   <script src="../../assets/dist/js/global_modal.js"></script>
   <script src="../../assets/dist/js/profile.js"></script>
 
-  <script></script>
-    <script src="views/js/social.js"></script>
+  <script src="js/social.js"></script>
 </body>
 
 </html>

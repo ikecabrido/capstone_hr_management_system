@@ -120,7 +120,7 @@ function navItem($page, $icon, $label, $currentPage) {
                     <div class="card-footer bg-light">
                       <small class="text-muted">
                         <i class="fas fa-user"></i> 
-                        <?= htmlspecialchars($announcement['author_name'] ?? 'Admin') ?>
+                        <?= htmlspecialchars($announcement['created_by_name'] ?? 'Admin') ?>
                       </small>
                     </div>
                   </div>
@@ -148,7 +148,7 @@ function navItem($page, $icon, $label, $currentPage) {
                   <?php foreach ($messageThreads as $t): ?>
                     <div class="timeline-item">
                       <span class="time"><i class="far fa-clock"></i> <?= htmlspecialchars($t['timestamp'] ?? '') ?></span>
-                      <h5 class="timeline-header"><?= htmlspecialchars($t['sender_name'] ?? 'N/A') ?> → <?= htmlspecialchars($t['receiver_name'] ?? 'N/A') ?></h5>
+                      <h5 class="timeline-header"><?= htmlspecialchars($t['sender_name'] ?? $t['sender_id'] ?? 'Unknown') ?> → <?= htmlspecialchars($t['receiver_name'] ?? $t['receiver_id'] ?? 'Unknown') ?></h5>
                       <div class="timeline-body text-clamp-3"><?= nl2br(htmlspecialchars($t['message'])) ?></div>
                     </div>
                   <?php endforeach; ?>

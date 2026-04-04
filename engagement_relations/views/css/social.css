@@ -1,7 +1,5 @@
-.content-wrapper .container-fluid { max-width: 1150px; margin: 0 auto; }
-
-.social-area { background: transparent; margin: 20px auto; max-width: 900px; padding: 16px; }
-.social-area .card { border: 1px solid #dfe6ef; border-radius: 8px; margin-bottom: 16px; }
+.social-area { background: transparent; margin: 0 5px; max-width: none; padding: 0; }
+.social-area .card { border: 1px solid #dfe6ef; border-radius: 8px; margin: 0; max-width: none; width: 100%; }
 .social-area .card-header { border-bottom: 1px solid #e7eef8; background: #ffffff; }
 .card .card-title { font-weight: 700; color: #0b78d0; }
 
@@ -44,3 +42,6 @@
 .form-control:focus { border-color: #3c8dbc; box-shadow: 0 0 0 .2rem rgba(60, 141, 188, 0.2); }
 .table th, .table td { padding: .72rem; }
 .text-clamp-3 { line-height: 1.5; }
+.col-sm-6 h1, .col-sm-6 h3 { display:flex ;margin-left: -22%;margin-top: -4%; }
+.text-muted{ margin-left: -22%;margin-top: 0%; }
+.col-sm-6{display:flex ; margin-bottom: -0%;}

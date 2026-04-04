@@ -8,10 +8,11 @@
 .form-control { width: 100%; max-width: 560px; border: 1px solid #d0d8e6; border-radius: 6px; padding: 8px 10px; }
 .form-control:focus { border-color: #4987dc; box-shadow: 0 0 0 0.15rem rgba(73, 135, 220, 0.25); }
 
-.content-wrapper .container-fluid { max-width: 1150px; margin: 0 auto; }
-.social-area, .survey-area, .recognition-area, .grievance-area { width: 100%; margin: 14px auto; max-width: 950px; }
-.row { background: transparent; margin: 20px auto; max-width: 900px; padding: 16px; }
-.row .card { border: 1px solid #dfe6ef; border-radius: 8px; margin-bottom: 16px; }
+.social-area, .survey-area, .recognition-area, .grievance-area { width: 100%; margin: 0; max-width: none; padding: 0; }
+.content-wrapper { background: #f4f7fb; }
+.content-wrapper .container-fluid { max-width: 1200px; margin: 0 auto; padding: 20px; }
+.row { background: transparent; margin: 0; max-width: none; padding: 0; }
+.row .card { border: 1px solid #dfe6ef; border-radius: 8px; margin: 0; max-width: none; width: 100%; }
 .row .card-header { border-bottom: 1px solid #e7eef8; background: #ffffff; }
 .card .card-title { font-weight: 700; color: #0b78d0; }
 .text-clamp-3 {
@@ -27,16 +28,16 @@
   .form-row { display: flex; flex-direction: column; gap: 12px; }
   .form-group, .form-control { width: 100% !important; max-width: 100% !important; }
 }
-.content-wrapper .container-fluid { max-width: 1150px; margin: 0 auto; }
-.row { background: transparent; margin: 14px auto; max-width: 900px; }
-.row .card { max-width: 900px; margin: 0 auto 16px; }
-.row { background: transparent; margin: 20px auto; max-width: 900px; padding: 16px; }
+
+.row { background: transparent; margin: 0; max-width: none; padding: 16px; }
+.row .card { max-width: none; margin: 0 0 16px; }
+.row { background: transparent; margin: 0; max-width: none; padding: 16px; }
 .row .card { border: 1px solid #dfe6ef; border-radius: 8px; margin-bottom: 16px; }
 .row .card-header { border-bottom: 1px solid #e7eef8; background: #ffffff; }
 .card .card-title { font-weight: 700; color: #0b78d0; }
 
 /* ---------- Engagement global theme ---------- */
-.content-wrapper { background: #f4f7fb; }
+
 .content-wrapper .container-fluid { max-width: 1200px; margin: 0 auto; padding: 20px; }
 .communication-area, .social-area, .survey-area, .recognition-area, .grievance-area { padding: 0; }
 .card { border: 1px solid #dce4ef !important; border-radius: 12px !important; box-shadow: 0 10px 32px rgba(20, 41, 78, 0.08); transition: transform 0.18s ease, box-shadow 0.18s ease; background: #ffffff; }
@@ -52,3 +53,6 @@
 .form-control:focus { border-color: #3c8dbc; box-shadow: 0 0 0 .2rem rgba(60, 141, 188, 0.2); }
 .table th, .table td { padding: .72rem; }
 .text-clamp-3 { line-height: 1.5; }
+.col-sm-6 h1, .col-sm-6 h3 { margin-left: -28%;margin-top: -5%; }
+.text-muted{ margin-left: -28%;margin-top: 0%; }
+.col-sm-6{margin-bottom: 0%;}

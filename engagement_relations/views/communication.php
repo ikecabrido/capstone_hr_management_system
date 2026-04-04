@@ -14,32 +14,60 @@ $communicationCtrl = new CommunicationController();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $formType = $_POST['form_type'] ?? '';
-    $currentEmployeeId = (int)($_SESSION['user']['id'] ?? 0);
+    $currentEmployeeId = $_SESSION['user']['employee_id'] ?? null;
+    $currentUserId = $_SESSION['user']['id'] ?? null;
 
-    if (!$currentEmployeeId) {
-        $_SESSION['flash_error'] = 'Your account is not linked to an employee record; action is blocked.';
+    if (!in_array($formType, ['announcement', 'message'], true) && empty($currentEmployeeId)) {
+      $_SESSION['flash_error'] = 'Your account is not linked to an employee record; action is blocked.';
     } else {
-        if ($formType === 'announcement') {
-            $title = trim($_POST['title'] ?? '');
-            $content = trim($_POST['content'] ?? '');
+      if ($formType === 'announcement') {
+        $title = trim($_POST['title'] ?? '');
+        $content = trim($_POST['content'] ?? '');
 
-            if ($title === '' || $content === '') {
-                $_SESSION['flash_error'] = 'Title and content are required for announcements.';
-            } else {
-                $communicationCtrl->postAnnouncement($title, $content, $currentEmployeeId);
-                $_SESSION['flash_success'] = 'Announcement posted successfully.';
-            }
-        } elseif ($formType === 'message') {
-            $receiverId = trim($_POST['receiver_id'] ?? '');
-            $message = trim($_POST['message'] ?? '');
-
-            if ($receiverId === '' || $message === '') {
-                $_SESSION['flash_error'] = 'Receiver ID and message text are required.';
-            } else {
-                $communicationCtrl->sendMessage($currentEmployeeId, (int)$receiverId, $message);
-                $_SESSION['flash_success'] = 'Message sent successfully.';
-            }
+        if ($title === '' || $content === '') {
+          $_SESSION['flash_error'] = 'Title and content are required for announcements.';
+        } else {
+          $createdBy = $currentEmployeeId ?? $currentUserId;
+          $communicationCtrl->postAnnouncement($title, $content, $createdBy);
+          $_SESSION['flash_success'] = 'Announcement posted successfully.';
         }
+      } elseif ($formType === 'message') {
+        $receiverId = trim($_POST['receiver_id'] ?? '');
+        $message = trim($_POST['message'] ?? '');
+
+        if ($receiverId === '' || $message === '') {
+          $_SESSION['flash_error'] = 'Receiver ID and message text are required.';
+        } else {
+          $senderId = $currentEmployeeId ?? $currentUserId;
+          if (empty($senderId)) {
+            $_SESSION['flash_error'] = 'Unable to determine sender ID.';
+          } else {
+            $communicationCtrl->sendMessage($senderId, $receiverId, $message);
+            $_SESSION['flash_success'] = 'Message sent successfully.';
+          }
+        }
+      } elseif ($formType === 'event') {
+        $title = trim($_POST['title'] ?? '');
+        $date = trim($_POST['date'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+
+        if ($title === '' || $date === '' || $description === '') {
+          $_SESSION['flash_error'] = 'Title, date, and description are required for events.';
+        } else {
+          $communicationCtrl->postEvent($title, $date, $description, $currentEmployeeId);
+          $_SESSION['flash_success'] = 'Event posted successfully.';
+        }
+      } elseif ($formType === 'policy_post') {
+        $title = trim($_POST['title'] ?? '');
+        $content = trim($_POST['content'] ?? '');
+
+        if ($title === '' || $content === '') {
+          $_SESSION['flash_error'] = 'Title and content are required for policy updates.';
+        } else {
+          $communicationCtrl->postPolicy($title, $content, $currentEmployeeId);
+          $_SESSION['flash_success'] = 'Policy posted successfully.';
+        }
+      }
     }
 
     header('Location: communication.php');
@@ -50,11 +78,13 @@ $flashSuccess = $_SESSION['flash_success'] ?? null;
 $flashError = $_SESSION['flash_error'] ?? null;
 unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 
+
 $payload = $payload ?? [];
 $userEmployeeId = (int)($_SESSION['user']['id'] ?? 0);
-// Load data from database
-$payload['announcements'] = $communicationCtrl->getAnnouncements();
-$payload['threads'] = $communicationCtrl->messageThreads(0);
+// Data will be loaded via API using JavaScript
+$payload['announcements'] = [];
+$payload['threads'] = [];
+
 
 ?>
 <!doctype html>
@@ -231,7 +261,7 @@ $payload['threads'] = $communicationCtrl->messageThreads(0);
         <div class="container-fluid">
           <div class="row mb-2">
             <div class="col-sm-6">
-              <h1 class="m-0">Communication</h1>
+              <h1>Communication</h1>
               <p class="text-muted">Announcements and Messaging</p>
             </div>
             <!-- /.col -->
@@ -270,28 +300,15 @@ $payload['threads'] = $communicationCtrl->messageThreads(0);
         </div>
       </div>
 
+      
       <div class="card card-success card-outline">
         <div class="card-header">
           <h3 class="card-title">Announcements</h3>
         </div>
         <div class="card-body">
-          <?php if (!empty($payload['announcements'])): ?>
-            <div class="list-group" id="announcementsList">
-              <?php foreach ($payload['announcements'] as $a): ?>
-                <a href="#" class="list-group-item list-group-item-action flex-column align-items-start">
-                  <div class="d-flex w-100 justify-content-between">
-                    <h5 class="mb-1"><?=htmlspecialchars($a['title'])?></h5>
-                    <small><?=htmlspecialchars($a['author_name'] ?? 'Unknown')?></small>
-                  </div>
-                  <p class="mb-1 text-clamp-3"><?=nl2br(htmlspecialchars($a['content']))?></p>
-                </a>
-              <?php endforeach; ?>
-            </div>
-          <?php else: ?>
-            <div class="list-group" id="announcementsList">
-              <div class="list-group-item text-muted">Loading announcements...</div>
-            </div>
-          <?php endif; ?>
+          <div class="list-group" id="announcementsList">
+            <div class="list-group-item text-muted">Loading announcements...</div>
+          </div>
         </div>
       </div>
 
@@ -304,8 +321,10 @@ $payload['threads'] = $communicationCtrl->messageThreads(0);
             <input type="hidden" name="form_type" value="message" />
             <div class="form-row">
               <div class="form-group col-md-6">
-                <label for="receiver-id">Receiver ID</label>
-                <input id="receiver-id" class="form-control" name="receiver_id" placeholder="Enter receiver user ID" required>
+                <label for="receiver-id">Receiver</label>
+                <select id="receiver-id" class="form-control" name="receiver_id" required>
+                  <option value="">Select employee...</option>
+                </select>
               </div>
               <div class="form-group col-md-6">
                 <label for="message-text">Message</label>
@@ -322,23 +341,15 @@ $payload['threads'] = $communicationCtrl->messageThreads(0);
           <h3 class="card-title">Message Threads</h3>
         </div>
         <div class="card-body">
-          <?php if (!empty($payload['threads'])): ?>
-            <div class="timeline" id="messagesList">
-              <?php foreach ($payload['threads'] as $t): ?>
-                <div class="timeline-item">
-                  <span class="time"><i class="far fa-clock"></i> <?=htmlspecialchars($t['timestamp'] ?? '')?></span>
-                  <h5 class="timeline-header"><?=htmlspecialchars($t['sender_name'] ?? 'N/A')?> → <?=htmlspecialchars($t['receiver_name'] ?? 'N/A')?></h5>
-                  <div class="timeline-body text-clamp-3"><?=nl2br(htmlspecialchars($t['message']))?></div>
-                </div>
-              <?php endforeach; ?>
-            </div>
-          <?php else: ?>
+          <div class="timeline" id="messagesList">
             <div class="alert alert-info">
-              <i class="fas fa-info-circle"></i> No messages yet.
+              <i class="fas fa-info-circle"></i> Loading messages...
             </div>
-          <?php endif; ?>
+          </div>
         </div>
       </div>
+
+
     </div>
 
       </div>
@@ -386,7 +397,6 @@ $payload['threads'] = $communicationCtrl->messageThreads(0);
   <script src="../../assets/dist/js/global_modal.js"></script>
   <script src="../../assets/dist/js/profile.js"></script>
 
-  <script></script>
   <script src="js/communication.js"></script>
 </body>
 

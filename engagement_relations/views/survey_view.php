@@ -39,7 +39,7 @@ $isAdmin = (strtolower($_SESSION['user']['role'] ?? '') === 'admin');
 if ($surveyId > 0 && $requestAction === 'view') {
     $payload['survey'] = $surveyCtrl->show($surveyId);
     if ($payload['survey']) {
-        $surveyResponses = $surveyCtrl->getResponses($surveyId);
+        $surveyResponses = $surveyCtrl->getSurveyResults($surveyId);
     }
 }
 
@@ -65,7 +65,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                 <div class="container-fluid">
                     <div class="row mb-2">
                         <div class="col-sm-12">
-                            <h1>Survey Answer</h1>
+                            <h3>Survey Response</h3>
                             <p>Please fill out the survey questions below and submit your responses. Your feedback is valuable to us!</p>
                         </div>
                     </div>
@@ -98,30 +98,22 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
             <div class="mt-4">
                 <h4>Survey Responses (<?=count($surveyResponses)?>)</h4>
                 <?php foreach ($surveyResponses as $response): ?>
-                    <?php $answers = json_decode($response['answers'], true); ?>
-                    <div class="survey-response-card">
-                        <div class="card-title">
-                            Respondent: <?=htmlspecialchars($response['employee_id'])?>
-                            <span class="text-muted" style="font-size:0.85rem;">&#8226;</span>
-                            <small><?=htmlspecialchars($response['submitted_at'])?></small>
-                        </div>
-                        <div class="card-body">
-                            <?php if (empty($answers)): ?>
-                                <p class="text-muted">No answers recorded.</p>
-                            <?php else: ?>
-                                <?php foreach ($payload['survey']['questions'] as $q): ?>
-                                    <div class="response-item">
-                                        <strong><?=htmlspecialchars($q['question_text'])?></strong>
-                                        <small><?=nl2br(htmlspecialchars($answers[$q['eer_survey_question_id']] ?? '(not answered)'))?></small>
-                                    </div>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </div>
+                    <div class="response-item">
+                        <p><strong>Response ID:</strong> <?= isset($response['id']) ? htmlspecialchars($response['id']) : 'N/A' ?></p>
+                        <p><strong>Submitted By:</strong> <?= htmlspecialchars($response['employee_id']) ?></p>
+                        <p><strong>Answers:</strong></p>
+                        <ul>
+                            <?php foreach (json_decode($response['answers'], true) as $question => $answer): ?>
+                                <li><strong>Question <?= htmlspecialchars($question) ?>:</strong> <?= htmlspecialchars($answer) ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                        <hr>
                     </div>
                 <?php endforeach; ?>
             </div>
+        <?php else: ?>
+            <div class="alert alert-warning">No responses found for this survey.</div>
         <?php endif; ?>
-
     <?php endif; ?>
     </div>
     </div>

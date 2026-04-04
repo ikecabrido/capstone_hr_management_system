@@ -2,10 +2,10 @@
     background: linear-gradient(120deg, #ffffff 0%, #f8fbff 100%);
     border-radius: 0.85rem;
     border: 1px solid #d0d9e6;
-    padding: 1.4rem;
+    padding: 0;
     box-shadow: 0 14px 28px rgba(26, 67, 116, 0.12);
-    margin: 1.4rem auto;
-    max-width: 900px;
+    margin: 0;
+    max-width: none;
 }
 
 .survey-view-module .card-header {

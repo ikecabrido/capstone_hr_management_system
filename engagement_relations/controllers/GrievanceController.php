@@ -58,4 +58,19 @@ class GrievanceController
     {
         return $this->update->getByGrievance($id);
     }
+
+    public function getGrievanceReport($startDate, $endDate)
+    {
+        return $this->grievance->generateReport($startDate, $endDate);
+    }
+
+    public function addInvestigationNotes($id, $notes, $hrPersonnelId)
+    {
+        return $this->grievance->addInvestigationNotes($id, $notes, $hrPersonnelId);
+    }
+
+    public function markConfidential($id, $isConfidential)
+    {
+        return $this->grievance->updateConfidentialFlag($id, $isConfidential);
+    }
 }

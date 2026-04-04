@@ -24,7 +24,7 @@ class User
     }
     public function findById($id)
     {
-        $sql = "SELECT * FROM users WHERE id = :id LIMIT 1";
+        $sql = "SELECT * FROM users WHERE user_id = :id LIMIT 1";
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute(['id' => $id]);
@@ -33,7 +33,7 @@ class User
     }
     public function updateProfile($id, $full_name)
     {
-        $sql = "UPDATE users SET full_name = :full_name WHERE id = :id";
+        $sql = "UPDATE users SET full_name = :full_name WHERE user_id = :id";
 
         $stmt = $this->db->prepare($sql);
 
@@ -44,7 +44,7 @@ class User
     }
     public function updatePassword($id, $password)
     {
-        $sql = "UPDATE users SET password = :password WHERE id = :id";
+        $sql = "UPDATE users SET password = :password WHERE user_id = :id";
 
         $stmt = $this->db->prepare($sql);
 

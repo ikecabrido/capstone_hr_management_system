@@ -14,7 +14,7 @@ class GrievanceUpdate extends BaseModel
     {
         $nameSql = $this->getEmployeeNameSql('e', 'updated_by_name');
         $sql = "SELECT gu.*, $nameSql FROM eer_grievance_updates gu 
-                LEFT JOIN employees e ON gu.updated_by = e.eer_employee_id 
+                LEFT JOIN employees e ON gu.updated_by = e.employee_id 
                 WHERE gu.grievance_id = :grievance_id 
                 ORDER BY gu.updated_at ASC";
         return $this->execute($sql, ['grievance_id' => $grievance_id])->fetchAll();

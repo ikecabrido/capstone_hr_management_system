@@ -6,24 +6,56 @@ require_once "../../auth/auth_check.php";
 
 require_once __DIR__ . '/../autoload.php';
 
+
 use App\Controllers\RecognitionController;
+use App\Controllers\GrievanceController;
+use App\Controllers\SocialController;
+use App\Controllers\SurveyController;
+use App\Controllers\FeedbackController;
+use App\Controllers\CommunicationController;
 
 $theme = $_SESSION['user']['theme'] ?? 'light';
 
 $ctrl = new RecognitionController();
+$grievanceCtrl = new GrievanceController();
+$socialCtrl = new SocialController();
+$surveyCtrl = new SurveyController();
+$feedbackCtrl = new FeedbackController();
+$communicationCtrl = new CommunicationController();
+
+
 $payload = $payload ?? [];
-$payload['recognitions'] = $ctrl->getRecognitions();
+// $payload['recognitions'] = $ctrl->getRecognitions();
+
+// Only include Employee Recognition & Rewards tables
+use App\Controllers\RewardController;
+use App\Controllers\RewardRedemptionController;
+use App\Controllers\BadgeController;
+use App\Controllers\EmployeeBadgeController;
+use App\Controllers\AwardHistoryController;
+
+$rewardCtrl = new RewardController();
+$rewardRedemptionCtrl = new RewardRedemptionController();
+$badgeCtrl = new BadgeController();
+$employeeBadgeCtrl = new EmployeeBadgeController();
+$awardHistoryCtrl = new AwardHistoryController();
+
+$payload['rewards'] = $rewardCtrl->index();
+$payload['reward_redemptions'] = $rewardRedemptionCtrl->index();
+$payload['badges'] = $badgeCtrl->index();
+$payload['employee_badges'] = $employeeBadgeCtrl->index();
+$payload['award_history'] = $awardHistoryCtrl->index();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['receiver_id']) && !empty($_POST['message'])) {
-    $employeeId = (int)($_SESSION['user']['id'] ?? 0);
-    if ($employeeId > 0) {
-        $ctrl->sendRecognition($employeeId, (int)$_POST['receiver_id'], $_POST['message'], (int)($_POST['points'] ?? 10));
-        $_SESSION['flash_success'] = 'Recognition sent successfully.';
-    } else {
-        $_SESSION['flash_error'] = 'Your account is not linked to an employee record.';
-    }
-    header('Location: ' . $_SERVER['REQUEST_URI']);
-    exit;
+  $currentEmployeeId = $_SESSION['user']['employee_id'] ?? null;
+  $currentUserId = $_SESSION['user']['id'] ?? null;
+  $senderId = $currentEmployeeId ?? $currentUserId;
+  if ($senderId) {
+    $ctrl->sendRecognition($senderId, $_POST['receiver_id'], $_POST['message'], (int)($_POST['points'] ?? 10));
+    $_SESSION['flash_success'] = 'Recognition sent successfully.';
+  }
+  header('Location: ' . $_SERVER['REQUEST_URI']);
+  exit;
 }
 
 $flashSuccess = $_SESSION['flash_success'] ?? null;
@@ -203,71 +235,112 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
         <div class="container-fluid">
           <div class="row mb-2">
             <div class="col-sm-6">
-              <h1 class="m-0">Recognition</h1>
+              <h3>Recognition</h3>
                 <p class="text-muted">Employee recognition and rewards</p>  
             </div>
           </div>
         </div>
 
-    <div class="row">
-      <div class="col-12">
-        <?php if (!empty($flashSuccess)): ?>
-          <div class="alert alert-success"><?=htmlspecialchars($flashSuccess)?></div>
+        <div class="card card-success card-outline">
+        <?php if ($flashSuccess): ?>
+          <div class="alert alert-success"> <?= htmlspecialchars($flashSuccess) ?> </div>
         <?php endif; ?>
-        <?php if (!empty($flashError)): ?>
-          <div class="alert alert-danger"><?=htmlspecialchars($flashError)?></div>
+        <?php if ($flashError): ?>
+          <div class="alert alert-danger"> <?= htmlspecialchars($flashError) ?> </div>
         <?php endif; ?>
-      </div>
-    </div>
 
-    <div class="row">
-      <div class="col-12">
-        <div class="card card-primary card-outline">
-          <div class="card-header"><h3 class="card-title">Send Recognition</h3></div>
-          <div class="card-body">
-            <form method="post">
+        <!-- Recognition Form -->
+        <section class="content">
+          <div class="container-fluid">
+            <form method="POST" action="">
               <div class="form-group">
-                <label for="rec-receiver">Receiver ID</label>
-                <input id="rec-receiver" class="form-control" type="number" name="receiver_id" required>
+                <label for="receiver_id">Select Employee</label>
+                <select name="receiver_id" id="receiver_id" class="form-control">
+                  <?php foreach ($payload['employee_badges'] as $employee): ?>
+                    <option value="<?= $employee['employee_id'] ?>">
+                      <?= htmlspecialchars($employee['employee_name']) ?>
+                    </option>
+                  <?php endforeach; ?>
+                </select>
               </div>
               <div class="form-group">
-                <label for="rec-message">Message</label>
-                <textarea id="rec-message" class="form-control" name="message" rows="3" required></textarea>
+                <label for="message">Message</label>
+                <textarea name="message" id="message" class="form-control"></textarea>
               </div>
               <div class="form-group">
-                <label for="rec-points">Points</label>
-                <input id="rec-points" class="form-control" type="number" name="points" value="10" required>
+                <label for="points">Points</label>
+                <input type="number" name="points" id="points" class="form-control" value="10" />
               </div>
-              <button class="btn btn-primary" type="submit">Send Recognition</button>
+              <button type="submit" class="btn btn-primary">Send Recognition</button>
             </form>
           </div>
-        </div>
+        </section>
       </div>
-    </div>
 
-    <div class="row">
-      <div class="col-12">
+
         <div class="card card-success card-outline">
           <div class="card-header"><h3 class="card-title">Recognition Feed</h3></div>
-          <div class="card-body">
-            <?php if (!empty($payload['recognitions'])): ?>
-            <ul class="list-group">
-              <?php foreach ($payload['recognitions'] as $r): ?>
-                <li class="list-group-item">
-                  <div><strong><?=htmlspecialchars($r['sender_name'])?></strong> ➜ <strong><?=htmlspecialchars($r['receiver_name'])?></strong></div>
-                  <p class="mb-1 text-clamp-3"><?=htmlspecialchars($r['message'])?> (<?=htmlspecialchars($r['points'])?> pts)</p>
-                  <small class="text-muted"><?=htmlspecialchars($r['created_at'])?></small>
-                </li>
-              <?php endforeach; ?>
-            </ul>
-            <?php else: ?>
-              <p class="text-muted">No recognition feed yet.</p>
-            <?php endif; ?>
+          <div class="card-body" id="recognition-feed">
+            <!-- Recognition feed will be loaded here by JS -->
           </div>
         </div>
-      </div>
+
+      <!-- Add containers for each feed below the recognition feed -->
+
+        <div class="card card-info card-outline">
+          <div class="card-header"><h3 class="card-title">Badges</h3></div>
+          <div class="card-body" id="badges-feed"></div>
+        </div>
+
+
+        <div class="card card-warning card-outline">
+          <div class="card-header"><h3 class="card-title">Award History</h3></div>
+          <div class="card-body" id="award-history-feed"></div>
+        </div>
+
+
+        <div class="card card-primary card-outline">
+          <div class="card-header"><h3 class="card-title">Rewards</h3></div>
+          <div class="card-body" id="rewards-feed"></div>
+        </div>
+
+
+        <div class="card card-success card-outline">
+          <div class="card-header"><h3 class="card-title">Reward Redemptions</h3></div>
+          <div class="card-body" id="reward-redemptions-feed"></div>
+        </div>
+
+
+        <div class="card card-secondary card-outline">
+          <div class="card-header"><h3 class="card-title">Employee Badges</h3></div>
+          <div class="card-body" id="employee-badges-feed"></div>
+        </div>
+
+
+    <!-- Leaderboard Section -->
+  <div class="card card-info card-outline">
+    <div class="card-header"><h3 class="card-title">Leaderboard</h3></div>
+    <div class="card-body">
+      <ul class="list-group">
+        <li class="list-group-item">Employee A - 120 Points</li>
+        <li class="list-group-item">Employee B - 100 Points</li>
+        <li class="list-group-item">Employee C - 90 Points</li>
+      </ul>
     </div>
-      </div>
+  </div>
+
+  <!-- Rewards Catalog Section -->
+  <div class="card card-success card-outline">
+    <div class="card-header"><h3 class="card-title">Rewards Catalog</h3></div>
+    <div class="card-body">
+      <ul class="list-group">
+        <li class="list-group-item">Gift Card - 50 Points</li>
+        <li class="list-group-item">Extra Leave - 100 Points</li>
+        <li class="list-group-item">Company Swag - 30 Points</li>
+      </ul>
+    </div>
+  </div>
+
     </div>
   <!-- CONTENT -->
 
@@ -312,8 +385,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
   <script src="../../assets/dist/js/global_modal.js"></script>
   <script src="../assets/dist/js/profile.js"></script>
 
-  <script></script>
-    <script src="views/js/recognition.js"></script>
+  <script src="js/recognition.js"></script>
 </body>
 
 </html>
