@@ -123,6 +123,11 @@ switch ($url) {
         (new AnnouncementController)->index();
         break;
 
+    //ThreeSixtyDegreeFeedback
+    case 'three-sixty-degree-feedback-index':
+        (new ThreeSixtyDegreeFeedbackController)->index();
+        break;
+
     default:
         $title = "Page Not Found";
         $content = __DIR__ . 'app/views/error-content.php';

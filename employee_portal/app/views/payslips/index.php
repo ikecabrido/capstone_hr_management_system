@@ -54,7 +54,6 @@ $content = $content ?? __DIR__ . '/main-content.php';
         }
         ?>
 
-        <?php require $partials . 'footer.php'; ?>
 
     </div>
 
