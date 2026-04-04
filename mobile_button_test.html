@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mobile Button Click Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+        
+        .test-button {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+        }
+        
+        .btn-primary {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .btn-primary:active, .btn-primary:hover {
+            background: #229954;
+            opacity: 0.8;
+        }
+        
+        .btn-secondary {
+            background: #2196F3;
+            color: white;
+        }
+        
+        .btn-secondary:active, .btn-secondary:hover {
+            background: #1976D2;
+            opacity: 0.8;
+        }
+        
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .btn-danger:active, .btn-danger:hover {
+            background: #c0392b;
+            opacity: 0.8;
+        }
+        
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .click-log {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .click-item {
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .click-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Mobile Button Click Test</h1>
+        
+        <div class="info-box">
+            <strong>Device Info:</strong><br>
+            <div id="deviceInfo">Loading...</div>
+        </div>
+
+        <div class="status info">
+            <strong>Instructions:</strong><br>
+            Tap each button below. If it works, you'll see a message appear.
+        </div>
+
+        <button class="test-button btn-primary" onclick="testButtonClicked('Button 1', this)">
+            Test Button 1
+        </button>
+        
+        <button class="test-button btn-secondary" onclick="testButtonClicked('Button 2', this)">
+            Test Button 2
+        </button>
+        
+        <button class="test-button btn-danger" onclick="testButtonClicked('Button 3', this)">
+            Test Button 3
+        </button>
+
+        <div id="statusBox"></div>
+
+        <h3>Click Log:</h3>
+        <div class="click-log" id="clickLog">
+            <div class="click-item">[Ready...]</div>
+        </div>
+
+        <button class="test-button btn-secondary" onclick="clearLog()" style="margin-top: 20px;">
+            Clear Log
+        </button>
+
+        <div class="info-box" style="margin-top: 20px;">
+            <strong>What to look for:</strong><br>
+            ✓ Button changes color when tapped<br>
+            ✓ Status message appears<br>
+            ✓ Click appears in log<br>
+            ✓ No error messages<br>
+            <br>
+            If these work, then the QR confirmation button should work too.
+        </div>
+    </div>
+
+    <script>
+        let clickLog = [];
+
+        function getDeviceInfo() {
+            const ua = navigator.userAgent;
+            const isMobile = /Android|iPhone|iPad|iPod|Windows Phone/i.test(ua);
+            const hasTouch = navigator.maxTouchPoints > 0;
+            
+            return `
+User Agent: ${ua.substring(0, 50)}...<br>
+Mobile: ${isMobile ? 'YES' : 'NO'}<br>
+Touch Points: ${navigator.maxTouchPoints}<br>
+Online: ${navigator.onLine ? 'YES' : 'NO'}
+            `.trim();
+        }
+
+        function testButtonClicked(buttonName, element) {
+            console.log('Button clicked:', buttonName);
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = `[${timestamp}] ${buttonName} clicked ✓`;
+            clickLog.unshift(entry);
+            
+            // Update log
+            const logDiv = document.getElementById('clickLog');
+            logDiv.innerHTML = clickLog.map(log => `<div class="click-item">${log}</div>`).join('');
+            logDiv.scrollTop = 0;
+            
+            // Show status
+            showStatus(`✓ ${buttonName} was clicked successfully!`, 'success');
+            
+            // Visual feedback
+            element.style.opacity = '0.7';
+            setTimeout(() => {
+                element.style.opacity = '1';
+            }, 200);
+        }
+
+        function showStatus(message, type) {
+            const statusBox = document.getElementById('statusBox');
+            statusBox.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function clearLog() {
+            clickLog = [];
+            document.getElementById('clickLog').innerHTML = '<div class="click-item">[Log cleared]</div>';
+            showStatus('', '');
+        }
+
+        // Initialize on load
+        window.addEventListener('load', function() {
+            document.getElementById('deviceInfo').innerHTML = getDeviceInfo();
+            showStatus('Ready! Tap a button to test.', 'info');
+            
+            // Log that page loaded
+            const timestamp = new Date().toLocaleTimeString();
+            clickLog.push(`[${timestamp}] Page loaded`);
+            const logDiv = document.getElementById('clickLog');
+            logDiv.innerHTML = clickLog.map(log => `<div class="click-item">${log}</div>`).join('');
+        });
+
+        // Fallback: Log all clicks to console
+        document.addEventListener('click', function(e) {
+            console.log('Click event detected:', e.target);
+        }, true);
+
+        // Log all touch events
+        document.addEventListener('touchstart', function(e) {
+            console.log('Touch start on:', e.target.tagName, e.target.textContent);
+        }, true);
+
+        document.addEventListener('touchend', function(e) {
+            console.log('Touch end on:', e.target.tagName, e.target.textContent);
+        }, true);
+    </script>
+</body>
+</html>

@@ -49,6 +49,7 @@ $currentMonth = date('F Y');
         html, body {
             margin: 0;
             padding: 0;
+            overflow-x: hidden;
         }
 
         body {
@@ -62,13 +63,16 @@ $currentMonth = date('F Y');
             margin-left: 0;
         }
 
-        .main-content {
-            width: calc(100% - 250px);
-            margin-left: 250px;
-            margin-top: 60px;
-            min-height: calc(100vh - 60px);
-            overflow-y: auto;
-            transition: width 0.3s ease, margin-left 0.3s ease;
+        .main-sidebar {
+        position: fixed !important;
+        top: 0 ;          /* 🔥 VERY IMPORTANT */
+        left: 0;
+        width: 250px;
+        height: calc(100vh - 60px);   /* 🔥 FIX HEIGHT */
+        overflow-y: auto;
+        z-index: 1000;
+        margin-left: 250px;
+        margin-top: 60px;
         }
 
         body.sidebar-collapsed .main-content {
@@ -77,9 +81,9 @@ $currentMonth = date('F Y');
         }
 
         .content-wrapper {
-            width: 100%;
-            margin: 0;
-            padding: 30px 20px;
+        width: 100%;
+        margin-left: 0 !important;
+        padding: 30px 20px; /* balanced */
         }
 
         /* Override AdminLTE container defaults */
@@ -300,7 +304,7 @@ $currentMonth = date('F Y');
             }
 
             #holidayCalendar {
-                height: 400px;
+                height: 380px;
             }
         }
 
@@ -520,10 +524,11 @@ $currentMonth = date('F Y');
             if (data.upcoming && data.upcoming.length > 0) {
                 data.upcoming.forEach(holiday => {
                     const daysLeft = Math.ceil((new Date(holiday.holiday_date) - new Date()) / (1000 * 60 * 60 * 24));
+                    const holidayName = holiday.holiday_name || holiday.name || 'Holiday';
                     upcomingHtml += `
                         <div class="holiday-item" style="background: rgba(255, 255, 255, 0.1); padding: 10px; margin-bottom: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; border-left: 3px solid rgba(255, 255, 255, 0.3);">
                             <div class="name" style="flex: 1;">
-                                <strong>${holiday.holiday_name}</strong><br>
+                                <strong>${holidayName}</strong><br>
                                 <span style="font-size: 11px; opacity: 0.8;">${new Date(holiday.holiday_date).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</span>
                             </div>
                             <div class="days" style="background: rgba(255, 255, 255, 0.2); padding: 3px 10px; border-radius: 4px; font-weight: 600; font-size: 12px;">${daysLeft} days</div>
@@ -538,7 +543,7 @@ $currentMonth = date('F Y');
             container.innerHTML = `
                 <div class="holiday-container" style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px; margin-bottom: 30px;">
                     <!-- Left: Holiday Widget -->
-                    <div class="holiday-widget" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);">
+                    <div class="holiday-widget" style="background: linear-gradient(135deg, #003d82 0%, #005ba8 100%); color: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0, 61, 130, 0.25);">
                         <h3 style="margin: 0 0 15px 0; font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 10px;">
                             <i class="fas fa-bell"></i> Upcoming Holidays
                         </h3>
@@ -563,7 +568,7 @@ $currentMonth = date('F Y');
                         ${nextHoliday ? `
                             <div class="next-holiday-block" style="background: rgba(255, 255, 255, 0.15); padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid rgba(255, 255, 255, 0.5);">
                                 <div class="label" style="font-size: 12px; opacity: 0.9; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Next Holiday</div>
-                                <div class="holiday-name" style="font-size: 20px; font-weight: 600; margin-bottom: 10px;">${nextHoliday.holiday_name}</div>
+                                <div class="holiday-name" style="font-size: 20px; font-weight: 600; margin-bottom: 10px;">${nextHoliday.holiday_name || nextHoliday.name || 'Holiday'}</div>
                                 <div class="countdown" style="font-size: 36px; font-weight: 700; margin-bottom: 5px; color: #fff;">${daysUntilNext}</div>
                                 <div class="countdown-label" style="font-size: 12px; opacity: 0.85;">${daysUntilNext == 0 ? 'Today!' : daysUntilNext == 1 ? 'Tomorrow' : 'days remaining'}</div>
                             </div>
@@ -588,11 +593,11 @@ $currentMonth = date('F Y');
                     </div>
 
                     <!-- Right: Calendar -->
-                    <div class="calendar-container" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+                    <div class="calendar-container" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column;">
                         <h3 style="margin: 0 0 20px 0; color: #333; display: flex; align-items: center; gap: 10px;">
                             <i class="fas fa-calendar-days"></i> Holiday Calendar
                         </h3>
-                        <div id="holidayCalendar" style="height: 550px;"></div>
+                        <div id="holidayCalendar" style="flex: 1; min-height: 450px;"></div>
                     </div>
                 </div>
             `;

@@ -25,12 +25,66 @@ class EmployeeShift {
     /**
      * Assign shift to employee
      * 
-     * @return bool
+     * @return array ['success' => bool, 'duplicate' => bool, 'existing_id' => int|null]
      */
     public function assign() {
-        // First, deactivate any active shifts for this employee
+        // Check if this exact assignment already exists
+        $existing = $this->checkExistingAssignment($this->employee_id, $this->shift_id, $this->effective_from);
+        if ($existing) {
+            // Return duplicate indicator instead of silently overwriting
+            return [
+                'success' => false,
+                'duplicate' => true,
+                'existing_id' => $existing['employee_shift_id']
+            ];
+        }
+
+        // Deactivate any other active shifts for this employee (only one shift per employee)
         $this->deactivateOtherShifts($this->employee_id);
 
+        $query = "INSERT INTO " . $this->table . "
+                  (employee_id, shift_id, effective_from, effective_to, is_active)
+                  VALUES (?, ?, ?, ?, ?)";
+
+        $stmt = $this->conn->prepare($query);
+
+        $stmt->bindParam(1, $this->employee_id);
+        $stmt->bindParam(2, $this->shift_id);
+        $stmt->bindParam(3, $this->effective_from);
+        $stmt->bindParam(4, $this->effective_to);
+        $stmt->bindParam(5, $this->is_active);
+
+        if ($stmt->execute()) {
+            return [
+                'success' => true,
+                'duplicate' => false,
+                'existing_id' => null
+            ];
+        }
+        return [
+            'success' => false,
+            'duplicate' => false,
+            'existing_id' => null
+        ];
+    }
+
+    /**
+     * Force assign shift by overwriting existing assignment
+     * Used when user confirms overwrite in confirmation modal
+     * 
+     * @param int $existing_employee_shift_id
+     * @return bool
+     */
+    public function forceAssign($existing_employee_shift_id) {
+        // Delete the old assignment
+        $deleteQuery = "DELETE FROM " . $this->table . " WHERE employee_shift_id = ?";
+        $deleteStmt = $this->conn->prepare($deleteQuery);
+        $deleteStmt->execute([$existing_employee_shift_id]);
+
+        // Deactivate any other active shifts
+        $this->deactivateOtherShifts($this->employee_id);
+
+        // Create new assignment
         $query = "INSERT INTO " . $this->table . "
                   (employee_id, shift_id, effective_from, effective_to, is_active)
                   VALUES (?, ?, ?, ?, ?)";
@@ -176,6 +230,40 @@ class EmployeeShift {
 
         $stmt = $this->conn->prepare($query);
         return $stmt->execute([$employee_id]);
+    }
+
+    /**
+     * Check if assignment already exists for employee and shift
+     * 
+     * @param int $employee_id
+     * @param int $shift_id
+     * @param string $effective_from
+     * @return array|false
+     */
+    private function checkExistingAssignment($employee_id, $shift_id, $effective_from) {
+        $query = "SELECT employee_shift_id FROM " . $this->table . "
+                  WHERE employee_id = ? AND shift_id = ? AND effective_from = ?
+                  LIMIT 1";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([$employee_id, $shift_id, $effective_from]);
+        
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Reactivate existing shift assignment (if it was deactivated)
+     * 
+     * @param int $employee_shift_id
+     * @return bool
+     */
+    private function assignExisting($employee_shift_id) {
+        $query = "UPDATE " . $this->table . "
+                  SET is_active = 1, effective_to = ?
+                  WHERE employee_shift_id = ?";
+
+        $stmt = $this->conn->prepare($query);
+        return $stmt->execute([$this->effective_to, $employee_shift_id]);
     }
 
     /**

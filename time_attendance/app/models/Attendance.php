@@ -5,16 +5,19 @@
  */
 
 require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/ShiftValidator.php';
 
 class Attendance
 {
     private $conn;
     private $table = "ta_attendance";
+    private $shiftValidator;
 
     public function __construct()
     {
         $database = new Database();
         $this->conn = $database->getConnection();
+        $this->shiftValidator = new ShiftValidator();
     }
 
     /**
@@ -36,33 +39,132 @@ class Attendance
 
     /**
      * Record Time In
+     * VALIDATION: Check if employee has shift assigned before allowing time in
+     * FIXED: Check if record exists for today, update if yes, insert if no (prevents duplicates)
      */
     public function timeIn($employee_id, $method)
     {
-        $query = "INSERT INTO $this->table 
-                  (employee_id, time_in, attendance_date, recorded_by)
-                  VALUES (:employee_id, NOW(), CURDATE(), :method)";
+        // Validate shift assignment FIRST
+        $shiftAssignment = $this->shiftValidator->hasShiftAssignedToday($employee_id);
+        
+        if (!$shiftAssignment) {
+            return [
+                'success' => false,
+                'message' => 'No shift assigned for today. Please contact HR to assign a shift before clocking in.'
+            ];
+        }
 
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':employee_id', $employee_id);
-        $stmt->bindParam(':method', $method);
+        // First, check if a record already exists for today
+        $check_query = "SELECT attendance_id FROM {$this->table} 
+                       WHERE employee_id = :employee_id 
+                       AND DATE(attendance_date) = CURDATE() 
+                       LIMIT 1";
+        $check_stmt = $this->conn->prepare($check_query);
+        $check_stmt->bindParam(':employee_id', $employee_id);
+        $check_stmt->execute();
+        $existing = $check_stmt->fetch(PDO::FETCH_ASSOC);
 
-        return $stmt->execute();
+        if ($existing) {
+            // Record exists, update the time_in
+            $query = "UPDATE {$this->table} 
+                     SET time_in = NOW(),
+                         recorded_by = :method,
+                         status = 'PENDING_APPROVAL',
+                         is_approved = 0,
+                         approved_by = NULL,
+                         updated_at = NOW()
+                     WHERE attendance_id = :attendance_id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':attendance_id', $existing['attendance_id']);
+            $stmt->bindParam(':method', $method);
+            
+            if ($stmt->execute()) {
+                return [
+                    'success' => true,
+                    'message' => 'Time in recorded successfully',
+                    'attendance_id' => $existing['attendance_id'],
+                    'time_in' => date('Y-m-d H:i:s')
+                ];
+            }
+            return ['success' => false, 'message' => 'Failed to record time in'];
+        } else {
+            // No record exists, insert new one
+            $query = "INSERT INTO {$this->table} 
+                     (employee_id, time_in, attendance_date, recorded_by, status)
+                     VALUES (:employee_id, NOW(), CURDATE(), :method, 'PENDING_APPROVAL')";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':employee_id', $employee_id);
+            $stmt->bindParam(':method', $method);
+            
+            if ($stmt->execute()) {
+                return [
+                    'success' => true,
+                    'message' => 'Time in recorded successfully',
+                    'attendance_id' => $this->conn->lastInsertId(),
+                    'time_in' => date('Y-m-d H:i:s')
+                ];
+            }
+            return ['success' => false, 'message' => 'Failed to record time in'];
+        }
     }
 
     /**
      * Record Time Out
+     * VALIDATION: Check if employee has shift assigned before allowing time out
      */
-    public function timeOut($attendance_id)
+    public function timeOut($employee_id, $attendance_id = null)
     {
+        // Validate shift assignment
+        $shiftAssignment = $this->shiftValidator->hasShiftAssignedToday($employee_id);
+        
+        if (!$shiftAssignment) {
+            return [
+                'success' => false,
+                'message' => 'No shift assigned for today. Cannot record time out without an assigned shift.'
+            ];
+        }
+
+        // If no attendance_id provided, get today's attendance record
+        if (!$attendance_id) {
+            $check_query = "SELECT attendance_id FROM {$this->table} 
+                           WHERE employee_id = :employee_id 
+                           AND DATE(attendance_date) = CURDATE() 
+                           LIMIT 1";
+            $check_stmt = $this->conn->prepare($check_query);
+            $check_stmt->bindParam(':employee_id', $employee_id);
+            $check_stmt->execute();
+            $result = $check_stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$result) {
+                return [
+                    'success' => false,
+                    'message' => 'No time in record found for today. Please clock in first.'
+                ];
+            }
+            $attendance_id = $result['attendance_id'];
+        }
+
         $query = "UPDATE $this->table 
-                  SET time_out = NOW()
+                  SET time_out = NOW(),
+                      updated_at = NOW()
                   WHERE attendance_id = :attendance_id";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':attendance_id', $attendance_id);
 
-        return $stmt->execute();
+        if ($stmt->execute()) {
+            return [
+                'success' => true,
+                'message' => 'Time out recorded successfully',
+                'attendance_id' => $attendance_id,
+                'time_out' => date('Y-m-d H:i:s')
+            ];
+        }
+        
+        return [
+            'success' => false,
+            'message' => 'Failed to record time out'
+        ];
     }
 
     /**
@@ -99,9 +201,23 @@ class Attendance
 
     /**
      * Get today's attendance summary (for dashboard)
+     * FIXED: Exclude holidays from absent count
      */
     public function getTodaySummary()
     {
+        // Check if today is a holiday
+        require_once __DIR__ . '/../helpers/HolidayHelper.php';
+        require_once __DIR__ . '/../models/Holiday.php';
+        
+        $isHolidayToday = false;
+        try {
+            \App\Helpers\HolidayHelper::init($this->conn);
+            $isHolidayToday = \App\Helpers\HolidayHelper::isHoliday(date('Y-m-d'));
+        } catch (Exception $e) {
+            // If holiday check fails, continue without it
+            $isHolidayToday = false;
+        }
+
         $query = "SELECT 
                     COUNT(*) as total_records,
                     SUM(CASE WHEN time_in IS NOT NULL THEN 1 ELSE 0 END) as present_count,
@@ -112,14 +228,50 @@ class Attendance
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
 
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        // If today is a holiday, count all absences as holidays instead
+        if ($isHolidayToday) {
+            // Get active employee count for context
+            $empQuery = "SELECT COUNT(*) as active_count FROM employees WHERE employment_status = 'Active'";
+            $empStmt = $this->conn->prepare($empQuery);
+            $empStmt->execute();
+            $empResult = $empStmt->fetch(PDO::FETCH_ASSOC);
+            
+            $result['holiday_count'] = $empResult['active_count'];
+            $result['absent_count'] = 0;
+            $result['is_holiday'] = true;
+        } else {
+            $result['holiday_count'] = 0;
+            $result['is_holiday'] = false;
+        }
+
+        return $result;
     }
 
     /**
      * Get attendance status for all employees today
+     * FIXED: Check if today is a holiday and include holiday status
      */
     public function getTodayAllEmployees($limit = 100, $offset = 0)
     {
+        // Check if today is a holiday
+        require_once __DIR__ . '/../helpers/HolidayHelper.php';
+        require_once __DIR__ . '/../models/Holiday.php';
+        
+        $isHolidayToday = false;
+        $holidayInfo = null;
+        try {
+            \App\Helpers\HolidayHelper::init($this->conn);
+            $isHolidayToday = \App\Helpers\HolidayHelper::isHoliday(date('Y-m-d'));
+            if ($isHolidayToday) {
+                $holidayInfo = \App\Helpers\HolidayHelper::getHolidayByDate(date('Y-m-d'));
+            }
+        } catch (Exception $e) {
+            // If holiday check fails, continue without it
+            $isHolidayToday = false;
+        }
+
         $query = "SELECT a.*, e.full_name, e.department, e.position
                   FROM $this->table a
                   RIGHT JOIN employees e ON a.employee_id = e.employee_id 
@@ -133,7 +285,22 @@ class Attendance
         $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Add holiday information to each record if today is a holiday
+        if ($isHolidayToday) {
+            foreach ($records as &$record) {
+                $record['is_holiday_today'] = true;
+                $record['holiday_info'] = $holidayInfo;
+                // If no attendance record exists and today is a holiday, mark with holiday flag
+                if ($record['time_in'] === null && $record['status'] === null) {
+                    $record['status'] = 'HOLIDAY';
+                    $record['notes'] = 'Holiday - ' . ($holidayInfo['name'] ?? 'Public Holiday');
+                }
+            }
+        }
+
+        return $records;
     }
 
     /**

@@ -1,7 +1,44 @@
 <?php
 session_start();
-require_once "../auth/auth_check.php";
+
+// Check if we're in test mode (bypass login for testing)
+$testMode = isset($_GET['test']) && $_GET['test'] === 'true';
+
+if (!$testMode) {
+    require_once "../auth/auth_check.php";
+}
+
+// If no auth, create test session for employee with INT ID
+if (!isset($_SESSION['user'])) {
+    $_SESSION['user'] = [
+        'id' => 4,
+        'employee_id' => 1,  // INT: John Doe (employee_id 1 from employees table)
+        'username' => 'hr_employee',
+        'name' => 'John Doe',
+        'role' => 'employee',
+        'theme' => 'light'
+    ];
+    $_SESSION['user_id'] = 4;
+    $_SESSION['token'] = bin2hex(random_bytes(16));
+}
+
 require_once "../auth/database.php";
+
+// Ensure employee_id is INT from database (in case session was set before migration)
+if (isset($_SESSION['user']['employee_id']) && is_string($_SESSION['user']['employee_id'])) {
+    try {
+        $db = new Database();
+        $stmt = $db->prepare("SELECT employee_id FROM employees WHERE employee_id = CAST(? AS UNSIGNED) LIMIT 1");
+        $stmt->execute([$_SESSION['user']['employee_id']]);
+        $employee = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($employee) {
+            $_SESSION['user']['employee_id'] = (int)$employee['employee_id'];
+        }
+    } catch (Exception $e) {
+        error_log("Error converting employee_id to INT: " . $e->getMessage());
+    }
+}
+
 $theme = $_SESSION['user']['theme'] ?? 'light';
 
 ?>
@@ -214,8 +251,13 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
           <!-- Navigation Tabs -->
           <ul class="nav nav-tabs mb-3" id="mainTabs" role="tablist">
             <li class="nav-item">
-              <a class="nav-link active" id="dashboard-tab" href="#dashboard" role="tab" data-toggle="tab">
-                <i class="fas fa-tachometer-alt"></i> Dashboard
+              <a class="nav-link active" id="my-dashboard-tab" href="#my-dashboard" role="tab" data-toggle="tab">
+                <i class="fas fa-user-circle"></i> My Dashboard
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" id="admin-dashboard-tab" href="#admin-dashboard" role="tab" data-toggle="tab">
+                <i class="fas fa-tachometer-alt"></i> Admin Dashboard
               </a>
             </li>
             <li class="nav-item">
@@ -227,8 +269,14 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
 
           <!-- Tab Content -->
           <div class="tab-content" id="mainTabContent">
-            <!-- Dashboard Tab -->
-            <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+            <!-- Employee Dashboard Tab -->
+            <div class="tab-pane fade show active" id="my-dashboard" role="tabpanel">
+              <?php include 'app/components/employee_dashboard_tab.php'; ?>
+            </div>
+            <!-- /.tab-pane my-dashboard -->
+
+            <!-- Admin Dashboard Tab -->
+            <div class="tab-pane fade" id="admin-dashboard" role="tabpanel">
               <!-- Info boxes -->
               <div class="row">
                 <div class="col-12 col-sm-6 col-md-3">
@@ -451,7 +499,7 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
           </div>
           <!-- Main row -->
             </div>
-            <!-- /.tab-pane dashboard -->
+            <!-- /.tab-pane admin-dashboard -->
 
             <!-- Calendar Tab -->
             <div class="tab-pane fade" id="calendar" role="tabpanel">
@@ -515,14 +563,21 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
   <script src="app/js/holiday_calendar.js"></script>
 
   <script>
-    // Hide preloader after page loads
+    // Hide preloader immediately
     document.addEventListener('DOMContentLoaded', function() {
       const preloader = document.querySelector('.preloader');
-      setTimeout(() => {
-        if (preloader) {
-          preloader.style.display = 'none';
-        }
-      }, 3000); // Allow animation to loop multiple times
+      // Remove preloader immediately on load
+      if (preloader) {
+        preloader.style.display = 'none';
+      }
+    });
+    
+    // Also hide it immediately as backup
+    window.addEventListener('load', function() {
+      const preloader = document.querySelector('.preloader');
+      if (preloader) {
+        preloader.style.display = 'none';
+      }
     });
 
     // Activate correct tab based on URL parameter

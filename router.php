@@ -32,7 +32,7 @@ switch ($role) {
         header("Location: workforce/workforce.php");
         break;
     case 'employee':
-        header("Location: employee/employee.php");
+        header("Location: employee_portal/index.php");
         break;
     case 'learning':
         header("Location: learning_development/learning_development.php");

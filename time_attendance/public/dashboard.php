@@ -7,6 +7,7 @@
 require_once "../app/controllers/AuthController.php";
 require_once "../app/models/Attendance.php";
 require_once "../app/models/Employee.php";
+require_once "../app/models/ShiftValidator.php";
 require_once "../app/helpers/Helper.php";
 require_once "../app/helpers/AuditLog.php";
 require_once "../app/core/Session.php";
@@ -27,6 +28,7 @@ if (!AuthController::hasRole('time')) {
 
 $attendanceModel = new Attendance();
 $employeeModel = new Employee();
+$shiftValidator = new ShiftValidator();
 $auditLog = new AuditLog();
 
 // Get statistics
@@ -34,6 +36,7 @@ $todayStats = $attendanceModel->getTodaySummary();
 $allEmployees = $employeeModel->getTotalCount('ACTIVE');
 $todayRecords = $attendanceModel->getTodayAllEmployees(100);
 $pendingApprovals = $attendanceModel->getPendingApprovals(10);
+$unassignedShiftCount = $shiftValidator->getUnassignedShiftCount();
 
 // Calculate today's attendance percentage
 $attendancePercentage = 0;
@@ -89,24 +92,29 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
         }
 
         .main-content {
-            width: calc(100% - 250px);
             margin-left: 250px;
             margin-top: 60px;
             min-height: calc(100vh - 60px);
             overflow-y: auto;
             transition: width 0.3s ease, margin-left 0.3s ease;
-        }
+            }
 
+        .main-sidebar {
+        position: fixed !important;
+        top: 0 ;          /* 🔥 VERY IMPORTANT */
+        left: 0;
+        width: 250px;
+        height: calc(100vh - 60px);   /* 🔥 FIX HEIGHT */
+        overflow-y: auto;
+        z-index: 1000;
+        margin-left: 250px;
+        margin-top: 60px;
+        }
         body.sidebar-collapsed .main-content {
             width: 100%;
             margin-left: 0;
         }
 
-        .content-wrapper {
-            width: 100%;
-            margin: 0;
-            padding: 30px 20px;
-        }
 
         /* Override AdminLTE container defaults */
         .container, .container-fluid {
@@ -130,14 +138,31 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
     <?php require_once "../app/components/Sidebar.php"; ?>
 
     <div class="main-content">
-        <div class="content-wrapper">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h1>Time & Attendance Dashboard</h1>
-                <div class="live-clock" id="liveClock">00:00:00</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 30px 20px 0px 20px;">
+            <h1>Time & Attendance Dashboard</h1>
+            <div class="live-clock" id="liveClock">00:00:00</div>
+        </div>
+
+        <!-- Alert for Unassigned Shifts -->
+        <?php if ($unassignedShiftCount > 0): ?>
+        <div style="margin: 20px; padding: 15px; background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%); color: white; border-radius: 8px; display: flex; align-items: center; gap: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <i class="fas fa-exclamation-circle fa-2x"></i>
+            <div style="flex: 1;">
+                <strong style="font-size: 16px;"><i class="fas fa-users-slash"></i> <?php echo $unassignedShiftCount; ?> Employee(s) Without Shift Assignment</strong>
+                <p style="margin: 5px 0 0 0; font-size: 14px;">These employees cannot clock in/out until shifts are assigned.</p>
             </div>
-            <!-- Quick Stats -->
-            <div class="dashboard-grid">
-                <div class="card employees">
+            <div style="display: flex; gap: 10px;">
+                <a href="../public/shifts.php" style="background: rgba(255,255,255,0.9); color: #ff6b35; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-plus"></i> Assign Shifts
+                </a>
+                <button onclick="dismissShiftAlert()" style="background: rgba(255,255,255,0.3); border: none; color: white; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 16px;">✕</button>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Quick Stats -->
+        <div class="dashboard-grid">
+            <div class="card employees">
                     <h3>Total Employees</h3>
                     <div class="card-value"><?php echo $allEmployees; ?></div>
                     <div class="card-unit">Active employees</div>
@@ -164,7 +189,7 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
 
             <!-- Attendance Metrics Overview -->
             <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #007bff;">
-                <h2 style="color: #2c3e50; margin-bottom: 20px; font-size: 1.5rem;">📊 Monthly Attendance Metrics</h2>
+                <h2 style="color: #2c3e50; margin-bottom: 20px; font-size: 1.5rem;">Monthly Attendance Metrics</h2>
                 
                 <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                     <!-- Attendance Rate -->
@@ -326,7 +351,6 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
                     </tbody>
                 </table>
             </div>
-        </div>
     </div>
 
     <script>
@@ -383,8 +407,30 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
             
             records.forEach(record => {
                 const row = document.createElement('tr');
-                const status = record.time_in ? (new Date(record.time_in).getHours() > 9 ? 'LATE' : 'PRESENT') : 'ABSENT';
-                const statusClass = status === 'PRESENT' ? 'badge-success' : (status === 'LATE' ? 'badge-warning' : 'badge-danger');
+                
+                // Determine status: HOLIDAY, PRESENT, LATE, or ABSENT
+                let status = 'ABSENT';
+                let statusClass = 'badge-danger';
+                
+                // Check if today is marked as holiday in the record
+                if (record.status === 'HOLIDAY' || record.is_holiday_today) {
+                    status = 'HOLIDAY';
+                    statusClass = 'badge-info';
+                } else if (record.time_in) {
+                    const timeInDate = new Date(record.time_in);
+                    const hours = timeInDate.getHours();
+                    const minutes = timeInDate.getMinutes();
+                    const timeInMinutes = hours * 60 + minutes;
+                    const nineAmMinutes = 9 * 60; // 09:00
+                    
+                    if (timeInMinutes > nineAmMinutes) {
+                        status = 'LATE';
+                        statusClass = 'badge-warning';
+                    } else {
+                        status = 'PRESENT';
+                        statusClass = 'badge-success';
+                    }
+                }
                 
                 row.innerHTML = `
                     <td>
@@ -403,7 +449,7 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
                             : '<span style="color: #f39c12;">Pending</span>'}
                     </td>
                     <td>${record.duration || 'N/A'}</td>
-                    <td><span class="badge ${statusClass}">${status}</span></td>
+                    <td><span class="badge ${statusClass}" title="${status === 'HOLIDAY' ? 'Holiday - No time-in required' : ''}">${status}</span></td>
                 `;
                 tbody.appendChild(row);
             });
@@ -479,6 +525,14 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
                 const minutes = String(now.getMinutes()).padStart(2, '0');
                 const seconds = String(now.getSeconds()).padStart(2, '0');
                 clockElement.textContent = `${hours}:${minutes}:${seconds}`;
+            }
+        }
+
+        // Dismiss unassigned shift alert
+        function dismissShiftAlert() {
+            const alert = document.querySelector('[style*="ffc107"]');
+            if (alert) {
+                alert.style.display = 'none';
             }
         }
 

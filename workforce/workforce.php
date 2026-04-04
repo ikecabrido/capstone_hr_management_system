@@ -172,6 +172,305 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
       border-radius: 4px;
       margin-bottom: 20px;
     }
+
+    /* Ensure inactive tabs are hidden */
+    .tab-pane {
+      display: none !important;
+      visibility: hidden !important;
+    }
+
+    .tab-pane.active {
+      display: block !important;
+      visibility: visible !important;
+    }
+
+    .tab-pane.fade.show.active {
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
+
+    /* Enhanced Button Styles */
+    .wfa-btn {
+      padding: 11px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+      letter-spacing: 0.5px;
+    }
+
+    .wfa-btn:hover {
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.16);
+      transform: translateY(-2px);
+    }
+
+    .wfa-btn:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .wfa-btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .wfa-btn-primary:hover {
+      background: linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%);
+      color: white;
+    }
+
+    .wfa-btn-secondary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .wfa-btn-secondary:hover {
+      background: linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%);
+      color: white;
+    }
+
+    .wfa-btn-success {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+    }
+
+    .wfa-btn-success:hover {
+      background: linear-gradient(135deg, #3da5e8 0%, #00dbe5 100%);
+      color: white;
+    }
+
+    .wfa-btn-danger {
+      background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+      color: white;
+    }
+
+    .wfa-btn-danger:hover {
+      background: linear-gradient(135deg, #f5588a 0%, #fdd130 100%);
+      color: white;
+    }
+
+    .wfa-btn-warning {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+    }
+
+    .wfa-btn-warning:hover {
+      background: linear-gradient(135deg, #e87aeb 0%, #e43c5c 100%);
+      color: white;
+    }
+
+    .wfa-btn-info {
+      background: linear-gradient(135deg, #00c9ff 0%, #92fe9d 100%);
+      color: white;
+    }
+
+    .wfa-btn-info:hover {
+      background: linear-gradient(135deg, #00b8e8 0%, #82ed8d 100%);
+      color: white;
+    }
+
+    .wfa-btn-sm {
+      padding: 6px 12px;
+      font-size: 0.85rem;
+    }
+
+    .wfa-btn-lg {
+      padding: 14px 28px;
+      font-size: 1.1rem;
+    }
+
+    .wfa-btn-block {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .wfa-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .wfa-btn:disabled:hover {
+      transform: none;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Filter Actions Container */
+    .wfa-filter-actions {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 2px solid #e0e0e0;
+    }
+
+    /* Enhanced Select/Dropdown Styles */
+    select, input[type="date"], input[type="text"], .wfa-filter-input, .wfa-filter-select {
+      padding: 10px 14px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      background-color: #fff;
+      color: #212529;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    select:hover, input[type="date"]:hover, input[type="text"]:hover, .wfa-filter-input:hover, .wfa-filter-select:hover {
+      border-color: #667eea;
+      box-shadow: 0 2px 6px rgba(102, 126, 234, 0.1);
+    }
+
+    select:focus, input[type="date"]:focus, input[type="text"]:focus, .wfa-filter-input:focus, .wfa-filter-select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      background-color: #f8f9ff;
+    }
+
+    /* Dropdown Arrow Styling */
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 30px;
+      background-size: 12px;
+    }
+
+    /* Filter Row Spacing */
+    .wfa-filter-row {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+    }
+
+    .wfa-filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .wfa-filter-group label {
+      font-weight: 600;
+      color: #212529;
+      font-size: 0.9rem;
+      display: block;
+    }
+
+    /* Spacing between sections */
+    .wfa-metrics-grid {
+      margin-top: 25px;
+      margin-bottom: 35px;
+    }
+
+    .wfa-charts-grid {
+      margin-top: 30px;
+      margin-bottom: 35px;
+    }
+
+    .wfa-table-container {
+      margin-top: 25px;
+      margin-bottom: 25px;
+    }
+
+    /* Insights Section Styles */
+    .wfa-insights-section {
+      margin-top: 40px;
+      margin-bottom: 40px;
+      padding: 25px;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      border-radius: 12px;
+      border-left: 5px solid #667eea;
+    }
+
+    .wfa-insight-card {
+      background: white;
+      border-radius: 8px;
+      padding: 18px;
+      margin-bottom: 15px;
+      border-left: 4px solid #667eea;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+    }
+
+    .wfa-insight-card:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      transform: translateX(2px);
+    }
+
+    .wfa-insight-card.success {
+      border-left-color: #28a745;
+      background: #f0f9f6;
+    }
+
+    .wfa-insight-card.danger {
+      border-left-color: #dc3545;
+      background: #fdf5f6;
+    }
+
+    .wfa-insight-card.warning {
+      border-left-color: #ffc107;
+      background: #fffaf0;
+    }
+
+    .wfa-insight-card.info {
+      border-left-color: #17a2b8;
+      background: #f0f8fb;
+    }
+
+    .insight-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 15px;
+      margin-bottom: 12px;
+    }
+
+    .insight-icon {
+      font-size: 24px;
+      line-height: 1.2;
+      flex-shrink: 0;
+    }
+
+    .insight-recommendation {
+      padding: 12px 15px;
+      background: rgba(102, 126, 234, 0.08);
+      border-radius: 6px;
+      font-size: 0.9rem;
+      color: #333;
+      line-height: 1.5;
+      margin-top: 12px;
+    }
+
+    .wfa-insight-card.success .insight-recommendation {
+      background: rgba(40, 167, 69, 0.08);
+    }
+
+    .wfa-insight-card.danger .insight-recommendation {
+      background: rgba(220, 53, 69, 0.08);
+    }
+
+    .wfa-insight-card.warning .insight-recommendation {
+      background: rgba(255, 193, 7, 0.08);
+    }
+
+    .wfa-insight-card.info .insight-recommendation {
+      background: rgba(23, 162, 184, 0.08);
+    }
+
   </style>
 </head>
 
@@ -293,6 +592,12 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
                 <p>Custom Reports</p>
               </a>
             </li>
+            <li class="nav-item">
+              <a href="#snapshots" data-toggle="tab" class="nav-link">
+                <i class="nav-icon fas fa-history"></i>
+                <p>Report History</p>
+              </a>
+            </li>
 
 
             <!-- Logout -->
@@ -367,6 +672,12 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
               <?php include 'public/reports.php'; ?>
             </div>
             <!-- /.tab-pane reports -->
+
+            <!-- Snapshots Tab -->
+            <div class="tab-pane fade" id="snapshots" role="tabpanel">
+              <?php include 'public/snapshots.php'; ?>
+            </div>
+            <!-- /.tab-pane snapshots -->
           </div>
           <!-- /.tab-content -->
         </div>
@@ -433,39 +744,108 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
         
         console.log('Loading WFA Dashboard for date:', date);
         
-        // Fetch dashboard metrics
-        console.log('Fetching:', `${basePath}/api/wfa/dashboard_metrics.php?date=${date}`);
-        const metricsResponse = await fetch(`${basePath}/api/wfa/dashboard_metrics.php?date=${date}`);
-        if (!metricsResponse.ok) throw new Error(`Metrics API error: ${metricsResponse.status}`);
-        const metricsData = await metricsResponse.json();
-        console.log('Metrics data:', metricsData);
+        // Fetch employee data (REQUIRED)
+        console.log('Fetching employee data...');
+        const empResponse = await fetch(`${basePath}/api/wfa/employees_data.php`);
+        if (!empResponse.ok) throw new Error(`Employees API error: ${empResponse.status}`);
+        const empText = await empResponse.text();
+        let empData = {};
+        try {
+          empData = JSON.parse(empText);
+        } catch (e) {
+          console.error('Invalid JSON from employees API:', empText);
+          throw new Error('Employees API returned invalid JSON');
+        }
+        console.log('Employee data:', empData);
         
-        // Fetch at-risk employees
-        const atRiskResponse = await fetch(`${basePath}/api/wfa/at_risk_employees.php?limit=5&risk_level=high`);
-        if (!atRiskResponse.ok) throw new Error(`At-risk API error: ${atRiskResponse.status}`);
-        const atRiskData = await atRiskResponse.json();
-        console.log('At-risk data:', atRiskData);
-        
-        // Fetch attrition metrics
-        const attritionResponse = await fetch(`${basePath}/api/wfa/attrition_metrics.php`);
-        if (!attritionResponse.ok) throw new Error(`Attrition API error: ${attritionResponse.status}`);
-        const attritionData = await attritionResponse.json();
-        console.log('Attrition data:', attritionData);
-        
-        // Fetch department analytics
-        const deptResponse = await fetch(`${basePath}/api/wfa/department_analytics.php?date=${date}`);
-        if (!deptResponse.ok) throw new Error(`Department API error: ${deptResponse.status}`);
-        const deptData = await deptResponse.json();
-        console.log('Department data:', deptData);
-        
-        // Fetch diversity metrics
-        const diversityResponse = await fetch(`${basePath}/api/wfa/diversity_metrics.php?date=${date}&category=gender`);
-        if (!diversityResponse.ok) throw new Error(`Diversity API error: ${diversityResponse.status}`);
-        const diversityData = await diversityResponse.json();
-        console.log('Diversity data:', diversityData);
+        // Fetch insights (REQUIRED)
+        console.log('Fetching insights...');
+        const insightsResponse = await fetch(`${basePath}/api/wfa/insights_analytics.php`);
+        if (!insightsResponse.ok) throw new Error(`Insights API error: ${insightsResponse.status}`);
+        const insightsText = await insightsResponse.text();
+        let insightsData = {};
+        try {
+          insightsData = JSON.parse(insightsText);
+        } catch (e) {
+          console.error('Invalid JSON from insights API:', insightsText);
+          throw new Error('Insights API returned invalid JSON');
+        }
+        console.log('Insights data:', insightsData);
+
+        // Fetch optional APIs with fallback
+        let metricsData = { data: {} };
+        let atRiskData = { data: [] };
+        let attritionData = { data: {} };
+        let deptData = { data: {} };
+        let diversityData = { data: {} };
+
+        // Try fetching metrics (optional)
+        try {
+          console.log('Fetching metrics...');
+          const metricsResponse = await fetch(`${basePath}/api/wfa/dashboard_metrics.php?date=${date}`);
+          if (metricsResponse.ok) {
+            const metricsText = await metricsResponse.text();
+            metricsData = JSON.parse(metricsText);
+            console.log('Metrics data:', metricsData);
+          }
+        } catch (e) {
+          console.warn('Metrics API unavailable:', e);
+        }
+
+        // Try fetching at-risk (optional)
+        try {
+          console.log('Fetching at-risk employees...');
+          const atRiskResponse = await fetch(`${basePath}/api/wfa/at_risk_employees.php?limit=5&risk_level=high`);
+          if (atRiskResponse.ok) {
+            const atRiskText = await atRiskResponse.text();
+            atRiskData = JSON.parse(atRiskText);
+            console.log('At-risk data:', atRiskData);
+          }
+        } catch (e) {
+          console.warn('At-risk API unavailable:', e);
+        }
+
+        // Try fetching attrition (optional)
+        try {
+          console.log('Fetching attrition metrics...');
+          const attritionResponse = await fetch(`${basePath}/api/wfa/attrition_metrics.php`);
+          if (attritionResponse.ok) {
+            const attritionText = await attritionResponse.text();
+            attritionData = JSON.parse(attritionText);
+            console.log('Attrition data:', attritionData);
+          }
+        } catch (e) {
+          console.warn('Attrition API unavailable:', e);
+        }
+
+        // Try fetching department (optional)
+        try {
+          console.log('Fetching department analytics...');
+          const deptResponse = await fetch(`${basePath}/api/wfa/department_analytics.php?date=${date}`);
+          if (deptResponse.ok) {
+            const deptText = await deptResponse.text();
+            deptData = JSON.parse(deptText);
+            console.log('Department data:', deptData);
+          }
+        } catch (e) {
+          console.warn('Department API unavailable:', e);
+        }
+
+        // Try fetching diversity (optional)
+        try {
+          console.log('Fetching diversity metrics...');
+          const diversityResponse = await fetch(`${basePath}/api/wfa/diversity_metrics.php?date=${date}&category=gender`);
+          if (diversityResponse.ok) {
+            const diversityText = await diversityResponse.text();
+            diversityData = JSON.parse(diversityText);
+            console.log('Diversity data:', diversityData);
+          }
+        } catch (e) {
+          console.warn('Diversity API unavailable:', e);
+        }
 
         // Build the dashboard HTML
-        buildDashboard(metricsData, atRiskData, attritionData, deptData, diversityData);
+        buildDashboard(empData, metricsData, atRiskData, attritionData, deptData, diversityData, insightsData);
       } catch (error) {
         console.error('Error loading WFA dashboard:', error);
         const container = document.getElementById('dashboardContainer');
@@ -479,7 +859,19 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
       }
     }
 
-    function buildDashboard(metricsData, atRiskData, attritionData, deptData, diversityData) {
+    function buildDashboard(empData, metricsData, atRiskData, attritionData, deptData, diversityData, insightsData) {
+      // Handle different data structures
+      let employees = [];
+      if (Array.isArray(empData)) {
+        employees = empData;
+      } else if (empData.data && Array.isArray(empData.data.employees)) {
+        employees = empData.data.employees;
+      } else if (empData.data && Array.isArray(empData.data)) {
+        employees = empData.data;
+      }
+      
+      console.log('Extracted employees array:', employees);
+      
       const metrics = metricsData.data?.employee_metrics || {};
       const atRiskCount = metricsData.data?.at_risk_count || 0;
       
@@ -488,39 +880,58 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
         <div class="wfa-metrics-grid">
           <div class="wfa-metric-card success">
             <div class="wfa-metric-label">Total Employees</div>
-            <div class="wfa-metric-value">${metrics.total_employees || 0}</div>
+            <div class="wfa-metric-value">${employees.length}</div>
             <div class="wfa-metric-change">Active workforce</div>
           </div>
           
           <div class="wfa-metric-card info">
-            <div class="wfa-metric-label">New Hires (YTD)</div>
-            <div class="wfa-metric-value">${metrics.new_hires_this_year || 0}</div>
-            <div class="wfa-metric-change">This year</div>
+            <div class="wfa-metric-label">Active Employees</div>
+            <div class="wfa-metric-value">${employees.filter(e => e.employment_status === 'Active').length}</div>
+            <div class="wfa-metric-change">Currently active</div>
           </div>
           
           <div class="wfa-metric-card danger">
-            <div class="wfa-metric-label">At-Risk Employees</div>
-            <div class="wfa-metric-value">${atRiskCount}</div>
-            <div class="wfa-metric-change">High risk</div>
+            <div class="wfa-metric-label">Inactive Employees</div>
+            <div class="wfa-metric-value">${employees.filter(e => e.employment_status !== 'Active').length}</div>
+            <div class="wfa-metric-change">Separated</div>
           </div>
           
           <div class="wfa-metric-card warning">
-            <div class="wfa-metric-label">Avg Performance</div>
-            <div class="wfa-metric-value">${(metrics.average_performance_score || 0).toFixed(1)}/5.0</div>
-            <div class="wfa-metric-change">Rating</div>
+            <div class="wfa-metric-label">Avg Tenure</div>
+            <div class="wfa-metric-value">${(employees.reduce((sum, e) => sum + (parseInt(e.years_employed) || 0), 0) / (employees.length || 1)).toFixed(1)} yrs</div>
+            <div class="wfa-metric-change">Average</div>
           </div>
           
           <div class="wfa-metric-card">
             <div class="wfa-metric-label">Departments</div>
-            <div class="wfa-metric-value">${metrics.total_departments || 0}</div>
+            <div class="wfa-metric-value">${[...new Set(employees.map(e => e.department))].length}</div>
             <div class="wfa-metric-change">Org units</div>
           </div>
           
           <div class="wfa-metric-card">
-            <div class="wfa-metric-label">Avg Salary</div>
-            <div class="wfa-metric-value">₱${(metrics.average_salary || 0).toLocaleString('en-US', {maximumFractionDigits: 0})}</div>
-            <div class="wfa-metric-change">Organization</div>
+            <div class="wfa-metric-label">Positions</div>
+            <div class="wfa-metric-value">${[...new Set(employees.map(e => e.position))].length}</div>
+            <div class="wfa-metric-change">Unique roles</div>
           </div>
+        </div>
+
+        <!-- Insights Section -->
+        <div class="wfa-insights-section">
+          <h3 style="margin-bottom: 20px; color: #333; font-weight: 600; font-size: 18px;">📊 Analytical Insights & Recommendations</h3>
+          ${insightsData?.data?.insights?.map(insight => `
+            <div class="wfa-insight-card ${insight.type}">
+              <div class="insight-header">
+                <span class="insight-icon">${insight.icon}</span>
+                <div>
+                  <h4 style="margin: 0 0 5px 0; color: #333;">${insight.title}</h4>
+                  <p style="margin: 0; color: #666; font-size: 14px;">${insight.message}</p>
+                </div>
+              </div>
+              <div class="insight-recommendation">
+                <strong>💡 Recommendation:</strong> ${insight.recommendation}
+              </div>
+            </div>
+          `).join('')}
         </div>
 
         <!-- Charts Grid -->
@@ -620,27 +1031,53 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
             </tbody>
           </table>
         </div>
+
+        <!-- Export Actions -->
+        <div class="wfa-export-actions" style="margin-top: 40px; padding: 25px; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-radius: 12px; border-left: 5px solid #667eea;">
+          <h3 style="margin-top: 0; margin-bottom: 20px; color: #333;">📥 Export Report</h3>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <button class="wfa-btn wfa-btn-primary" onclick="exportDashboardPDF()">
+              <i class="fas fa-file-pdf"></i> Export as PDF
+            </button>
+            <button class="wfa-btn wfa-btn-success" onclick="exportDashboardCSV()">
+              <i class="fas fa-file-csv"></i> Export as CSV
+            </button>
+            <button class="wfa-btn wfa-btn-info" onclick="printDashboard()">
+              <i class="fas fa-print"></i> Print Report
+            </button>
+          </div>
+        </div>
       `;
 
       document.getElementById('dashboardContainer').innerHTML = html;
 
-      // Initialize Charts
-      initializeCharts(deptData, diversityData, attritionData);
+      // Initialize Charts - pass the extracted employees array
+      initializeCharts(employees);
     }
 
-    function initializeCharts(deptData, diversityData, attritionData) {
+    function initializeCharts(employees) {
+      if (!employees || employees.length === 0) return;
+
+      // Calculate department distribution
+      const deptCounts = {};
+      employees.forEach(emp => {
+        deptCounts[emp.department] = (deptCounts[emp.department] || 0) + 1;
+      });
+      const deptLabels = Object.keys(deptCounts);
+      const deptValues = Object.values(deptCounts);
+
       // Department Chart
       const deptCtx = document.getElementById('wfaDeptChart')?.getContext('2d');
-      if (deptCtx && deptData.data?.departments) {
+      if (deptCtx) {
         new Chart(deptCtx, {
           type: 'bar',
           data: {
-            labels: deptData.data.departments.map(d => d.department),
+            labels: deptLabels,
             datasets: [{
               label: 'Employee Count',
-              data: deptData.data.departments.map(d => d.employee_count),
-              backgroundColor: '#007bff',
-              borderColor: '#0056b3',
+              data: deptValues,
+              backgroundColor: '#667eea',
+              borderColor: '#764ba2',
               borderWidth: 1
             }]
           },
@@ -652,16 +1089,23 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
         });
       }
 
-      // Gender Chart
+      // Status Distribution Chart (Pie)
+      const statusCounts = {};
+      employees.forEach(emp => {
+        statusCounts[emp.employment_status] = (statusCounts[emp.employment_status] || 0) + 1;
+      });
+      const statusLabels = Object.keys(statusCounts);
+      const statusValues = Object.values(statusCounts);
+
       const genderCtx = document.getElementById('wfaGenderChart')?.getContext('2d');
-      if (genderCtx && diversityData.data?.gender_summary) {
+      if (genderCtx) {
         new Chart(genderCtx, {
           type: 'doughnut',
           data: {
-            labels: diversityData.data.gender_summary.map(g => g.category_value),
+            labels: statusLabels,
             datasets: [{
-              data: diversityData.data.gender_summary.map(g => g.employee_count),
-              backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
+              data: statusValues,
+              backgroundColor: ['#28a745', '#dc3545', '#ffc107']
             }]
           },
           options: {
@@ -671,41 +1115,55 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
         });
       }
 
-      // Attrition Chart
+      // Tenure Distribution Chart (Line)
+      const tenureCounts = {};
+      employees.forEach(emp => {
+        const tenure = Math.floor(emp.years_employed || 0);
+        const group = tenure <= 1 ? '0-1 yr' : tenure <= 3 ? '1-3 yrs' : tenure <= 5 ? '3-5 yrs' : '5+ yrs';
+        tenureCounts[group] = (tenureCounts[group] || 0) + 1;
+      });
+      const tenureLabels = ['0-1 yr', '1-3 yrs', '3-5 yrs', '5+ yrs'];
+      const tenureValues = tenureLabels.map(label => tenureCounts[label] || 0);
+
       const attrCtx = document.getElementById('wfaAttritionChart')?.getContext('2d');
-      if (attrCtx && attritionData.data?.monthly_summary) {
-        const last12 = attritionData.data.monthly_summary.slice(-12);
+      if (attrCtx) {
         new Chart(attrCtx, {
-          type: 'line',
+          type: 'bar',
           data: {
-            labels: last12.map(a => a.year_month.substring(0, 7)),
+            labels: tenureLabels,
             datasets: [{
-              label: 'Attrition Rate %',
-              data: last12.map(a => a.attrition_rate_percent),
-              borderColor: '#dc3545',
-              backgroundColor: 'rgba(220, 53, 69, 0.1)',
-              tension: 0.4,
-              fill: true
+              label: 'Employee Count',
+              data: tenureValues,
+              backgroundColor: '#00c9ff',
+              borderColor: '#92fe9d',
+              borderWidth: 1
             }]
           },
           options: {
             responsive: true,
-            plugins: { legend: { display: true } },
-            scales: { y: { beginAtZero: true, max: 100 } }
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
           }
         });
       }
 
-      // Separation Type Chart
+      // Position Distribution Chart (Pie)
+      const posCounts = {};
+      employees.forEach(emp => {
+        posCounts[emp.position] = (posCounts[emp.position] || 0) + 1;
+      });
+      const posLabels = Object.keys(posCounts).slice(0, 5);
+      const posValues = posLabels.map(pos => posCounts[pos]);
+
       const sepCtx = document.getElementById('wfaSeparationChart')?.getContext('2d');
-      if (sepCtx && attritionData.data?.by_separation_type) {
+      if (sepCtx) {
         new Chart(sepCtx, {
           type: 'pie',
           data: {
-            labels: attritionData.data.by_separation_type.map(s => s.separation_type),
+            labels: posLabels,
             datasets: [{
-              data: attritionData.data.by_separation_type.map(s => s.count),
-              backgroundColor: ['#28a745', '#ffc107', '#dc3545']
+              data: posValues,
+              backgroundColor: ['#f093fb', '#f5576c', '#4facfe', '#00f2fe', '#43e97b']
             }]
           },
           options: {
@@ -716,9 +1174,66 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
       }
     }
 
-    // Load dashboard on page load
+    // Load dashboard on page load and handle tab switching
     document.addEventListener('DOMContentLoaded', function() {
       loadWFADashboard();
+      
+      // Handle tab clicks - attach to the tab container
+      const tabContainer = document.querySelector('ul.nav-pills.nav-sidebar');
+      console.log('Tab container found:', !!tabContainer);
+      if (tabContainer) {
+        tabContainer.addEventListener('click', function(e) {
+          const tabLink = e.target.closest('a[data-toggle="tab"]');
+          if (tabLink) {
+            e.preventDefault();
+            const targetTab = tabLink.getAttribute('href').substring(1); // Remove #
+            console.log('Tab clicked:', targetTab);
+            
+            // Remove active class from all tabs and links
+            document.querySelectorAll('a[data-toggle="tab"]').forEach(link => {
+              link.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+              pane.classList.remove('show', 'active');
+            });
+            
+            // Add active class to clicked tab and show target pane
+            tabLink.classList.add('active');
+            const targetPane = document.getElementById(targetTab);
+            if (targetPane) {
+              targetPane.classList.add('show', 'active');
+              console.log('Showing tab pane:', targetTab);
+            }
+            
+            // Call appropriate load function based on tab
+            setTimeout(() => {
+              if (targetTab === 'attrition' && typeof loadAttritionTab === 'function') {
+                console.log('Loading attrition tab');
+                loadAttritionTab();
+              } else if (targetTab === 'diversity' && typeof loadDiversityTab === 'function') {
+                console.log('Loading diversity tab');
+                loadDiversityTab();
+              } else if (targetTab === 'performance' && typeof loadPerformanceTab === 'function') {
+                console.log('Loading performance tab');
+                loadPerformanceTab();
+              } else if (targetTab === 'reports' && typeof loadReportsTab === 'function') {
+                console.log('Loading reports tab');
+                loadReportsTab();
+              } else if (targetTab === 'snapshots' && typeof loadSnapshotsTab === 'function') {
+                console.log('Loading snapshots tab');
+                loadSnapshotsTab();
+              } else if (targetTab === 'dashboard' && typeof loadWFADashboard === 'function') {
+                console.log('Loading dashboard tab');
+                loadWFADashboard();
+              } else {
+                console.log('No matching function for tab:', targetTab);
+              }
+            }, 100);
+          }
+        });
+      } else {
+        console.log('Tab container not found');
+      }
       
       const preloader = document.querySelector('.preloader');
       setTimeout(() => {
@@ -727,18 +1242,36 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
         }
       }, 3000);
     });
-  </script>
 
-  <script>
-    // Hide preloader after page loads
-    document.addEventListener('DOMContentLoaded', function() {
-      const preloader = document.querySelector('.preloader');
-      setTimeout(() => {
-        if (preloader) {
-          preloader.style.display = 'none';
-        }
-      }, 3000); // Allow animation to loop multiple times
-    });
+    // Export Functions
+    function exportDashboardPDF() {
+      const basePath = '/capstone_hr_management_system';
+      window.location.href = `${basePath}/api/wfa/generate_pdf_report.php?type=dashboard`;
+    }
+
+    function exportDashboardCSV() {
+      const basePath = '/capstone_hr_management_system';
+      let csv = 'WORKFORCE ANALYTICS DASHBOARD\n';
+      csv += `Generated: ${new Date().toLocaleString()}\n\n`;
+      csv += 'SUMMARY METRICS\n';
+      csv += '===============\n';
+      csv += `Report Date,${new Date().toISOString().split('T')[0]}\n`;
+      csv += '\n';
+      
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `Dashboard_Report_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function printDashboard() {
+      window.print();
+    }
   </script>
 </body>
 

@@ -1,0 +1,225 @@
+[2026-03-29 16:57:40] handleQRAttendance() called
+[2026-03-29 16:57:40] QR token found: 56564c04adc160fbb7e0...
+[2026-03-29 16:57:40] Getting database connection
+[2026-03-29 16:57:40] Database connection successful
+[2026-03-29 16:57:40] User ID: 32
+[2026-03-29 16:57:40] Querying employee record for user_id=32
+[2026-03-29 16:57:40] Employee found: 4
+[2026-03-29 16:57:40] Employee ID: 4, Today: 2026-03-29
+[2026-03-29 16:57:40] Executing query: SELECT attendance_id, time_in, time_out FROM ta_attendance 
+                           WHERE employee_id = '4' OR '2026-03-29' AND DATE(attendance_date) = '4' OR '2026-03-29'
+[2026-03-29 16:57:40] Record found: NO
+[2026-03-29 16:57:40] New attendance record - Action: TIME IN
+[2026-03-29 16:57:40] Storing QR pending data - Action: time_in, Message: Time In
+[2026-03-29 16:57:40] QR pending data stored successfully
+[2026-03-29 16:57:40] Redirecting to: index.php?url=time-attendance&qr_confirm=1
+[2026-03-29 16:58:21] handleQRAttendance() called
+[2026-03-29 16:58:21] QR token found: db93de617759a1e3c2a7...
+[2026-03-29 16:58:21] Getting database connection
+[2026-03-29 16:58:21] Database connection successful
+[2026-03-29 16:58:21] User ID: 32
+[2026-03-29 16:58:21] Querying employee record for user_id=32
+[2026-03-29 16:58:21] Employee found: 4
+[2026-03-29 16:58:21] Employee ID: 4, Today: 2026-03-29
+[2026-03-29 16:58:21] Executing query: SELECT attendance_id, time_in, time_out FROM ta_attendance 
+                           WHERE employee_id = '4' OR '2026-03-29' AND DATE(attendance_date) = '4' OR '2026-03-29'
+[2026-03-29 16:58:21] Record found: YES
+[2026-03-29 16:58:21] Existing record - time_in: 2026-03-29 16:57:44, time_out: NULL
+[2026-03-29 16:58:21] Storing QR pending data - Action: time_out, Message: Time Out
+[2026-03-29 16:58:21] QR pending data stored successfully
+[2026-03-29 16:58:21] Redirecting to: index.php?url=time-attendance&qr_confirm=1
+[2026-03-29 17:15:14] handleQRAttendance() called
+[2026-03-29 17:15:14] QR token found: 9a05fdc304a0c4dc5eb8...
+[2026-03-29 17:15:14] Getting database connection
+[2026-03-29 17:15:14] Database connection successful
+[2026-03-29 17:15:14] User ID: 34
+[2026-03-29 17:15:14] Querying employee record for user_id=34
+[2026-03-29 17:15:14] Employee found: 6
+[2026-03-29 17:15:14] Employee ID: 6, Today: 2026-03-29
+[2026-03-29 17:15:14] Executing query: SELECT attendance_id, time_in, time_out FROM ta_attendance 
+                           WHERE employee_id = '6' OR '2026-03-29' AND DATE(attendance_date) = '6' OR '2026-03-29'
+[2026-03-29 17:15:14] Record found: NO
+[2026-03-29 17:15:14] New attendance record - Action: TIME IN
+[2026-03-29 17:15:14] Storing QR pending data - Action: time_in, Message: Time In
+[2026-03-29 17:15:14] QR pending data stored successfully
+[2026-03-29 17:15:14] Redirecting to: index.php?url=time-attendance&qr_confirm=1
+[2026-03-30 09:49:17] handleQRAttendance() called
+[2026-03-30 09:49:17] QR token found: ca747329f251baecca39...
+[2026-03-30 09:49:17] Getting database connection
+[2026-03-30 09:49:17] Database connection successful
+[2026-03-30 09:49:17] User ID: 33
+[2026-03-30 09:49:17] Querying employee record for user_id=33
+[2026-03-30 09:49:17] Employee found: 5
+[2026-03-30 09:49:17] Employee ID: 5, Today: 2026-03-30
+[2026-03-30 09:49:17] Executing query: SELECT attendance_id, time_in, time_out FROM ta_attendance 
+                           WHERE employee_id = '5' OR '2026-03-30' AND DATE(attendance_date) = '5' OR '2026-03-30'
+[2026-03-30 09:49:17] Record found: NO
+[2026-03-30 09:49:17] New attendance record - Action: TIME IN
+[2026-03-30 09:49:17] Storing QR pending data - Action: time_in, Message: Time In
+[2026-03-30 09:49:17] QR pending data stored successfully
+[2026-03-30 09:49:17] Redirecting to: index.php?url=time-attendance&qr_confirm=1
+[2026-04-02 00:49:27] handleQRAttendance() called
+[2026-04-02 00:49:27] QR token found: aa3a37871b7758e67b41...
+[2026-04-02 00:49:27] Getting database connection
+[2026-04-02 00:49:27] Database connection successful
+[2026-04-02 00:49:27] User ID: 33
+[2026-04-02 00:49:27] Querying employee record for user_id=33
+[2026-04-02 00:49:27] Employee found: 5
+[2026-04-02 00:49:27] Employee ID: 5, Today: 2026-04-02
+[2026-04-02 00:49:27] Executing query: SELECT attendance_id, time_in, time_out FROM ta_attendance 
+                           WHERE employee_id = '5' OR '2026-04-02' AND DATE(attendance_date) = '5' OR '2026-04-02'
+[2026-04-02 00:49:27] Record found: NO
+[2026-04-02 00:49:27] New attendance record - Action: TIME IN
+[2026-04-02 00:49:27] Storing QR pending data - Action: time_in, Message: Time In
+[2026-04-02 00:49:27] QR pending data stored successfully
+[2026-04-02 00:49:27] Redirecting to: index.php?url=time-attendance&qr_confirm=1
+[2026-04-02 01:12:21] handleQRAttendance() called
+[2026-04-02 01:12:21] QR token found: d465fec6eb6eb0403fbb...
+[2026-04-02 01:12:21] Getting database connection
+[2026-04-02 01:12:21] Database connection successful
+[2026-04-02 01:12:21] User ID: 33
+[2026-04-02 01:12:21] Querying employee record for user_id=33
+[2026-04-02 01:12:21] Employee found: 5
+[2026-04-02 01:12:21] Employee ID: 5, Today: 2026-04-02
+[2026-04-02 01:12:21] Executing query: SELECT attendance_id, time_in, time_out FROM ta_attendance 
+                           WHERE employee_id = '5' OR '2026-04-02' AND DATE(attendance_date) = '5' OR '2026-04-02'
+[2026-04-02 01:12:21] Record found: NO
+[2026-04-02 01:12:21] New attendance record - Action: TIME IN
+[2026-04-02 01:12:21] Storing QR pending data - Action: time_in, Message: Time In
+[2026-04-02 01:12:21] QR pending data stored successfully
+[2026-04-02 01:12:21] Redirecting to: index.php?url=time-attendance&qr_confirm=1
+[2026-04-02 01:12:32] handleQRAttendance() called
+[2026-04-02 01:12:32] QR token found: d465fec6eb6eb0403fbb...
+[2026-04-02 01:12:32] Getting database connection
+[2026-04-02 01:12:32] Database connection successful
+[2026-04-02 01:12:32] User ID: 33
+[2026-04-02 01:12:32] Querying employee record for user_id=33
+[2026-04-02 01:12:32] Employee found: 5
+[2026-04-02 01:12:32] Employee ID: 5, Today: 2026-04-02
+[2026-04-02 01:12:32] Executing query: SELECT attendance_id, time_in, time_out FROM ta_attendance 
+                           WHERE employee_id = '5' OR '2026-04-02' AND DATE(attendance_date) = '5' OR '2026-04-02'
+[2026-04-02 01:12:32] Record found: NO
+[2026-04-02 01:12:32] New attendance record - Action: TIME IN
+[2026-04-02 01:12:32] Storing QR pending data - Action: time_in, Message: Time In
+[2026-04-02 01:12:32] QR pending data stored successfully
+[2026-04-02 01:12:32] Redirecting to: index.php?url=time-attendance&qr_confirm=1
+[2026-04-02 01:12:54] handleQRAttendance() called
+[2026-04-02 01:12:54] QR token found: d465fec6eb6eb0403fbb...
+[2026-04-02 01:12:54] Getting database connection
+[2026-04-02 01:12:54] Database connection successful
+[2026-04-02 01:12:54] User ID: 33
+[2026-04-02 01:12:55] Querying employee record for user_id=33
+[2026-04-02 01:12:55] Employee found: 5
+[2026-04-02 01:12:55] Employee ID: 5, Today: 2026-04-02
+[2026-04-02 01:12:55] Executing query: SELECT attendance_id, time_in, time_out FROM ta_attendance 
+                           WHERE employee_id = '5' OR '2026-04-02' AND DATE(attendance_date) = '5' OR '2026-04-02'
+[2026-04-02 01:12:55] Record found: NO
+[2026-04-02 01:12:55] New attendance record - Action: TIME IN
+[2026-04-02 01:12:55] Storing QR pending data - Action: time_in, Message: Time In
+[2026-04-02 01:12:55] QR pending data stored successfully
+[2026-04-02 01:12:55] Redirecting to: index.php?url=time-attendance&qr_confirm=1
+[2026-04-02 01:16:43] handleQRAttendance() called
+[2026-04-02 01:16:43] QR token found: 230bc70e2b779fa357b6...
+[2026-04-02 01:16:43] Getting database connection
+[2026-04-02 01:16:43] Database connection successful
+[2026-04-02 01:16:43] User ID: 33
+[2026-04-02 01:16:43] Querying employee record for user_id=33
+[2026-04-02 01:16:43] Employee found: 5
+[2026-04-02 01:16:43] Employee ID: 5, Today: 2026-04-02
+[2026-04-02 01:16:43] Executing query: SELECT attendance_id, time_in, time_out FROM ta_attendance 
+                           WHERE employee_id = '5' OR '2026-04-02' AND DATE(attendance_date) = '5' OR '2026-04-02'
+[2026-04-02 01:16:43] Record found: NO
+[2026-04-02 01:16:43] New attendance record - Action: TIME IN
+[2026-04-02 01:16:43] Storing QR pending data - Action: time_in, Message: Time In
+[2026-04-02 01:16:43] QR pending data stored successfully
+[2026-04-02 01:16:43] Redirecting to: index.php?url=time-attendance&qr_confirm=1
+[2026-04-02 01:19:11] handleQRAttendance() called
+[2026-04-02 01:19:11] QR token found: d737d1f37b5973b59bfb...
+[2026-04-02 01:19:11] Getting database connection
+[2026-04-02 01:19:11] Database connection successful
+[2026-04-02 01:19:11] User ID: 33
+[2026-04-02 01:19:11] Querying employee record for user_id=33
+[2026-04-02 01:19:11] Employee found: 5
+[2026-04-02 01:19:11] Employee ID: 5, Today: 2026-04-02
+[2026-04-02 01:19:11] Executing query: SELECT attendance_id, time_in, time_out FROM ta_attendance 
+                           WHERE employee_id = '5' OR '2026-04-02' AND DATE(attendance_date) = '5' OR '2026-04-02'
+[2026-04-02 01:19:11] Record found: NO
+[2026-04-02 01:19:11] New attendance record - Action: TIME IN
+[2026-04-02 01:19:11] Storing QR pending data - Action: time_in, Message: Time In
+[2026-04-02 01:19:11] QR pending data stored successfully
+[2026-04-02 01:19:11] Redirecting to: index.php?url=time-attendance&qr_confirm=1
+[2026-04-02 01:22:34] handleQRAttendance() called
+[2026-04-02 01:22:34] QR token found: a2453415702a44e58db9...
+[2026-04-02 01:22:34] Getting database connection
+[2026-04-02 01:22:34] Database connection successful
+[2026-04-02 01:22:34] User ID: 33
+[2026-04-02 01:22:34] Querying employee record for user_id=33
+[2026-04-02 01:22:34] Employee found: 5
+[2026-04-02 01:22:34] Employee ID: 5, Today: 2026-04-02
+[2026-04-02 01:22:34] Executing query: SELECT attendance_id, time_in, time_out FROM ta_attendance 
+                           WHERE employee_id = '5' OR '2026-04-02' AND DATE(attendance_date) = '5' OR '2026-04-02'
+[2026-04-02 01:22:34] Record found: NO
+[2026-04-02 01:22:34] New attendance record - Action: TIME IN
+[2026-04-02 01:22:34] Storing QR pending data - Action: time_in, Message: Time In
+[2026-04-02 01:22:34] QR pending data stored successfully
+[2026-04-02 01:22:34] Redirecting to: index.php?url=time-attendance&qr_confirm=1
+[2026-04-02 01:25:22] handleQRAttendance() called
+[2026-04-02 01:25:22] QR token found: 102ebc0b2bf24df69906...
+[2026-04-02 01:25:22] Getting database connection
+[2026-04-02 01:25:22] Database connection successful
+[2026-04-02 01:25:22] User ID: 33
+[2026-04-02 01:25:22] Querying employee record for user_id=33
+[2026-04-02 01:25:22] Employee found: 5
+[2026-04-02 01:25:22] Employee ID: 5, Today: 2026-04-02
+[2026-04-02 01:25:22] Executing query: SELECT attendance_id, time_in, time_out FROM ta_attendance 
+                           WHERE employee_id = '5' OR '2026-04-02' AND DATE(attendance_date) = '5' OR '2026-04-02'
+[2026-04-02 01:25:22] Record found: NO
+[2026-04-02 01:25:22] New attendance record - Action: TIME IN
+[2026-04-02 01:25:22] Storing QR pending data - Action: time_in, Message: Time In
+[2026-04-02 01:25:22] QR pending data stored successfully
+[2026-04-02 01:25:22] Redirecting to: index.php?url=time-attendance&qr_confirm=1
+[2026-04-02 01:27:22] handleQRAttendance() called
+[2026-04-02 01:27:22] QR token found: 2484844dc66f9cc598bd...
+[2026-04-02 01:27:22] Getting database connection
+[2026-04-02 01:27:22] Database connection successful
+[2026-04-02 01:27:22] User ID: 33
+[2026-04-02 01:27:22] Querying employee record for user_id=33
+[2026-04-02 01:27:22] Employee found: 5
+[2026-04-02 01:27:22] Employee ID: 5, Today: 2026-04-02
+[2026-04-02 01:27:22] Executing query: SELECT attendance_id, time_in, time_out FROM ta_attendance 
+                           WHERE employee_id = '5' OR '2026-04-02' AND DATE(attendance_date) = '5' OR '2026-04-02'
+[2026-04-02 01:27:22] Record found: NO
+[2026-04-02 01:27:22] New attendance record - Action: TIME IN
+[2026-04-02 01:27:22] Storing QR pending data - Action: time_in, Message: Time In
+[2026-04-02 01:27:22] QR pending data stored successfully
+[2026-04-02 01:27:22] Redirecting to: index.php?url=time-attendance&qr_confirm=1
+[2026-04-02 01:29:03] handleQRAttendance() called
+[2026-04-02 01:29:03] QR token found: 81605ffdfeabd7caeda2...
+[2026-04-02 01:29:03] Getting database connection
+[2026-04-02 01:29:03] Database connection successful
+[2026-04-02 01:29:03] User ID: 33
+[2026-04-02 01:29:03] Querying employee record for user_id=33
+[2026-04-02 01:29:03] Employee found: 5
+[2026-04-02 01:29:03] Employee ID: 5, Today: 2026-04-02
+[2026-04-02 01:29:03] Executing query: SELECT attendance_id, time_in, time_out FROM ta_attendance 
+                           WHERE employee_id = '5' OR '2026-04-02' AND DATE(attendance_date) = '5' OR '2026-04-02'
+[2026-04-02 01:29:03] Record found: NO
+[2026-04-02 01:29:03] New attendance record - Action: TIME IN
+[2026-04-02 01:29:03] Storing QR pending data - Action: time_in, Message: Time In
+[2026-04-02 01:29:03] QR pending data stored successfully
+[2026-04-02 01:29:03] Redirecting to: index.php?url=time-attendance&qr_confirm=1
+[2026-04-02 13:59:31] handleQRAttendance() called
+[2026-04-02 13:59:31] QR token found: 85b62f61519e3ff3c9b0...
+[2026-04-02 13:59:31] Getting database connection
+[2026-04-02 13:59:31] Database connection successful
+[2026-04-02 13:59:31] User ID: 33
+[2026-04-02 13:59:31] Querying employee record for user_id=33
+[2026-04-02 13:59:31] Employee found: 5
+[2026-04-02 13:59:31] Employee ID: 5, Today: 2026-04-02
+[2026-04-02 13:59:31] Executing query: SELECT attendance_id, time_in, time_out FROM ta_attendance 
+                           WHERE employee_id = '5' OR '2026-04-02' AND DATE(attendance_date) = '5' OR '2026-04-02'
+[2026-04-02 13:59:31] Record found: NO
+[2026-04-02 13:59:31] New attendance record - Action: TIME IN
+[2026-04-02 13:59:31] Storing QR pending data - Action: time_in, Message: Time In
+[2026-04-02 13:59:31] QR pending data stored successfully
+[2026-04-02 13:59:31] Redirecting to: index.php?url=time-attendance&qr_confirm=1

@@ -16,6 +16,9 @@ try {
     $start_date = $_GET['start_date'] ?? null;
     $end_date = $_GET['end_date'] ?? null;
 
+    // Debug logging
+    error_log('get_employee_schedule.php called with: employee_id=' . $employee_id . ', start_date=' . $start_date . ', end_date=' . $end_date);
+
     if (!$employee_id) {
         throw new Exception('Employee ID is required');
     }
@@ -59,7 +62,7 @@ try {
     $attendance_records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Get flexible schedules for this employee (both one-time and recurring)
-    $flexible_query = "SELECT * FROM flexible_schedules
+    $flexible_query = "SELECT * FROM ta_flexible_schedules
                        WHERE employee_id = ?
                        AND ((schedule_date BETWEEN ? AND ?)
                           OR (day_of_week IS NOT NULL AND 

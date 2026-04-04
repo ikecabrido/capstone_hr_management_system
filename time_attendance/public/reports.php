@@ -188,6 +188,15 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
     </style>
 </head>
 <body>
+    <div
+      class="preloader flex-column justify-content-center align-items-center">
+      <img
+        class="animation__wobble"
+        src="../../assets/pics/bcpLogo.png"
+        alt="BCP Logo"
+        height="60"
+        width="60" />
+    </div>
     <?php require_once "../app/components/Sidebar.php"; ?>
 
     <div class="main-content">
@@ -381,6 +390,33 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
             if (darkMode) {
                 document.body.classList.add('dark-mode');
             }
+        });
+
+        // Preloader Management
+        document.addEventListener('DOMContentLoaded', function() {
+            const preloader = document.querySelector('.preloader');
+            
+            // Hide preloader after page load
+            setTimeout(() => {
+                if (preloader) {
+                    preloader.style.display = 'none';
+                }
+            }, 500);
+
+            // Show preloader on navigation links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    const href = this.getAttribute('href');
+                    if (href && !href.includes('logout') && !href.startsWith('javascript')) {
+                        if (preloader) {
+                            preloader.style.display = 'flex';
+                            setTimeout(() => {
+                                preloader.style.display = 'none';
+                            }, 3000);
+                        }
+                    }
+                });
+            });
         });
     </script>
 </body>

@@ -1,4 +1,4 @@
-<!-- TAB 2: ATTRITION & TURNOVER -->
+<!-- TAB: ATTRITION & TURNOVER -->
 <div class="wfa-container" id="attritionContainer">
     <div class="wfa-loading">
         <i class="fas fa-spinner fa-spin"></i> Loading Attrition Data...
@@ -7,90 +7,201 @@
 
 <script>
 async function loadAttritionTab() {
+    console.log('loadAttritionTab() called');
     const container = document.getElementById('attritionContainer');
+    
+    if (!container) {
+        console.error('Attrition container not found');
+        return;
+    }
     
     try {
         const basePath = '/capstone_hr_management_system';
-        const response = await fetch(`${basePath}/api/wfa/attrition_metrics.php`);
-        const data = await response.json();
+        console.log('Fetching employee data for attrition...');
         
-        const monthly = data.data?.monthly_summary || [];
-        const byType = data.data?.by_separation_type || [];
+        // Fetch both employee data and insights
+        const [empResponse, insightsResponse] = await Promise.all([
+            fetch(`${basePath}/api/wfa/employees_data.php`),
+            fetch(`${basePath}/api/wfa/insights_analytics.php`)
+        ]);
+        
+        if (!empResponse.ok) throw new Error(`Employees API Error: ${empResponse.status}`);
+        if (!insightsResponse.ok) throw new Error(`Insights API Error: ${insightsResponse.status}`);
+        
+        const empData = await empResponse.json();
+        const insightsData = await insightsResponse.json();
+        
+        const employees = empData.data?.employees || [];
+        const totalEmployees = employees.length;
+        const insights = insightsData.data?.insights || [];
+        
+        // Calculate employment status
+        const statusDist = {};
+        employees.forEach(emp => {
+            if (!statusDist[emp.employment_status]) {
+                statusDist[emp.employment_status] = 0;
+            }
+            statusDist[emp.employment_status]++;
+        });
+        
+        // Calculate tenure groups
+        const tenureGroups = {
+            'New (0-1 year)': employees.filter(e => parseInt(e.years_employed) <= 1).length,
+            'Developing (1-3 years)': employees.filter(e => parseInt(e.years_employed) > 1 && parseInt(e.years_employed) <= 3).length,
+            'Experienced (3-5 years)': employees.filter(e => parseInt(e.years_employed) > 3 && parseInt(e.years_employed) <= 5).length,
+            'Senior (5+ years)': employees.filter(e => parseInt(e.years_employed) > 5).length
+        };
+        
+        // Calculate department attrition
+        const deptStats = {};
+        employees.forEach(emp => {
+            if (!deptStats[emp.department]) {
+                deptStats[emp.department] = { total: 0, active: 0, inactive: 0 };
+            }
+            deptStats[emp.department].total++;
+            if (emp.employment_status === 'Active') {
+                deptStats[emp.department].active++;
+            } else {
+                deptStats[emp.department].inactive++;
+            }
+        });
+        
+        // Calculate turnover rates per department
+        const deptTurnover = Object.entries(deptStats).map(([dept, stats]) => ({
+            department: dept,
+            total: stats.total,
+            active: stats.active,
+            inactive: stats.inactive,
+            turnover_rate: stats.total > 0 ? ((stats.inactive / stats.total) * 100).toFixed(1) : 0,
+            health: stats.total > 0 ? (
+                ((stats.inactive / stats.total) * 100) > 20 ? 'At Risk' : 
+                ((stats.inactive / stats.total) * 100) > 10 ? 'Caution' : 
+                'Healthy'
+            ) : 'Unknown'
+        })).sort((a, b) => parseFloat(b.turnover_rate) - parseFloat(a.turnover_rate));
+        
+        const activeCount = statusDist['Active'] || 0;
+        const inactiveCount = totalEmployees - activeCount;
+        const attritionRate = totalEmployees > 0 ? ((inactiveCount / totalEmployees) * 100).toFixed(1) : 0;
         
         let html = `
+            <!-- Insights Alert Section -->
+            <div style="margin-bottom: 30px;">
+                ${insights.map(insight => `
+                    <div class="wfa-insight-card ${insight.type}">
+                        <div class="insight-header">
+                            <span class="insight-icon">${insight.icon}</span>
+                            <div>
+                                <h4 style="margin: 0 0 5px 0; color: #333;">${insight.title}</h4>
+                                <p style="margin: 0; color: #666; font-size: 14px;">${insight.message}</p>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            
             <!-- Attrition Metrics -->
             <div class="wfa-metrics-grid">
+                <div class="wfa-metric-card">
+                    <div class="wfa-metric-label">Total Employees</div>
+                    <div class="wfa-metric-value">${totalEmployees}</div>
+                    <div class="wfa-metric-change">Current Headcount</div>
+                </div>
+                
+                <div class="wfa-metric-card success">
+                    <div class="wfa-metric-label">Active Employees</div>
+                    <div class="wfa-metric-value">${activeCount}</div>
+                    <div class="wfa-metric-change">Currently Active</div>
+                </div>
+                
                 <div class="wfa-metric-card danger">
-                    <div class="wfa-metric-label">Total Separations (YTD)</div>
-                    <div class="wfa-metric-value">${monthly.reduce((sum, m) => sum + (m.total_separations || 0), 0)}</div>
-                    <div class="wfa-metric-change">This year</div>
+                    <div class="wfa-metric-label">Inactive Employees</div>
+                    <div class="wfa-metric-value">${inactiveCount}</div>
+                    <div class="wfa-metric-change">Separated</div>
                 </div>
                 
                 <div class="wfa-metric-card warning">
-                    <div class="wfa-metric-label">Voluntary Separations</div>
-                    <div class="wfa-metric-value">${monthly.reduce((sum, m) => sum + (m.voluntary_separations || 0), 0)}</div>
-                    <div class="wfa-metric-change">Resignations</div>
-                </div>
-                
-                <div class="wfa-metric-card">
-                    <div class="wfa-metric-label">Involuntary Separations</div>
-                    <div class="wfa-metric-value">${monthly.reduce((sum, m) => sum + (m.involuntary_separations || 0), 0)}</div>
-                    <div class="wfa-metric-change">Terminations</div>
-                </div>
-                
-                <div class="wfa-metric-card info">
-                    <div class="wfa-metric-label">Avg Attrition Rate</div>
-                    <div class="wfa-metric-value">${monthly.length > 0 ? (monthly.reduce((sum, m) => sum + (m.attrition_rate_percent || 0), 0) / monthly.length).toFixed(1) : 0}%</div>
-                    <div class="wfa-metric-change">Monthly average</div>
+                    <div class="wfa-metric-label">Attrition Rate</div>
+                    <div class="wfa-metric-value">${attritionRate}%</div>
+                    <div class="wfa-metric-change">Overall Rate</div>
                 </div>
             </div>
             
-            <!-- Charts -->
+            <!-- Attrition Charts -->
             <div class="wfa-charts-grid">
                 <div class="wfa-chart-container">
-                    <div class="wfa-chart-title">Monthly Attrition Rate</div>
-                    <canvas id="attritionTrendChart"></canvas>
+                    <div class="wfa-chart-title">Tenure Distribution</div>
+                    <canvas id="tenureChart"></canvas>
                 </div>
                 
                 <div class="wfa-chart-container">
-                    <div class="wfa-chart-title">Separation Types</div>
-                    <canvas id="separationTypeChart"></canvas>
+                    <div class="wfa-chart-title">Employment Status</div>
+                    <canvas id="attritionStatusChart"></canvas>
                 </div>
             </div>
             
-            <!-- Attrition Summary Table -->
+            <!-- Tenure Distribution Table -->
             <div class="wfa-table-container">
-                <h3 style="margin-bottom: 15px;">Monthly Attrition Summary</h3>
+                <h3 style="margin-bottom: 15px;">Employee Tenure Distribution</h3>
                 <table class="wfa-table">
                     <thead>
                         <tr>
-                            <th>Month</th>
-                            <th>Total Separations</th>
-                            <th>Voluntary</th>
-                            <th>Involuntary</th>
-                            <th>Attrition Rate (%)</th>
-                            <th>Avg Tenure (Years)</th>
+                            <th>Tenure Group</th>
+                            <th>Employee Count</th>
+                            <th>Percentage</th>
                         </tr>
                     </thead>
                     <tbody>
         `;
         
-        if (monthly.length > 0) {
-            monthly.slice(0, 12).forEach(m => {
-                html += `
-                    <tr>
-                        <td>${m.year_month || 'N/A'}</td>
-                        <td>${m.total_separations || 0}</td>
-                        <td>${m.voluntary_separations || 0}</td>
-                        <td>${m.involuntary_separations || 0}</td>
-                        <td>${(m.attrition_rate_percent || 0).toFixed(2)}%</td>
-                        <td>${(m.average_tenure_departing || 0).toFixed(1)}</td>
-                    </tr>
-                `;
-            });
-        } else {
-            html += '<tr><td colspan="6" style="text-align: center; padding: 20px;">No attrition data available</td></tr>';
-        }
+        Object.keys(tenureGroups).forEach(group => {
+            const count = tenureGroups[group];
+            const percent = totalEmployees > 0 ? ((count / totalEmployees) * 100).toFixed(1) : 0;
+            html += `
+                <tr>
+                    <td><strong>${group}</strong></td>
+                    <td>${count}</td>
+                    <td>${percent}%</td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Department Attrition Table -->
+            <div class="wfa-table-container">
+                <h3 style="margin-bottom: 15px;">📊 Department Turnover Analysis</h3>
+                <table class="wfa-table">
+                    <thead>
+                        <tr>
+                            <th>Department</th>
+                            <th>Total Employees</th>
+                            <th>Active</th>
+                            <th>Inactive</th>
+                            <th>Turnover Rate</th>
+                            <th>Health Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        deptTurnover.forEach(dept => {
+            const healthColor = dept.health === 'At Risk' ? '#dc3545' : (dept.health === 'Caution' ? '#ffc107' : '#28a745');
+            const healthBg = dept.health === 'At Risk' ? '#ffe5e5' : (dept.health === 'Caution' ? '#fff9e6' : '#e5f5ea');
+            html += `
+                <tr>
+                    <td><strong>${dept.department}</strong></td>
+                    <td>${dept.total}</td>
+                    <td><span style="color: #4CAF50; font-weight: bold;">${dept.active}</span></td>
+                    <td><span style="color: #f44336; font-weight: bold;">${dept.inactive}</span></td>
+                    <td><strong style="color: ${dept.turnover_rate > 15 ? '#dc3545' : (dept.turnover_rate > 10 ? '#ffc107' : '#28a745')}">${dept.turnover_rate}%</strong></td>
+                    <td><span style="background: ${healthBg}; color: ${healthColor}; padding: 5px 10px; border-radius: 4px; font-weight: 600;">${dept.health}</span></td>
+                </tr>
+            `;
+        });
         
         html += `
                     </tbody>
@@ -98,79 +209,87 @@ async function loadAttritionTab() {
             </div>
         `;
         
+        console.log('Attrition HTML generated');
         container.innerHTML = html;
         
         // Initialize charts
-        initAttritionCharts(monthly, byType);
+        initializeAttritionCharts(tenureGroups, statusDist, totalEmployees);
         
     } catch (error) {
         console.error('Error loading attrition data:', error);
-        container.innerHTML = '<div class="wfa-error">Error loading attrition data</div>';
+        container.innerHTML = '<div style="padding: 20px; color: #d32f2f;">Error loading attrition data: ' + error.message + '</div>';
     }
 }
 
-function initAttritionCharts(monthly, byType) {
-    // Attrition Trend Chart
-    if (monthly.length > 0) {
-        const trendCtx = document.getElementById('attritionTrendChart')?.getContext('2d');
-        if (trendCtx) {
-            new Chart(trendCtx, {
-                type: 'line',
-                data: {
-                    labels: monthly.map(m => m.year_month),
-                    datasets: [{
-                        label: 'Attrition Rate (%)',
-                        data: monthly.map(m => m.attrition_rate_percent || 0),
-                        borderColor: '#dc3545',
-                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }]
+function initializeAttritionCharts(tenureGroups, statusDist, totalEmployees) {
+    console.log('Initializing attrition charts');
+    
+    // Tenure Chart
+    const tenureCtx = document.getElementById('tenureChart');
+    if (tenureCtx) {
+        const tenureLabels = Object.keys(tenureGroups);
+        const tenureCounts = tenureLabels.map(t => tenureGroups[t]);
+        
+        new Chart(tenureCtx, {
+            type: 'bar',
+            data: {
+                labels: tenureLabels,
+                datasets: [{
+                    label: 'Employees',
+                    data: tenureCounts,
+                    backgroundColor: '#667eea',
+                    borderColor: '#764ba2',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false }
                 },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: true } },
-                    scales: { y: { beginAtZero: true } }
+                scales: {
+                    y: { beginAtZero: true }
                 }
-            });
-        }
+            }
+        });
+        console.log('Tenure chart created');
     }
     
-    // Separation Type Chart
-    if (byType.length > 0) {
-        const typeCtx = document.getElementById('separationTypeChart')?.getContext('2d');
-        if (typeCtx) {
-            new Chart(typeCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: byType.map(t => t.separation_type),
-                    datasets: [{
-                        data: byType.map(t => t.count),
-                        backgroundColor: ['#28a745', '#ffc107', '#dc3545']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { position: 'bottom' } }
+    // Status Chart
+    const statusCtx = document.getElementById('attritionStatusChart');
+    if (statusCtx) {
+        const statusLabels = Object.keys(statusDist);
+        const statusCounts = statusLabels.map(s => statusDist[s]);
+        
+        const colors = [];
+        statusLabels.forEach(label => {
+            colors.push(label === 'Active' ? '#4CAF50' : '#f44336');
+        });
+        
+        new Chart(statusCtx, {
+            type: 'pie',
+            data: {
+                labels: statusLabels,
+                datasets: [{
+                    data: statusCounts,
+                    backgroundColor: colors,
+                    borderColor: '#fff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 15, font: { size: 12 } }
+                    }
                 }
-            });
-        }
+            }
+        });
+        console.log('Status chart created');
     }
 }
-
-// Load on tab click
-document.addEventListener('DOMContentLoaded', function() {
-    const attritionTab = document.querySelector('a[href="#attrition"]');
-    if (attritionTab) {
-        attritionTab.addEventListener('click', function() {
-            loadAttritionTab();
-        });
-    }
-});
 </script>
-                <tr>
-                    <td colspan="5" class="text-center">Loading...</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
