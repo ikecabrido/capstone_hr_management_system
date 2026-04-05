@@ -131,8 +131,12 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
                 <p>360-Degree Feedback</p>
               </a>
             </li>
+<<<<<<< HEAD
       
             <li class="nav-item">
+=======
+             <li class="nav-item">
+>>>>>>> 8942cf7 (Clinic update)
               <a href="modules/Appraisals&review.php" class="nav-link">
                 <i class="nav-icon fas fa-edit"></i>
                 <p>Appraisals & Review</p>
@@ -152,7 +156,11 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
             </li>
             <li class="nav-item">
               <a href="modules/Training.php" class="nav-link">
+<<<<<<< HEAD
                 <i class="nav-icon fas fa-graduation-cap"></i>
+=======
+                <i class="nav-icon fas fa-table"></i>
+>>>>>>> 8942cf7 (Clinic update)
                 <p>Training</p>
               </a>
             </li>

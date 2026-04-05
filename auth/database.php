@@ -5,10 +5,17 @@ class Database
     private static $instance = null;
     private $conn;
 
+<<<<<<< HEAD
     private $host = "localhost";
     private $db   = "hr_management";
     private $user = "root";
     private $pass = "";
+=======
+    private string $host = "localhost";
+    private string $db   = "hr_management";
+    private string $user = "root";
+    private string $pass = "";
+>>>>>>> 8942cf7 (Clinic update)
 
     private function __construct()
     {

@@ -12,10 +12,14 @@ CREATE TABLE IF NOT EXISTS `goals` (
   `goal_description` text DEFAULT NULL,
   `target_date` date NOT NULL,
   `priority_level` enum('low','medium','high','critical') NOT NULL DEFAULT 'medium',
+<<<<<<< HEAD
   `status` enum('not_started','in_progress','completed') NOT NULL DEFAULT 'not_started',
   `kpi_target` decimal(10,2) DEFAULT NULL,
   `kpi_current` decimal(10,2) DEFAULT 0.00,
   `kpi_unit` varchar(50) DEFAULT NULL,
+=======
+  `status` enum('pending','ongoing','completed') NOT NULL DEFAULT 'pending',
+>>>>>>> 8942cf7 (Clinic update)
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`goal_id`),
@@ -143,7 +147,11 @@ CREATE TABLE `pm_evaluations` (
   `created_by` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+<<<<<<< HEAD
   PRIMARY KEY (`evaluation_id`),
+=======
+  PRIMARY KEY (`id`),
+>>>>>>> 8942cf7 (Clinic update)
   KEY `employee_id` (`employee_id`),
   CONSTRAINT `performance_evaluations_employee_fk` FOREIGN KEY (`employee_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci; 
