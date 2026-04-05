@@ -13,7 +13,6 @@ $content = $content ?? __DIR__ . '/main-content.php';
 
     <title><?= $title ?? 'HR Management System'; ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
-
     <script src="<?= $base ?>/employee_portal/public/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= $base ?>/employee_portal/public/assets/bootstrap/css/bootstrap.min.css">
@@ -28,8 +27,6 @@ $content = $content ?? __DIR__ . '/main-content.php';
     <link rel="stylesheet" href="/capstone_hr_management_system/employee_portal/public/assets/css/employeeDashboard.css">
     <link rel="stylesheet" href="/capstone_hr_management_system/employee_portal/public/assets/css/style.css">
     <script src="/capstone_hr_management_system/employee_portal/public/assets/js/mobile-responsive.js" defer></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 
 <body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed">
@@ -59,7 +56,28 @@ $content = $content ?? __DIR__ . '/main-content.php';
     <script src="<?= $base ?>/assets/dist/js/adminlte.min.js"></script>
     <script src="<?= $base ?>/employee_portal/app/views/partials/custom.js"></script>
     <script src="<?= $base ?>/employee_portal/public/assets/js/time.js"></script>
+    <script>
+        function validatePassword() {
+            const pass = document.getElementById('newPassword').value;
+            const confirm = document.getElementById('confirmPassword').value;
+            const errorDiv = document.getElementById('passwordError');
 
+            if (pass.length < 6) {
+                errorDiv.style.display = 'block';
+                errorDiv.innerText = 'Password must be at least 6 characters.';
+                return false;
+            }
+
+            if (pass !== confirm) {
+                errorDiv.style.display = 'block';
+                errorDiv.innerText = 'Passwords do not match.';
+                return false;
+            }
+
+            errorDiv.style.display = 'none';
+            return true;
+        }
+    </script>
 
 </body>
 

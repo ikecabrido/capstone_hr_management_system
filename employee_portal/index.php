@@ -2,6 +2,7 @@
 session_start();
 
 require 'app/controllers/AuthController.php';
+require 'app/controllers/ProfileController.php';
 require 'app/controllers/PayslipController.php';
 require 'app/controllers/LeaveRequestController.php';
 require 'app/controllers/AnnouncementController.php';
@@ -15,7 +16,7 @@ require 'app/controllers/PerformanceFeedbackController.php';
 $url = $_GET['url'] ?? 'auth-index';
 
 switch ($url) {
-
+//Authentication
     case 'auth-index':
         (new AuthController)->index();
         break;
@@ -137,6 +138,19 @@ switch ($url) {
     //Clinic / Medical Records
     case 'employee-medical-records':
         (new MedicalRecordController)->index();
+        break;
+
+    //Profile
+    case 'user-profile':
+        (new ProfileController)->index();
+        break;
+    
+    case 'update-name':
+        (new ProfileController)->updateName();
+        break;
+    
+    case 'update-password':
+        (new ProfileController)->changePassword();
         break;
 
     default:

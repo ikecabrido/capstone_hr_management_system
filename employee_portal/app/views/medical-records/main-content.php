@@ -4,8 +4,8 @@
             <div class="bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-100">
 
                 <div class="px-6 py-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-                    <h2 class="text-xl font-semibold flex items-center gap-2">
-                        🏥 Medical Records
+                    <h2 class="text-6xl font-semibold flex items-center gap-2">
+                        Medical Records
                     </h2>
                     <p class="text-sm text-blue-100">Patient visits and consultations</p>
                 </div>
@@ -21,8 +21,7 @@
                                 <th class="px-6 py-3 text-left">Diagnosis</th>
                                 <th class="px-6 py-3 text-left">Type</th>
                                 <th class="px-6 py-3 text-left">Status</th>
-                                <th class="px-6 py-3 text-left">Doctor</th>
-                                <th class="px-6 py-3 text-center">Action</th>
+                                <th class="px-6 py-3 text-left">Medical Assistant</th>
                             </tr>
                         </thead>
 
@@ -32,7 +31,6 @@
                                 <?php foreach ($records as $r): ?>
                                     <tr class="hover:bg-blue-50 transition duration-150">
 
-                                        <!-- Patient -->
                                         <td class="px-6 py-4">
                                             <div class="font-semibold text-gray-800">
                                                 <?= htmlspecialchars($r['full_name'] ?? 'N/A') ?>
@@ -42,7 +40,6 @@
                                             </div>
                                         </td>
 
-                                        <!-- Visit Date -->
                                         <td class="px-6 py-4 text-gray-600">
                                             <?= !empty($r['visit_date'])
                                                 ? date('M d, Y', strtotime($r['visit_date']))
@@ -54,17 +51,14 @@
                                             </div>
                                         </td>
 
-                                        <!-- Complaint -->
                                         <td class="px-6 py-4 text-gray-700 max-w-[200px] truncate">
                                             <?= htmlspecialchars($r['chief_complaint'] ?? 'N/A') ?>
                                         </td>
 
-                                        <!-- Diagnosis -->
                                         <td class="px-6 py-4 text-gray-700 max-w-[200px] truncate">
                                             <?= htmlspecialchars($r['diagnosis'] ?? 'N/A') ?>
                                         </td>
 
-                                        <!-- Consultation Type -->
                                         <td class="px-6 py-4">
                                             <span class="px-2 py-1 text-xs rounded-full font-semibold
                                     <?= $r['consultation_type'] === 'Emergency' ? 'bg-red-100 text-red-700' : ($r['consultation_type'] === 'Walk-in' ? 'bg-blue-100 text-blue-700' : ($r['consultation_type'] === 'Appointment' ? 'bg-purple-100 text-purple-700' :
@@ -73,7 +67,6 @@
                                             </span>
                                         </td>
 
-                                        <!-- Status -->
                                         <td class="px-6 py-4">
                                             <span class="px-2 py-1 text-xs rounded-full font-semibold
                                     <?= $r['status'] === 'Completed' ? 'bg-green-100 text-green-700' : ($r['status'] === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
@@ -82,28 +75,9 @@
                                             </span>
                                         </td>
 
-                                        <!-- Doctor -->
                                         <td class="px-6 py-4 text-gray-600">
                                             <?= htmlspecialchars($r['attending_physician'] ?? 'N/A') ?>
                                         </td>
-
-                                        <!-- Actions -->
-                                        <td class="px-6 py-4 text-center">
-                                            <div class="flex justify-center gap-2">
-
-                                                <a href="view.php?id=<?= $r['record_id'] ?>"
-                                                    class="px-3 py-1 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
-                                                    View
-                                                </a>
-
-                                                <a href="edit.php?id=<?= $r['record_id'] ?>"
-                                                    class="px-3 py-1 text-xs bg-yellow-400 text-white rounded-lg hover:bg-yellow-500 transition">
-                                                    print
-                                                </a>
-
-                                            </div>
-                                        </td>
-
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
