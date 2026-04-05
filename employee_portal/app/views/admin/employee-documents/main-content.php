@@ -93,9 +93,18 @@
                                         </div>
                                     <?php endif; ?>
                                 </td>
-
+                                
                                 <td class="text-truncate text-muted" style="max-width: 120px;">
-                                    <?= htmlspecialchars($doc['remarks'] ?? '-') ?>
+                                    <?php if (empty($doc['remarks'])): ?>
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-primary"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#remarksModal<?= (int)$doc['approval_id'] ?>">
+                                            Add
+                                        </button>
+                                    <?php else: ?>
+                                        <?= htmlspecialchars($doc['remarks'], ENT_QUOTES) ?>
+                                    <?php endif; ?>
                                 </td>
 
                                 <td class="text-center">
@@ -108,8 +117,8 @@
                                         </form>
                                     </div>
                                 </td>
-
                             </tr>
+                            <?php require __DIR__ . '/modal-remarks.php'; ?>
                         <?php endforeach; ?>
                     <?php else : ?>
                         <tr>

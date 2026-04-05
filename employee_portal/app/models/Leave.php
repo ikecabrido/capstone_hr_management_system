@@ -12,6 +12,13 @@ class Leave
         $this->conn = $database->getConnection();
     }
 
+    public function all()
+    {
+        $query = "SELECT * FROM {$this->table} ORDER BY date_submitted DESC";
+        $stmt = $this->conn->query($query);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     /**  * Create leave request */
     public function create($data)
     {

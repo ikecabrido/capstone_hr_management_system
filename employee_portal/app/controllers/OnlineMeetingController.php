@@ -82,7 +82,6 @@ class OnlineMeetingController
             header("Location: index.php?url=admin-online-meeting");
             exit;
         }
-
         $id = $_POST['id'] ?? '';
         $title = trim($_POST['title'] ?? '');
         $scheduled_at = $_POST['scheduled_at'] ?? '';

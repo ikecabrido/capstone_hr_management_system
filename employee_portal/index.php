@@ -47,6 +47,10 @@ switch ($url) {
         (new EmployeeDocumentsController)->decision();
         break;
 
+    case 'admin-documents-add-remarks':
+        (new EmployeeDocumentsController)->addRemarks();
+        break;
+
     // Employee Attendance
     case 'employee-time-in':
         (new AttendanceController)->timeIn();

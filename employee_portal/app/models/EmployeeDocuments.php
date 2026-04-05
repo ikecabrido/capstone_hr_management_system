@@ -5,13 +5,11 @@ class EmployeeDocuments
 {
     private $conn;
     private $table = "ep_employee_documents";
-
     public function __construct()
     {
         $database = new Database();
         $this->conn = $database->getConnection();
     }
-
     public function all()
     {
         $stmt = $this->conn->prepare("
@@ -28,7 +26,6 @@ class EmployeeDocuments
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-
     public function getByDepartment($departmentId)
     {
         $stmt = $this->conn->prepare("
@@ -47,7 +44,6 @@ class EmployeeDocuments
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-
     public function getById($approvalId)
     {
         $query = "SELECT * FROM " . $this->table . " WHERE approval_id = :approval_id LIMIT 1";
@@ -57,7 +53,6 @@ class EmployeeDocuments
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
     public function create($data)
     {
         $query = "INSERT INTO " . $this->table . " 
@@ -72,16 +67,20 @@ class EmployeeDocuments
 
         return $stmt->execute() ? $this->conn->lastInsertId() : false;
     }
-
     public function update($approvalId, $data)
     {
         $fields = [];
+
         foreach ($data as $key => $value) {
             $fields[] = "$key = :$key";
         }
 
-        $query = "UPDATE " . $this->table . " SET " . implode(", ", $fields) . " WHERE approval_id = :approval_id";
+        $query = "UPDATE " . $this->table . "
+              SET " . implode(", ", $fields) . "
+              WHERE approval_id = :approval_id";
+
         $stmt = $this->conn->prepare($query);
+
         $stmt->bindParam(':approval_id', $approvalId, PDO::PARAM_INT);
 
         foreach ($data as $key => $value) {

@@ -3,8 +3,6 @@
         <?php require __DIR__ . '/../../../views/partials/notif.php' ?>
         <div class="card shadow-lg border-0 rounded-4 w-full p-4 bg-white">
 
-            <?php require __DIR__ . '/../partials/notif.php' ?>
-
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1 class="fw-bold fs-3">Leave Dashboard</h1>
                 <button
@@ -55,21 +53,21 @@
                                 <?php foreach ($leaves as $index => $leave): ?>
                                     <tr>
                                         <td><?= $index + 1 ?></td>
-                                        <td><?= htmlspecialchars($leave['leave_type']) ?></td>
-                                        <td><?= date('M d, Y', strtotime($leave['start_date'])) ?></td>
-                                        <td><?= date('M d, Y', strtotime($leave['end_date'])) ?></td>
+                                        <td><?= htmlspecialchars($leaveTypeMap[$leave['leave_type_id']] ?? 'Unknown') ?></td>
+                                        <td><?= date('M d, Y', strtotime($leave['start_date'] ?? '')) ?></td>
+                                        <td><?= date('M d, Y', strtotime($leave['end_date'] ?? '')) ?></td>
                                         <td>
                                             <?php
-                                                $statusClass = match(strtolower($leave['status'])) {
-                                                    'pending' => 'badge bg-warning text-dark',
-                                                    'approved' => 'badge bg-success',
-                                                    'rejected' => 'badge bg-danger',
-                                                    default => 'badge bg-secondary'
-                                                };
+                                            $statusClass = match (strtolower($leave['status'] ?? '')) {
+                                                'pending' => 'badge bg-warning text-dark',
+                                                'approved' => 'badge bg-success',
+                                                'rejected' => 'badge bg-danger',
+                                                default => 'badge bg-secondary'
+                                            };
                                             ?>
                                             <span class="<?= $statusClass ?>"><?= ucfirst($leave['status']) ?></span>
                                         </td>
-                                        <td><?= htmlspecialchars($leave['reason']) ?></td>
+                                        <td><?= htmlspecialchars($leave['reject_reason']) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>

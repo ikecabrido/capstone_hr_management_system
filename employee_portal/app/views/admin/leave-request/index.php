@@ -1,5 +1,5 @@
 <?php
-$partials = __DIR__ . '/../partials/';
+$partials = __DIR__ . '/../../partials/';
 $base = "/capstone_hr_management_system";
 $content = $content ?? __DIR__ . '/main-content.php';
 ?>
@@ -35,7 +35,7 @@ $content = $content ?? __DIR__ . '/main-content.php';
 
         <?php require $partials . 'navbar.php'; ?>
 
-        <?php require $partials . 'sidebar.php'; ?>
+        <?php require $partials . 'adminSidebar.php'; ?>
 
 
         <?php
@@ -56,35 +56,6 @@ $content = $content ?? __DIR__ . '/main-content.php';
     <script src="<?= $base ?>/assets/dist/js/adminlte.min.js"></script>
     <script src="<?= $base ?>/employee_portal/app/views/partials/custom.js"></script>
     <script src="<?= $base ?>/employee_portal/public/assets/js/time.js"></script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const startInput = document.getElementById("start_date");
-            const endInput = document.getElementById("end_date");
-
-            const today = new Date();
-            const tomorrow = new Date();
-
-            tomorrow.setDate(today.getDate() + 1);
-
-            const formatDate = (date) => date.toISOString().split('T')[0];
-
-            startInput.value = formatDate(today);
-            endInput.value = formatDate(tomorrow);
-
-            startInput.min = formatDate(today);
-            endInput.min = formatDate(today);
-        });
-        document.getElementById("start_date").addEventListener("change", function() {
-            const start = new Date(this.value);
-            const end = new Date(start);
-            end.setDate(start.getDate() + 1);
-
-            const formatDate = (date) => date.toISOString().split('T')[0];
-
-            document.getElementById("end_date").value = formatDate(end);
-            document.getElementById("end_date").min = formatDate(start);
-        });
-    </script>
 
 
 </body>

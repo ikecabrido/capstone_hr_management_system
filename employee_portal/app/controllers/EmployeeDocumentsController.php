@@ -5,11 +5,9 @@ require_once __DIR__ . '/../models/Employee.php';
 
 class EmployeeDocumentsController
 {
-
     private $employeeDocumentsModel;
     private $departmentsModel;
     private $employeeModel;
-
     public function __construct()
     {
         $this->employeeDocumentsModel = new EmployeeDocuments();
@@ -33,7 +31,6 @@ class EmployeeDocumentsController
         $content = __DIR__ . '/../views/employee-documents/main-content.php';
         require __DIR__ . '/../views/employee-documents/index.php';
     }
-
     public function create()
     {
         try {
@@ -100,7 +97,6 @@ class EmployeeDocumentsController
         header("Location: $redirectTo");
         exit;
     }
-
     public function adminDocsIndex()
     {
         $employeeDocumentsModel = new EmployeeDocuments();
@@ -124,17 +120,16 @@ class EmployeeDocumentsController
             $empdocs = [];
         }
     }
-
     public function decision()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header("Location: index.php?url=admin-documents-index");
             exit;
         }
-
+        $user_id = $_SESSION['user_id'] ?? null;
         $approval_id = $_POST['approval_id'] ?? null;
         $decision = $_POST['decision'] ?? null;
-        
+
         if (!$approval_id || !$decision) {
             $_SESSION['error'] = "Invalid request.";
             header("Location: index.php?url=admin-documents-index");
@@ -144,7 +139,8 @@ class EmployeeDocumentsController
         try {
             $data = [
                 'decision' => $decision,
-                'approved_at' => date('Y-m-d H:i:s')
+                'approved_at' => date('Y-m-d H:i:s'),
+                'approver_id'  => $user_id
             ];
 
             $this->employeeDocumentsModel->update($approval_id, $data);
@@ -153,6 +149,35 @@ class EmployeeDocumentsController
         } catch (Exception $e) {
             error_log($e->getMessage());
             $_SESSION['error'] = "Failed to update decision.";
+        }
+
+        header("Location: index.php?url=admin-documents-index");
+        exit;
+    }
+    public function addRemarks()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header("Location: index.php?url=admin-documents-index");
+            exit;
+        }
+
+        $approval_id = $_POST['approval_id'] ?? null;
+        $remarks = $_POST['remarks'] ?? null;
+
+        if (!$approval_id || $remarks === null) {
+            $_SESSION['error'] = "Invalid input.";
+            header("Location: index.php?url=admin-documents-index");
+            exit;
+        }
+
+        try {
+            $this->employeeDocumentsModel->update($approval_id, [
+                'remarks' => $remarks
+            ]);
+
+            $_SESSION['success'] = "Remarks updated!";
+        } catch (Exception $e) {
+            $_SESSION['error'] = "Failed to update remarks.";
         }
 
         header("Location: index.php?url=admin-documents-index");

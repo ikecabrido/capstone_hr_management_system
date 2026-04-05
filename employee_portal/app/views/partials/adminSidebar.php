@@ -23,7 +23,7 @@
             <ul class="text-[14px] nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
 
                 <li class="nav-item">
-                    <a href="index.php?url=dashboard" class="nav-link active">
+                    <a href="index.php?url=admin-dashboard" class="nav-link active">
                         <i class="nav-icon fas fa-home"></i>
                         <p>Dashboard</p>
                     </a>
@@ -47,13 +47,13 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="payslip-request.php" class="nav-link">
+                    <a href="#" class="nav-link">
                         <i class="fas fa-file-invoice-dollar nav-icon"></i>
                         <p>Payslip Request</p>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="online-training.php" class="nav-link">
+                    <a href="#" class="nav-link">
                         <i class="fas fa-chalkboard-teacher nav-icon"></i>
                         <p>Online Training Request</p>
                     </a>

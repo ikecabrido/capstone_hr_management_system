@@ -15,6 +15,7 @@ class LeaveRequestController
         $this->employeeModel = new Employee();
         $this->leaveTypeModel = new LeaveType();
     }
+
     public function index()
     {
         $user_id = $_SESSION['user_id'] ?? null;
@@ -31,8 +32,7 @@ class LeaveRequestController
 
         $leaves = $this->leaveModel->getLeavesByEmployee($employee_id);
 
-        $leaveTypeModel = new LeaveType();
-        $allLeaveTypes = $leaveTypeModel->getAllLeaveTypes();
+        $allLeaveTypes = $this->leaveTypeModel->getAllLeaveTypes();
 
         $leaveTypeMap = [];
         foreach ($allLeaveTypes as $type) {
@@ -51,30 +51,32 @@ class LeaveRequestController
         $content = __DIR__ . '/../views/leave-request/main-content.php';
         require __DIR__ . '/../views/leave-request/index.php';
     }
+
     public function indexAdmin()
     {
         $user_id = $_SESSION['user_id'] ?? null;
-        var_dump($user_id);
-        die;
         if (!$user_id) {
             die('User not logged in.');
         }
         $employee = $this->employeeModel->findByUserId($user_id);
         $employee_id = $employee['id'] ?? null;
 
+        $allLeaveTypes = $this->leaveTypeModel->getAllLeaveTypes();
+
         $leaveTypeMap = [];
         foreach ($allLeaveTypes as $type) {
             $leaveTypeMap[$type['leave_type_id']] = $type['leave_type_name'];
         }
+
         $totalLeaves = $this->leaveModel->getTotalLeaves($employee_id);
         $usedLeaves  = $this->leaveModel->getUsedLeaves($employee_id);
         $remainingLeaves = $totalLeaves - $usedLeaves;
 
-        $leaves = $this->leaveModel->getLeavesByEmployee($employee_id);
-
-        $content = __DIR__ . '/../views/leave-request/main-content.php';
-        require __DIR__ . '/../views/leave-request/index.php';
+        $leaves = $this->leaveModel->all();
+        $content = __DIR__ . '/../views/admin/leave-request/main-content.php';
+        require __DIR__ . '/../views/admin/leave-request/index.php';
     }
+
     public function store()
     {
         $user_id = $_POST['user_id'] ?? null;

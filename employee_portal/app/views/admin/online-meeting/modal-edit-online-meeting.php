@@ -1,4 +1,4 @@
- <div class="modal fade" id="editMeetingModal<?= $meeting['id'] ?>" tabindex="-1">
+ <div class="modal fade" id="editMeetingModal<?= $meeting['meetings_id'] ?>" tabindex="-1">
      <div class="modal-dialog modal-dialog-centered">
          <form method="POST" action="index.php?url=admin-online-meeting-update">
              <div class="modal-content">
@@ -9,7 +9,7 @@
                  </div>
                  <form action="index.php?url=admin-online-meeting-update" method="POST">
                      <div class="modal-body">
-                         <input type="hidden" name="id" value="<?= $meeting['id'] ?>">
+                         <input type="hidden" name="id" value="<?= $meeting['meetings_id'] ?>">
 
                          <div class="mb-3">
                              <label class="form-label">Meeting Title</label>

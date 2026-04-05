@@ -55,11 +55,11 @@ class Payslip
                e.full_name,  
                pos.title AS position, 
                et.name AS employment_type
-        FROM payslips p
+        FROM {$this->table} p
         JOIN employees e ON p.employee_id = e.id
         LEFT JOIN positions pos ON e.position_id = pos.id
         LEFT JOIN employment_types et ON e.employment_type_id = et.id
-        WHERE p.id = :id
+        WHERE p.payslip_id = :id
         LIMIT 1
     ";
 
