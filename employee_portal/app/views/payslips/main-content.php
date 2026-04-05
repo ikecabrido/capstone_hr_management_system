@@ -65,7 +65,7 @@
                                     <td class="px-4 py-3 text-center space-x-2 no-print flex">
 
                                         <!-- View -->
-                                        <a href="index.php?url=view-payslip&id=<?= $r['id'] ?>"
+                                        <a href="index.php?url=view-payslip&id=<?= $r['payslip_id'] ?>"
                                             class="inline-flex items-center h-9 mt-4 px-3 bg-blue-500 text-white text-xs rounded-lg hover:bg-blue-600 transition">
                                             <i class="fas fa-eye mr-1"></i> View
                                         </a>

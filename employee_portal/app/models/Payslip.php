@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/Database.php';
 class Payslip
 {
     private $conn;
-    private $table = 'payslips';
+    private $table = 'pr_payslips';
 
     public function __construct()
     {
@@ -16,7 +16,7 @@ class Payslip
         $query = "SELECT p.*, full_name
               FROM {$this->table} p
               JOIN employees e ON p.employee_id = e.id
-              ORDER BY p.id DESC";
+              ORDER BY p.payslip_id DESC";
 
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
@@ -41,7 +41,7 @@ class Payslip
               FROM {$this->table} p
               JOIN employees e ON p.employee_id = e.id
               WHERE p.employee_id = ?
-              ORDER BY p.id DESC";
+              ORDER BY p.payslip_id DESC";
 
         $stmt = $this->conn->prepare($query);
         $stmt->execute([$id]);
