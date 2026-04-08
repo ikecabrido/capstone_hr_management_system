@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* BLUE SIDEBAR */
 .main-sidebar {
   background-color: #0d47a1 !important;
@@ -63,3 +64,154 @@ body.dark-mode .main-footer {
   transform: rotate(180deg) scale(0.5);
   opacity: 0;
 }
+=======
+/* BLUE SIDEBAR */
+.main-sidebar {
+  background-color: #0d47a1 !important;
+}
+
+/* Sidebar brand */
+.brand-link {
+  background-color: #0b3c91 !important;
+  color: #fff !important;
+}
+
+/* Sidebar links */
+.nav-sidebar .nav-link {
+  color: #ffffff !important;
+}
+
+/* Dropdown menu styling */
+.nav-treeview .nav-link {
+  font-size: 0.85rem !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+  font-weight: 500;
+  background-color: rgba(0, 0, 0, 0.2) !important;
+  margin: 2px 0;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.nav-treeview .nav-link p {
+  margin: 0 !important;
+}
+
+.nav-treeview .nav-icon {
+  font-size: 0.8rem;
+  width: auto !important;
+  margin-right: 0 !important;
+}
+
+/* Active & hover */
+.nav-sidebar .nav-link.active,
+.nav-sidebar .nav-link:hover {
+  background-color: #1565c0 !important;
+  color: #fff !important;
+}
+/* MAIN CONTENT WHITE */
+.content-wrapper {
+  background-color: #ffffff !important;
+}
+.main-header.navbar {
+  background-color: #1976d2 !important;
+}
+/* DARK MODE CUSTOMIZATION */
+body.dark-mode .main-sidebar {
+  background-color: #0b1f3a !important;
+}
+
+body.dark-mode .content-wrapper {
+  background-color: #313030 !important;
+}
+
+body.dark-mode .main-header.navbar {
+  background-color: #0d47a1 !important;
+}
+body:not(.dark-mode) .content-wrapper {
+  background-color: #f4f6f9 !important;
+}
+.wrapper .preloader {
+  background-color: #0b3c91 !important;
+}
+.main-footer {
+  background-color: #1976d2;
+  color: #d6d3d3;
+}
+/* Dark mode search bar */
+body.dark-mode .browse-section.search-section {
+  background: linear-gradient(180deg, rgba(49, 48, 48, 0.98) 0%, rgba(49, 48, 48, 0.95) 100%);
+}
+
+/* Sidebar dividers */
+.nav-sidebar .nav-header {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff !important;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+  display: inline-block;
+  transition:
+    transform 0.35s ease,
+    opacity 0.25s ease;
+}
+
+#themeIcon.animate {
+  transform: rotate(180deg) scale(0.5);
+  opacity: 0;
+}
+
+/* CARD BACKGROUNDS - shows when no image or placeholder is used */
+.training-card,
+.career-card,
+.compliance-card,
+.activity-card {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url('modules/img/card-bg-portrait.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.leadership-card,
+.course-card {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), url('modules/img/card-bg-landscape.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Hide placeholder image - show background instead */
+.card-img-top {
+  display: none;
+}
+
+/* Card hover effects */
+.card {
+  overflow: hidden;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.training-card,
+.career-card,
+.compliance-card,
+.activity-card,
+.leadership-card,
+.course-card {
+  cursor: pointer;
+}
+>>>>>>> rain
