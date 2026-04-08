@@ -40,6 +40,24 @@
                 </li>
                 <li class="nav-item has-treeview">
                     <a href="#" class="nav-link">
+                        <i class="nav-icon fas fa-graduation-cap"></i>
+                        <p>
+                            Learning & Development
+                            <i class="right fas fa-chevron-left"></i>
+                        </p>
+                    </a>
+
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="index.php?url=user-profile" class="nav-link">
+                                <i class="far fa-circle nav-icon text-warning"></i>
+                                <p>Course Enrollment Training</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-item has-treeview">
+                    <a href="#" class="nav-link">
                         <i class="nav-icon fas fa-users"></i>
                         <p>
                             Engagement Relations
