@@ -4,13 +4,11 @@ class MedicalRecord
 {
     private $conn;
     private $table = "cm_medical_records";
-
     public function __construct()
     {
         $database = new Database();
         $this->conn = $database->getConnection();
     }
-
     public function getByEmployee($employee_id)
     {
         $query = "SELECT c.*, e.full_name

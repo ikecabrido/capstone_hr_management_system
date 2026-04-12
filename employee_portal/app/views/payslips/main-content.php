@@ -1,9 +1,9 @@
-<div class="w-full ml-16 mt-6">
+<div class="w-full ml-28 mt-6">
     <div class="content-wrapper w-auto">
         <div class="card shadow-lg border-0 rounded-4">
 
             <div class="px-6 py-4 flex items-center justify-between">
-                <h2 class="text-2xl font-semibold flex items-center gap-2">
+                <h2 class="text-4xl font-semibold flex items-center gap-2">
                     <i class="fas fa-receipt"></i>
                     My Payslip Records
                 </h2>
@@ -15,7 +15,6 @@
                     <thead class="bg-blue-400 text-white text-sm uppercase">
                         <tr>
                             <th class="px-4 py-3 text-left">Employee</th>
-                            <th class="px-4 py-3 text-left">Payroll Run</th>
                             <th class="px-4 py-3 text-left">Gross Pay</th>
                             <th class="px-4 py-3 text-left">Deductions</th>
                             <th class="px-4 py-3 text-left">Net Pay</th>
@@ -32,11 +31,6 @@
                                     <!-- Employee -->
                                     <td class="px-4 py-3 font-medium text-gray-700">
                                         <?= htmlspecialchars($r['full_name']) ?>
-                                    </td>
-
-                                    <!-- Payroll Run -->
-                                    <td class="px-4 py-3">
-                                        <?= htmlspecialchars($r['payroll_run_id'] ?? 'N/A') ?>
                                     </td>
 
                                     <!-- Gross Pay -->

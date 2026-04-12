@@ -46,12 +46,29 @@
                             <i class="right fas fa-chevron-left"></i>
                         </p>
                     </a>
-
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="index.php?url=user-profile" class="nav-link">
-                                <i class="far fa-circle nav-icon text-warning"></i>
-                                <p>Course Enrollment Training</p>
+                            <a href="index.php?url=training-program-index" class="nav-link">
+                                <i class="fas fa-chalkboard-teacher nav-icon text-warning"></i>
+                                <p>Browse Training</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="index.php?url=training-program-index" class="nav-link">
+                                <i class="fas fa-route nav-icon text-warning"></i>
+                                <p>Career Path</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="index.php?url=training-program-index" class="nav-link">
+                                <i class="fas fa-crown nav-icon text-warning"></i>
+                                <p>Leadership Program</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="index.php?url=training-program-index" class="nav-link">
+                                <i class="fas fa-sitemap nav-icon text-warning"></i>
+                                <p class="text-xs">Organizational Development</p>
                             </a>
                         </li>
                     </ul>
@@ -92,6 +109,14 @@
                             <a href="index.php?url=employee-payslip-items" class="nav-link">
                                 <i class="far fa-file-alt nav-icon text-warning"></i>
                                 <p>Payslip</p>
+                            </a>
+                        </li>
+                    </ul>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="index.php?url=employee-payslip-items" class="nav-link">
+                                <i class="far fa-file-alt nav-icon text-warning"></i>
+                                <p>Payslip Request</p>
                             </a>
                         </li>
                     </ul>
@@ -152,7 +177,13 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="online-training.php" class="nav-link">
+                            <a href="index.php?url=online-meeting" class="nav-link">
+                                <i class="fas fa-video nav-icon text-warning"></i>
+                                <p>Online Meeting</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
                                 <i class="fas fa-chalkboard-teacher nav-icon text-warning"></i>
                                 <p>Online Training Request</p>
                             </a>
@@ -161,12 +192,6 @@
                             <a href="#" class="nav-link">
                                 <i class="fas fa-clock nav-icon text-warning"></i>
                                 <p>View Schedule</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="index.php?url=online-meeting" class="nav-link">
-                                <i class="fas fa-video nav-icon text-warning"></i>
-                                <p>Online Meeting</p>
                             </a>
                         </li>
                     </ul>
@@ -179,7 +204,7 @@
                 </li>
             </ul>
         </nav>
-        <section class="flex flex-col items-center mt-44">
+        <section class="flex flex-col items-center mt-36">
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#aiChatModal">
                 AI Assistant
             </button>

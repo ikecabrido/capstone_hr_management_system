@@ -1,19 +1,15 @@
 <?php
 require_once __DIR__ . '/../models/PerformanceFeedback.php';
 require_once __DIR__ . '/../models/Employee.php';
-
-
 class PerformanceFeedbackController
 {
     private $performanceFeedbackModel;
     private $employeeModel;
-
     public function __construct()
     {
         $this->performanceFeedbackModel = new PerformanceFeedback();
         $this->employeeModel = new Employee();
     }
-
     public function index()
     {
         $user_id = $_SESSION['user_id'] ?? null;
@@ -23,9 +19,8 @@ class PerformanceFeedbackController
 
         $title = "Performance Feedback";
         $content = __DIR__ . '/../views/performance-feedback/main-content.php';
-        require __DIR__ . '/../views/performance-feedback/index.php';
+        require __DIR__ . '/../views/index.php';
     }
-
     public function create()
     {
         try {
@@ -53,8 +48,6 @@ class PerformanceFeedbackController
                 'evaluation_date' => $evaluation_date,
                 'created_at' => $created_at
             ];
-
-            $this->performanceFeedbackModel = new PerformanceFeedback();
             $this->performanceFeedbackModel->create($data);
 
             $_SESSION['success'] = "Document submitted successfully.";

@@ -1,7 +1,7 @@
-<div class="w-full ml-2 mt-4">
-    <div class="content-wrapper text-3xl">
-        <div class="pt-10 pl-10">
-            <h5 class="fw-bold mb-3 text-primary">Employee Documents</h5>
+<div class="w-full mt-4">
+    <div class="content-wrapper">
+        <div class="pt-5 pl-4">
+            <h5 class="fw-bold mb-3 text-5xl">Employee Documents</h5>
 
             <table class="table table-sm table-hover mb-0 border border-primary-subtle rounded-3 overflow-hidden">
                 <?php require __DIR__ . '/../../../views/partials/notif.php' ?>
@@ -93,7 +93,7 @@
                                         </div>
                                     <?php endif; ?>
                                 </td>
-                                
+
                                 <td class="text-truncate text-muted" style="max-width: 120px;">
                                     <?php if (empty($doc['remarks'])): ?>
                                         <button type="button"
@@ -108,14 +108,10 @@
                                 </td>
 
                                 <td class="text-center">
-                                    <div class="btn-group btn-group-sm">
-
-
-                                        <form method="POST" action="employee-documents-delete">
-                                            <input type="hidden" name="approval_id" value="<?= $doc['approval_id'] ?>">
-                                            <button type="submit" class="btn btn-outline-secondary btn-sm">🗑</button>
-                                        </form>
-                                    </div>
+                                    <form method="POST" action="employee-documents-delete">
+                                        <input type="hidden" name="approval_id" value="<?= $doc['approval_id'] ?>">
+                                        <button type="submit" class="btn btn-outline-secondary text-2xl">🗑</button>
+                                    </form>
                                 </td>
                             </tr>
                             <?php require __DIR__ . '/modal-remarks.php'; ?>

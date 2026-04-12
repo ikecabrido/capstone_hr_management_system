@@ -167,48 +167,130 @@
         <!-- Leave Requests History -->
         <div>
             <h2 style="margin-top: 40px;">📋 My Leave Requests</h2>
+
             <div class="leave-requests-section">
+
                 <?php if (!empty($leave_requests)): ?>
                     <div style="display: grid; gap: 12px;">
+
                         <?php foreach ($leave_requests as $req): ?>
+
                             <?php
-                            $leaveType = htmlspecialchars($req['leave_type_name'] ?? 'none');
-                            $startDate = !empty($req['start_date']) ? date('M d, Y', strtotime($req['start_date'])) : 'none';
-                            $endDate = !empty($req['end_date']) ? date('M d, Y', strtotime($req['end_date'])) : 'none';
-                            $reason = !empty($req['reason']) ? htmlspecialchars(substr($req['reason'], 0, 60)) : 'none';
-                            $reasonMore = strlen($req['reason'] ?? '') > 60 ? '...' : '';
-                            $submitted = !empty($req['created_at']) ? date('M d, Y h:i A', strtotime($req['created_at'])) : 'none';
-                            $status = htmlspecialchars($req['status'] ?? 'none');
-                            $remarks = htmlspecialchars($req['remarks'] ?? 'none');
-                            $statusColor = $status === 'Pending' ? ['bg' => '#fff3cd', 'text' => '#856404'] : ($status === 'Approved' || $status === 'Final-Approved' ? ['bg' => '#d4edda', 'text' => '#155724'] :
-                                ['bg' => '#f8d7da', 'text' => '#721c24']);
-                            $borderColor = $status === 'Pending' ? '#f39c12' : ($status === 'Approved' || $status === 'Final-Approved' ? '#27ae60' : '#e74c3c');
+                            $leaveType = htmlspecialchars($req['leave_type_name'] ?? 'Unknown');
+
+                            $startDate = !empty($req['start_date'])
+                                ? date('M d, Y', strtotime($req['start_date']))
+                                : 'N/A';
+
+                            $endDate = !empty($req['end_date'])
+                                ? date('M d, Y', strtotime($req['end_date']))
+                                : 'N/A';
+
+                            // FIX: usually your DB uses "details" not "reason"
+                            $reasonRaw = $req['details'] ?? '';
+                            $reason = !empty($reasonRaw)
+                                ? htmlspecialchars(substr($reasonRaw, 0, 60))
+                                : 'No reason provided';
+
+                            $reasonMore = strlen($reasonRaw) > 60 ? '...' : '';
+
+                            $submitted = !empty($req['date_submitted'] ?? $req['created_at'])
+                                ? date('M d, Y h:i A', strtotime($req['date_submitted'] ?? $req['created_at']))
+                                : 'N/A';
+
+                            $status = htmlspecialchars($req['status'] ?? 'Pending');
+
+                            $remarks = htmlspecialchars($req['remarks'] ?? '');
+
+                            // Status colors
+                            $statusColor = match ($status) {
+                                'Pending' => ['bg' => '#fff3cd', 'text' => '#856404'],
+                                'Approved', 'Final-Approved' => ['bg' => '#d4edda', 'text' => '#155724'],
+                                default => ['bg' => '#f8d7da', 'text' => '#721c24'],
+                            };
+
+                            $borderColor = match ($status) {
+                                'Pending' => '#f39c12',
+                                'Approved', 'Final-Approved' => '#27ae60',
+                                default => '#e74c3c',
+                            };
                             ?>
-                            <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid <?php echo $borderColor; ?>; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+
+                            <div style="
+                        background: white;
+                        padding: 15px;
+                        border-radius: 8px;
+                        border-left: 4px solid <?= $borderColor ?>;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    ">
+
                                 <div style="display: flex; justify-content: space-between; align-items: start;">
+
                                     <div style="flex: 1;">
-                                        <h4 style="margin: 0 0 8px 0; color: #333;"><?php echo $leaveType; ?></h4>
-                                        <p style="margin: 0 0 5px 0; color: #666; font-size: 13px;"><strong>Dates:</strong> <?php echo $startDate; ?> - <?php echo $endDate; ?></p>
-                                        <p style="margin: 0 0 5px 0; color: #666; font-size: 13px;"><strong>Reason:</strong> <?php echo $reason . $reasonMore; ?></p>
-                                        <p style="margin: 0; color: #999; font-size: 12px;">Submitted: <?php echo $submitted; ?></p>
+                                        <h4 style="margin: 0 0 8px 0; color: #333;">
+                                            <?= $leaveType ?>
+                                        </h4>
+
+                                        <p style="margin: 0 0 5px 0; color: #666; font-size: 13px;">
+                                            <strong>Dates:</strong> <?= $startDate ?> - <?= $endDate ?>
+                                        </p>
+
+                                        <p style="margin: 0 0 5px 0; color: #666; font-size: 13px;">
+                                            <strong>Reason:</strong> <?= $reason . $reasonMore ?>
+                                        </p>
+
+                                        <p style="margin: 0; color: #999; font-size: 12px;">
+                                            Submitted: <?= $submitted ?>
+                                        </p>
                                     </div>
-                                    <span style="background: <?php echo $statusColor['bg']; ?>; color: <?php echo $statusColor['text']; ?>; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; white-space: nowrap;">
-                                        <?php echo $status; ?>
+
+                                    <span style="
+                                background: <?= $statusColor['bg'] ?>;
+                                color: <?= $statusColor['text'] ?>;
+                                padding: 6px 12px;
+                                border-radius: 20px;
+                                font-size: 12px;
+                                font-weight: bold;
+                                white-space: nowrap;
+                            ">
+                                        <?= $status ?>
                                     </span>
+
                                 </div>
+
                                 <?php if (!empty($req['remarks'])): ?>
-                                    <p style="margin: 8px 0 0 0; padding-top: 8px; border-top: 1px solid #eee; color: #666; font-size: 12px;">
-                                        <strong>Remarks:</strong> <?php echo $remarks; ?>
+                                    <p style="
+                                margin: 8px 0 0 0;
+                                padding-top: 8px;
+                                border-top: 1px solid #eee;
+                                color: #666;
+                                font-size: 12px;
+                            ">
+                                        <strong>Remarks:</strong> <?= $remarks ?>
                                     </p>
                                 <?php endif; ?>
+
                             </div>
+
                         <?php endforeach; ?>
+
                     </div>
+
                 <?php else: ?>
-                    <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; color: #999; border: 1px solid #eee;">
+
+                    <div style="
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                text-align: center;
+                color: #999;
+                border: 1px solid #eee;
+            ">
                         <p>📭 No leave requests yet</p>
                     </div>
+
                 <?php endif; ?>
+
             </div>
         </div>
     </div>

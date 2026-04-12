@@ -14,24 +14,28 @@
             </div>
 
             <div class="leave-balance row g-3 mb-4">
+
                 <div class="col-md-4">
                     <div class="card text-center shadow-sm rounded-3 p-3">
                         <h5 class="fw-semibold text-secondary">Total Leaves</h5>
-                        <p class="fs-3 fw-bold"><?= $totalLeaves ?? 0 ?></p>
+                        <p class="fs-3 fw-bold"><?= $totalEntitlement ?></p>
                     </div>
                 </div>
+
                 <div class="col-md-4">
                     <div class="card text-center shadow-sm rounded-3 p-3">
                         <h5 class="fw-semibold text-secondary">Used Leaves</h5>
-                        <p class="fs-3 fw-bold text-danger"><?= $usedLeaves ?? 0 ?></p>
+                        <p class="fs-3 fw-bold text-danger"><?= $usedLeaves ?></p>
                     </div>
                 </div>
+
                 <div class="col-md-4">
                     <div class="card text-center shadow-sm rounded-3 p-3">
                         <h5 class="fw-semibold text-secondary">Remaining Leaves</h5>
-                        <p class="fs-3 fw-bold text-success"><?= $remainingLeaves ?? 0 ?></p>
+                        <p class="fs-3 fw-bold text-success"><?= $remainingLeaves ?></p>
                     </div>
                 </div>
+
             </div>
 
             <div class="leave-requests mt-4">

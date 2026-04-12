@@ -11,7 +11,6 @@ class User
         $database = new Database();
         $this->conn = $database->getConnection();
     }
-
     public function login($employee_no)
     {
         $query = "

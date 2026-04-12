@@ -11,14 +11,12 @@ class AuthController
     private $userModel;
     private $auditLog;
     private $employeeModel;
-
     public function __construct()
     {
         $this->userModel = new User();
         $this->auditLog  = new AuditLog();
         $this->employeeModel = new Employee();
     }
-
     public function login()
     {
         Session::start();
@@ -54,14 +52,12 @@ class AuthController
             Helper::redirect('index.php?url=auth-index');
         }
     }
-
     public function logout()
     {
         if (session_status() === PHP_SESSION_NONE) {
             Session::start();
         }
-
-        $user_id = Session::get('user_id');
+        $user_id = $_SESSION['user'] ?? null;
 
         if (!empty($user_id)) {
             $this->auditLog->log('LOGOUT', $user_id, null, null, [], 'SUCCESS');
@@ -87,7 +83,11 @@ class AuthController
         Helper::redirect('index.php');
         exit;
     }
-
+    public function index()
+    {
+        $title = "Employee Portal Login";
+        require __DIR__ . '/../views/auth/login.php';
+    }
     public static function hasRole($role)
     {
         Session::start();
@@ -105,19 +105,11 @@ class AuthController
 
         return false;
     }
-
-    public function index()
-    {
-        $title = "Employee Portal Login";
-        require __DIR__ . '/../views/auth/login.php';
-    }
-
     public static function getCurrentUserId()
     {
         Session::start();
         return Session::get('user_id');
     }
-
     public static function requireAuth()
     {
         session_start();
@@ -129,7 +121,6 @@ class AuthController
 
         return $_SESSION['user_id'];
     }
-
     public function checkUserEmployee($user_id)
     {
         $employee = $this->employeeModel->findByUserId($user_id);

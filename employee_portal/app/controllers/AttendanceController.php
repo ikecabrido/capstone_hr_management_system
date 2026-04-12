@@ -18,14 +18,11 @@ require_once __DIR__ . '/../core/Session.php';
 class AttendanceController
 {
     private $attendanceModel;
-    private $employeeModel;
     private $qrHelper;
     private $auditLog;
-
     public function __construct()
     {
         $this->attendanceModel = new Attendance();
-        $this->employeeModel = new Employee();
         $this->qrHelper = new QRHelper();
         $this->auditLog = new AuditLog();
     }
@@ -179,11 +176,9 @@ class AttendanceController
     {
         Session::start();
         $user_id = Session::get('user_id');
-
         try {
             // Validate QR token
             $tokenData = $this->qrHelper->validateToken($token);
-
             if (!$tokenData) {
                 $this->auditLog->log(
                     'QR_SCAN_FAILED',
@@ -199,7 +194,6 @@ class AttendanceController
                     'message' => 'QR code has expired or is invalid. Please ask HR to generate a new one.'
                 ];
             }
-
             // Check if token is for today
             if ($tokenData['generated_for_date'] !== Helper::getCurrentDate()) {
                 $this->auditLog->log(
@@ -223,7 +217,7 @@ class AttendanceController
             // Check if employee has timed in today
             $todayRecord = $this->attendanceModel->getTodayAttendance($employee_no);
 
-            // Smart decision: if already timed in, do time out; otherwise do time in
+            // If already timed in, do time out; otherwise do time in
             if ($todayRecord && !empty($todayRecord['time_in']) && empty($todayRecord['time_out'])) {
                 // Employee already timed in, so do TIME OUT
                 $result = $this->timeOut($employee_no, 'QR');
@@ -248,7 +242,6 @@ class AttendanceController
                     'SUCCESS'
                 );
             }
-
             return $result;
         } catch (Exception $e) {
             $error_msg = $e->getMessage();
@@ -268,7 +261,6 @@ class AttendanceController
             ];
         }
     }
-
     public function getStatus($employee_id)
     {
         $record = $this->attendanceModel->getTodayAttendance($employee_id);

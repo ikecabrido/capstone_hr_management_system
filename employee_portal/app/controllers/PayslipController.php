@@ -1,25 +1,27 @@
 <?php
 require_once __DIR__ . '/../models/Payslip.php';
-
+require_once __DIR__ . '/../models/Employee.php';
 class PayslipController
 {
     private $payslipModel;
-
+    private $employeeModel;
     public function __construct()
     {
         $this->payslipModel = new Payslip();
+        $this->employeeModel = new Employee();
     }
-
     public function index()
     {
-        $employee_id = AuthController::getCurrentUserId();
-
+        // get user id from session and then get employee id from user id
+        $user_id = AuthController::getCurrentUserId();
+        $employee = $this->employeeModel->getByUserId($user_id);
+        $employee_id = $employee['id'];
         $records = $this->payslipModel->getByEmployee($employee_id);
 
+        $title = "My Payslips";
         $content = __DIR__ . '/../views/payslips/main-content.php';
-        require __DIR__ . '/../views/payslips/index.php';
+        require __DIR__ . '/../views/index.php';
     }
-
     public function viewPayslip()
     {
         if (!isset($_GET['id'])) {
@@ -35,9 +37,8 @@ class PayslipController
         }
 
         $content = __DIR__ . '/../views/payslips/view_payslip.php';
-        require __DIR__ . '/../views/payslips/index.php';
+        require __DIR__ . '/../views/index.php';
     }
-
     public function exportCsv()
     {
         header('Content-Type: text/csv');

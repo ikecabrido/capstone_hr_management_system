@@ -61,7 +61,7 @@ class EmployeePortalController
         $leave_requests = $this->leaveModel->getLeaveRequestsByEmployee($employee_id);
 
         $content = __DIR__ . '/../views/employee-portal/main-content.php';
-        require __DIR__ . '/../views/employee-portal/index.php';
+        require __DIR__ . '/../views/index.php';
     }
     public function adminIndex()
     {

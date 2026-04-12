@@ -17,9 +17,9 @@ class OnlineMeetingController
     {
         Auth::requireAuth();
 
-        $meetings = $this->meetingModel->getAll();
+        $meetings = $this->meetingModel->all();
 
-        $title = "Admin Online Meeting";
+        $title = "Employee Online Meeting";
         $content = __DIR__ . '/../views/online-meeting/main-content.php';
         require __DIR__ . '/../views/online-meeting/index.php';
     }
@@ -32,13 +32,13 @@ class OnlineMeetingController
         if (!$user_id) {
             die('User not logged in.');
         }
-        $meetings = $this->meetingModel->getAll();
+        $meetings = $this->meetingModel->all();
         $employee = $this->employeeModel->findByUserId($user_id);
         $employee_id = $employee['id'] ?? null;
 
         $title = "Admin Online Meeting";
         $content = __DIR__ . '/../views/admin/online-meeting/main-content.php';
-        require __DIR__ . '/../views/admin/online-meeting/index.php';
+        require __DIR__ . '/../views/admin/index.php';
     }
     public function store()
     {

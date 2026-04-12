@@ -2,8 +2,6 @@
 require_once __DIR__ . '/../models/Leave.php';
 require_once __DIR__ . '/../models/Employee.php';
 require_once __DIR__ . '/../models/LeaveType.php';
-
-
 class LeaveRequestController
 {
     private $leaveModel;
@@ -15,26 +13,16 @@ class LeaveRequestController
         $this->employeeModel = new Employee();
         $this->leaveTypeModel = new LeaveType();
     }
-
     public function index()
     {
-        $user_id = $_SESSION['user_id'] ?? null;
-        if (!$user_id) {
-            die('User not logged in.');
-        }
-
-        $employee = $this->employeeModel->findByUserId($user_id);
-        $employee_id = $employee['id'] ?? null;
-
-        if (!$employee_id) {
-            die('Employee record not found.');
-        }
+        $user_id = AuthController::getCurrentUserId();
+        $employee = $this->employeeModel->getByUserId($user_id);
+        $employee_id = $employee['id'];
 
         $leaves = $this->leaveModel->getLeavesByEmployee($employee_id);
-
         $allLeaveTypes = $this->leaveTypeModel->getAllLeaveTypes();
-
         $leaveTypeMap = [];
+
         foreach ($allLeaveTypes as $type) {
             $leaveTypeMap[$type['leave_type_id']] = $type['leave_type_name'];
         }
@@ -44,39 +32,46 @@ class LeaveRequestController
         }
         unset($leave);
 
-        $totalLeaves     = $this->leaveModel->getTotalLeaves($employee_id);
-        $usedLeaves      = $this->leaveModel->getUsedLeaves($employee_id);
-        $remainingLeaves = $totalLeaves - $usedLeaves;
+        $leaveBalances = $this->leaveModel->getLeaveBalances($employee_id);
 
         $content = __DIR__ . '/../views/leave-request/main-content.php';
-        require __DIR__ . '/../views/leave-request/index.php';
+        require __DIR__ . '/../views/index.php';
     }
-
     public function indexAdmin()
     {
-        $user_id = $_SESSION['user_id'] ?? null;
-        if (!$user_id) {
-            die('User not logged in.');
-        }
-        $employee = $this->employeeModel->findByUserId($user_id);
-        $employee_id = $employee['id'] ?? null;
+        $leaves = $this->leaveModel->all();
+
+        $pendingLeaves = array_filter($leaves, function ($leave) {
+            return $leave['status'] == 'Pending';
+        });
+
+        $approvedLeaves = array_filter($leaves, function ($leave) {
+            return $leave['status'] == 'Approved';
+        });
 
         $allLeaveTypes = $this->leaveTypeModel->getAllLeaveTypes();
 
         $leaveTypeMap = [];
+        $totalEntitlement = 0;
+
         foreach ($allLeaveTypes as $type) {
             $leaveTypeMap[$type['leave_type_id']] = $type['leave_type_name'];
+            $totalEntitlement += (int)$type['days_per_year'];
         }
 
-        $totalLeaves = $this->leaveModel->getTotalLeaves($employee_id);
-        $usedLeaves  = $this->leaveModel->getUsedLeaves($employee_id);
-        $remainingLeaves = $totalLeaves - $usedLeaves;
+        $usedLeaves = 0;
 
-        $leaves = $this->leaveModel->all();
+        foreach ($approvedLeaves as $leave) {
+            $start = new DateTime($leave['start_date']);
+            $end = new DateTime($leave['end_date']);
+            $usedLeaves += $start->diff($end)->days + 1;
+        }
+
+        $remainingLeaves = $totalEntitlement - $usedLeaves;
+
         $content = __DIR__ . '/../views/admin/leave-request/main-content.php';
-        require __DIR__ . '/../views/admin/leave-request/index.php';
+        require __DIR__ . '/../views/admin/index.php';
     }
-
     public function store()
     {
         $user_id = $_POST['user_id'] ?? null;

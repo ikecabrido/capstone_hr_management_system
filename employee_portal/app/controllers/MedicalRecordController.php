@@ -12,14 +12,13 @@ class MedicalRecordController
     }
     public function index()
     {
-
-        $user_id = $_SESSION['user_id'] ?? null;
+        $user_id = $_SESSION['user_id'];
         $employee = $this->employeeModel->findByUserId($user_id);
-        $employee_id = $employee['id'] ?? null;
+        $employee_id = $employee['id'];
         $records = $this->medicalRecordModel->getByEmployee($employee_id);
 
         $title = "Medical Records";
         $content = __DIR__ . '/../views/medical-records/main-content.php';
-        require __DIR__ . '/../views/medical-records/index.php';
+        require __DIR__ . '/../views/index.php';
     }
 }

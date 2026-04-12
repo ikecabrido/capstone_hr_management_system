@@ -5,13 +5,11 @@ class LeaveType
 {
     private $conn;
     private $table = 'ta_leave_types';
-
     public function __construct()
     {
         $database = new Database();
         $this->conn = $database->getConnection();
     }
-
     /**
      * Get all leave types
      */
@@ -23,7 +21,6 @@ class LeaveType
         $stmt = $this->conn->query($query);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-
     /**
      * Get a leave type by ID
      */
@@ -34,10 +31,9 @@ class LeaveType
         $stmt->execute([':id' => $id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
     public function getAllLeaveTypes()
     {
-        $query = "SELECT leave_type_id, leave_type_name FROM {$this->table} ORDER BY leave_type_name";
+        $query = "SELECT leave_type_id, leave_type_name, days_per_year FROM {$this->table}";
         $stmt = $this->conn->query($query);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

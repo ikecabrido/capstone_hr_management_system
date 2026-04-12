@@ -13,8 +13,11 @@
             <div class="image">
                 <img src="<?= $base ?>/assets/dist/img/user2-160x160.jpg" class="img-circle elevation-2" alt="User Image" />
             </div>
+
             <div class="info">
-                <a href="#" class="d-block">Alexander Pierce</a>
+                <a href="#" class="d-block">
+                    <?= $_SESSION['employee']['full_name'] ?? $_SESSION['user']['name'] ?? 'Admin'; ?>
+                </a>
             </div>
         </div>
 
@@ -23,7 +26,7 @@
             <ul class="text-[14px] nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
 
                 <li class="nav-item">
-                    <a href="index.php?url=admin-dashboard" class="nav-link active">
+                    <a href="index.php?url=admin-dashboard" class="nav-link">
                         <i class="nav-icon fas fa-home"></i>
                         <p>Dashboard</p>
                     </a>
@@ -46,6 +49,41 @@
                         <p>Employee Documents</p>
                     </a>
                 </li>
+                <li class="nav-item has-treeview">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon fas fa-graduation-cap"></i>
+                        <p>
+                            Learning & Development
+                            <i class="right fas fa-chevron-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="/capstone_hr_management_system/employee_portal/index.php?url=training-program-admin-index" class="nav-link">
+                                <i class="fas fa-chalkboard-teacher nav-icon text-warning"></i>
+                                <p>Browse Training</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fas fa-route nav-icon text-warning"></i>
+                                <p>Career Path</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fas fa-crown nav-icon text-warning"></i>
+                                <p>Leadership Program</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fas fa-sitemap nav-icon text-warning"></i>
+                                <p class="text-xs">Organizational Development</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
                 <li class="nav-item">
                     <a href="#" class="nav-link">
                         <i class="fas fa-file-invoice-dollar nav-icon"></i>
@@ -65,12 +103,11 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="index.php?url=auth-logout" class="nav-link">
+                    <a href="/capstone_hr_management_system/employee_portal/index.php?url=auth-logout" class="nav-link">
                         <i class="nav-icon fas fa-sign-out-alt"></i>
                         <p>Logout</p>
                     </a>
                 </li>
-
             </ul>
         </nav>
         <!-- /.sidebar-menu -->

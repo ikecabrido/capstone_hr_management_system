@@ -13,7 +13,7 @@ class OnlineMeeting
         $database = new Database();
         $this->conn = $database->getConnection();
     }
-    public function getAll()
+    public function all()
     {
         $query = "SELECT * FROM {$this->table} ORDER BY scheduled_at DESC";
         $stmt = $this->conn->prepare($query);
