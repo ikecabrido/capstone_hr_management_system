@@ -74,23 +74,25 @@ function filterByDateRange($items, $dateField, $startDate, $endDate) {
  * @param int $perPage - Items per page
  * @return array ['items' => ..., 'totalPages' => ..., 'totalItems' => ..., 'currentPage' => ...]
  */
-function paginateItems($items, $page = 1, $perPage = 12) {
-    $totalItems = count($items);
-    $totalPages = ceil($totalItems / $perPage);
-    $page = max(1, min($page, $totalPages));
-    
-    $startIndex = ($page - 1) * $perPage;
-    $paginatedItems = array_slice($items, $startIndex, $perPage);
-    
-    return [
-        'items' => $paginatedItems,
-        'totalPages' => $totalPages,
-        'totalItems' => $totalItems,
-        'currentPage' => $page,
-        'perPage' => $perPage,
-        'hasNextPage' => $page < $totalPages,
-        'hasPrevPage' => $page > 1
-    ];
+if (!function_exists('paginateItems')) {
+    function paginateItems($items, $page = 1, $perPage = 12) {
+        $totalItems = count($items);
+        $totalPages = ceil($totalItems / $perPage);
+        $page = max(1, min($page, $totalPages));
+
+        $startIndex = ($page - 1) * $perPage;
+        $paginatedItems = array_slice($items, $startIndex, $perPage);
+
+        return [
+            'items' => $paginatedItems,
+            'totalPages' => $totalPages,
+            'totalItems' => $totalItems,
+            'currentPage' => $page,
+            'perPage' => $perPage,
+            'hasNextPage' => $page < $totalPages,
+            'hasPrevPage' => $page > 1
+        ];
+    }
 }
 
 /**
