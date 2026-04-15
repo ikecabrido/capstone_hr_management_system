@@ -21,7 +21,27 @@ $content = $content ?? __DIR__ . '/main-content.php';
     <link rel="stylesheet" href="<?= $base ?>/assets/dist/css/adminlte.css">
     <link rel="stylesheet" href="<?= $base ?>/employee_portal/app/views/partials/custom.css">
     <link rel="stylesheet" href="<?= $base ?>/employee_portal/public/assets/css/employee-portal.css">
+    <style>
+        .card-hover {
+            transition: all 0.25s ease;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
 
+        .card-hover:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        .pagination .page-link {
+            border-radius: 8px;
+            margin: 0 3px;
+        }
+
+        .pagination .active .page-link {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+    </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="/capstone_hr_management_system/employee_portal/public/assets/css/employeeDashboard.css">
@@ -40,6 +60,12 @@ $content = $content ?? __DIR__ . '/main-content.php';
 
         <?php
         if (file_exists($content)) {
+            $paginatedPrograms = $data['paginatedPrograms'] ?? null;
+            $searchQuery = $data['searchQuery'] ?? '';
+            $statusFilter = $data['statusFilter'] ?? '';
+            $currentUserId = $data['currentUserId'] ?? null;
+            $isAuthorized = $data['isAuthorized'] ?? false;
+
             require $content;
         } else {
             echo "<div class='alert alert-danger'>Page content not found.</div>";

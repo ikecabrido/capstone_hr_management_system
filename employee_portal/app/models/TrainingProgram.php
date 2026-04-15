@@ -57,4 +57,6 @@ class TrainingProgram
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
+
+   
 }
