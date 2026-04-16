@@ -20,72 +20,62 @@ class TrainingProgramController
     }
     public function adminIndex()
     {
-        $programs = $this->trainingModel->all();
+        $data = $this->getPaginatedPrograms();
+
+        extract($data);
+
         $title = "Training Programs";
         $content = __DIR__ . '/../views/admin/learning-development/training/main-content.php';
+
         require __DIR__ . '/../views/admin/learning-development/index.php';
     }
 
-    // public function adminIndex()
-    // {
-    //     require_once __DIR__ . '/../helpers/pagination.php';
-    //     require_once __DIR__ . '/../helpers/search_filter.php';
+    public function paginate()
+    {
+        $this->adminIndex();
+    }
 
-    //     $items = $this->trainingModel->all();
+    private function getPaginatedPrograms()
+    {
+        $allPrograms = $this->trainingModel->all();
 
-    //     foreach ($items as &$program) {
-    //         $program['id'] = $program['ld_training_programs_id'];
-    //     }
-    //     unset($program);
+        $limit = 9;
 
-    //     $searchQuery = $_GET['search'] ?? '';
-    //     $statusFilter = $_GET['status'] ?? '';
-    //     $programPage = intval($_GET['program_page'] ?? 1);
+        $page = isset($_GET['page']) && is_numeric($_GET['page'])
+            ? (int) $_GET['page']
+            : 1;
 
-    //     $filteredItems = $items;
+        $page = max(1, $page);
 
-    //     if (!empty($searchQuery)) {
-    //         $filteredItems = filterBySearch($filteredItems, $searchQuery, ['name', 'description']);
-    //     }
+        $searchQuery = $_GET['search'] ?? '';
+        $statusFilter = $_GET['status'] ?? '';
 
-    //     if (!empty($statusFilter)) {
-    //         $filteredItems = filterByStatus($filteredItems, $statusFilter, 'status');
-    //     }
+        $filteredPrograms = array_filter($allPrograms, function ($program) use ($searchQuery, $statusFilter) {
 
-    //     $paginatedPrograms = paginateItems($filteredItems, $programPage, 12);
+            $matchesSearch = empty($searchQuery) ||
+                stripos($program['title'], $searchQuery) !== false ||
+                stripos($program['description'], $searchQuery) !== false;
 
-    //     $enrollmentDetails = [];
-    //     $enrollmentCounts = [];
+            $matchesStatus = empty($statusFilter) ||
+                strtolower($program['status']) === strtolower($statusFilter);
 
-    //     foreach ($items as $program) {
-    //         $id = $program['id'];
-    //         $data = $this->trainingModel->getEnrollmentDetailsByProgram($id);
+            return $matchesSearch && $matchesStatus;
+        });
 
-    //         $enrollmentDetails[$id] = $data;
-    //         $enrollmentCounts[$id] = count($data);
-    //     }
+        $filteredPrograms = array_values($filteredPrograms);
 
-    //     $currentUserId = $_SESSION['user']['id'] ?? null;
-    //     $currentUsername = $_SESSION['user']['name'] ?? null;
-    //     $isAuthorized = $this->canManage();
+        $totalPrograms = count($filteredPrograms);
+        $totalPages = max(1, ceil($totalPrograms / $limit));
 
-    //     $message = '';
-    //     $messageType = 'info';
+        $offset = ($page - 1) * $limit;
+        $programs = array_slice($filteredPrograms, $offset, $limit);
 
-    //     $role = $this->currentRole();
-    //     $title = "Training Programs";
-    //     $content = __DIR__ . '/../views/admin/learning-development/training/main-content.php';
-
-    //     $data = [
-    //         'paginatedPrograms' => $paginatedPrograms,
-    //         'searchQuery' => $searchQuery,
-    //         'statusFilter' => $statusFilter,
-    //         'currentUserId' => $currentUserId,
-    //         'isAuthorized' => $isAuthorized,
-    //         'enrollmentDetails' => $enrollmentDetails,
-    //         'enrollmentCounts' => $enrollmentCounts
-    //     ];
-    //     extract($data);
-    //     require __DIR__ . '/../views/admin/learning-development/index.php';
-    // }
+        return [
+            'programs' => $programs,
+            'page' => $page,
+            'totalPages' => $totalPages,
+            'searchQuery' => $searchQuery,
+            'statusFilter' => $statusFilter
+        ];
+    }
 }

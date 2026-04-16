@@ -41,6 +41,22 @@ $content = $content ?? __DIR__ . '/main-content.php';
             background-color: #0d6efd;
             border-color: #0d6efd;
         }
+
+        .program-card {
+            transition: all 0.25s ease;
+        }
+
+        .program-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .line-clamp {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -55,16 +71,11 @@ $content = $content ?? __DIR__ . '/main-content.php';
 
         <?php require $partials . 'navbar.php'; ?>
 
-        <?php require $partials . 'sidebar.php'; ?>
+        <?php require $partials . 'adminSidebar.php'; ?>
 
 
         <?php
         if (file_exists($content)) {
-            $paginatedPrograms = $data['paginatedPrograms'] ?? null;
-            $searchQuery = $data['searchQuery'] ?? '';
-            $statusFilter = $data['statusFilter'] ?? '';
-            $currentUserId = $data['currentUserId'] ?? null;
-            $isAuthorized = $data['isAuthorized'] ?? false;
 
             require $content;
         } else {

@@ -274,6 +274,10 @@ switch ($url) {
     case 'training-program-index':
         (new TrainingProgramController)->index();
         break;
+
+    case 'training-program-paginate':
+        (new TrainingProgramController)->paginate();
+        break;
     /*
 |--------------------------------------------------------------------------
 | Default Error Content Routes
