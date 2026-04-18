@@ -3,7 +3,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="viewProgramModalLabel">Program Details</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
       </div>
       <div class="modal-body">
         <img id="view-image" src="img/placeholder.gif" class="img-fluid mb-3 view-image-anim" style="max-height:300px;object-fit:cover;width:100%;border-radius:8px;" alt="">

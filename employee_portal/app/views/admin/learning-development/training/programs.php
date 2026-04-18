@@ -1,5 +1,5 @@
 <div class="row g-4">
-    <?php foreach ($programs as $program): ?>
+    <?php foreach ($programs as $index => $program): ?>
         <?php
         $id = $program['ld_training_programs_id'];
         $title = $program['title'];
@@ -9,12 +9,18 @@
         $end = $program['end_date'];
         $max = $program['max_participants'];
         $status = $program['status'];
+
+        $modalId = 'programModal_' . $id . '_' . $index;
+
+        $enrolled = false;
+        if (!empty($enrollmentDetails[$id]) && $currentUserId) {
+            $userIds = array_column($enrollmentDetails[$id], 'user_id');
+            $enrolled = in_array($currentUserId, $userIds);
+        }
         ?>
 
         <div class="col-md-6 col-lg-4">
-
             <div class="card border-0 rounded-4 overflow-hidden program-card h-100">
-
                 <div class="p-3 text-white" style="background: linear-gradient(135deg, #0d6efd, #4dabf7);">
                     <div class="d-flex justify-content-between align-items-center">
                         <small class="opacity-75">
@@ -54,15 +60,13 @@
                         <button
                             class="btn btn-primary w-100 rounded-3 fw-semibold"
                             data-bs-toggle="modal"
-                            data-bs-target="#programModal<?= $id ?>">
+                            data-bs-target="#<?= $modalId ?>">
                             <i class="fa-solid fa-eye me-2"></i> View Course
                         </button>
                     </div>
-
                 </div>
-
             </div>
-
         </div>
+        <?php require __DIR__ . '/view-modal.php' ?>
     <?php endforeach; ?>
 </div>

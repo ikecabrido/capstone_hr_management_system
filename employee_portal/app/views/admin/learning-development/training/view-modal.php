@@ -1,4 +1,4 @@
-<div class="modal fade" id="programModal<?= $id ?>" tabindex="-1">
+<div class="modal fade" id="<?= $modalId ?>" tabindex="-1">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content border-0 rounded-4 overflow-hidden">
 

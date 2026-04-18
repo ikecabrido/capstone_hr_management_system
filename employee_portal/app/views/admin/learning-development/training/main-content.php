@@ -33,7 +33,6 @@
             </div>
             <?php require __DIR__ . '/programs.php' ?>
             <?php require __DIR__ . '/paginate.php' ?>
-            <?php require __DIR__ . '/view-modal.php' ?>
           </div>
         </div>
       </div>

@@ -85,7 +85,96 @@ $content = $content ?? __DIR__ . '/main-content.php';
 
 
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
 
+            document.querySelectorAll('.training-card').forEach(card => {
+
+                card.addEventListener('click', function(e) {
+
+                    if (e.target.closest('button') || e.target.closest('form')) return;
+
+                    const title = this.dataset.title;
+                    const desc = this.dataset.description;
+                    const trainer = this.dataset.trainer;
+                    const status = this.dataset.status;
+                    const date = this.dataset.date;
+                    const capacity = this.dataset.capacity;
+                    const image = this.dataset.image || 'img/placeholder.gif';
+
+                    document.getElementById('view-title').textContent = title;
+                    document.getElementById('view-description').textContent = desc;
+                    document.getElementById('view-trainer').textContent = trainer;
+                    document.getElementById('view-image').src = image;
+
+                    document.getElementById('meta-status').textContent = status;
+                    document.getElementById('meta-date').textContent = date;
+                    document.getElementById('meta-capacity').textContent = capacity;
+
+                    const modal = new bootstrap.Modal(document.getElementById('viewProgramModal'));
+                    modal.show();
+
+                });
+
+            });
+
+        });
+        document.addEventListener('DOMContentLoaded', function() {
+
+            document.querySelectorAll('.training-card').forEach(card => {
+
+                card.addEventListener('click', function(e) {
+
+                    // prevent clicks from buttons/forms
+                    if (e.target.closest('button') || e.target.closest('form')) return;
+
+                    // GET DATA
+                    const id = this.dataset.id;
+                    const title = this.dataset.title;
+                    const desc = this.dataset.description;
+                    const trainer = this.dataset.trainer;
+                    const status = this.dataset.status;
+                    const date = this.dataset.date;
+                    const capacity = this.dataset.capacity;
+                    const enrolled = this.dataset.enrolled === '1';
+
+                    // SET MODAL CONTENT
+                    document.getElementById('view-title').textContent = title;
+                    document.getElementById('view-description').textContent = desc;
+                    document.getElementById('view-trainer').textContent = trainer;
+
+                    document.getElementById('meta-status').textContent = status;
+                    document.getElementById('meta-date').textContent = date;
+                    document.getElementById('meta-capacity').textContent = capacity;
+
+                    // ACTION BUTTON
+                    const actionsDiv = document.getElementById('view-actions');
+
+                    let formAction = enrolled ? 'unenroll' : 'enroll';
+                    let btnClass = enrolled ? 'btn-warning' : 'btn-primary';
+                    let btnText = enrolled ? 'Unenroll' : 'Enroll';
+                    let icon = enrolled ? 'fa-user-minus' : 'fa-user-plus';
+
+                    actionsDiv.innerHTML = `
+        <form method="post">
+          <input type="hidden" name="id" value="${id}">
+          <input type="hidden" name="action" value="${formAction}">
+          <button class="btn ${btnClass}">
+            <i class="fa-solid ${icon} me-1"></i> ${btnText}
+          </button>
+        </form>
+      `;
+
+                    // SHOW MODAL
+                    const modal = new bootstrap.Modal(document.getElementById('viewProgramModal'));
+                    modal.show();
+
+                });
+
+            });
+
+        });
+    </script>
     <script src="<?= $base ?>/employee_portal/public/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="<?= $base ?>/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="<?= $base ?>/assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>

@@ -5,7 +5,6 @@ require_once __DIR__ . '/../models/TrainingProgram.php';
 class TrainingProgramController
 {
     private $trainingModel;
-
     public function __construct()
     {
         $this->trainingModel = new TrainingProgram();
@@ -29,12 +28,10 @@ class TrainingProgramController
 
         require __DIR__ . '/../views/admin/learning-development/index.php';
     }
-
     public function paginate()
     {
         $this->adminIndex();
     }
-
     private function getPaginatedPrograms()
     {
         $allPrograms = $this->trainingModel->all();

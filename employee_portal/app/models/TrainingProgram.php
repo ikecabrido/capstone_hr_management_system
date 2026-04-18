@@ -19,7 +19,6 @@ class TrainingProgram
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-
     public function getEnrollmentDetailsByProgram($programId)
     {
         $query = "
@@ -57,6 +56,4 @@ class TrainingProgram
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
-
-   
 }
