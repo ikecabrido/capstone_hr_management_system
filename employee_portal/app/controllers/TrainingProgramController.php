@@ -11,11 +11,22 @@ class TrainingProgramController
     }
     public function index()
     {
-        Auth::requireAuth();
+        $filters = $this->getSearchFilters();
+        $page = $_GET['page'] ?? 1;
+
+        $data = $this->trainingModel->searchPrograms($filters, $page);
+
+        $programs = $data['programs'];
+        $totalPages = $data['totalPages'];
+        $currentPage = $data['currentPage'];
+
+        $searchQuery = $filters['search'];
+        $statusFilter = $filters['status'];
 
         $title = "Training Programs";
         $content = __DIR__ . '/../views/learning-development/training/main-content.php';
-        require __DIR__ . '/../views/learning-development/index.php';
+
+        require __DIR__ . '/../views/index.php';
     }
     public function adminIndex()
     {
@@ -73,6 +84,18 @@ class TrainingProgramController
             'totalPages' => $totalPages,
             'searchQuery' => $searchQuery,
             'statusFilter' => $statusFilter
+        ];
+    }
+    public function clearBtn()
+    {
+        header("Location: index.php?url=training-program-index");
+        exit;
+    }
+    private function getSearchFilters()
+    {
+        return [
+            'search' => $_GET['search'] ?? '',
+            'status' => $_GET['status'] ?? ''
         ];
     }
 }

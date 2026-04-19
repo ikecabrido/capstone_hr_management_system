@@ -19,7 +19,9 @@
                 <button type="submit" class="btn btn-primary w-100">Search</button>
             </div>
             <div class="col-md-2">
-                <a href="?page=training" class="btn btn-secondary w-100">Clear</a>
+                <a href="index.php?url=training-program-index" class="btn btn-secondary w-100">
+                    Clear
+                </a>
             </div>
         </form>
     </div>

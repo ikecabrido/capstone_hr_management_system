@@ -125,10 +125,8 @@ $content = $content ?? __DIR__ . '/main-content.php';
 
                 card.addEventListener('click', function(e) {
 
-                    // prevent clicks from buttons/forms
                     if (e.target.closest('button') || e.target.closest('form')) return;
 
-                    // GET DATA
                     const id = this.dataset.id;
                     const title = this.dataset.title;
                     const desc = this.dataset.description;
@@ -138,7 +136,6 @@ $content = $content ?? __DIR__ . '/main-content.php';
                     const capacity = this.dataset.capacity;
                     const enrolled = this.dataset.enrolled === '1';
 
-                    // SET MODAL CONTENT
                     document.getElementById('view-title').textContent = title;
                     document.getElementById('view-description').textContent = desc;
                     document.getElementById('view-trainer').textContent = trainer;
@@ -147,7 +144,6 @@ $content = $content ?? __DIR__ . '/main-content.php';
                     document.getElementById('meta-date').textContent = date;
                     document.getElementById('meta-capacity').textContent = capacity;
 
-                    // ACTION BUTTON
                     const actionsDiv = document.getElementById('view-actions');
 
                     let formAction = enrolled ? 'unenroll' : 'enroll';
@@ -165,7 +161,6 @@ $content = $content ?? __DIR__ . '/main-content.php';
         </form>
       `;
 
-                    // SHOW MODAL
                     const modal = new bootstrap.Modal(document.getElementById('viewProgramModal'));
                     modal.show();
 

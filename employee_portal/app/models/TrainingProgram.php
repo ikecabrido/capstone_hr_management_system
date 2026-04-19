@@ -56,4 +56,42 @@ class TrainingProgram
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
+    public function searchPrograms($filters, $page = 1)
+    {
+        $search = $filters['search'] ?? '';
+        $status = $filters['status'] ?? '';
+
+        $limit = 9;
+        $offset = ($page - 1) * $limit;
+
+        $sql = "SELECT * FROM ld_training_programs WHERE 1=1";
+        $params = [];
+
+        if (!empty($search)) {
+            $sql .= " AND (title LIKE :search OR description LIKE :search)";
+            $params[':search'] = "%$search%";
+        }
+
+        if (!empty($status)) {
+            $sql .= " AND status = :status";
+            $params[':status'] = strtolower($status);
+        }
+
+        $countSql = str_replace("SELECT *", "SELECT COUNT(*)", $sql);
+        $countStmt = $this->conn->prepare($countSql);
+        $countStmt->execute($params);
+        $totalRecords = $countStmt->fetchColumn();
+
+        $totalPages = max(1, ceil($totalRecords / $limit));
+
+        $sql .= " LIMIT $limit OFFSET $offset";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+
+        return [
+            'programs' => $stmt->fetchAll(PDO::FETCH_ASSOC),
+            'totalPages' => $totalPages,
+            'currentPage' => $page
+        ];
+    }
 }
