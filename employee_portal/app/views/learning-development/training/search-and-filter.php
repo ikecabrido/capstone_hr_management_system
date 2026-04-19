@@ -7,19 +7,9 @@
                     <input type="hidden" name="url" value="training-program-index">
 
                     <div class="row g-3 align-items-end">
-                        <div class="col-md-5">
-                            <label class="form-label">Search Programs</label>
-                            <input type="text" name="search" class="form-control"
+                        <div class="col-md-9">
+                            <input type="text" name="search" class="form-control" placeholder="Search trainings..." 
                                 value="<?php echo htmlspecialchars($searchQuery); ?>">
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label">Status</label>
-                            <select name="status" class="form-select">
-                                <option value="">All Statuses</option>
-                                <option value="Active" <?= $statusFilter === 'Active' ? 'selected' : '' ?>>Active</option>
-                                <option value="Inactive" <?= $statusFilter === 'Inactive' ? 'selected' : '' ?>>Inactive</option>
-                            </select>
                         </div>
 
                         <div class="col-md-3">

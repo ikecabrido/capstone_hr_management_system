@@ -1,3 +1,9 @@
+<section>
+    <h3 class="section-title text-xl">
+        <i class="fas fa-bookmark"></i> Featured Training Programs
+    </h3>
+    <small class="text-muted">Manage and explore all available programs</small>
+</section>
 <div class="row g-4">
     <?php foreach ($programs as $index => $program): ?>
         <?php
@@ -18,52 +24,51 @@
             $enrolled = in_array($currentUserId, $userIds);
         }
         ?>
-
         <div class="col-md-6 col-lg-4">
-            <div class="card border-0 rounded-4 overflow-hidden program-card h-100">
-                <div class="p-3 text-white" style="background: linear-gradient(135deg, #0d6efd, #4dabf7);">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <small class="opacity-75">
-                            <i class="fa-solid fa-graduation-cap me-1"></i> Course
-                        </small>
-                        <span class="badge bg-light text-dark px-2 py-1 rounded-pill">
-                            <?= ucfirst($status) ?>
-                        </span>
-                    </div>
-                </div>
+            <div class="card h-100 training-card clickable-card rounded-4 overflow-hidden"
+                style="cursor: pointer;"
+                data-bs-toggle="modal"
+                data-bs-target="#<?= $modalId ?>">
+                <?php require __DIR__ . '/random-gif.php'; ?>
+                <img src="<?= htmlspecialchars($coverPhoto ?? $randomGif) ?>"
+                    class="card-img-top"
+                    style="height: 200px; object-fit: cover;"
+                    alt="<?= htmlspecialchars($title) ?>">
 
-                <div class="card-body d-flex flex-column p-4">
+                <div class="card-body d-flex flex-column">
 
-                    <h5 class="fw-bold text-dark mb-2">
+                    <h5 class="card-title">
                         <?= htmlspecialchars($title) ?>
                     </h5>
 
-                    <p class="text-muted small mb-3 line-clamp">
-                        <?= htmlspecialchars($desc) ?>
+                    <p class="card-text text-muted mb-2">
+                        <?= htmlspecialchars(substr($desc, 0, 100)) ?>
                     </p>
 
-                    <div class="text-muted small mb-4">
+                    <p class="text-center mb-2">
+                        <small class="badge bg-info">Training</small>
+                    </p>
 
-                        <div class="d-flex align-items-center mb-2">
-                            <i class="fa-solid fa-user-tie me-2 text-primary"></i>
-                            <?= htmlspecialchars($trainer) ?>
-                        </div>
-
-                        <div class="d-flex align-items-center">
-                            <i class="fa-solid fa-calendar-days me-2 text-primary"></i>
-                            <?= $start ?> - <?= $end ?>
-                        </div>
-
+                    <div class="d-flex justify-content-between mb-2">
+                        <small><?= ucfirst($status) ?></small>
+                        <small><?= $start ?></small>
+                        <small><?= $end ?></small>
                     </div>
+
+                    <small class="text-muted mb-3">
+                        <i class="fa-solid fa-user-tie me-1"></i>
+                        <?= htmlspecialchars($trainer) ?>
+                    </small>
 
                     <div class="mt-auto">
                         <button
-                            class="btn btn-primary w-100 rounded-3 fw-semibold"
+                            class="btn btn-primary w-100"
                             data-bs-toggle="modal"
                             data-bs-target="#<?= $modalId ?>">
-                            <i class="fa-solid fa-eye me-2"></i> View Course
+                            View Course
                         </button>
                     </div>
+
                 </div>
             </div>
         </div>

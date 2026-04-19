@@ -70,9 +70,14 @@
           <i class="fa-solid fa-xmark me-1"></i> Close
         </button>
 
-        <button class="btn btn-primary px-4 fw-semibold">
-          <i class="fa-solid fa-user-plus me-1"></i> Enroll Now
-        </button>
+        <form method="post">
+          <input type="hidden" name="action" value="enroll">
+          <input type="hidden" name="id" value="<?= $id ?>">
+
+          <button class="btn btn-primary px-4 fw-semibold">
+            <i class="fa-solid fa-user-plus me-1"></i> Enroll Now
+          </button>
+        </form>
 
       </div>
 

@@ -278,14 +278,6 @@ switch ($url) {
     case 'training-program-paginate':
         (new TrainingProgramController)->paginate();
         break;
-
-    case 'training-program-search':
-        (new TrainingProgramController)->searchBtn();
-        break;
-
-    case 'training-program-clear':
-        (new TrainingProgramController)->clearBtn();
-        break;
     /*
 |--------------------------------------------------------------------------
 | Default Error Content Routes

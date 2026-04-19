@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Fetch all training programs
 $allPrograms = [];
 try {
-    $stmt = $pdo->query('SELECT * FROM training_programs WHERE status = "Active" ORDER BY created_at DESC LIMIT 1000');
+    $stmt = $pdo->query('SELECT * FROM ld_training_programs WHERE status = "Active" ORDER BY created_at DESC LIMIT 1000');
     $allPrograms = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 } catch (Exception $e) {
     error_log('Error fetching training programs: ' . $e->getMessage());
@@ -95,7 +95,7 @@ try {
             SELECT COUNT(*) as count FROM training_enrollments
             WHERE program_id = ?
         ');
-        $stmt->execute([$program['id']]);
+        $stmt->execute([$program['ld_training_programs_id']]);
         $enrollmentDetails[$program['id']] = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
     }
 } catch (Exception $e) {
@@ -223,21 +223,21 @@ $paginatedPrograms = paginateItems($filteredPrograms, $pageNum, $itemsPerPage);
       ?>
         <div class="col-md-4">
           <div class="card h-100 training-card clickable-card" style="cursor: pointer;"
-            data-program-id="<?php echo intval($program['id']); ?>"
-            data-name="<?php echo htmlspecialchars($program['name']); ?>"
+            data-program-id="<?php echo intval($program['ld_training_programs_id']); ?>"
+            data-name="<?php echo htmlspecialchars($program['title']); ?>"
             data-description="<?php echo htmlspecialchars($program['description']); ?>"
             data-cover-photo="<?php echo htmlspecialchars(getImageUrl($program['cover_photo'] ?? null, 'modules/img/placeholder.gif')); ?>"
             data-duration="<?php echo htmlspecialchars($program['duration'] ?? 'N/A'); ?>"
             data-instructor="<?php echo htmlspecialchars($program['instructor'] ?? 'N/A'); ?>"
             data-status="<?php echo htmlspecialchars($program['status'] ?? 'N/A'); ?>"
             data-start-date="<?php echo htmlspecialchars($program['start_date'] ?? 'N/A'); ?>"
-            data-enrolled="<?php echo $enrollmentDetails[$program['id']] ?? 0; ?>">
+            data-enrolled="<?php echo $enrollmentDetails[$program['ld_training_programs_id']] ?? 0; ?>">
             <div style="position: relative;">
-                <img src="<?php echo htmlspecialchars(getImageUrl($program['cover_photo'] ?? null)); ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?php echo htmlspecialchars($program['name']); ?>">
+                <img src="<?php echo htmlspecialchars(getImageUrl($program['cover_photo'] ?? null)); ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?php echo htmlspecialchars($program['title']); ?>">
               <span class="badge bg-warning" style="position: absolute; top: 10px; right: 10px;">Featured</span>
             </div>
             <div class="card-body d-flex flex-column">
-              <h5 class="card-title"><?php echo htmlspecialchars($program['name']); ?></h5>
+              <h5 class="card-title"><?php echo htmlspecialchars($program['title']); ?></h5>
               <p class="card-text text-muted mb-2"><?php echo htmlspecialchars(substr($program['description'], 0, 100)); ?></p>
               <p class="text-center mb-2" style="font-size: 0.9rem;">
                 <small class="badge bg-info">Training</small>
@@ -247,15 +247,15 @@ $paginatedPrograms = paginateItems($filteredPrograms, $pageNum, $itemsPerPage);
                 <div class="d-flex justify-content-between gap-1">
                   <small class="meta-label">Active</small>
                   <small class="meta-label">—</small>
-                  <small class="meta-label">Enrolled: <?php echo $enrollmentDetails[$program['id']] ?? 0; ?></small>
+                  <small class="meta-label">Enrolled: <?php echo $enrollmentDetails[$program['ld_training_programs_id']] ?? 0; ?></small>
                 </div>
               </div>
               <div class="mt-auto d-flex justify-content-between align-items-center">
-                <small class="text-muted">Total: <?php echo $enrollmentDetails[$program['id']] ?? 0; ?></small>
+                <small class="text-muted">Total: <?php echo $enrollmentDetails[$program['ld_training_programs_id']] ?? 0; ?></small>
                 <div class="card-action-set">
                   <form method="post" style="display:inline;" onclick="event.stopPropagation();">
                     <input type="hidden" name="action" value="<?php echo $isEnrolled ? 'unenroll' : 'enroll'; ?>">
-                    <input type="hidden" name="id" value="<?php echo intval($program['id']); ?>">
+                    <input type="hidden" name="id" value="<?php echo intval($program['ld_training_programs_id']); ?>">
                     <button type="submit" class="btn btn-sm <?php echo $isEnrolled ? 'btn-outline-warning' : 'btn-primary'; ?>">
                       <?php echo $isEnrolled ? 'Unenroll' : 'Enroll'; ?>
                     </button>
@@ -279,18 +279,18 @@ $paginatedPrograms = paginateItems($filteredPrograms, $pageNum, $itemsPerPage);
         <?php foreach ($paginatedPrograms['items'] as $program): ?>
           <div class="col-md-4">
             <div class="card h-100 training-card clickable-card" style="cursor: pointer;"
-              data-program-id="<?php echo intval($program['id']); ?>"
-              data-name="<?php echo htmlspecialchars($program['name']); ?>"
+              data-program-id="<?php echo intval($program['ld_training_programs_id']); ?>"
+              data-name="<?php echo htmlspecialchars($program['title']); ?>"
               data-description="<?php echo htmlspecialchars($program['description']); ?>"
                 data-cover-photo="<?php echo htmlspecialchars(getImageUrl($program['cover_photo'] ?? null)); ?>"
               data-duration="<?php echo htmlspecialchars($program['duration'] ?? 'N/A'); ?>"
               data-instructor="<?php echo htmlspecialchars($program['instructor'] ?? 'N/A'); ?>"
               data-status="<?php echo htmlspecialchars($program['status'] ?? 'N/A'); ?>"
               data-start-date="<?php echo htmlspecialchars($program['start_date'] ?? 'N/A'); ?>"
-              data-enrolled="<?php echo $enrollmentDetails[$program['id']] ?? 0; ?>">
-              <img src="<?php echo htmlspecialchars(getImageUrl($program['cover_photo'] ?? null, 'modules/img/placeholder.gif')); ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?php echo htmlspecialchars($program['name']); ?>">
+              data-enrolled="<?php echo $enrollmentDetails[$program['ld_training_programs_id']] ?? 0; ?>">
+              <img src="<?php echo htmlspecialchars(getImageUrl($program['cover_photo'] ?? null, 'modules/img/placeholder.gif')); ?>" class="card-img-top" style="height: 200px; object-fit: cover;" alt="<?php echo htmlspecialchars($program['title']); ?>">
               <div class="card-body d-flex flex-column">
-                <h5 class="card-title"><?php echo htmlspecialchars($program['name']); ?></h5>
+                <h5 class="card-title"><?php echo htmlspecialchars($program['title']); ?></h5>
                 <p class="card-text text-muted mb-2"><?php echo htmlspecialchars(substr($program['description'], 0, 100)); ?></p>
                 <p class="text-center mb-2" style="font-size: 0.9rem;">
                   <small class="badge bg-info">Training</small>
@@ -300,17 +300,17 @@ $paginatedPrograms = paginateItems($filteredPrograms, $pageNum, $itemsPerPage);
                   <div class="d-flex justify-content-between gap-1">
                     <small class="meta-label">Active</small>
                     <small class="meta-label">—</small>
-                    <small class="meta-label">Enrolled: <?php echo $enrollmentDetails[$program['id']] ?? 0; ?></small>
+                    <small class="meta-label">Enrolled: <?php echo $enrollmentDetails[$program['ld_training_programs_id']] ?? 0; ?></small>
                   </div>
                 </div>
                 <div class="mt-auto d-flex justify-content-between align-items-center">
-                  <small class="text-muted">Total: <?php echo $enrollmentDetails[$program['id']] ?? 0; ?></small>
+                  <small class="text-muted">Total: <?php echo $enrollmentDetails[$program['ld_training_programs_id']] ?? 0; ?></small>
                   <div class="card-action-set">
                     <?php 
                     $isEnrolled = false;
                     if ($currentUserId) {
                         foreach ($userEnrollments as $enrolled) {
-                            if ($enrolled['id'] == $program['id']) {
+                            if ($enrolled['id'] == $program['ld_training_programs_id']) {
                                 $isEnrolled = true;
                                 break;
                             }
@@ -319,7 +319,7 @@ $paginatedPrograms = paginateItems($filteredPrograms, $pageNum, $itemsPerPage);
                     ?>
                     <form method="post" style="display:inline;" onclick="event.stopPropagation();">
                       <input type="hidden" name="action" value="<?php echo $isEnrolled ? 'unenroll' : 'enroll'; ?>">
-                      <input type="hidden" name="id" value="<?php echo intval($program['id']); ?>">
+                      <input type="hidden" name="id" value="<?php echo intval($program['ld_training_programs_id']); ?>">
                       <button type="submit" class="btn btn-sm <?php echo $isEnrolled ? 'btn-outline-warning' : 'btn-primary'; ?>">
                         <?php echo $isEnrolled ? 'Unenroll' : 'Enroll'; ?>
                       </button>
