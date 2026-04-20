@@ -9,16 +9,21 @@ session_start();
 */
 $protectedRoutes = [
     'dashboard',
-    'employee-grievance',
-    'employee-grievance-create',
-    'employee-documents-index',
+    'user-profile',
     'employee-time-in',
     'employee-time-out',
+    'employee-grievance',
     'employee-payslip-items',
-    'user-profile',
+    'employee-documents-index',
+    'employee-grievance-create',
 ];
 
-
+/*
+|--------------------------------------------------------------------------
+|  Including Controllers
+|--------------------------------------------------------------------------
+|
+*/
 require 'app/controllers/AuthController.php';
 require 'app/controllers/ProfileController.php';
 require 'app/controllers/PayslipController.php';
@@ -30,6 +35,7 @@ require 'app/controllers/MedicalRecordController.php';
 require 'app/controllers/OnlineMeetingController.php';
 require 'app/controllers/EmployeePortalController.php';
 require 'app/controllers/TrainingProgramController.php';
+require 'app/controllers/EnrollmentProgramController.php';
 require 'app/controllers/PerformanceFeedbackController.php';
 
 /*
@@ -277,6 +283,14 @@ switch ($url) {
 
     case 'training-program-paginate':
         (new TrainingProgramController)->paginate();
+        break;
+
+    case 'training-program-enroll':
+        (new EnrollmentProgramController)->enroll();
+        break;
+
+    case 'training-program-unenroll':
+        (new EnrollmentProgramController)->unenroll();
         break;
     /*
 |--------------------------------------------------------------------------

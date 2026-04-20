@@ -1,22 +1,38 @@
 <?php
 
 require_once __DIR__ . '/../models/TrainingProgram.php';
+require_once __DIR__ . '/../models/EnrollmentProgram.php';
 
 class TrainingProgramController
 {
     private $trainingModel;
+    private $enrollmentModel;
     public function __construct()
     {
         $this->trainingModel = new TrainingProgram();
+        $this->enrollmentModel = new EnrollmentProgram();
     }
     public function index()
     {
+        $userId = $_SESSION['user_id'] ?? 0;
+        $enrollmentModel = $this->enrollmentModel;
+        $userEnrollments = $enrollmentModel->getUserEnrollments($userId);
+        
         $filters = $this->getSearchFilters();
         $page = $_GET['page'] ?? 1;
 
         $data = $this->trainingModel->searchPrograms($filters, $page);
 
         $programs = $data['programs'];
+
+        foreach ($programs as &$program) {
+            $program['isEnrolled'] = $enrollmentModel->isEnrolled(
+                $userId,
+                $program['ld_training_programs_id']
+            ) ? true : false;
+        }
+        unset($program);
+
         $totalPages = $data['totalPages'];
         $currentPage = $data['currentPage'];
 
@@ -25,7 +41,6 @@ class TrainingProgramController
 
         $title = "Training Programs";
         $content = __DIR__ . '/../views/learning-development/training/main-content.php';
-
         require __DIR__ . '/../views/index.php';
     }
     public function adminIndex()
