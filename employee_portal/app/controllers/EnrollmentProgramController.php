@@ -9,7 +9,6 @@ class EnrollmentProgramController
     {
         $this->enrollmentModel = new EnrollmentProgram();
     }
-
     public function enroll()
     {
         session_start();

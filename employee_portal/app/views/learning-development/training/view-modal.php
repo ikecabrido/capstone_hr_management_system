@@ -1,5 +1,3 @@
-<?php $isEnrolled = $program['isEnrolled']; ?>
-
 <div class="modal fade" id="<?= $modalId ?>" tabindex="-1">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content border-0 rounded-4 overflow-hidden">
@@ -72,15 +70,20 @@
           <i class="fa-solid fa-xmark me-1"></i> Close
         </button>
 
+        <?php if ($showEnrollButton): ?> 
+
         <form method="post"
-          action="index.php?url=<?= $isEnrolled ? 'training-program-unenroll' : 'training-program-enroll' ?>">
+              action="index.php?url=<?= $isEnrolled ? 'training-program-unenroll' : 'training-program-enroll' ?>">
 
           <input type="hidden" name="id" value="<?= $id ?>">
 
           <button class="btn <?= $isEnrolled ? 'btn-outline-warning' : 'btn-primary' ?>">
             <?= $isEnrolled ? 'Unenroll' : 'Enroll Now' ?>
           </button>
+
         </form>
+
+        <?php endif; ?> 
 
       </div>
 

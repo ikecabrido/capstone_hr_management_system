@@ -72,6 +72,18 @@
                 </div>
             </div>
         </div>
+
+        <?php
+        $isEnrolled = false;
+
+        if (!empty($enrollmentDetails[$id]) && $currentUserId) {
+            $userIds = array_column($enrollmentDetails[$id], 'user_id');
+            $isEnrolled = in_array($currentUserId, $userIds);
+        }
+
+        $showEnrollButton = true; 
+        ?>
         <?php require __DIR__ . '/view-modal.php' ?>
+        
     <?php endforeach; ?>
 </div>
