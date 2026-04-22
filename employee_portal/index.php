@@ -9,11 +9,14 @@ session_start();
 */
 $protectedRoutes = [
     'dashboard',
+    'view-payslip',
     'user-profile',
     'employee-time-in',
     'employee-time-out',
+    'export-payslip-csv',
     'employee-grievance',
     'employee-payslip-items',
+    'career-path-plans-index',
     'employee-documents-index',
     'employee-grievance-create',
 ];
@@ -29,6 +32,7 @@ require 'app/controllers/ProfileController.php';
 require 'app/controllers/PayslipController.php';
 require 'app/controllers/GrievanceController.php';
 require 'app/controllers/DocumentsController.php';
+require 'app/controllers/CareerPathController.php';
 require 'app/controllers/LeaveRequestController.php';
 require 'app/controllers/AnnouncementController.php';
 require 'app/controllers/MedicalRecordController.php';
@@ -292,6 +296,17 @@ switch ($url) {
     case 'training-program-unenroll':
         (new EnrollmentProgramController)->unenroll();
         break;
+    /*
+|--------------------------------------------------------------------------
+| Career Path Plans Routes
+|--------------------------------------------------------------------------
+| These routes handle employee career path functionality.
+|
+*/
+    case 'career-path-plans-index':
+        (new CareerPathController)->index();
+        break;
+
     /*
 |--------------------------------------------------------------------------
 | Default Error Content Routes

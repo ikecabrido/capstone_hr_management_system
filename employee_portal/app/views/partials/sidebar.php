@@ -54,7 +54,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="index.php?url=training-program-index" class="nav-link">
+                            <a href="index.php?url=career-path-plans-index" class="nav-link">
                                 <i class="fas fa-route nav-icon text-warning"></i>
                                 <p>Career Path</p>
                             </a>
