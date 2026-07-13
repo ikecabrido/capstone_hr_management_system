@@ -14,16 +14,18 @@
                 <img src="<?= $base ?>/assets/dist/img/user2-160x160.jpg" class="img-circle elevation-2" alt="User Image" />
             </div>
             <div class="info">
-                <a href="#" class="d-block">Alexander Pierce</a>
+                <a href="#" class="d-block"><?php echo isset($_SESSION['full_name']) ? $_SESSION['full_name'] : 'User'; ?></a>
             </div>
         </div>
 
         <!-- Sidebar Menu -->
         <nav class="mt-2">
             <ul class="text-[14px] nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-
+                <?php 
+                var_dump($_SESSION);
+                ?>
                 <li class="nav-item">
-                    <a href="index.php?url=admin-dashboard" class="nav-link active">
+                    <a href="index.php?url=admin-dashboard" class="nav-link">
                         <i class="nav-icon fas fa-home"></i>
                         <p>Dashboard</p>
                     </a>

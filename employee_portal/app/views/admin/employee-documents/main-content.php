@@ -61,7 +61,7 @@
 
                                 <td>
                                     <?php if (!empty($doc['file_path'])): ?>
-                                        <a href="<?= $base . '/public/' . ltrim($doc['file_path'], '/') ?>"
+                                        <a href="<?= $base . '/employee_portal/public/' . ltrim($doc['file_path'], '/') ?>"
                                             class="btn btn-outline-primary btn-sm py-0 px-2"
                                             target="_blank">
                                             View
