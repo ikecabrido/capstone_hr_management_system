@@ -21,9 +21,6 @@
         <!-- Sidebar Menu -->
         <nav class="mt-2">
             <ul class="text-[14px] nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-                <?php 
-                var_dump($_SESSION);
-                ?>
                 <li class="nav-item">
                     <a href="index.php?url=admin-dashboard" class="nav-link">
                         <i class="nav-icon fas fa-home"></i>
