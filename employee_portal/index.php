@@ -6,6 +6,7 @@ require 'app/controllers/ProfileController.php';
 require 'app/controllers/PayslipController.php';
 require 'app/controllers/LeaveRequestController.php';
 require 'app/controllers/AnnouncementController.php';
+require 'app/controllers/NotificationController.php';
 require 'app/controllers/MedicalRecordController.php';
 require 'app/controllers/OnlineMeetingController.php';
 require 'app/controllers/EmployeePortalController.php';
@@ -16,7 +17,7 @@ require 'app/controllers/PerformanceFeedbackController.php';
 $url = $_GET['url'] ?? 'auth-index';
 
 switch ($url) {
-//Authentication
+    //Authentication
     case 'auth-index':
         (new AuthController)->index();
         break;
@@ -148,13 +149,18 @@ switch ($url) {
     case 'user-profile':
         (new ProfileController)->index();
         break;
-    
+
     case 'update-name':
         (new ProfileController)->updateName();
         break;
-    
+
     case 'update-password':
         (new ProfileController)->changePassword();
+        break;
+
+    //Notification
+    case 'admin-notification':
+        (new NotificationController)->index();
         break;
 
     default:

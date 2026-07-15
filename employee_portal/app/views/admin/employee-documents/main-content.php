@@ -74,7 +74,7 @@
                                 <td class="text-nowrap text-muted">
                                     <?= !empty($doc['approved_at']) ? date('M d', strtotime($doc['approved_at'])) : '-' ?>
                                 </td>
-                                <td class="text-primary text-[12px] fw-semibold">
+                                <td class="text-primary text-[14px] fw-bold">
                                     <?= ucfirst($doc['decision'] ?? '-') ?>
 
                                     <?php if (empty($doc['decision'] !== 'Pending')): ?>
@@ -82,13 +82,13 @@
                                             <form method="POST" action="index.php?url=employee-documents-decision" class="d-inline">
                                                 <input type="hidden" name="approval_id" value="<?= $doc['approval_id'] ?>">
                                                 <input type="hidden" name="decision" value="Approved">
-                                                <button type="submit" class="btn btn-outline-success btn-sm">✔</button>
+                                                <button type="submit" class="btn btn-outline-success btn-sm bg-primary">✔</button>
                                             </form>
 
                                             <form method="POST" action="index.php?url=employee-documents-decision" class="d-inline">
                                                 <input type="hidden" name="approval_id" value="<?= $doc['approval_id'] ?>">
                                                 <input type="hidden" name="decision" value="Rejected">
-                                                <button type="submit" class="btn btn-outline-danger btn-sm">✖</button>
+                                                <button type="submit" class="btn btn-outline-danger btn-sm bg-danger">✖</button>
                                             </form>
                                         </div>
                                     <?php endif; ?>

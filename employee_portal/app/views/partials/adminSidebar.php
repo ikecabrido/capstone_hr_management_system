@@ -11,7 +11,7 @@
         <!-- Sidebar user panel (optional) -->
         <div class="user-panel mt-3 pb-3 mb-3 d-flex">
             <div class="image">
-                <img src="<?= $base ?>/assets/dist/img/user2-160x160.jpg" class="img-circle elevation-2" alt="User Image" />
+                <img src="<?= $base ?>/employee_portal/public/assets/image/default_user_icon.webp" class="img-circle elevation-2" alt="User Image" />
             </div>
             <div class="info">
                 <a href="#" class="d-block"><?php echo isset($_SESSION['full_name']) ? $_SESSION['full_name'] : 'User'; ?></a>
@@ -43,6 +43,12 @@
                     <a href="/capstone_hr_management_system/employee_portal/index.php?url=admin-documents-index" class="nav-link">
                         <i class="fas fa-file-alt nav-icon"></i>
                         <p>Employee Documents</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/capstone_hr_management_system/employee_portal/index.php?url=admin-notification" class="nav-link">
+                        <i class="fa-solid fa-bell nav-icon"></i>
+                        <p>Notification</p>
                     </a>
                 </li>
                 <li class="nav-item">
