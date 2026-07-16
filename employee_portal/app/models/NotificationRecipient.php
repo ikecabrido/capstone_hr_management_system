@@ -98,4 +98,38 @@ class NotificationRecipient
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    public function markAsRead($notificationId, $employeeId)
+    {
+        $query = "
+        UPDATE ep_notification_recipients
+        SET is_read = 1,
+            read_at = NOW()
+        WHERE notification_id = :notification_id
+        AND employee_id = :employee_id
+    ";
+
+        $stmt = $this->conn->prepare($query);
+
+        return $stmt->execute([
+            ':notification_id' => $notificationId,
+            ':employee_id' => $employeeId
+        ]);
+    }
+
+    public function markAllAsRead($employeeId)
+    {
+        $query = "
+        UPDATE ep_notification_recipients
+        SET is_read = 1,
+            read_at = NOW()
+        WHERE employee_id = :employee_id
+        AND is_read = 0
+    ";
+
+        $stmt = $this->conn->prepare($query);
+
+        return $stmt->execute([
+            ':employee_id' => $employeeId
+        ]);
+    }
 }

@@ -179,6 +179,18 @@ switch ($url) {
         (new NotificationController)->delete();
         break;
 
+    case 'employee-notifications':
+        (new NotificationController)->employeeNotifications();
+        break;
+
+    case 'employee-notification-mark-read':
+        (new NotificationController)->markRead();
+        break;
+
+    case 'employee-notification-mark-all-read':
+        (new NotificationController)->markAllRead();
+        break;
+
     default:
         $title = "Page Not Found";
         $content = __DIR__ . 'app/views/error-content.php';

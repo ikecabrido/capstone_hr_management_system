@@ -175,4 +175,50 @@ class NotificationController
 
         Helper::redirect('index.php?url=admin-notification');
     }
+    public function employeeNotifications()
+    {
+        Session::start();
+
+        $employee = $this->employeeModel->findByUserId(
+            Session::get('user_id')
+        );
+
+        if (!$employee) {
+            Helper::redirect('index.php?url=dashboard');
+        }
+
+        $notifications = $this->notificationModel
+            ->getEmployeeNotifications($employee['id']);
+            
+        $title = "My Notifications";
+        $content = __DIR__ . '/../views/notifications/main-content.php';
+        require __DIR__ . '/../views/employee-portal/index.php';
+    }
+    public function markRead()
+    {
+        Session::start();
+
+        $employee = $this->employeeModel
+            ->findByUserId(Session::get('user_id'));
+
+        $this->recipientModel->markAsRead(
+            $_GET['id'],
+            $employee['id']
+        );
+
+        Helper::redirect('index.php?url=employee-notifications');
+    }
+    public function markAllRead()
+    {
+        Session::start();
+
+        $employee = $this->employeeModel
+            ->findByUserId(Session::get('user_id'));
+
+        $this->recipientModel->markAllAsRead(
+            $employee['id']
+        );
+
+        Helper::redirect('index.php?url=employee-notifications');
+    }
 }
