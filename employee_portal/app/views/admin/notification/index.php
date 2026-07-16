@@ -56,7 +56,7 @@ $content = $content ?? __DIR__ . '/main-content.php';
     <script src="<?= $base ?>/assets/dist/js/adminlte.min.js"></script>
     <script src="<?= $base ?>/employee_portal/app/views/partials/custom.js"></script>
     <script src="<?= $base ?>/employee_portal/public/assets/js/time.js"></script>
-
+    <script src="<?= $base ?>/employee_portal/public/assets/js/notifSelection.js"></script>
 
 </body>
 

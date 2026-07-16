@@ -1,0 +1,7 @@
+code for showing variable data in the UI
+
+<?php
+echo '<pre>';
+print_r($_SESSION);
+echo '</pre>';
+?>

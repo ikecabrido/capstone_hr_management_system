@@ -2,174 +2,246 @@
     <div class="content-wrapper text-3xl">
         <div class="pt-10 pl-10">
 
-                <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
 
-                    <div>
-                        <h3 class="fw-bold text-primary mb-1">
-                            <i class="fas fa-bell me-2"></i>Notification Management
-                        </h3>
+                <div>
 
-                        <p class="text-muted mb-0">
-                            Create and manage employee notifications.
-                        </p>
-                    </div>
+                    <h1 class="fw-bold text-primary mb-1 display-5">
+                        <i class="fas fa-bell me-2"></i>
+                        Notification Management
+                    </h1>
 
-                    <button class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>Create Notification
-                    </button>
+                    <p class="text-muted mb-0 fs-5">
+                        Create and manage employee notifications.
+                    </p>
 
                 </div>
 
-                <div class="card shadow-sm border-0">
+                <button
+                    class="btn btn-primary btn-lg"
+                    data-bs-toggle="modal"
+                    data-bs-target="#createNotificationModal">
 
-                    <div class="card-header bg-white">
+                    <i class="fas fa-plus me-2"></i>
+                    Create Notification
 
-                        <div class="row">
+                </button>
 
-                            <div class="col-md-4">
-                                <input
-                                    type="text"
-                                    class="form-control"
-                                    placeholder="Search notifications...">
-                            </div>
+            </div>
+            <?php require __DIR__ . '/../../../views/partials/notif.php' ?>
 
+            <div class="card shadow-sm border-0">
+
+                <div class="card-header bg-white">
+
+                    <div class="row">
+
+                        <div class="col-md-4">
+                            <input
+                                type="text"
+                                class="form-control"
+                                placeholder="Search notifications...">
                         </div>
 
                     </div>
 
-                    <div class="card-body p-0">
+                </div>
 
-                        <div class="table-responsive">
+                <div class="card-body p-0">
 
-                            <table class="table table-hover align-middle mb-0">
+                    <div class="table-responsive">
 
-                                <thead class="table-light">
+                        <table class="table table-hover align-middle mb-0">
 
-                                    <tr>
+                            <thead class="table-light">
 
-                                        <th>ID</th>
+                                <tr>
 
-                                        <th>Title</th>
+                                    <th>ID</th>
 
-                                        <th>Type</th>
+                                    <th>Title</th>
 
-                                        <th>Priority</th>
+                                    <th>Type</th>
 
-                                        <th>Recipients</th>
+                                    <th>Priority</th>
 
-                                        <th>Created By</th>
+                                    <th>Recipients</th>
 
-                                        <th>Date</th>
+                                    <th>Created By</th>
 
-                                        <th width="150">Actions</th>
+                                    <th>Date</th>
 
-                                    </tr>
+                                    <th width="150">Actions</th>
 
-                                </thead>
+                                </tr>
 
-                                <tbody>
+                            </thead>
 
-                                    <?php if (!empty($notification)): ?>
+                            <tbody>
 
-                                        <?php foreach ($notification as $row): ?>
+                                <?php if (!empty($notification)): ?>
 
-                                            <tr>
-
-                                                <td><?= $row['notification_id']; ?></td>
-
-                                                <td>
-                                                    <strong><?= htmlspecialchars($row['title']); ?></strong>
-                                                </td>
-
-                                                <td>
-
-                                                    <?php
-
-                                                    $typeClass = [
-                                                        'announcement' => 'primary',
-                                                        'payroll' => 'success',
-                                                        'leave' => 'warning text-dark',
-                                                        'training' => 'info text-dark',
-                                                        'performance' => 'secondary',
-                                                        'document' => 'dark',
-                                                        'meeting' => 'info',
-                                                        'compliance' => 'danger',
-                                                        'general' => 'secondary'
-                                                    ];
-
-                                                    ?>
-
-                                                    <span class="badge bg-<?= $typeClass[$row['type']] ?? 'secondary'; ?>">
-                                                        <?= ucfirst($row['type']); ?>
-                                                    </span>
-
-                                                </td>
-
-                                                <td>
-
-                                                    <?php
-
-                                                    $priorityClass = [
-                                                        'normal' => 'success',
-                                                        'important' => 'warning text-dark',
-                                                        'urgent' => 'danger'
-                                                    ];
-
-                                                    ?>
-
-                                                    <span class="badge bg-<?= $priorityClass[$row['priority']] ?? 'secondary'; ?>">
-                                                        <?= ucfirst($row['priority']); ?>
-                                                    </span>
-
-                                                </td>
-
-                                                <td>N/A</td>
-
-                                                <td>User #<?= $row['created_by_user_id']; ?></td>
-
-                                                <td><?= date('M d, Y', strtotime($row['created_at'])); ?></td>
-
-                                                <td>
-
-                                                    <button class="btn btn-sm btn-info text-white">
-                                                        <i class="fas fa-eye"></i>
-                                                    </button>
-
-                                                    <button class="btn btn-sm btn-warning text-white">
-                                                        <i class="fas fa-edit"></i>
-                                                    </button>
-
-                                                    <button class="btn btn-sm btn-danger">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-
-                                                </td>
-
-                                            </tr>
-
-                                        <?php endforeach; ?>
-
-                                    <?php else: ?>
+                                    <?php foreach ($notification as $row): ?>
 
                                         <tr>
-                                            <td colspan="8" class="text-center text-muted py-4">
-                                                No notifications found.
+
+                                            <td><?= $row['notification_id']; ?></td>
+
+                                            <td>
+                                                <strong><?= htmlspecialchars($row['title']); ?></strong>
                                             </td>
+
+                                            <td>
+
+                                                <?php
+
+                                                $typeClass = [
+                                                    'announcement' => 'primary',
+                                                    'payroll' => 'success',
+                                                    'leave' => 'warning text-dark',
+                                                    'training' => 'info text-dark',
+                                                    'performance' => 'secondary',
+                                                    'document' => 'dark',
+                                                    'meeting' => 'info',
+                                                    'compliance' => 'danger',
+                                                    'general' => 'secondary'
+                                                ];
+
+                                                ?>
+
+                                                <span class="badge bg-<?= $typeClass[$row['type']] ?? 'secondary'; ?>">
+                                                    <?= ucfirst($row['type']); ?>
+                                                </span>
+
+                                            </td>
+
+                                            <td>
+
+                                                <?php
+
+                                                $priorityClass = [
+                                                    'normal' => 'success',
+                                                    'important' => 'warning text-dark',
+                                                    'urgent' => 'danger'
+                                                ];
+
+                                                ?>
+
+                                                <span class="badge bg-<?= $priorityClass[$row['priority']] ?? 'secondary'; ?>">
+                                                    <?= ucfirst($row['priority']); ?>
+                                                </span>
+
+                                            </td>
+
+                                            <td>
+                                                <?php if ($row['recipient_count'] > 0): ?>
+
+                                                    <span class="badge bg-success">
+                                                        <?= $row['recipient_count']; ?>
+                                                        Employee<?= $row['recipient_count'] > 1 ? 's' : ''; ?>
+                                                    </span>
+
+                                                <?php else: ?>
+
+                                                    <span class="text-muted">
+                                                        No recipients
+                                                    </span>
+
+                                                <?php endif; ?>
+                                            </td>
+
+                                            <td class="flex">
+                                                Admin
+                                                <small class="ml-1 text-muted d-block">
+                                                    ID: <?= $row['created_by_user_id']; ?>
+                                                </small>
+                                            </td>
+
+                                            <td><?= date('M d, Y', strtotime($row['created_at'])); ?></td>
+
+                                            <td class="flex">
+
+                                                <a
+                                                    href="index.php?url=admin-notification&view=<?= $row['notification_id']; ?>"
+                                                    class="btn mr-1 btn-sm btn-info text-white">
+
+                                                    <i class="fas fa-eye"></i>
+
+                                                </a>
+
+                                                <button
+                                                    class="btn mr-1 btn-sm btn-warning text-white"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#editNotificationModal<?= $row['notification_id']; ?>">
+
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+
+                                                <form
+                                                    action="index.php?url=notification-delete"
+                                                    method="POST"
+                                                    class="d-inline"
+                                                    onsubmit="return confirm('Are you sure you want to delete this notification? This action cannot be undone.');">
+
+                                                    <input
+                                                        type="hidden"
+                                                        name="notification_id"
+                                                        value="<?= $row['notification_id']; ?>">
+
+                                                    <button
+                                                        type="submit"
+                                                        class="btn btn-sm btn-danger">
+
+                                                        <i class="fas fa-trash"></i>
+
+                                                    </button>
+
+                                                </form>
+
+                                            </td>
+
                                         </tr>
+                                        <?php require __DIR__ . '/edit-modal.php'; ?>
+                                    <?php endforeach; ?>
 
-                                    <?php endif; ?>
+                                <?php else: ?>
 
-                                </tbody>
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted py-4">
+                                            No notifications found.
+                                        </td>
+                                    </tr>
 
-                            </table>
+                                <?php endif; ?>
 
-                        </div>
+                            </tbody>
+
+                        </table>
 
                     </div>
 
                 </div>
 
             </div>
+            <?php require __DIR__ . '/create-modal.php' ?>
+            <?php require __DIR__ . '/view-modal.php'; ?>
+
         </div>
     </div>
 </div>
+
+<?php if (!empty($viewNotification)): ?>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+
+            $('#viewNotificationModal').modal('show');
+
+            // Remove the "view" parameter from the URL
+            window.history.replaceState({},
+                document.title,
+                'index.php?url=admin-notification'
+            );
+
+        });
+    </script>
+<?php endif; ?>

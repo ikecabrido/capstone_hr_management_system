@@ -163,6 +163,22 @@ switch ($url) {
         (new NotificationController)->index();
         break;
 
+    case 'notification-store':
+        (new NotificationController)->create();
+        break;
+
+    case 'notification-view':
+        (new NotificationController)->view();
+        break;
+
+    case 'notification-update':
+        (new NotificationController)->update();
+        break;
+
+    case 'notification-delete':
+        (new NotificationController)->delete();
+        break;
+
     default:
         $title = "Page Not Found";
         $content = __DIR__ . 'app/views/error-content.php';
