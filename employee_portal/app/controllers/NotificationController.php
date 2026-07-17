@@ -18,8 +18,8 @@ class NotificationController
         $employeeList = $this->employeeModel->all();
         $notification = $this->notificationModel->all();
 
+        //for view
         $recipientList = [];
-
         if (!empty($_GET['view'])) {
 
             $viewNotification = $this->notificationModel->find($_GET['view']);

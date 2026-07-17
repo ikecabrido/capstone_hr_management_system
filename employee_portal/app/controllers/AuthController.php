@@ -27,6 +27,8 @@ class AuthController
             $employee_no = Helper::sanitize($_POST['employee_no'] ?? '');
             $password   = trim($_POST['password'] ?? '');
 
+            var_dump($employee_no);
+            die;
             if (empty($employee_no) || empty($password)) {
                 throw new Exception("Please fill in all fields");
             }

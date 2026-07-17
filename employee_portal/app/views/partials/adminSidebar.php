@@ -14,7 +14,9 @@
                 <img src="<?= $base ?>/employee_portal/public/assets/image/default_user_icon.webp" class="img-circle elevation-2" alt="User Image" />
             </div>
             <div class="info">
-                <a href="#" class="d-block"><?php echo isset($_SESSION['full_name']) ? $_SESSION['full_name'] : 'Admin'; ?></a>
+                <a href="#" class="d-block">
+                    <?= htmlspecialchars($_SESSION['user']['name'] ?? 'Admin') ?>
+                </a>
             </div>
         </div>
 

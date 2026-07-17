@@ -7,6 +7,13 @@ class NotificationHelper
 
     public static function getEmployeeNotifications($employeeId)
     {
+        if (empty($employeeId)) {
+            return [
+                'count' => 0,
+                'latest' => []
+            ];
+        }
+
         $notificationModel = new Notification();
 
         return [
@@ -14,5 +21,4 @@ class NotificationHelper
             'latest' => $notificationModel->latest($employeeId)
         ];
     }
-
 }

@@ -1,22 +1,21 @@
 <?php
+$notificationCount = 0;
+$latestNotifications = [];
 
-require_once __DIR__ . '/../../models/Employee.php';
-require_once __DIR__ . '/../../core/NotificationHelper.php';
+if (isset($_SESSION['user_id'])) {
 
-$employeeModel = new Employee();
+    $employeeModel = new Employee();
 
-$employee = $employeeModel->findByUserId(
-    $_SESSION['user_id']
-);
+    $employee = $employeeModel->findByUserId($_SESSION['user_id']);
 
-$employeeId = $employee['id'] ?? null;
+    if ($employee) {
 
-$notifications = NotificationHelper::getEmployeeNotifications(
-    $employeeId
-);
+        $notifications = NotificationHelper::getEmployeeNotifications($employee['id']);
 
-$notificationCount = $notifications['count'];
-$latestNotifications = $notifications['latest'];
+        $notificationCount = $notifications['count'];
+        $latestNotifications = $notifications['latest'];
+    }
+}
 ?>
 
 <!-- Preloader -->

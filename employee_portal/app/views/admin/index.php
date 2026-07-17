@@ -1,4 +1,5 @@
 <?php
+
 $partials = __DIR__ . '/../partials/';
 $base = "/capstone_hr_management_system";
 $content = $content ?? __DIR__ . '/main-content.php';
@@ -33,7 +34,7 @@ $content = $content ?? __DIR__ . '/main-content.php';
 
     <div class="wrapper">
 
-        <?php require $partials . 'navbar.php'; ?>
+        <?php require $partials . 'adminNavbar.php'; ?>
 
         <?php require $partials . 'adminSidebar.php'; ?>
 
