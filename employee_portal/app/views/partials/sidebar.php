@@ -159,7 +159,7 @@
                     <a href="#" class="nav-link">
                         <i class="nav-icon fas fa-inbox"></i>
                         <p>
-                            Request
+                            Request & Others
                             <i class="right fas fa-angle-left"></i>
                         </p>
                     </a>
@@ -204,6 +204,5 @@
                 </li>
             </ul>
         </nav>
-
     </div>
 </aside>

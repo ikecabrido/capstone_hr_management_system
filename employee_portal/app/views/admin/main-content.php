@@ -11,7 +11,6 @@
                 + New Document
             </a>
         </div>
-
         <!-- Stats Cards -->
         <div class="row g-3 mb-4">
 

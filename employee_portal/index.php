@@ -1,32 +1,17 @@
 <?php
 session_start();
 
-/*
-|--------------------------------------------------------------------------
-| Initiating protected Routes
-|--------------------------------------------------------------------------
-|
-*/
-$protectedRoutes = [
-    'dashboard',
-    'view-payslip',
-    'user-profile',
-    'employee-time-in',
-    'employee-time-out',
-    'export-payslip-csv',
-    'employee-grievance',
-    'employee-payslip-items',
-    'career-path-plans-index',
-    'employee-documents-index',
-    'employee-grievance-create',
-];
+if (isset($_SESSION['user']) && !isset($_SESSION['user_id'])) {
 
-/*
-|--------------------------------------------------------------------------
-|  Including Controllers
-|--------------------------------------------------------------------------
-|
-*/
+    $_SESSION['user_id'] = $_SESSION['user']['id'];
+    $_SESSION['employee_id'] = $_SESSION['user']['employee_id'];
+    $_SESSION['username'] = $_SESSION['user']['username'];
+    $_SESSION['name'] = $_SESSION['user']['name'];
+    $_SESSION['full_name'] = $_SESSION['user']['name'];
+    $_SESSION['role'] = $_SESSION['user']['role'];
+    $_SESSION['theme'] = $_SESSION['user']['theme'];
+}
+
 require 'app/controllers/AuthController.php';
 require 'app/controllers/ProfileController.php';
 require 'app/controllers/PayslipController.php';
@@ -35,6 +20,7 @@ require 'app/controllers/DocumentsController.php';
 require 'app/controllers/CareerPathController.php';
 require 'app/controllers/LeaveRequestController.php';
 require 'app/controllers/AnnouncementController.php';
+require 'app/controllers/NotificationController.php';
 require 'app/controllers/MedicalRecordController.php';
 require 'app/controllers/OnlineMeetingController.php';
 require 'app/controllers/EmployeePortalController.php';
@@ -64,6 +50,7 @@ if (in_array($url, $protectedRoutes)) {
 |
 */
 switch ($url) {
+    //Authentication
     case 'auth-index':
         (new AuthController)->index();
         break;
@@ -270,50 +257,40 @@ switch ($url) {
     case 'update-password':
         (new ProfileController)->changePassword();
         break;
-    /*
-|--------------------------------------------------------------------------
-| Training Program Routes
-|--------------------------------------------------------------------------
-| These routes handle employee training program functionality.
-|
-*/
-    case 'training-program-admin-index':
-        (new TrainingProgramController)->adminIndex();
+
+    //Notification
+    case 'admin-notification':
+        (new NotificationController)->index();
         break;
 
-    case 'training-program-index':
-        (new TrainingProgramController)->index();
+    case 'notification-store':
+        (new NotificationController)->create();
         break;
 
-    case 'training-program-paginate':
-        (new TrainingProgramController)->paginate();
+    case 'notification-view':
+        (new NotificationController)->view();
         break;
 
-    case 'training-program-enroll':
-        (new EnrollmentProgramController)->enroll();
+    case 'notification-update':
+        (new NotificationController)->update();
         break;
 
-    case 'training-program-unenroll':
-        (new EnrollmentProgramController)->unenroll();
-        break;
-    /*
-|--------------------------------------------------------------------------
-| Career Path Plans Routes
-|--------------------------------------------------------------------------
-| These routes handle employee career path functionality.
-|
-*/
-    case 'career-path-plans-index':
-        (new CareerPathController)->index();
+    case 'notification-delete':
+        (new NotificationController)->delete();
         break;
 
-    /*
-|--------------------------------------------------------------------------
-| Default Error Content Routes
-|--------------------------------------------------------------------------
-| These routes handle any unmatched routes.
-|
-*/
+    case 'employee-notifications':
+        (new NotificationController)->employeeNotifications();
+        break;
+
+    case 'employee-notification-mark-read':
+        (new NotificationController)->markRead();
+        break;
+
+    case 'employee-notification-mark-all-read':
+        (new NotificationController)->markAllRead();
+        break;
+
     default:
         $title = "Page Not Found";
         $content = __DIR__ . 'app/views/error-content.php';

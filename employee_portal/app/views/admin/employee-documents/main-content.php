@@ -3,127 +3,220 @@
         <div class="pt-5 pl-4">
             <h5 class="fw-bold mb-3 text-5xl">Employee Documents</h5>
 
-            <table class="table table-sm table-hover mb-0 border border-primary-subtle rounded-3 overflow-hidden">
-                <?php require __DIR__ . '/../../../views/partials/notif.php' ?>
+            <table class="table table-striped table-hover align-middle mb-0">
+                <?php require __DIR__ . '/../../../views/partials/notif.php'; ?>
 
-                <thead class="bg-primary color-blue-500 text-white text-nowrap small">
+                <thead class="table-primary text-nowrap">
                     <tr>
-                        <th>ID</th>
+                        <th width="60">#</th>
                         <th>Title</th>
                         <th>Submitted By</th>
                         <th>Department</th>
                         <th>Approver</th>
-                        <th>Status</th>
-                        <th>Attachment</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Attachment</th>
                         <th>Date Approved</th>
-                        <th>Decision</th>
+                        <th class="text-center">Decision</th>
                         <th>Remarks</th>
-                        <th class="text-center">Actions</th>
+                        <th class="text-center">Action</th>
                     </tr>
                 </thead>
 
-                <tbody class="small">
-                    <?php if (!empty($empdocs)) : ?>
-                        <?php foreach ($empdocs as $doc) : ?>
+                <tbody>
+
+                    <?php if (!empty($empdocs)): ?>
+
+                        <?php foreach ($empdocs as $doc): ?>
+
+                            <?php
+                            $decision = strtolower($doc['decision'] ?? 'pending');
+
+                            $badgeClass = match ($decision) {
+                                'approved' => 'bg-success',
+                                'rejected' => 'bg-danger',
+                                default => 'bg-warning text-dark'
+                            };
+                            ?>
+
                             <tr>
 
-                                <td class="text-primary fw-semibold">
-                                    <?= $doc['approval_id'] ?>
+                                <td class="fw-bold text-primary">
+                                    #<?= $doc['approval_id']; ?>
                                 </td>
 
                                 <td class="fw-semibold">
-                                    <?= htmlspecialchars($doc['title'] ?? 'N/A') ?>
+                                    <?= htmlspecialchars($doc['title'] ?? 'N/A'); ?>
                                 </td>
 
-                                <td><?= htmlspecialchars($doc['submitter_name'] ?? '-') ?></td>
-
                                 <td>
-                                    <span class="badge bg-primary-subtle text-primary">
-                                        <?= htmlspecialchars($doc['department_name'] ?? '-') ?>
-                                    </span>
+                                    <?= htmlspecialchars($doc['submitter_name'] ?? '-'); ?>
                                 </td>
 
-                                <td><?= htmlspecialchars($doc['approver_name'] ?? '-') ?></td>
-
                                 <td>
-                                    <?php
-                                    $decision = strtolower($doc['decision'] ?? 'pending');
-                                    $badgeClass = match ($decision) {
-                                        'approved' => 'bg-success',
-                                        'rejected' => 'bg-danger',
-                                        default => 'bg-warning text-dark'
-                                    };
-                                    ?>
-                                    <span class="badge <?= $badgeClass ?> small">
-                                        <?= ucfirst($decision) ?>
+                                    <span class="badge bg-info text-dark">
+                                        <?= htmlspecialchars($doc['department_name'] ?? '-'); ?>
                                     </span>
                                 </td>
 
                                 <td>
-                                    <?php if (!empty($doc['file_path'])): ?>
-                                        <a href="<?= $base . '/public/' . ltrim($doc['file_path'], '/') ?>"
-                                            class="btn btn-outline-primary btn-sm py-0 px-2"
-                                            target="_blank">
-                                            View
-                                        </a>
-                                    <?php else: ?>
-                                        <span class="text-muted small">-</span>
-                                    <?php endif; ?>
-                                </td>
-
-                                <td class="text-nowrap text-muted">
-                                    <?= !empty($doc['approved_at']) ? date('M d', strtotime($doc['approved_at'])) : '-' ?>
-                                </td>
-                                <td class="text-primary text-[12px] fw-semibold">
-                                    <?= ucfirst($doc['decision'] ?? '-') ?>
-
-                                    <?php if (empty($doc['decision'] !== 'Pending')): ?>
-                                        <div class="d-flex gap-1 mt-1">
-                                            <form method="POST" action="index.php?url=employee-documents-decision" class="d-inline">
-                                                <input type="hidden" name="approval_id" value="<?= $doc['approval_id'] ?>">
-                                                <input type="hidden" name="decision" value="Approved">
-                                                <button type="submit" class="btn btn-outline-success btn-sm">✔</button>
-                                            </form>
-
-                                            <form method="POST" action="index.php?url=employee-documents-decision" class="d-inline">
-                                                <input type="hidden" name="approval_id" value="<?= $doc['approval_id'] ?>">
-                                                <input type="hidden" name="decision" value="Rejected">
-                                                <button type="submit" class="btn btn-outline-danger btn-sm">✖</button>
-                                            </form>
-                                        </div>
-                                    <?php endif; ?>
-                                </td>
-
-                                <td class="text-truncate text-muted" style="max-width: 120px;">
-                                    <?php if (empty($doc['remarks'])): ?>
-                                        <button type="button"
-                                            class="btn btn-sm btn-outline-primary"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#remarksModal<?= (int)$doc['approval_id'] ?>">
-                                            Add
-                                        </button>
-                                    <?php else: ?>
-                                        <?= htmlspecialchars($doc['remarks'], ENT_QUOTES) ?>
-                                    <?php endif; ?>
+                                    <?= htmlspecialchars($doc['approver_name'] ?? '-'); ?>
                                 </td>
 
                                 <td class="text-center">
-                                    <form method="POST" action="employee-documents-delete">
-                                        <input type="hidden" name="approval_id" value="<?= $doc['approval_id'] ?>">
-                                        <button type="submit" class="btn btn-outline-secondary text-2xl">🗑</button>
-                                    </form>
+                                    <span class="badge <?= $badgeClass ?>">
+                                        <?= ucfirst($decision); ?>
+                                    </span>
                                 </td>
+
+                                <td class="text-center">
+
+                                    <?php if (!empty($doc['file_path'])): ?>
+
+                                        <a href="<?= $base . '/employee_portal/public/' . ltrim($doc['file_path'], '/') ?>"
+                                            target="_blank"
+                                            class="btn btn-sm btn-outline-primary">
+
+                                            <i class="fas fa-eye"></i> View
+
+                                        </a>
+
+                                    <?php else: ?>
+
+                                        <span class="text-muted">No File</span>
+
+                                    <?php endif; ?>
+
+                                </td>
+
+                                <td class="text-nowrap">
+
+                                    <?= !empty($doc['approved_at'])
+                                        ? date('M d, Y', strtotime($doc['approved_at']))
+                                        : '-'; ?>
+
+                                </td>
+
+                                <td class="text-center">
+
+                                    <?php if ($decision == 'pending'): ?>
+
+                                        <div class="btn-group btn-group-sm">
+
+                                            <form method="POST"
+                                                action="index.php?url=employee-documents-decision">
+
+                                                <input type="hidden"
+                                                    name="approval_id"
+                                                    value="<?= $doc['approval_id']; ?>">
+
+                                                <input type="hidden"
+                                                    name="decision"
+                                                    value="Approved">
+
+                                                <button class="btn btn-sm mr-1 btn-success">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+
+                                            </form>
+
+                                            <form method="POST"
+                                                action="index.php?url=employee-documents-decision">
+
+                                                <input type="hidden"
+                                                    name="approval_id"
+                                                    value="<?= $doc['approval_id']; ?>">
+
+                                                <input type="hidden"
+                                                    name="decision"
+                                                    value="Rejected">
+
+                                                <button class="btn btn-sm btn-danger">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+
+                                            </form>
+
+                                        </div>
+
+                                    <?php else: ?>
+
+                                        <span class="text-success fw-semibold">
+                                            Completed
+                                        </span>
+
+                                    <?php endif; ?>
+
+                                </td>
+
+                                <td style="max-width:220px;">
+
+                                    <?php if (empty($doc['remarks'])): ?>
+
+                                        <button class="btn btn-outline-secondary btn-sm"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#remarksModal<?= $doc['approval_id']; ?>">
+
+                                            <i class="fas text-md fa-comment"></i>
+                                            Add Remarks
+
+                                        </button>
+
+                                    <?php else: ?>
+
+                                        <span class="text-muted">
+                                            <?= htmlspecialchars($doc['remarks']); ?>
+                                        </span>
+
+                                    <?php endif; ?>
+
+                                </td>
+
+                                <td class="text-center">
+
+                                    <form method="POST"
+                                        action="index.php?url=employee-documents-delete">
+
+                                        <input type="hidden"
+                                            name="approval_id"
+                                            value="<?= $doc['approval_id']; ?>">
+
+                                        <button class="btn btn-outline-danger btn-sm"
+                                            onclick="return confirm('Delete this document?')">
+
+                                            <i class="fas text-md fa-trash"></i>
+
+                                        </button>
+
+                                    </form>
+
+                                </td>
+
                             </tr>
+
                             <?php require __DIR__ . '/modal-remarks.php'; ?>
+
                         <?php endforeach; ?>
-                    <?php else : ?>
+
+                    <?php else: ?>
+
                         <tr>
-                            <td colspan="11" class="text-center text-muted small">
-                                No documents found
+
+                            <td colspan="11" class="text-center text-muted py-5">
+
+                                <i class="fas fa-folder-open fa-2x mb-2"></i>
+
+                                <br>
+
+                                No employee document requests found.
+
                             </td>
+
                         </tr>
+
                     <?php endif; ?>
+
                 </tbody>
+
             </table>
         </div>
     </div>

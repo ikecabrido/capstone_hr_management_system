@@ -1,6 +1,5 @@
 <?php
-
-$partials = __DIR__ . '/../partials/';
+$partials = __DIR__ . '/../../partials/';
 $base = "/capstone_hr_management_system";
 $content = $content ?? __DIR__ . '/main-content.php';
 ?>
@@ -93,7 +92,6 @@ $content = $content ?? __DIR__ . '/main-content.php';
             Meeting link copied!
         </div>
     </div>
-
 </body>
 
 </html>

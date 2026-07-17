@@ -1,6 +1,5 @@
 <?php
-
-$partials = __DIR__ . '/../partials/';
+$partials = __DIR__ . '/../../partials/';
 $base = "/capstone_hr_management_system";
 $content = $content ?? __DIR__ . '/main-content.php';
 ?>
@@ -57,42 +56,7 @@ $content = $content ?? __DIR__ . '/main-content.php';
     <script src="<?= $base ?>/assets/dist/js/adminlte.min.js"></script>
     <script src="<?= $base ?>/employee_portal/app/views/partials/custom.js"></script>
     <script src="<?= $base ?>/employee_portal/public/assets/js/time.js"></script>
-    <script>
-        function copyLink(link) {
-            navigator.clipboard.writeText(link).then(function() {
 
-                const toast = document.getElementById('copyToast');
-
-                toast.style.display = 'block';
-                toast.style.opacity = '0';
-                toast.style.transition = 'opacity 0.5s ease';
-
-                setTimeout(() => {
-                    toast.style.opacity = '1';
-                }, 10);
-
-                setTimeout(() => {
-                    toast.style.opacity = '0';
-
-                    setTimeout(() => {
-                        toast.style.display = 'none';
-                    }, 500);
-                }, 4000);
-
-            }, function() {
-                alert("Failed to copy link.");
-            });
-        }
-    </script>
-    <div id="copyToast"
-        class="position-fixed bottom-0 end-0 p-3"
-        style="z-index: 9999; display: none;">
-
-        <div class="alert alert-success shadow-sm rounded-3 mb-0">
-            <i class="fas fa-check-circle me-2"></i>
-            Meeting link copied!
-        </div>
-    </div>
 
 </body>
 

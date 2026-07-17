@@ -6,3 +6,5 @@ payslip request
 medical records & requirements 
 
 employee self upload of documents
+notification
+edit profile

@@ -33,7 +33,7 @@ $content = $content ?? __DIR__ . '/main-content.php';
 
     <div class="wrapper">
 
-        <?php require $partials . 'navbar.php'; ?>
+        <?php require $partials . 'adminNavbar.php'; ?>
 
         <?php require $partials . 'sidebar.php'; ?>
 

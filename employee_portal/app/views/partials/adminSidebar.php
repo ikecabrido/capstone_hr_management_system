@@ -11,12 +11,12 @@
         <!-- Sidebar user panel (optional) -->
         <div class="user-panel mt-3 pb-3 mb-3 d-flex">
             <div class="image">
-                <img src="<?= $base ?>/assets/dist/img/user2-160x160.jpg" class="img-circle elevation-2" alt="User Image" />
+                <img src="<?= $base ?>/employee_portal/public/assets/image/default_user_icon.webp" class="img-circle elevation-2" alt="User Image" />
             </div>
 
             <div class="info">
                 <a href="#" class="d-block">
-                    <?= $_SESSION['employee']['full_name'] ?? $_SESSION['user']['name'] ?? 'Admin'; ?>
+                    <?= htmlspecialchars($_SESSION['user']['name'] ?? 'Admin') ?>
                 </a>
             </div>
         </div>
@@ -24,7 +24,6 @@
         <!-- Sidebar Menu -->
         <nav class="mt-2">
             <ul class="text-[14px] nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-
                 <li class="nav-item">
                     <a href="index.php?url=admin-dashboard" class="nav-link">
                         <i class="nav-icon fas fa-home"></i>
@@ -49,40 +48,11 @@
                         <p>Employee Documents</p>
                     </a>
                 </li>
-                <li class="nav-item has-treeview">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-graduation-cap"></i>
-                        <p>
-                            Learning & Development
-                            <i class="right fas fa-chevron-left"></i>
-                        </p>
+                <li class="nav-item">
+                    <a href="/capstone_hr_management_system/employee_portal/index.php?url=admin-notification" class="nav-link">
+                        <i class="fa-solid fa-bell nav-icon"></i>
+                        <p>Notification</p>
                     </a>
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="/capstone_hr_management_system/employee_portal/index.php?url=training-program-admin-index" class="nav-link">
-                                <i class="fas fa-chalkboard-teacher nav-icon text-warning"></i>
-                                <p>Browse Training</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="#" class="nav-link">
-                                <i class="fas fa-route nav-icon text-warning"></i>
-                                <p>Career Path</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="#" class="nav-link">
-                                <i class="fas fa-crown nav-icon text-warning"></i>
-                                <p>Leadership Program</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="#" class="nav-link">
-                                <i class="fas fa-sitemap nav-icon text-warning"></i>
-                                <p class="text-xs">Organizational Development</p>
-                            </a>
-                        </li>
-                    </ul>
                 </li>
                 <li class="nav-item">
                     <a href="#" class="nav-link">
