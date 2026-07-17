@@ -9,6 +9,10 @@
     <link rel="stylesheet" href="/capstone_hr_management_system/assets/plugins/toastr/toastr.min.css" />
     <link rel="stylesheet" href="/capstone_hr_management_system/assets/plugins/bootstrap/css/bootstrap.min.css" />
     <link rel="stylesheet" href="/capstone_hr_management_system/login.css" />
+    <?php
+    $password = 'employee123';
+    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+    ?>
 </head>
 
 <body>

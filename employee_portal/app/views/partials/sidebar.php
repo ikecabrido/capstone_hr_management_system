@@ -204,12 +204,6 @@
                 </li>
             </ul>
         </nav>
-        <section class="flex flex-col items-center mt-36">
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#aiChatModal">
-                AI Assistant
-            </button>
-        </section>
+
     </div>
 </aside>
-
-<?php require $partials . 'modal-ai.php'; ?>
