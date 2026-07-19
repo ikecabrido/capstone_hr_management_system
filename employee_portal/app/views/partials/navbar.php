@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../core/NotificationHelper.php';
 $notificationCount = 0;
 $latestNotifications = [];
 
@@ -10,10 +11,10 @@ if (isset($_SESSION['user_id'])) {
 
     if ($employee) {
 
-        $notifications = NotificationHelper::getEmployeeNotifications($employee['id']);
+        $notificationData = NotificationHelper::getEmployeeNotifications($employee['id']);
 
-        $notificationCount = $notifications['count'];
-        $latestNotifications = $notifications['latest'];
+        $notificationCount = $notificationData['count'];
+        $latestNotifications = $notificationData['latest'];
     }
 }
 ?>

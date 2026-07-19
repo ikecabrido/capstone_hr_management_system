@@ -18,15 +18,10 @@ class NotificationController
         $employeeList = $this->employeeModel->all();
         $notification = $this->notificationModel->all();
 
-        //for view
-        $recipientList = [];
-        if (!empty($_GET['view'])) {
-
-            $viewNotification = $this->notificationModel->find($_GET['view']);
-
-            $recipientList = $this->recipientModel
-                ->getRecipients($_GET['view']);
+        foreach ($notification as &$row) {
+            $row['recipients'] = $this->recipientModel->getRecipients($row['notification_id']);
         }
+        unset($row);
 
         $title = "Employee Notification";
         $content = __DIR__ . '/../views/admin/notification/main-content.php';
@@ -79,12 +74,25 @@ class NotificationController
     }
     public function view()
     {
-        $id = $_GET['id'] ?? 0;
+        if (!isset($_GET['id'])) {
+            echo json_encode([
+                'success' => false
+            ]);
+            exit;
+        }
+
+        $id = (int) $_GET['id'];
 
         $notification = $this->notificationModel->find($id);
 
-        header('Content-Type: application/json');
-        echo json_encode($notification);
+        $recipients = $this->recipientModel->getRecipients($id);
+
+        echo json_encode([
+            'success' => true,
+            'notification' => $notification,
+            'recipients' => $recipients
+        ]);
+
         exit;
     }
     public function update()
@@ -187,12 +195,24 @@ class NotificationController
             Helper::redirect('index.php?url=dashboard');
         }
 
-        $notifications = $this->notificationModel
-            ->getEmployeeNotifications($employee['id']);
-            
-        $title = "My Notifications";
-        $content = __DIR__ . '/../views/notifications/main-content.php';
-        require __DIR__ . '/../views/employee-portal/index.php';
+        try {
+
+            $employeeNotifications = $this->notificationModel
+                ->getEmployeeNotifications($employee['id']);
+
+            $notificationCount = count($employeeNotifications);
+
+            $title = "My Notifications";
+            $content = __DIR__ . '/../views/notifications/main-content.php';
+
+            require __DIR__ . '/../views/employee-portal/index.php';
+        } catch (Throwable $e) {
+
+            die("<h3>Error</h3>
+            <b>Message:</b> {$e->getMessage()}<br>
+            <b>File:</b> {$e->getFile()}<br>
+            <b>Line:</b> {$e->getLine()}");
+        }
     }
     public function markRead()
     {
