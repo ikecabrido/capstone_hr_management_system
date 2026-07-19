@@ -158,3 +158,33 @@ ALTER TABLE `ep_notification_recipients`
   ADD CONSTRAINT `fk_notification` FOREIGN KEY (`notification_id`) REFERENCES `ep_notifications` (`notification_id`) ON DELETE CASCADE;
 COMMIT;
 
+CREATE TABLE ep_employee_benefits (
+    benefit_id INT AUTO_INCREMENT PRIMARY KEY,
+    employee_id INT NOT NULL,
+
+    record_type ENUM(
+        'SSS',
+        'PhilHealth',
+        'Pag-IBIG',
+        'Withholding Tax',
+        'BIR Form 2316'
+    ) NOT NULL,
+
+    period VARCHAR(20) NOT NULL,
+    description TEXT NULL,
+
+    file_name VARCHAR(255) NOT NULL,
+    file_path VARCHAR(255) NOT NULL,
+
+    uploaded_by INT NOT NULL,
+
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+ALTER TABLE ep_employee_benefits
+ADD CONSTRAINT fk_employee_benefits_employee
+FOREIGN KEY (employee_id)
+REFERENCES employees(id)
+ON DELETE CASCADE
+ON UPDATE CASCADE;

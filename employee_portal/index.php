@@ -24,6 +24,7 @@ require 'app/controllers/EmployeePortalController.php';
 require 'app/controllers/EmployeeDocumentsController.php';
 require 'app/controllers/EmployeeGrievanceController.php';
 require 'app/controllers/PerformanceFeedbackController.php';
+require 'app/controllers/BenefitsAndGovContribController.php';
 
 $url = $_GET['url'] ?? 'auth-index';
 
@@ -200,6 +201,15 @@ switch ($url) {
 
     case 'employee-notification-mark-all-read':
         (new NotificationController)->markAllRead();
+        break;
+
+    //Benefits and Gov Contrib
+    case 'admin-benefits-and-gov-contrib':
+        (new BenefitsAndGovContribController)->index();
+        break;
+
+    case 'benefits-and-gov-contrib-store':
+        (new BenefitsAndGovContribController)->create();
         break;
 
     default:
