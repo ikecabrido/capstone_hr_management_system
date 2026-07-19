@@ -31,43 +31,29 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 
-const file = button.getAttribute('data-file');
+document.addEventListener('DOMContentLoaded', function () {
 
-const preview = document.getElementById('currentFilePreview');
+    const editModal = document.getElementById('editBenefitModal');
 
-preview.innerHTML = "";
+    editModal.addEventListener('show.bs.modal', function (event) {
 
-if (file) {
+        const button = event.relatedTarget;
 
-    const extension = file.split('.').pop().toLowerCase();
+        document.getElementById('editBenefitId').value =
+            button.getAttribute('data-id');
 
-    if (['jpg', 'jpeg', 'png'].includes(extension)) {
+        document.getElementById('editEmployee').value =
+            button.getAttribute('data-employee');
 
-        preview.innerHTML = `
-            <img src="${file}"
-                 class="img-fluid rounded"
-                 style="max-height:220px;">
-        `;
+        document.getElementById('editRecordType').value =
+            button.getAttribute('data-record');
 
-    } else if (extension === 'pdf') {
+        document.getElementById('editPeriod').value =
+            button.getAttribute('data-period');
 
-        preview.innerHTML = `
-            <iframe
-                src="${file}"
-                width="100%"
-                height="250"
-                style="border:none;">
-            </iframe>
-        `;
+        document.getElementById('editDescription').value =
+            button.getAttribute('data-description');
 
-    } else {
+    });
 
-        preview.innerHTML = `
-            <a href="${file}" target="_blank" class="btn btn-info btn-sm">
-                <i class="fas fa-file"></i>
-                View Current File
-            </a>
-        `;
-    }
-
-}
+});

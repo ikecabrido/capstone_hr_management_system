@@ -89,7 +89,7 @@
 
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="index.php?url=employee-payslip-items" class="nav-link">
+                            <a href="index.php?url=benefits-and-gov-contrib" class="nav-link">
                                 <i class="fas fa-receipt nav-icon text-warning"></i>
                                 <p class="small">View Benefits</p>
                             </a>

@@ -82,16 +82,28 @@
                                 data-employee="<?= htmlspecialchars($benefit['full_name']); ?>"
                                 data-record="<?= htmlspecialchars($benefit['record_type']); ?>"
                                 data-period="<?= htmlspecialchars($benefit['period']); ?>"
-                                data-description="<?= htmlspecialchars($benefit['description']); ?>"
-                                data-file="<?= htmlspecialchars($benefit['file_path']); ?>">
+                                data-description="<?= htmlspecialchars($benefit['description']); ?>">
 
                                 <i class="fas fa-edit fa-xs"></i>
 
                             </button>
 
-                            <button class="btn btn-danger btn-xs px-2">
-                                <i class="fas fa-trash fa-xs"></i>
-                            </button>
+                            <form
+                                action="index.php?url=benefits-and-gov-contrib-delete"
+                                method="POST"
+                                class="d-inline"
+                                onsubmit="return confirm('Are you sure you want to delete this benefit record?');">
+
+                                <input
+                                    type="hidden"
+                                    name="benefit_id"
+                                    value="<?= $benefit['benefit_id']; ?>">
+
+                                <button type="submit" class="btn btn-danger btn-xs px-2">
+                                    <i class="fas fa-trash fa-xs"></i>
+                                </button>
+
+                            </form>
 
                         </td>
 

@@ -12,6 +12,6 @@ class AnnouncementController
         $announcements = $this->announcementModel->all();
         $title = "Employee Announcements";
         $content = __DIR__ . '/../views/announcements/main-content.php';
-        require __DIR__ . '/../views/announcements/index.php';
+        require __DIR__ . '/../views/employee-portal/index.php';
     }
 }

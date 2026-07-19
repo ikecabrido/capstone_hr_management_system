@@ -77,20 +77,13 @@
                                 class="form-control"
                                 name="period"
                                 id="editPeriod"
+                                value="June 2026"
                                 placeholder="e.g. June 2026"
                                 required>
                         </div>
 
                         <!-- Replace File -->
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">
-                                Current Attachment
-                            </label>
-
-                            <div id="currentFilePreview" class="border rounded p-2 text-center mb-2">
-                                <!-- Preview will be inserted here -->
-                            </div>
-
                             <label class="form-label fw-semibold">
                                 Replace Attachment
                             </label>

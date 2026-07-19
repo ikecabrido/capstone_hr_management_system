@@ -212,6 +212,18 @@ switch ($url) {
         (new BenefitsAndGovContribController)->create();
         break;
 
+    case 'benefits-and-gov-contrib-update':
+        (new BenefitsAndGovContribController)->update();
+        break;
+
+    case 'benefits-and-gov-contrib-delete':
+        (new BenefitsAndGovContribController)->delete();
+        break;
+
+    case 'benefits-and-gov-contrib':
+        (new BenefitsAndGovContribController)->employeeBenefits();
+        break;
+
     default:
         $title = "Page Not Found";
         $content = __DIR__ . 'app/views/error-content.php';
