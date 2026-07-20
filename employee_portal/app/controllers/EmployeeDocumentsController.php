@@ -16,20 +16,40 @@ class EmployeeDocumentsController
     }
     public function employeeIndex()
     {
-        $departmentId = $_GET['department'] ?? null;
+        $userId = $_SESSION['user_id'];
 
-        if ($departmentId) {
-            $empdocs = $this->employeeDocumentsModel->getByDepartment($departmentId);
-        } else {
-            $empdocs = $this->employeeDocumentsModel->all();
-        }
-
+        $empdocs = $this->employeeDocumentsModel->getBySubmittedBy($userId);
+        
         $departments = $this->departmentsModel->all();
         $employees = $this->employeeModel->all();
 
         $title = "Employee Documents";
         $content = __DIR__ . '/../views/employee-documents/main-content.php';
-        require __DIR__ . '/../views/employee-documents/index.php';
+
+        require __DIR__ . '/../views/employee-portal/index.php';
+    }
+    public function adminDocsIndex()
+    {
+        $employeeDocumentsModel = new EmployeeDocuments();
+
+        try {
+            $empdocs = $employeeDocumentsModel->all();
+
+            if (!is_array($empdocs)) {
+                $empdocs = [];
+            }
+
+            $title   = "Admin - Employee Documents";
+            $content = __DIR__ . '/../views/admin/employee-documents/main-content.php';
+
+            require __DIR__ . '/../views/admin/employee-documents/index.php';
+        } catch (PDOException $e) {
+            echo "<div class='alert alert-danger'>Database Error: " . htmlspecialchars($e->getMessage()) . "</div>";
+            $empdocs = [];
+        } catch (Exception $e) {
+            echo "<div class='alert alert-danger'>Error: " . htmlspecialchars($e->getMessage()) . "</div>";
+            $empdocs = [];
+        }
     }
     public function create()
     {
@@ -96,29 +116,6 @@ class EmployeeDocumentsController
         $redirectTo = $_SERVER['HTTP_REFERER'] ?? "index.php?url=employee-documents-index";
         header("Location: $redirectTo");
         exit;
-    }
-    public function adminDocsIndex()
-    {
-        $employeeDocumentsModel = new EmployeeDocuments();
-
-        try {
-            $empdocs = $employeeDocumentsModel->all();
-
-            if (!is_array($empdocs)) {
-                $empdocs = [];
-            }
-
-            $title   = "Admin - Employee Documents";
-            $content = __DIR__ . '/../views/admin/employee-documents/main-content.php';
-
-            require __DIR__ . '/../views/admin/employee-documents/index.php';
-        } catch (PDOException $e) {
-            echo "<div class='alert alert-danger'>Database Error: " . htmlspecialchars($e->getMessage()) . "</div>";
-            $empdocs = [];
-        } catch (Exception $e) {
-            echo "<div class='alert alert-danger'>Error: " . htmlspecialchars($e->getMessage()) . "</div>";
-            $empdocs = [];
-        }
     }
     public function decision()
     {

@@ -89,4 +89,29 @@ class EmployeeDocuments
 
         return $stmt->execute();
     }
+    public function getBySubmittedBy($userId)
+    {
+        $sql = "SELECT
+                ed.*,
+                e.full_name,
+                d.department_name
+            FROM ep_employee_documents ed
+            LEFT JOIN employees e
+                ON e.user_id = ed.submit_by
+            LEFT JOIN (
+                SELECT id, MAX(department_name) AS department_name
+                FROM departments
+                GROUP BY id
+            ) d
+                ON d.id = ed.department
+            WHERE ed.submit_by = :user_id
+            ORDER BY ed.submitted_on DESC";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([
+            ':user_id' => $userId
+        ]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }
