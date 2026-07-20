@@ -44,6 +44,12 @@
                                     target="_blank"
                                     class="btn btn-sm btn-info"> View
                                 </a>
+                                <a
+                                    href="<?= htmlspecialchars($benefit['file_path']); ?>"
+                                    download="<?= htmlspecialchars($benefit['file_name']); ?>"
+                                    class="btn btn-success btn-sm">
+                                    Download
+                                </a>
                             <?php else: ?>
                                 <span class="text-muted">No File</span>
                             <?php endif; ?>
