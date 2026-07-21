@@ -66,6 +66,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="/capstone_hr_management_system/employee_portal/index.php?url=admin-performance-feedback" class="nav-link">
+                        <i class="nav-icon fas fa-chart-line"></i>
+                        <p>Performance Evaluation</p>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="/capstone_hr_management_system/employee_portal/index.php?url=admin-notification" class="nav-link">
                         <i class="fa-solid fa-bell nav-icon"></i>
                         <p>Manage Notification</p>

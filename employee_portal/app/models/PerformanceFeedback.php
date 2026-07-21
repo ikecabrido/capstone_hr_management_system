@@ -11,7 +11,19 @@ class PerformanceFeedback
         $database = new Database();
         $this->conn = $database->getConnection();
     }
-        public function create($data)
+    public function getByEmployee($employee_id)
+    {
+        $sql = "SELECT *
+                FROM {$this->table}
+                WHERE employee_id = ?
+                ORDER BY evaluation_date DESC, created_at DESC";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$employee_id]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    public function create($data)
     {
         $query = "INSERT INTO {$this->table}  
         (employee_id, evaluator_type, rating, category, comments, is_anonymous, evaluation_date, created_at)
@@ -30,5 +42,21 @@ class PerformanceFeedback
             ':evaluation_date' => $data['evaluation_date'],
             ':created_at' => $data['created_at']
         ]);
+    }
+    public function getAll()
+    {
+        $sql = "SELECT
+                f.*,
+                e.full_name,
+                e.employee_no
+            FROM pm_360_feedback f
+            LEFT JOIN employees e
+                ON f.employee_id = e.id
+            ORDER BY f.evaluation_date DESC";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

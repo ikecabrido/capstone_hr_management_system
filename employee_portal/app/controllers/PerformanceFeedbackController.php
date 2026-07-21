@@ -13,7 +13,16 @@ class PerformanceFeedbackController
         $this->performanceFeedbackModel = new PerformanceFeedback();
         $this->employeeModel = new Employee();
     }
+    public function adminIndex()
+    {
+        $employees = $this->employeeModel->getAll();
+        $feedbacks = $this->performanceFeedbackModel->getAll();
 
+        $title = "Performance Feedback";
+        $content = __DIR__ . '/../views/admin/performance/main-content.php';
+
+        require __DIR__ . '/../views/admin/index.php';
+    }
     public function index()
     {
         $user_id = $_SESSION['user_id'] ?? null;
@@ -21,11 +30,14 @@ class PerformanceFeedbackController
         $employee = $this->employeeModel->findByUserId($user_id);
         $employee_id = $employee['id'] ?? null;
 
+        // Get all feedback for the employee
+        $feedbacks = $this->performanceFeedbackModel->getByEmployee($employee_id);
+
         $title = "Performance Feedback";
         $content = __DIR__ . '/../views/performance-feedback/main-content.php';
-        require __DIR__ . '/../views/performance-feedback/index.php';
-    }
 
+        require __DIR__ . '/../views/employee-portal/index.php';
+    }
     public function create()
     {
         try {

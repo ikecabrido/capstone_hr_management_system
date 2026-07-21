@@ -144,6 +144,10 @@ switch ($url) {
         break;
 
     //Performance Feedback
+    case 'admin-performance-feedback':
+        (new PerformanceFeedbackController)->adminIndex();
+        break;
+
     case 'performance-feedback':
         (new PerformanceFeedbackController)->index();
         break;
