@@ -48,8 +48,9 @@ try {
         $qrToken = trim($_POST['qr_token'] ?? '');
         
         if (!empty($qrToken)) {
-            // Redirect to QR scan handler with token
-            sendResponse(true, 'Login successful', 200, 'time_attendance/public/qr_scan.php?token=' . urlencode($qrToken));
+            // For QR scans, redirect to employee portal QR confirmation page
+            // This will show a modal with timestamp before recording attendance
+            sendResponse(true, 'Login successful', 200, 'employee_portal/index.php?url=qr-attendance&token=' . urlencode($qrToken));
         } else {
             // Normal login redirect
             sendResponse(true, 'Login successful', 200, 'router.php');

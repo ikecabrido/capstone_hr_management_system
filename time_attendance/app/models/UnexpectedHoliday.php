@@ -4,7 +4,7 @@
  * Handles adding crisis/emergency/unexpected holidays
  */
 
-require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../../auth/database.php';
 
 class UnexpectedHoliday
 {
@@ -13,7 +13,7 @@ class UnexpectedHoliday
 
     public function __construct()
     {
-        $database = new Database();
+        $database = Database::getInstance();
         $this->conn = $database->getConnection();
     }
 

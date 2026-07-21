@@ -2,6 +2,7 @@
 session_start();
 
 require 'app/controllers/AuthController.php';
+require 'app/controllers/AttendanceController.php';
 require 'app/controllers/PayslipController.php';
 require 'app/controllers/LeaveRequestController.php';
 require 'app/controllers/AnnouncementController.php';
@@ -53,6 +54,10 @@ switch ($url) {
 
     case 'employee-time-out':
         (new AttendanceController)->timeOut();
+        break;
+
+    case 'qr-attendance':
+        (new AttendanceController)->qrAttendance();
         break;
 
     // Employee Grievance

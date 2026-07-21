@@ -797,6 +797,146 @@ body:has(.sidebar.active) #performance .charts-section {
     color: var(--secondary-color);
 }
 
+.directory-table th:first-child,
+.directory-table td:first-child {
+    width: 48px;
+}
+
+.directory-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.directory-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #3498db 0%, #2c3e50 100%);
+    color: white;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.review-badge,
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.review-badge.quarterly {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.review-badge.annual {
+    background: #d4edda;
+    color: #155724;
+}
+
+.review-badge.monthly {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.score-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 150px;
+}
+
+.score-progress {
+    width: 100%;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.score-progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width var(--transition);
+}
+
+.score-progress-fill.high {
+    background: #4caf50;
+}
+
+.score-progress-fill.medium {
+    background: #f1c40f;
+}
+
+.score-progress-fill.low {
+    background: #e74c3c;
+}
+
+.status-pill.recent {
+    background: #e6f4ff;
+    color: #0b74de;
+}
+
+.status-pill.upcoming {
+    background: #fff5e6;
+    color: #d97706;
+}
+
+.status-pill.due {
+    background: #fdecea;
+    color: #c53030;
+}
+
+.status-pill.unknown {
+    background: #f2f2f2;
+    color: #7f8c8d;
+}
+
+.status-pill.active {
+    background: #e6ffed;
+    color: #1d7a2d;
+}
+
+.status-pill.inactive {
+    background: #f8f9fa;
+    color: #6c757d;
+}
+
+.btn-icon {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    justify-content: center;
+    min-width: 34px;
+}
+
+.btn-icon.danger {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.btn-icon.danger:hover {
+    background-color: #c0392b;
+}
+
+@media (max-width: 900px) {
+    .directory-user {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .data-table {
+        font-size: 0.92rem;
+    }
+}
+
 /* ============ RESPONSIVE DESIGN ============ */
 @media (max-width: 1024px) {
     .header {

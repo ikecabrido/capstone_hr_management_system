@@ -86,7 +86,6 @@ function handleGetRecords($absenceLateMgmt)
         'excuse_status' => $_GET['excuse_status'] ?? null,
         'start_date' => $_GET['start_date'] ?? null,
         'end_date' => $_GET['end_date'] ?? null,
-        'is_excused' => isset($_GET['is_excused']) ? (int)$_GET['is_excused'] : null,
         'limit' => (int)($_GET['limit'] ?? 50),
         'offset' => (int)($_GET['offset'] ?? 0)
     ];
@@ -224,8 +223,7 @@ function handleGetReport($absenceLateMgmt)
         'start_date' => $_GET['start_date'] ?? null,
         'end_date' => $_GET['end_date'] ?? null,
         'department' => $_GET['department'] ?? null,
-        'type' => $_GET['type'] ?? null,
-        'is_excused' => isset($_GET['is_excused']) ? (int)$_GET['is_excused'] : null
+        'type' => $_GET['type'] ?? null
     ];
 
     $report = $absenceLateMgmt->getReport($filters);

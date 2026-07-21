@@ -23,7 +23,7 @@ class LeaveRequestController
         }
 
         $employee = $this->employeeModel->findByUserId($user_id);
-        $employee_id = $employee['id'] ?? null;
+        $employee_id = $employee['employee_id'] ?? null;
 
         if (!$employee_id) {
             die('Employee record not found.');
@@ -83,7 +83,7 @@ class LeaveRequestController
         }
 
         $employee = $this->employeeModel->findByUserId($user_id);
-        $employee_id = $employee['id'] ?? null;
+        $employee_id = $employee['employee_id'] ?? null;
 
         if (!$employee_id) {
             $_SESSION['error'] = "Employee record not found.";
@@ -101,10 +101,11 @@ class LeaveRequestController
         $start_date    = $_POST['start_date'] ?? '';
         $end_date      = $_POST['end_date'] ?? '';
         $reason        = trim($_POST['reason'] ?? '');
+        $details       = trim($_POST['details'] ?? '');
 
         // Validate all fields
         if (!$leave_type_id || !$start_date || !$end_date || !$reason) {
-            $_SESSION['error'] = "All fields are required.";
+            $_SESSION['error'] = "All required fields must be filled.";
             header("Location: index.php?url=employee-leave-request");
             exit;
         }
@@ -124,17 +125,73 @@ class LeaveRequestController
             exit;
         }
 
-        try {
-            $this->leaveModel->create([
-                'employee_id'       => $employee_id,
-                'leave_type_id'     => $leave_type_id,
-                'start_date'        => $start_date,
-                'end_date'          => $end_date,
-                'details'           => $reason,
-                'supporting_document' => null
-            ]);
+        // Validate 2-week advance for vacation leave
+        $leaveTypeName = strtolower($leaveType['leave_type_name'] ?? '');
+        if (strpos($leaveTypeName, 'vacation') !== false) {
+            $startDateTime = new DateTime($start_date);
+            $today = new DateTime('today');
+            $daysAdvance = $today->diff($startDateTime)->days;
+            
+            if ($daysAdvance < 14) {
+                $_SESSION['error'] = "Vacation leave must be filed at least 2 weeks in advance.";
+                header("Location: index.php?url=employee-leave-request");
+                exit;
+            }
+        }
 
-            $_SESSION['success'] = "Leave request submitted successfully!";
+        try {
+            // Prepare documents data
+            $documentPaths = [];
+
+            // Handle document uploads first
+            if (!empty($_FILES['documents']['name'][0])) {
+                $uploadDir = __DIR__ . '/../../uploads/leave_documents/';
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0755, true);
+                }
+
+                foreach ($_FILES['documents']['tmp_name'] as $key => $tmpName) {
+                    if (!empty($tmpName) && $_FILES['documents']['error'][$key] === UPLOAD_ERR_OK) {
+                        $fileName = basename($_FILES['documents']['name'][$key]);
+                        $fileType = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+                        
+                        // Validate file type
+                        $allowedTypes = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
+                        if (!in_array($fileType, $allowedTypes)) {
+                            continue;
+                        }
+
+                        // Validate file size (5MB max)
+                        if ($_FILES['documents']['size'][$key] > 5 * 1024 * 1024) {
+                            continue;
+                        }
+
+                        // Create unique filename
+                        $uniqueFileName = time() . '_' . md5($fileName . rand()) . '.' . $fileType;
+                        $filePath = $uploadDir . $uniqueFileName;
+
+                        if (move_uploaded_file($tmpName, $filePath)) {
+                            $documentPaths[] = 'uploads/leave_documents/' . $uniqueFileName;
+                        }
+                    }
+                }
+            }
+
+            // Create leave request with documents
+            $requestData = [
+                'employee_id'   => $employee_id,
+                'leave_type_id' => $leave_type_id,
+                'start_date'    => $start_date,
+                'end_date'      => $end_date,
+                'reason'        => $reason,
+                'details'       => $details,
+                'documents'     => !empty($documentPaths) ? json_encode($documentPaths) : null,
+                'status'        => 'Pending'
+            ];
+
+            $leaveRequestId = $this->leaveModel->create($requestData);
+
+            $_SESSION['success'] = "Leave request submitted successfully! Your request has been sent for approval.";
         } catch (Exception $e) {
             error_log("Leave submission failed: " . $e->getMessage());
             $_SESSION['error'] = "Failed to submit leave request. Please try again later.";

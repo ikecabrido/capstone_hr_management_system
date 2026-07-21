@@ -19,7 +19,7 @@ class User
             e.employee_no,
             e.full_name,
             e.user_id,
-            u.id AS user_id_ref,
+            u.id,
             u.username,
             u.password,
             u.role

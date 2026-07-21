@@ -121,6 +121,27 @@ body.dark-mode .modal-content {
     color: #e0e0e0;
 }
 
+body.dark-mode .card,
+body.dark-mode .card-header,
+body.dark-mode .card-body,
+body.dark-mode .card-footer,
+body.dark-mode .box,
+body.dark-mode .box-header,
+body.dark-mode .box-body,
+body.dark-mode .box-footer,
+body.dark-mode .alert,
+body.dark-mode .list-group-item,
+body.dark-mode .panel,
+body.dark-mode .panel-body,
+body.dark-mode .panel-heading,
+body.dark-mode .panel-footer,
+body.dark-mode pre,
+body.dark-mode code {
+    background-color: #232323;
+    color: #e0e0e0;
+    border-color: rgba(255,255,255,0.12);
+}
+
 /* ====================
    LOGIN PAGE STYLES
    ==================== */

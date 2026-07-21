@@ -4,7 +4,7 @@
  * Manages employee data, credentials, and information
  */
 
-require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../../auth/database.php';
 
 class Employee
 {
@@ -13,7 +13,7 @@ class Employee
 
     public function __construct()
     {
-        $database = new Database();
+        $database = Database::getInstance();
         $this->conn = $database->getConnection();
     }
 

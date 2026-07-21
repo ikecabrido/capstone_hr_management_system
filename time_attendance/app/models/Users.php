@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../../auth/database.php';
 
 class User
 {
@@ -8,7 +8,7 @@ class User
 
     public function __construct()
     {
-        $database = new Database();
+        $database = Database::getInstance();
         $this->conn = $database->getConnection();
     }
 

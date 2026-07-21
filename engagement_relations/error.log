@@ -185,3 +185,8 @@ Stack trace:
 Stack trace:
 #0 {main}
   thrown in C:\xampp\htdocs\capstone_hr_management_system\engagement_relations\api\dashboard.php on line 56
+[06-Apr-2026 00:06:18 Europe/Berlin] Dashboard API Error: SQLSTATE[HY000] [1049] Unknown database 'sample_hr' - C:\xampp\htdocs\capstone_hr_management_system\engagement_relations\config\db.php:22
+[06-Apr-2026 03:31:00 Europe/Berlin] Dashboard API Error: SQLSTATE[HY000] [1049] Unknown database 'sample_hr' - C:\xampp\htdocs\capstone_hr_management_system\engagement_relations\config\db.php:22
+[06-Apr-2026 03:34:30 Europe/Berlin] Dashboard API Error: SQLSTATE[HY000] [1049] Unknown database 'sample_hr' - C:\xampp\htdocs\capstone_hr_management_system\engagement_relations\config\db.php:22
+[06-Apr-2026 03:35:00 Europe/Berlin] Dashboard API Error: SQLSTATE[HY000] [1049] Unknown database 'sample_hr' - C:\xampp\htdocs\capstone_hr_management_system\engagement_relations\config\db.php:22
+[06-Apr-2026 03:35:31 Europe/Berlin] Dashboard API Error: SQLSTATE[HY000] [1049] Unknown database 'sample_hr' - C:\xampp\htdocs\capstone_hr_management_system\engagement_relations\config\db.php:22

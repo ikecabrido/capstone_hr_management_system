@@ -1,14 +1,14 @@
 <?php
-require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../../auth/database.php';
 
 class Leave
 {
     private $conn;
-    private $table = 'leave_requests';
+    private $table = 'ta_leave_requests';
 
     public function __construct()
     {
-        $database = new Database();
+        $database = Database::getInstance();
         $this->conn = $database->getConnection();
     }
 
@@ -17,7 +17,7 @@ class Leave
      */
     public function createRequest($data)
     {
-        $query = "INSERT INTO `leave_requests` 
+        $query = "INSERT INTO `ta_leave_requests` 
                   (employee_id, leave_type_id, start_date, end_date, details, status)
                   VALUES (:employee_id, :leave_type_id, :start_date, :end_date, :details, 'Pending')";
 
@@ -36,7 +36,9 @@ class Leave
      */
     public function getPendingByDepartmentHead($deptHeadUserId)
     {
-        $query = "SELECT lr.*, e.full_name, e.department, lt.leave_type_name
+        $query = "SELECT lr.id, lr.employee_id, lr.leave_type_id, lr.start_date, lr.end_date, lr.details, lr.status, lr.date_submitted,
+                         e.full_name, e.department, lt.leave_type_name,
+                         DATEDIFF(lr.end_date, lr.start_date) + 1 AS total_days
                   FROM ta_leave_requests lr
                   INNER JOIN employees e ON lr.employee_id = e.employee_id
                   INNER JOIN ta_leave_types lt ON lr.leave_type_id = lt.leave_type_id
@@ -56,11 +58,22 @@ class Leave
      */
     public function getForHRApproval()
     {
-        $query = "SELECT lr.*, e.full_name, e.department, lt.leave_type_name
+        $query = "SELECT lr.id,
+                         lr.employee_id,
+                         lr.leave_type_id,
+                         lr.start_date,
+                         lr.end_date,
+                         lr.details,
+                         lr.status,
+                         lr.date_submitted,
+                         e.full_name, 
+                         e.department, 
+                         lt.leave_type_name,
+                         DATEDIFF(lr.end_date, lr.start_date) + 1 AS total_days
                   FROM ta_leave_requests lr
-                  INNER JOIN employees e ON lr.employee_id = e.employee_no
+                  INNER JOIN employees e ON lr.employee_id = e.employee_id
                   INNER JOIN ta_leave_types lt ON lr.leave_type_id = lt.leave_type_id
-                  WHERE lr.status IN ('Pending', 'Approved')
+                  WHERE lr.status = 'Pending'
                   ORDER BY lr.date_submitted DESC";
 
         $stmt = $this->conn->prepare($query);
@@ -74,18 +87,163 @@ class Leave
      */
     public function updateStatus($leave_request_id, $status, $user_id, $remarks = '')
     {
-        $query = "UPDATE leave_requests 
-                  SET status = :status, 
-                      reject_reason = :remarks,
-                      updated_at = NOW()
-                  WHERE id = :id";
+        try {
+            // Update status in ta_leave_requests
+            $updateQuery = "UPDATE ta_leave_requests 
+                           SET status = :status, 
+                               reject_reason = :remarks,
+                               updated_at = NOW()
+                           WHERE id = :id";
 
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':status', $status);
-        $stmt->bindParam(':remarks', $remarks);
-        $stmt->bindParam(':id', $leave_request_id, PDO::PARAM_INT);
+            $updateStmt = $this->conn->prepare($updateQuery);
+            $updateStmt->bindParam(':status', $status);
+            $updateStmt->bindParam(':remarks', $remarks);
+            $updateStmt->bindParam(':id', $leave_request_id, PDO::PARAM_INT);
+            
+            if (!$updateStmt->execute()) {
+                error_log('Failed to update ta_leave_requests for ID: ' . $leave_request_id);
+                return false;
+            }
 
-        return $stmt->execute();
+            error_log('Successfully updated ta_leave_requests. Status: ' . $status);
+
+            // If approved, transfer to lc_leave_requests for Legal & Compliance
+            if ($status === 'Approved') {
+                error_log('Preparing to transfer approved leave to lc_leave_requests for ID: ' . $leave_request_id);
+                
+                // Get the leave request details with leave type name
+                $leaveQuery = "SELECT lr.id, lr.employee_id, lr.leave_type_id, lr.start_date, lr.end_date, lr.details,
+                                      lt.leave_type_name
+                               FROM ta_leave_requests lr
+                               LEFT JOIN ta_leave_types lt ON lr.leave_type_id = lt.leave_type_id
+                               WHERE lr.id = :id";
+                $leaveStmt = $this->conn->prepare($leaveQuery);
+                $leaveStmt->bindParam(':id', $leave_request_id, PDO::PARAM_INT);
+                
+                if (!$leaveStmt->execute()) {
+                    error_log('Failed to fetch leave request details. Error: ' . implode(' ', $leaveStmt->errorInfo()));
+                    return false;
+                }
+                
+                $leaveRequest = $leaveStmt->fetch(PDO::FETCH_ASSOC);
+                
+                if (!$leaveRequest) {
+                    error_log('Leave request not found: ' . $leave_request_id);
+                    return false;
+                }
+
+                error_log('Found leave request: ' . json_encode($leaveRequest));
+
+                // Calculate total days using SQL
+                $daysQuery = "SELECT DATEDIFF(:end_date, :start_date) + 1 AS days";
+                $daysStmt = $this->conn->prepare($daysQuery);
+                $startDate = $leaveRequest['start_date'];
+                $endDate = $leaveRequest['end_date'];
+                $daysStmt->bindParam(':start_date', $startDate);
+                $daysStmt->bindParam(':end_date', $endDate);
+                
+                if (!$daysStmt->execute()) {
+                    error_log('Failed to calculate days');
+                    return false;
+                }
+                
+                $daysResult = $daysStmt->fetch(PDO::FETCH_ASSOC);
+                $totalDays = $daysResult['days'] ?? 1;
+                
+                error_log('Calculated total days: ' . $totalDays);
+
+                // Transfer to lc_leave_requests
+                $lcInsertQuery = "INSERT INTO lc_leave_requests 
+                                 (employee_id, leave_type, start_date, end_date, total_days, reason, status, checked_by, checked_at, hr_comments)
+                                 VALUES 
+                                 (:employee_id, :leave_type, :start_date, :end_date, :total_days, :reason, 'pending', :checked_by, NOW(), :hr_comments)";
+
+                $lcStmt = $this->conn->prepare($lcInsertQuery);
+                
+                // Get variables to bind - use leave_type_name if available, otherwise use details as fallback
+                $empId = $leaveRequest['employee_id'];
+                $leaveType = $leaveRequest['leave_type_name'] ?? $leaveRequest['details'] ?? 'Leave';
+                $sDate = $leaveRequest['start_date'];
+                $eDate = $leaveRequest['end_date'];
+                $reason = $leaveRequest['details'] ?? '';
+                $checkedBy = $user_id;
+                $hrComments = $remarks;
+                
+                error_log('Transfer data - Leave Type: ' . $leaveType . ', Reason: ' . $reason);
+                
+                $lcStmt->bindParam(':employee_id', $empId, PDO::PARAM_INT);
+                $lcStmt->bindParam(':leave_type', $leaveType);
+                $lcStmt->bindParam(':start_date', $sDate);
+                $lcStmt->bindParam(':end_date', $eDate);
+                $lcStmt->bindParam(':total_days', $totalDays);
+                $lcStmt->bindParam(':reason', $reason);
+                $lcStmt->bindParam(':checked_by', $checkedBy, PDO::PARAM_INT);
+                $lcStmt->bindParam(':hr_comments', $hrComments);
+
+                if (!$lcStmt->execute()) {
+                    error_log('Failed to insert into lc_leave_requests. Error: ' . implode(' ', $lcStmt->errorInfo()));
+                    return false;
+                }
+                
+                error_log('Successfully inserted into lc_leave_requests');
+                
+                // Get the newly inserted lc_leave_requests ID
+                $lcLeaveId = $this->conn->lastInsertId();
+                error_log('Inserted lc_leave_requests with ID: ' . $lcLeaveId);
+                
+                // Transfer documents to lc_leave_documents if they exist
+                if (!empty($leaveRequest['documents'])) {
+                    error_log('Found documents to transfer: ' . $leaveRequest['documents']);
+                    $documents = json_decode($leaveRequest['documents'], true);
+                    
+                    if (is_array($documents) && count($documents) > 0) {
+                        error_log('Parsed ' . count($documents) . ' documents for transfer');
+                        
+                        foreach ($documents as $docPath) {
+                            // Extract document type/name from path
+                            $docName = basename($docPath);
+                            
+                            // Normalize the path - if it starts with 'uploads/', prepend 'employee_portal/public/'
+                            // This ensures the path is consistent across all modules
+                            if (strpos($docPath, 'uploads/') === 0) {
+                                // Path is in the format 'uploads/leave_documents/file.ext'
+                                // Convert to 'employee_portal/public/uploads/leave_documents/file.ext'
+                                $normalizedPath = 'employee_portal/public/' . $docPath;
+                            } else {
+                                // Path is already in full format or custom format, use as is
+                                $normalizedPath = $docPath;
+                            }
+                            
+                            error_log('Document path conversion: ' . $docPath . ' -> ' . $normalizedPath);
+                            
+                            $docQuery = "INSERT INTO lc_leave_documents 
+                                        (leave_id, document_type, file_path)
+                                        VALUES 
+                                        (:leave_id, :document_type, :file_path)";
+                            
+                            $docStmt = $this->conn->prepare($docQuery);
+                            $docStmt->bindParam(':leave_id', $lcLeaveId, PDO::PARAM_INT);
+                            $docStmt->bindParam(':document_type', $docName);
+                            $docStmt->bindParam(':file_path', $normalizedPath);
+                            
+                            if (!$docStmt->execute()) {
+                                error_log('Failed to transfer document: ' . $docPath . '. Error: ' . implode(' ', $docStmt->errorInfo()));
+                                // Continue with other documents even if one fails
+                            } else {
+                                error_log('Successfully transferred document: ' . $docPath . ' as ' . $normalizedPath);
+                            }
+                        }
+                    }
+                } else {
+                    error_log('No documents to transfer for leave ID: ' . $leave_request_id);
+                }
+            }
+
+            return true;
+        } catch (Exception $e) {
+            error_log('Leave updateStatus exception: ' . $e->getMessage());
+            return false;
+        }
     }
 
     /**
@@ -136,7 +294,7 @@ class Leave
      */
     public function deductLeaveBalance($employee_id, $leave_type_id, $days_to_deduct)
     {
-        $query = "UPDATE leave_balances 
+        $query = "UPDATE ta_leave_balances 
                   SET used_days = used_days + :days,
                       remaining_days = remaining_days - :days,
                       updated_at = NOW()

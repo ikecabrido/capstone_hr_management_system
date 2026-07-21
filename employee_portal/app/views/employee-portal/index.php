@@ -25,7 +25,8 @@ $content = $content ?? __DIR__ . '/main-content.php';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="/capstone_hr_management_system/employee_portal/public/assets/css/employeeDashboard.css">
-    <link rel="stylesheet" href="/capstone_hr_management_system/employee_portal/public/assets/css/style.css">
+    <link rel="stylesheet" href="<?= $base ?>/employee_portal/public/assets/css/style.css">
+    <link rel="stylesheet" href="<?= $base ?>/employee_portal/public/assets/css/mobile-responsive.css">
     <script src="/capstone_hr_management_system/employee_portal/public/assets/js/mobile-responsive.js" defer></script>
 </head>
 
@@ -56,6 +57,7 @@ $content = $content ?? __DIR__ . '/main-content.php';
     <script src="<?= $base ?>/assets/dist/js/adminlte.min.js"></script>
     <script src="<?= $base ?>/employee_portal/app/views/partials/custom.js"></script>
     <script src="<?= $base ?>/employee_portal/public/assets/js/time.js"></script>
+    <script src="<?= $base ?>/employee_portal/public/assets/js/mobile-fix.js"></script>
 
 
 </body>

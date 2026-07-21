@@ -4,7 +4,7 @@
  * Handles all absence and late arrival tracking, excuse management, and reporting
  */
 
-require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../../auth/database.php';
 
 class AbsenceLateMgmt
 {
@@ -16,7 +16,7 @@ class AbsenceLateMgmt
 
     public function __construct()
     {
-        $database = new Database();
+        $database = Database::getInstance();
         $this->conn = $database->getConnection();
     }
 
@@ -29,11 +29,9 @@ class AbsenceLateMgmt
                     r.*, 
                     e.full_name, 
                     e.employee_id, 
-                    e.department,
-                    a.time_in, a.time_out
+                    e.department
                   FROM {$this->records_table} r
                   JOIN employees e ON r.employee_id = e.employee_id
-                  LEFT JOIN {$this->attendance_table} a ON r.attendance_id = a.attendance_id
                   WHERE 1=1";
 
         // Filter by employee
@@ -56,11 +54,6 @@ class AbsenceLateMgmt
             $query .= " AND r.absence_date BETWEEN :start_date AND :end_date";
         }
 
-        // Filter by is_excused
-        if (isset($filters['is_excused'])) {
-            $query .= " AND r.is_excused = :is_excused";
-        }
-
         $query .= " ORDER BY r.absence_date DESC LIMIT :limit OFFSET :offset";
 
         $stmt = $this->conn->prepare($query);
@@ -78,9 +71,6 @@ class AbsenceLateMgmt
         if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
             $stmt->bindParam(':start_date', $filters['start_date']);
             $stmt->bindParam(':end_date', $filters['end_date']);
-        }
-        if (isset($filters['is_excused'])) {
-            $stmt->bindParam(':is_excused', $filters['is_excused'], PDO::PARAM_BOOL);
         }
 
         $limit = $filters['limit'] ?? 50;
@@ -118,15 +108,13 @@ class AbsenceLateMgmt
     public function createRecord($attendance_id, $employee_id, $absence_date, $type, $submitted_by = null)
     {
         $query = "INSERT INTO {$this->records_table} 
-                  (attendance_id, employee_id, absence_date, type, submitted_by, submitted_date, excuse_status)
-                  VALUES (:attendance_id, :employee_id, :absence_date, :type, :submitted_by, NOW(), 'PENDING')";
+                  (employee_id, absence_date, type, excuse_status)
+                  VALUES (:employee_id, :absence_date, :type, 'PENDING')";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':attendance_id', $attendance_id, PDO::PARAM_INT);
         $stmt->bindParam(':employee_id', $employee_id, PDO::PARAM_INT);
         $stmt->bindParam(':absence_date', $absence_date);
         $stmt->bindParam(':type', $type);
-        $stmt->bindParam(':submitted_by', $submitted_by);
 
         if ($stmt->execute()) {
             return $this->conn->lastInsertId();
@@ -140,10 +128,8 @@ class AbsenceLateMgmt
     public function submitExcuse($record_id, $reason, $supporting_document = null, $employee_id = null)
     {
         $query = "UPDATE {$this->records_table} 
-                  SET reason = :reason, 
-                      supporting_document_url = :document,
-                      excuse_status = 'PENDING',
-                      submitted_date = NOW()
+                  SET reason = :reason,
+                      excuse_status = 'PENDING'
                   WHERE record_id = :record_id";
 
         if (!is_null($employee_id)) {
@@ -167,22 +153,16 @@ class AbsenceLateMgmt
      */
     public function reviewExcuse($record_id, $status, $approval_notes, $reviewed_by)
     {
-        $is_excused = ($status === 'APPROVED') ? 1 : 0;
-
         $query = "UPDATE {$this->records_table} 
                   SET excuse_status = :status,
-                      is_excused = :is_excused,
                       approval_notes = :notes,
-                      reviewed_by = :reviewed_by,
-                      reviewed_date = NOW()
+                      approval_date = NOW()
                   WHERE record_id = :record_id";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':record_id', $record_id, PDO::PARAM_INT);
         $stmt->bindParam(':status', $status);
-        $stmt->bindParam(':is_excused', $is_excused, PDO::PARAM_BOOL);
         $stmt->bindParam(':notes', $approval_notes);
-        $stmt->bindParam(':reviewed_by', $reviewed_by, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
             // Update thresholds
@@ -222,8 +202,8 @@ class AbsenceLateMgmt
                     COUNT(*) as total_records,
                     SUM(CASE WHEN type = 'ABSENT' THEN 1 ELSE 0 END) as absent_count,
                     SUM(CASE WHEN type = 'LATE' THEN 1 ELSE 0 END) as late_count,
-                    SUM(CASE WHEN is_excused = 1 THEN 1 ELSE 0 END) as excused_count,
-                    SUM(CASE WHEN is_excused = 0 THEN 1 ELSE 0 END) as unexcused_count,
+                    SUM(CASE WHEN excuse_status = 'APPROVED' THEN 1 ELSE 0 END) as excused_count,
+                    SUM(CASE WHEN excuse_status != 'APPROVED' THEN 1 ELSE 0 END) as unexcused_count,
                     SUM(CASE WHEN excuse_status = 'PENDING' THEN 1 ELSE 0 END) as pending_count
                   FROM {$this->records_table}
                   WHERE employee_id = :employee_id
@@ -246,10 +226,10 @@ class AbsenceLateMgmt
 
         $query = "SELECT 
                     COUNT(*) as total_records,
-                    SUM(CASE WHEN type = 'ABSENT' AND is_excused = 0 THEN 1 ELSE 0 END) as absent_count,
-                    SUM(CASE WHEN type = 'LATE' AND is_excused = 0 THEN 1 ELSE 0 END) as late_count,
-                    SUM(CASE WHEN type = 'ABSENT' AND is_excused = 1 THEN 1 ELSE 0 END) as excused_absent_count,
-                    SUM(CASE WHEN type = 'LATE' AND is_excused = 1 THEN 1 ELSE 0 END) as excused_late_count
+                    SUM(CASE WHEN type = 'ABSENT' AND excuse_status != 'APPROVED' THEN 1 ELSE 0 END) as absent_count,
+                    SUM(CASE WHEN type = 'LATE' AND excuse_status != 'APPROVED' THEN 1 ELSE 0 END) as late_count,
+                    SUM(CASE WHEN type = 'ABSENT' AND excuse_status = 'APPROVED' THEN 1 ELSE 0 END) as excused_absent_count,
+                    SUM(CASE WHEN type = 'LATE' AND excuse_status = 'APPROVED' THEN 1 ELSE 0 END) as excused_late_count
                   FROM {$this->records_table}
                   WHERE employee_id = :employee_id
                   AND DATE_FORMAT(absence_date, '%Y-%m') = :month_year";
@@ -309,15 +289,11 @@ class AbsenceLateMgmt
                     e.department,
                     r.type,
                     r.absence_date,
-                    r.is_excused,
                     r.excuse_status,
                     r.reason,
-                    r.submitted_date,
-                    r.reviewed_date,
-                    u.full_name as reviewed_by_name
+                    r.created_at
                   FROM {$this->records_table} r
                   JOIN employees e ON r.employee_id = e.employee_id
-                  LEFT JOIN users u ON r.reviewed_by = u.user_id
                   WHERE 1=1";
 
         if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
@@ -330,10 +306,6 @@ class AbsenceLateMgmt
 
         if (!empty($filters['type'])) {
             $query .= " AND r.type = :type";
-        }
-
-        if (isset($filters['is_excused'])) {
-            $query .= " AND r.is_excused = :is_excused";
         }
 
         $query .= " ORDER BY r.absence_date DESC";
@@ -350,9 +322,6 @@ class AbsenceLateMgmt
         if (!empty($filters['type'])) {
             $stmt->bindParam(':type', $filters['type']);
         }
-        if (isset($filters['is_excused'])) {
-            $stmt->bindParam(':is_excused', $filters['is_excused'], PDO::PARAM_BOOL);
-        }
 
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -367,8 +336,6 @@ class AbsenceLateMgmt
                     COUNT(*) as total_records,
                     SUM(CASE WHEN type = 'ABSENT' THEN 1 ELSE 0 END) as total_absents,
                     SUM(CASE WHEN type = 'LATE' THEN 1 ELSE 0 END) as total_lates,
-                    SUM(CASE WHEN is_excused = 1 THEN 1 ELSE 0 END) as total_excused,
-                    SUM(CASE WHEN is_excused = 0 THEN 1 ELSE 0 END) as total_unexcused,
                     SUM(CASE WHEN excuse_status = 'PENDING' THEN 1 ELSE 0 END) as pending_reviews,
                     SUM(CASE WHEN excuse_status = 'APPROVED' THEN 1 ELSE 0 END) as approved_excuses,
                     SUM(CASE WHEN excuse_status = 'REJECTED' THEN 1 ELSE 0 END) as rejected_excuses
@@ -403,11 +370,11 @@ class AbsenceLateMgmt
                     r.type,
                     r.absence_date,
                     r.reason,
-                    r.submitted_date
+                    r.created_at
                   FROM {$this->records_table} r
                   JOIN employees e ON r.employee_id = e.employee_id
                   WHERE r.excuse_status = 'PENDING'
-                  ORDER BY r.submitted_date ASC
+                  ORDER BY r.created_at ASC
                   LIMIT :limit";
 
         $stmt = $this->conn->prepare($query);
@@ -444,34 +411,27 @@ class AbsenceLateMgmt
                 if ($check_stmt->rowCount() > 0) {
                     // Record exists, update it
                     $update_query = "UPDATE {$this->records_table}
-                                    SET is_excused = 1,
-                                        excuse_status = 'APPROVED',
-                                        excuse_type = 'APPROVED_LEAVE',
-                                        leave_request_id = :leave_request_id,
+                                    SET excuse_status = 'APPROVED',
                                         reason = 'Approved Leave',
                                         approval_notes = 'Automatically marked as excused due to approved leave request',
-                                        reviewed_date = NOW()
+                                        approval_date = NOW()
                                     WHERE employee_id = :employee_id
                                     AND absence_date = :absence_date";
 
                     $update_stmt = $this->conn->prepare($update_query);
-                    $update_stmt->bindParam(':leave_request_id', $leave_request_id, PDO::PARAM_INT);
                     $update_stmt->bindParam(':employee_id', $employee_id, PDO::PARAM_INT);
                     $update_stmt->bindParam(':absence_date', $date_str);
                     $update_stmt->execute();
                 } else {
                     // No record exists, create one for this absent day
                     $insert_query = "INSERT INTO {$this->records_table}
-                                    (employee_id, absence_date, type, is_excused, excuse_status, 
-                                     excuse_type, leave_request_id, reason, approval_notes, reviewed_date)
-                                    VALUES (:employee_id, :absence_date, 'ABSENT', 1, 'APPROVED',
-                                            'APPROVED_LEAVE', :leave_request_id, 'Approved Leave',
-                                            'Automatically created from approved leave request', NOW())";
+                                    (employee_id, absence_date, type, excuse_status, reason, approval_notes, approval_date)
+                                    VALUES (:employee_id, :absence_date, 'ABSENT', 'APPROVED',
+                                            'Approved Leave', 'Automatically created from approved leave request', NOW())";
 
                     $insert_stmt = $this->conn->prepare($insert_query);
                     $insert_stmt->bindParam(':employee_id', $employee_id, PDO::PARAM_INT);
                     $insert_stmt->bindParam(':absence_date', $date_str);
-                    $insert_stmt->bindParam(':leave_request_id', $leave_request_id, PDO::PARAM_INT);
                     $insert_stmt->execute();
                 }
 
@@ -496,17 +456,12 @@ class AbsenceLateMgmt
     public function reverseLeaveExcuse($employee_id, $leave_request_id)
     {
         $query = "UPDATE {$this->records_table}
-                 SET is_excused = 0,
-                     excuse_status = 'PENDING',
-                     excuse_type = 'MANUAL_APPEAL',
-                     leave_request_id = NULL,
+                 SET excuse_status = 'PENDING',
                      approval_notes = 'Leave request was rejected'
-                 WHERE employee_id = :employee_id
-                 AND leave_request_id = :leave_request_id";
+                 WHERE employee_id = :employee_id";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':employee_id', $employee_id, PDO::PARAM_INT);
-        $stmt->bindParam(':leave_request_id', $leave_request_id, PDO::PARAM_INT);
 
         return $stmt->execute();
     }
@@ -516,12 +471,8 @@ class AbsenceLateMgmt
      */
     public function getExcuseLabel($record)
     {
-        if (!$record['is_excused']) {
+        if ($record['excuse_status'] !== 'APPROVED') {
             return 'Unexcused';
-        }
-
-        if ($record['excuse_type'] === 'APPROVED_LEAVE') {
-            return 'Excused - Leave Approved';
         }
 
         return 'Excused - ' . $record['excuse_status'];

@@ -4,7 +4,7 @@
  * Displays attendance records in a calendar format with color-coding
  */
 
-require_once '../app/config/Database.php';
+require_once '../../auth/database.php';
 require_once '../app/core/Session.php';
 require_once '../app/models/Attendance.php';
 require_once '../app/models/Employee.php';
@@ -25,7 +25,7 @@ $employeeModel = new Employee();
 $employee = $employeeModel->getByUserId($user_id);
 $employee_id = $employee['employee_id'];
 
-$database = new Database();
+$database = Database::getInstance();
 $db = $database->getConnection();
 
 // Get month and year from URL or use current

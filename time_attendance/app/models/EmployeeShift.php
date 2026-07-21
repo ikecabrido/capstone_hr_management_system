@@ -201,5 +201,39 @@ class EmployeeShift {
         $shift = $this->getCurrentShift($employee_id);
         return !empty($shift);
     }
+
+    /**
+     * Get employees without active shift assignments
+     * 
+     * @return array
+     */
+    public function getEmployeesWithoutShift() {
+        $query = "SELECT e.employee_id, e.full_name, e.department, e.position
+                  FROM employees e
+                  WHERE e.employment_status = 'Active'
+                  AND e.employee_id NOT IN (
+                      SELECT DISTINCT es.employee_id 
+                      FROM " . $this->table . " es
+                      WHERE es.is_active = 1 
+                      AND es.effective_from <= CURDATE()
+                      AND (es.effective_to IS NULL OR es.effective_to >= CURDATE())
+                  )
+                  ORDER BY e.full_name ASC";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Get count of employees without shift assignment
+     * 
+     * @return int
+     */
+    public function getEmployeesWithoutShiftCount() {
+        $employees = $this->getEmployeesWithoutShift();
+        return count($employees);
+    }
 }
 ?>

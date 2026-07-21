@@ -5,7 +5,7 @@
 
 header('Content-Type: application/json');
 
-require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../../auth/database.php';
 require_once __DIR__ . '/../core/Session.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
 require_once __DIR__ . '/../models/UnexpectedHoliday.php';
@@ -28,7 +28,7 @@ if (!AuthController::hasRole('time') && !AuthController::hasRole('hr')) {
 
 try {
     // Initialize table if not exists
-    $db = new Database();
+    $db = Database::getInstance();
     $conn = $db->getConnection();
     UnexpectedHoliday::createTable($conn);
 

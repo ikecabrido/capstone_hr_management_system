@@ -6,7 +6,7 @@
 
 header('Content-Type: application/json');
 
-require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../../auth/database.php';
 
 try {
     $start_date = $_GET['start_date'] ?? null;
@@ -16,7 +16,7 @@ try {
         throw new Exception('Date range is required');
     }
 
-    $db = new Database();
+    $db = Database::getInstance();
     $conn = $db->getConnection();
 
     // Get all active employees

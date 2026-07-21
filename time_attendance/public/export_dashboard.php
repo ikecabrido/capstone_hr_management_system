@@ -3,7 +3,7 @@
  * Export Dashboard Data to Excel with Professional Template
  */
 
-require_once "../app/config/Database.php";
+require_once "../../auth/database.php";
 require_once "../app/controllers/AuthController.php";
 require_once "../app/models/Employee.php";
 require_once "../app/core/Session.php";
@@ -35,7 +35,7 @@ error_log('Export requested - format: ' . ($_GET['format'] ?? 'none') . ', is_pr
 $current_month_start = date('Y-m-01');
 $current_month_end = date('Y-m-t');
 
-$db = new Database();
+$db = Database::getInstance();
 $conn = $db->getConnection();
 
 // Get monthly attendance

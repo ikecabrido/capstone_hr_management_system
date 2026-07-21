@@ -8,7 +8,7 @@ header('Content-Type: application/json');
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
-require_once "../config/Database.php";
+require_once "../../../../auth/database.php";
 require_once "../controllers/AuthController.php";
 require_once "../helpers/MetricsCalculator.php";
 require_once "../core/Session.php";
@@ -26,7 +26,7 @@ try {
     $action = $_GET['action'] ?? $_POST['action'] ?? '';
     
     // Initialize database and metrics calculator
-    $db = new Database();
+    $db = Database::getInstance();
     $conn = $db->getConnection();
     $calculator = new MetricsCalculator($conn);
 
@@ -268,7 +268,7 @@ function handleGetAttendanceMetricsSummary($calculator)
     $monthYear = $_GET['month_year'] ?? date('Y-m');
     
     try {
-        $db = new Database();
+        $db = Database::getInstance();
         $conn = $db->getConnection();
         
         // Get metrics from ta_attendance_metrics table

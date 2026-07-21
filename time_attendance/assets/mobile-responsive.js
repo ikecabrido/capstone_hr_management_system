@@ -6,15 +6,8 @@
 (function() {
     'use strict';
 
-    // Prevent double-tap zoom on buttons
-    document.addEventListener('touchend', function(event) {
-        if (event.target.tagName === 'BUTTON' || 
-            event.target.tagName === 'A' || 
-            event.target.closest('button') || 
-            event.target.closest('a')) {
-            event.preventDefault();
-        }
-    }, false);
+    // Don't prevent default on touchend - let click events fire normally
+    // Buttons should work on both desktop and mobile without interference
 
     // Handle viewport meta tag
     function ensureViewportMeta() {

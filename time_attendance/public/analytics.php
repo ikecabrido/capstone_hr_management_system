@@ -4,7 +4,7 @@
  * Department-wide attendance analytics with charts
  */
 
-require_once "../app/config/Database.php";
+require_once "../../auth/database.php";
 require_once "../app/controllers/AuthController.php";
 require_once "../app/models/Attendance.php";
 require_once "../app/helpers/Helper.php";
@@ -25,7 +25,7 @@ if (!in_array($role, ['HR_ADMIN', 'DEPARTMENT_HEAD', 'SYSTEM_ADMIN'])) {
     exit;
 }
 
-$db = new Database();
+$db = Database::getInstance();
 $conn = $db->getConnection();
 
 $report_type = $_GET['type'] ?? 'monthly'; // monthly, weekly, daily
@@ -153,6 +153,7 @@ $top_employees = $emp_stmt->fetchAll(PDO::FETCH_ASSOC);
     <title>Analytics & Reports - Time & Attendance System</title>
     <link rel="icon" href="../Bestlink College of the Philippines.jpeg" type="image/jpeg">
     <link rel="stylesheet" href="../assets/style.css">
+    <link rel="stylesheet" href="../assets/adminlte-overrides.css">
     <script src="../assets/mobile-responsive.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -161,24 +162,6 @@ $top_employees = $emp_stmt->fetchAll(PDO::FETCH_ASSOC);
             margin: 0;
             padding: 0;
             transition: margin-left 0.3s ease;
-        }
-
-        body.sidebar-collapsed {
-            margin-left: 0;
-        }
-
-        .main-content {
-            width: calc(100% - 250px);
-            margin-left: 250px;
-            margin-top: 60px;
-            min-height: calc(100vh - 60px);
-            padding: 20px;
-            transition: width 0.3s ease, margin-left 0.3s ease;
-        }
-
-        body.sidebar-collapsed .main-content {
-            width: 100%;
-            margin-left: 0;
         }
         .content-wrapper {
             max-width: 1400px;

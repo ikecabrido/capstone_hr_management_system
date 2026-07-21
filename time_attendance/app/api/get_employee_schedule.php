@@ -6,7 +6,7 @@
 
 header('Content-Type: application/json');
 
-require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../../auth/database.php';
 require_once __DIR__ . '/../models/Employee.php';
 require_once __DIR__ . '/../models/EmployeeShift.php';
 require_once __DIR__ . '/../models/Attendance.php';
@@ -24,7 +24,7 @@ try {
         throw new Exception('Date range is required');
     }
 
-    $db = new Database();
+    $db = Database::getInstance();
     $conn = $db->getConnection();
 
     // Get employee info
@@ -59,7 +59,7 @@ try {
     $attendance_records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Get flexible schedules for this employee (both one-time and recurring)
-    $flexible_query = "SELECT * FROM flexible_schedules
+    $flexible_query = "SELECT * FROM ta_flexible_schedules
                        WHERE employee_id = ?
                        AND ((schedule_date BETWEEN ? AND ?)
                           OR (day_of_week IS NOT NULL AND 
@@ -92,8 +92,34 @@ try {
             'day_name' => $date->format('l'),
             'shift' => $current_shift,
             'attendance' => null,
-            'flexible' => null
+            'flexible' => null,
+            'has_exclusion' => false
         ];
+
+        // Check if this employee has a shift exclusion for this date
+        $exclusion_query = "SELECT COUNT(*) as exclusion_count 
+                           FROM ta_shift_exclusions se
+                           WHERE se.exclusion_date = :date
+                           AND se.employee_shift_id IN (
+                               SELECT employee_shift_id FROM ta_employee_shifts 
+                               WHERE employee_id = :employee_id 
+                               AND is_active = 1
+                               AND effective_from <= :date
+                               AND (effective_to IS NULL OR effective_to >= :date)
+                           )";
+        
+        try {
+            $stmt = $conn->prepare($exclusion_query);
+            $stmt->bindParam(':employee_id', $employee_id);
+            $stmt->bindParam(':date', $date_str);
+            $stmt->execute();
+            
+            $exclusion_result = $stmt->fetch(PDO::FETCH_ASSOC);
+            $day_data['has_exclusion'] = $exclusion_result['exclusion_count'] > 0;
+        } catch (Exception $e) {
+            // Table might not exist, ignore
+            $day_data['has_exclusion'] = false;
+        }
 
         // Find attendance for this date
         foreach ($attendance_records as $record) {
@@ -104,44 +130,47 @@ try {
         }
 
         // Find flexible schedule for this date (one-time or recurring)
-        foreach ($flexible_schedules as $flex) {
-            $should_display = false;
-            
-            // Check if it's a one-time schedule that matches this date
-            if ($flex['schedule_date'] === $date_str) {
-                $should_display = true;
-            }
-            
-            // Check if it's a recurring schedule that matches this day of week
-            if (!$should_display && $flex['day_of_week'] !== null) {
-                if ((int)$flex['day_of_week'] === $day_of_week) {
-                    // Check if we're within the repeat_until or contract_end_date range
-                    $repeat_until = $flex['repeat_until'] ? new DateTime($flex['repeat_until']) : null;
-                    $contract_end = $flex['contract_end_date'] ? new DateTime($flex['contract_end_date']) : null;
-                    $current_date = new DateTime($date_str);
-                    
-                    // Determine the end date (whichever is later or exists)
-                    $end_limit = null;
-                    if ($repeat_until && $contract_end) {
-                        $end_limit = $repeat_until > $contract_end ? $repeat_until : $contract_end;
-                    } elseif ($repeat_until) {
-                        $end_limit = $repeat_until;
-                    } elseif ($contract_end) {
-                        $end_limit = $contract_end;
-                    }
-                    
-                    // If no end limit, show indefinitely (until end of calendar view)
-                    if (!$end_limit) {
-                        $should_display = true;
-                    } elseif ($current_date <= $end_limit) {
-                        $should_display = true;
+        // BUT SKIP if employee has a shift exclusion for this date
+        if (!$day_data['has_exclusion']) {
+            foreach ($flexible_schedules as $flex) {
+                $should_display = false;
+                
+                // Check if it's a one-time schedule that matches this date
+                if ($flex['schedule_date'] === $date_str) {
+                    $should_display = true;
+                }
+                
+                // Check if it's a recurring schedule that matches this day of week
+                if (!$should_display && $flex['day_of_week'] !== null) {
+                    if ((int)$flex['day_of_week'] === $day_of_week) {
+                        // Check if we're within the repeat_until or contract_end_date range
+                        $repeat_until = $flex['repeat_until'] ? new DateTime($flex['repeat_until']) : null;
+                        $contract_end = $flex['contract_end_date'] ? new DateTime($flex['contract_end_date']) : null;
+                        $current_date = new DateTime($date_str);
+                        
+                        // Determine the end date (whichever is later or exists)
+                        $end_limit = null;
+                        if ($repeat_until && $contract_end) {
+                            $end_limit = $repeat_until > $contract_end ? $repeat_until : $contract_end;
+                        } elseif ($repeat_until) {
+                            $end_limit = $repeat_until;
+                        } elseif ($contract_end) {
+                            $end_limit = $contract_end;
+                        }
+                        
+                        // If no end limit, show indefinitely (until end of calendar view)
+                        if (!$end_limit) {
+                            $should_display = true;
+                        } elseif ($current_date <= $end_limit) {
+                            $should_display = true;
+                        }
                     }
                 }
-            }
-            
-            if ($should_display) {
-                $day_data['flexible'] = $flex;
-                break;
+                
+                if ($should_display) {
+                    $day_data['flexible'] = $flex;
+                    break;
+                }
             }
         }
 

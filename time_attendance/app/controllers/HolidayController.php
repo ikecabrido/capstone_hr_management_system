@@ -201,6 +201,9 @@ class HolidayController
             $result = $this->nagerService->syncHolidays($userId);
 
             if ($result['success']) {
+                // Also fix any empty names
+                $this->nagerService->fixEmptyHolidayNames();
+                
                 return $this->response(true, $result['message'], [
                     'synced_count' => $result['count'],
                     'last_sync' => $this->nagerService->getLastSyncTime()
@@ -210,6 +213,19 @@ class HolidayController
             }
         } catch (Exception $e) {
             return $this->response(false, 'Sync failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Fix empty holiday names (helper endpoint)
+     */
+    public function fixEmptyNames()
+    {
+        try {
+            $fixed = $this->nagerService->fixEmptyHolidayNames();
+            return $this->response(true, "Fixed $fixed holiday names", ['fixed_count' => $fixed]);
+        } catch (Exception $e) {
+            return $this->response(false, 'Fix failed: ' . $e->getMessage());
         }
     }
 

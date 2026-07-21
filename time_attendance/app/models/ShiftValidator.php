@@ -4,7 +4,7 @@
  * Validates if employee has shift assigned before time in/out
  */
 
-require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../../auth/database.php';
 
 class ShiftValidator
 {
@@ -15,7 +15,7 @@ class ShiftValidator
 
     public function __construct()
     {
-        $database = new Database();
+        $database = Database::getInstance();
         $this->conn = $database->getConnection();
         $this->createTableIfNotExists();
     }

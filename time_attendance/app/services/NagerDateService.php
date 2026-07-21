@@ -86,9 +86,12 @@ class NagerDateService
             // Determine if recurring (fixed date holidays recur yearly)
             $isRecurring = isset($holiday['fixed']) ? $holiday['fixed'] : false;
 
+            // Use localName as fallback if name is not available
+            $holidayName = $holiday['name'] ?? $holiday['localName'] ?? 'Holiday';
+
             $transformed[] = [
-                'name' => $holiday['name'] ?? '',
-                'localName' => $holiday['localName'] ?? '',
+                'name' => $holidayName,
+                'localName' => $holiday['localName'] ?? $holiday['name'] ?? '',
                 'holiday_date' => $holiday['date'] ?? '',
                 'is_recurring' => $isRecurring ? 1 : 0,
                 'country_code' => $this->countryCode,
@@ -124,6 +127,9 @@ class NagerDateService
             // Insert new holidays
             $this->bulkInsertHolidays($holidays, $createdBy);
 
+            // Fix any empty holiday names
+            $this->fixEmptyHolidayNames();
+
             // Log the sync
             $this->logSync(count($holidays));
 
@@ -138,6 +144,37 @@ class NagerDateService
                 'message' => $e->getMessage(),
                 'count' => 0
             ];
+        }
+    }
+
+    /**
+     * Fix empty holiday names in database
+     * Update rows where name is empty to use description instead
+     */
+    public function fixEmptyHolidayNames()
+    {
+        try {
+            // Fix NULL or empty names
+            $query = "UPDATE ta_holidays 
+                     SET name = COALESCE(NULLIF(description, ''), 'Holiday')
+                     WHERE name IS NULL OR name = '' OR TRIM(name) = ''";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            
+            $updated = $stmt->rowCount();
+            
+            // Also ensure description is not empty for display
+            $query2 = "UPDATE ta_holidays 
+                      SET description = name
+                      WHERE description IS NULL OR description = ''";
+            $stmt2 = $this->db->prepare($query2);
+            $stmt2->execute();
+            
+            return $updated;
+        } catch (Exception $e) {
+            error_log("Error fixing empty holiday names: " . $e->getMessage());
+            return 0;
         }
     }
 

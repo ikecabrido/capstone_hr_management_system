@@ -34,90 +34,15 @@ $currentMonth = date('F Y');
     <title>Holidays - Time & Attendance System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../../assets/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="../../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
     <link rel="stylesheet" href="../../assets/plugins/toastr/toastr.min.css">
     <!-- FullCalendar CSS -->
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
     <link rel="stylesheet" href="../assets/style.css">
     <link rel="stylesheet" href="../assets/dashboard.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html, body {
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            background: #f5f5f5;
-            margin: 0;
-            padding: 0;
-            transition: margin-left 0.3s ease;
-        }
-
-        body.sidebar-collapsed {
-            margin-left: 0;
-        }
-
-        .main-content {
-            width: calc(100% - 250px);
-            margin-left: 250px;
-            margin-top: 60px;
-            min-height: calc(100vh - 60px);
-            overflow-y: auto;
-            transition: width 0.3s ease, margin-left 0.3s ease;
-        }
-
-        body.sidebar-collapsed .main-content {
-            width: 100%;
-            margin-left: 0;
-        }
-
-        .content-wrapper {
-            width: 100%;
-            margin: 0;
-            padding: 30px 20px;
-        }
-
-        /* Override AdminLTE container defaults */
-        .container, .container-fluid {
-            margin: 0 !important;
-            padding: 0 !important;
-            width: 100% !important;
-            max-width: 100% !important;
-        }
-
-        .preloader {
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-
-        .holiday-container {
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .holiday-widget {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .holiday-widget h3 {
-            margin: 0 0 15px 0;
-            font-size: 18px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+    <link rel="stylesheet" href="../assets/adminlte-overrides.css">
+<style>
 
         .next-holiday-block {
             background: rgba(255, 255, 255, 0.15);
@@ -224,9 +149,15 @@ $currentMonth = date('F Y');
 
         .calendar-container {
             background: white;
-            padding: 20px;
+            padding: 20px 30px 30px 30px;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            width: 100%;
+            box-sizing: border-box;
+            max-width: 100%;
+            height: auto;
+            min-height: 750px;
         }
 
         .calendar-container h3 {
@@ -238,7 +169,62 @@ $currentMonth = date('F Y');
         }
 
         #holidayCalendar {
-            height: 550px;
+            width: 100% !important;
+            height: 100% !important;
+            max-width: calc(100vw - 300px) !important;
+        }
+
+        /* Prevent scrolling within calendar */
+        .fc-view-harness {
+            overflow: hidden !important;
+            height: 100% !important;
+        }
+
+        .fc-scroller {
+            overflow: hidden !important;
+        }
+
+        /* FullCalendar responsive sizing */
+        .fc {
+            font-size: 0.75em;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 100% !important;
+        }
+
+        .fc-header-toolbar {
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 10px;
+            padding: 10px 0;
+        }
+
+        .fc-button {
+            padding: 4px 8px !important;
+            font-size: 0.85em !important;
+        }
+
+        .fc-daygrid-day-frame {
+            min-height: 30px !important;
+        }
+
+        .fc-daygrid-day {
+            padding: 1px !important;
+        }
+
+        .fc-col-header-cell {
+            padding: 4px 1px !important;
+            font-size: 0.75em !important;
+        }
+
+        .fc-daygrid-day-number {
+            padding: 2px !important;
+            font-size: 0.7em !important;
+        }
+
+        .fc-event {
+            padding: 1px 2px !important;
+            font-size: 0.65em !important;
         }
 
         .fc-daygrid-day.holiday {
@@ -253,10 +239,7 @@ $currentMonth = date('F Y');
         @media (max-width: 1024px) {
             .holiday-container {
                 grid-template-columns: 1fr;
-            }
-
-            #holidayCalendar {
-                height: 400px;
+                overflow: hidden;
             }
         }
 
@@ -342,9 +325,78 @@ $currentMonth = date('F Y');
                 margin-bottom: 5px;
             }
         }
+
+        .page-header {
+            background: linear-gradient(135deg, #003d82 0%, #005ba8 100%);
+            padding: 35px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 61, 130, 0.15);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .page-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 800;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .page-title i {
+            font-size: 36px;
+            opacity: 0.95;
+        }
+
+        .page-subtitle {
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 14px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .page-header-right {
+            position: relative;
+            z-index: 1;
+            text-align: right;
+        }
+
+        .page-header-right .current-month {
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .page-header-right .month-year {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ffffff;
+        }
     </style>
 </head>
-<body>
+<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
     <div class="preloader flex-column justify-content-center align-items-center">
         <img class="animation__wobble" src="../../assets/pics/bcpLogo.png" alt="AdminLTELogo" height="60" width="60" />
     </div>
@@ -354,20 +406,23 @@ $currentMonth = date('F Y');
     <div class="main-content">
         <div class="content-wrapper">
             <!-- Page Header -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <div>
-                    <h1><i class="fas fa-calendar-alt"></i> Holidays</h1>
-                    <p style="color: #666; margin: 0; font-size: 14px;">View and manage company holidays</p>
-                </div>
-                <div style="text-align: right;">
-                    <p style="color: #666; margin: 0; font-size: 14px;">Current Month</p>
-                    <h3 style="margin: 0; color: #333;"><?php echo $currentMonth; ?></h3>
+            <div class="page-header">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <div class="page-title">
+                            <i class="fas fa-calendar-alt"></i> Holidays
+                        </div>
+                    </div>
+                    <div class="page-header-right">
+                        <div class="current-month">Current Month</div>
+                        <div class="month-year" id="currentMonthDisplay">July 2026</div>
+                    </div>
                 </div>
             </div>
 
             <!-- Content will be loaded here -->
-            <div id="holidayContent" style="text-align: center; padding: 40px;">
-                <i class="fas fa-spinner fa-spin" style="font-size: 32px; color: #667eea; margin-bottom: 15px;"></i>
+            <div id="holidayContent" class="glass-panel" style="padding: 30px; border-radius: 18px; text-align: center;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 32px; color: #005ba8; margin-bottom: 15px;"></i>
                 <p style="color: #666; font-size: 14px;">Loading holiday data...</p>
             </div>
         </div>
@@ -390,6 +445,17 @@ $currentMonth = date('F Y');
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 
     <script>
+        // Get color based on holiday category
+        function getCategoryColor(category) {
+            const colors = {
+                'national': '#e74c3c',   // Red
+                'regional': '#f39c12',   // Orange
+                'optional': '#3498db',   // Blue
+                'special': '#9b59b6'     // Purple
+            };
+            return colors[category] || '#95a5a6'; // Gray default
+        }
+
         // Hide preloader immediately on load
         document.addEventListener('DOMContentLoaded', function() {
             const preloader = document.querySelector('.preloader');
@@ -459,11 +525,11 @@ $currentMonth = date('F Y');
 
             if (data.holidays.length === 0 && data.upcoming.length === 0) {
                 container.innerHTML = `
-                    <div style="background: white; padding: 40px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+                    <div class="glass-panel" style="padding: 40px; border-radius: 18px; text-align: center;">
                         <i class="fas fa-calendar-times" style="font-size: 48px; color: #ddd; margin-bottom: 20px;"></i>
                         <h3 style="color: #666;">No Holidays Found</h3>
                         <p style="color: #999; margin-bottom: 20px;">No holidays have been configured yet. Click the button below to sync holidays from the API.</p>
-                        <button class="sync-button" style="background: #667eea; color: white; padding: 12px 25px; border: none; border-radius: 5px; cursor: pointer; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;" onclick="syncHolidays()">
+                        <button class="sync-button" style="background: #005ba8; color: white; padding: 12px 25px; border: none; border-radius: 5px; cursor: pointer; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;" onclick="syncHolidays()">
                             <i class="fas fa-sync-alt"></i> Sync Holidays from API
                         </button>
                     </div>
@@ -479,7 +545,7 @@ $currentMonth = date('F Y');
                     upcomingHtml += `
                         <div class="holiday-item" style="background: rgba(255, 255, 255, 0.1); padding: 10px; margin-bottom: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; border-left: 3px solid rgba(255, 255, 255, 0.3);">
                             <div class="name" style="flex: 1;">
-                                <strong>${holiday.holiday_name}</strong><br>
+                                <strong>${holiday.name}</strong><br>
                                 <span style="font-size: 11px; opacity: 0.8;">${new Date(holiday.holiday_date).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</span>
                             </div>
                             <div class="days" style="background: rgba(255, 255, 255, 0.2); padding: 3px 10px; border-radius: 4px; font-weight: 600; font-size: 12px;">${daysLeft} days</div>
@@ -494,7 +560,7 @@ $currentMonth = date('F Y');
             container.innerHTML = `
                 <div class="holiday-container" style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px; margin-bottom: 30px;">
                     <!-- Left: Holiday Widget -->
-                    <div class="holiday-widget" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);">
+                    <div class="holiday-widget" style="background: linear-gradient(135deg, #003d82 0%, #005ba8 100%); color: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);">
                         <h3 style="margin: 0 0 15px 0; font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 10px;">
                             <i class="fas fa-bell"></i> Upcoming Holidays
                         </h3>
@@ -519,7 +585,7 @@ $currentMonth = date('F Y');
                         ${nextHoliday ? `
                             <div class="next-holiday-block" style="background: rgba(255, 255, 255, 0.15); padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid rgba(255, 255, 255, 0.5);">
                                 <div class="label" style="font-size: 12px; opacity: 0.9; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Next Holiday</div>
-                                <div class="holiday-name" style="font-size: 20px; font-weight: 600; margin-bottom: 10px;">${nextHoliday.holiday_name}</div>
+                                <div class="holiday-name" style="font-size: 20px; font-weight: 600; margin-bottom: 10px;">${nextHoliday.name}</div>
                                 <div class="countdown" style="font-size: 36px; font-weight: 700; margin-bottom: 5px; color: #fff;">${daysUntilNext}</div>
                                 <div class="countdown-label" style="font-size: 12px; opacity: 0.85;">${daysUntilNext == 0 ? 'Today!' : daysUntilNext == 1 ? 'Tomorrow' : 'days remaining'}</div>
                             </div>
@@ -544,7 +610,7 @@ $currentMonth = date('F Y');
                     </div>
 
                     <!-- Right: Calendar -->
-                    <div class="calendar-container" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+                    <div class="calendar-container glass-panel" style="padding: 20px; border-radius: 18px;">
                         <h3 style="margin: 0 0 20px 0; color: #333; display: flex; align-items: center; gap: 10px;">
                             <i class="fas fa-calendar-days"></i> Holiday Calendar
                         </h3>
@@ -564,10 +630,10 @@ $currentMonth = date('F Y');
 
             try {
                 const events = holidays.map(h => ({
-                    title: h.holiday_name,
+                    title: h.name,
                     start: h.holiday_date,
-                    backgroundColor: '#667eea',
-                    borderColor: '#667eea',
+                    backgroundColor: '#005ba8',
+                    borderColor: '#005ba8',
                     extendedProps: {
                         category: h.category || 'Holiday'
                     }
@@ -603,7 +669,7 @@ $currentMonth = date('F Y');
         function showError(message) {
             const container = document.getElementById('holidayContent');
             container.innerHTML = `
-                <div style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 20px; border-radius: 10px; text-align: center;">
+                <div class="glass-panel" style="background: rgba(248, 215, 218, 0.9); border: 1px solid #f5c6cb; color: #721c24; padding: 20px; border-radius: 18px; text-align: center;">
                     <i class="fas fa-exclamation-circle" style="font-size: 32px; margin-bottom: 15px;"></i>
                     <h3>${message}</h3>
                     <p style="margin-bottom: 0;">Please try reloading the page or contact support if the problem persists.</p>
@@ -615,7 +681,7 @@ $currentMonth = date('F Y');
         function showSetupNeeded() {
             const container = document.getElementById('holidayContent');
             container.innerHTML = `
-                <div style="background: white; padding: 40px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+                <div class="glass-panel" style="padding: 40px; border-radius: 18px; text-align: center;">
                     <i class="fas fa-wrench" style="font-size: 48px; color: #ffc107; margin-bottom: 20px;"></i>
                     <h3 style="color: #666;">Holiday System Setup Required</h3>
                     <p style="color: #999; margin-bottom: 20px;">The holiday system needs to be initialized. Please visit the setup page to sync holidays from the API.</p>
@@ -625,7 +691,7 @@ $currentMonth = date('F Y');
                         2. Click "Sync Holidays from API"<br>
                         3. Return to this page
                     </p>
-                    <a href="../app/setup/holiday_setup.php" style="display: inline-block; background: #667eea; color: white; padding: 12px 25px; border: none; border-radius: 5px; cursor: pointer; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; text-decoration: none;">
+                    <a href="../app/setup/holiday_setup.php" style="display: inline-block; background: #005ba8; color: white; padding: 12px 25px; border: none; border-radius: 5px; cursor: pointer; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; text-decoration: none;">
                         <i class="fas fa-cog"></i> Go to Setup
                     </a>
                 </div>
@@ -685,6 +751,8 @@ $currentMonth = date('F Y');
             if (calendarEl) {
                 try {
                     const calendar = new FullCalendar.Calendar(calendarEl, {
+                        height: 'auto',
+                        contentHeight: 'auto',
                         initialView: 'dayGridMonth',
                         headerToolbar: {
                             left: 'prev,next today',
@@ -692,13 +760,40 @@ $currentMonth = date('F Y');
                             right: 'dayGridMonth,listMonth'
                         },
                         events: function(info, successCallback, failureCallback) {
+                                    console.log('Fetching holidays...'); // Debug log
                             // Fetch holidays from API
-                            fetch('../api/holiday_api.php?action=get_calendar_events')
+                            fetch('../app/api/holiday_api.php?action=get_all&year=' + info.start.getFullYear())
                                 .then(response => response.json())
                                 .then(data => {
-                                    if (data.success && data.events) {
-                                        successCallback(data.events);
+                                    console.log('Holiday API Response:', data); // Debug log
+                                    if (data.success && data.data && data.data.holidays) {
+                                        console.log('Found holidays in data.data.holidays:', data.data.holidays); // Debug
+                                        // Transform holidays to FullCalendar event format
+                                        const events = data.data.holidays.map(holiday => ({
+                                            id: `holiday-${holiday.id}`,
+                                            title: holiday.name,
+                                            start: holiday.holiday_date,
+                                            end: holiday.holiday_date,
+                                            extendedProps: {
+                                                category: holiday.category,
+                                                isRecurring: holiday.is_recurring === 1,
+                                                description: holiday.description,
+                                                isHoliday: true
+                                            },
+                                            backgroundColor: getCategoryColor(holiday.category),
+                                            borderColor: getCategoryColor(holiday.category),
+                                            textColor: '#fff',
+                                            className: `ta-holiday ta-holiday-${holiday.category}`,
+                                            display: 'block'
+                                        }));
+                                        console.log('Transformed events:', events); // Debug
+                                        successCallback(events);
                                     } else {
+                                        console.warn('No holidays found. Response structure:', {
+                                            success: data.success,
+                                            hasData: !!data.data,
+                                            hasHolidays: data.data && !!data.data.holidays
+                                        });
                                         successCallback([]); // Empty array instead of error
                                     }
                                 })

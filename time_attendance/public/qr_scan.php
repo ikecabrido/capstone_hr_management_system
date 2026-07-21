@@ -50,10 +50,10 @@ if (!AuthController::isAuthenticated()) {
 }
 
 // User is authenticated - process attendance immediately
-require_once "../app/config/Database.php";
+require_once "../../auth/database.php";
 require_once "../app/models/Attendance.php";
 
-$db = new Database();
+$db = Database::getInstance();
 $conn = $db->getConnection();
 
 try {

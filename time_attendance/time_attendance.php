@@ -1,5 +1,4 @@
-<<<<<<< HEAD
-<?php
+﻿<?php
 session_start();
 require_once "../auth/auth_check.php";
 $theme = $_SESSION['user']['theme'] ?? 'light';

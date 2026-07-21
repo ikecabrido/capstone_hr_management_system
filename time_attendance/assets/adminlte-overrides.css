@@ -1,0 +1,506 @@
+/* AdminLTE-style overrides for Time & Attendance */
+
+html, body {
+    overflow-x: hidden !important;
+}
+
+/* Sidebar visual theme */
+.main-sidebar {
+    background-color: #0d47a1 !important;
+    width: 250px !important;
+    transition: width 0.3s ease, left 0.3s ease !important;
+}
+
+/* Remove list markers from sidebar */
+.nav-sidebar,
+.nav-sidebar ul {
+    list-style: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.nav-sidebar li,
+.nav-sidebar li.nav-item {
+    list-style: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Sidebar collapsed */
+body.sidebar-collapse .main-sidebar,
+body.sidebar-collapsed .main-sidebar {
+    width: 80px !important;
+}
+
+.brand-link {
+    background-color: #0b3c91 !important;
+    color: #fff !important;
+    transition: width 0.3s ease, padding 0.3s ease !important;
+}
+
+body.sidebar-collapse .brand-link,
+body.sidebar-collapsed .brand-link {
+    text-align: center;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+}
+
+body.sidebar-collapse .brand-text,
+body.sidebar-collapsed .brand-text {
+    display: none !important;
+}
+
+.brand-image {
+    max-height: 38px;
+    width: auto;
+}
+
+body.sidebar-collapse .brand-image,
+body.sidebar-collapsed .brand-image {
+    margin: 0 auto !important;
+    display: block !important;
+}
+
+.nav-sidebar .nav-link {
+    color: #ffffff !important;
+    transition: background-color 0.2s ease, color 0.2s ease !important;
+    border: none !important;
+    border-left: none !important;
+}
+
+.nav-sidebar .nav-link.active,
+.nav-sidebar .nav-link:hover {
+    background-color: #1565c0 !important;
+    color: #fff !important;
+    border: none !important;
+    border-left: none !important;
+}
+
+.nav-sidebar .nav-link .nav-icon {
+    min-width: 1.8rem;
+}
+
+body.sidebar-collapse .nav-sidebar .nav-link p,
+body.sidebar-collapse .user-panel .info,
+body.sidebar-collapsed .nav-sidebar .nav-link p,
+body.sidebar-collapsed .user-panel .info {
+    display: none !important;
+}
+
+body.sidebar-collapse .nav-sidebar .nav-icon,
+body.sidebar-collapsed .nav-sidebar .nav-icon {
+    margin-right: 0 !important;
+    display: block !important;
+    text-align: center !important;
+    width: 100% !important;
+}
+
+/* Navbar and layout */
+.main-header.navbar {
+    background-color: #1976d2 !important;
+    left: 250px !important;
+    width: calc(100% - 250px) !important;
+    transition: left 0.3s ease, width 0.3s ease !important;
+}
+
+body.sidebar-collapse .main-header.navbar,
+body.sidebar-collapsed .main-header.navbar {
+    left: 80px !important;
+    width: calc(100% - 80px) !important;
+}
+
+.main-content {
+    width: auto !important;
+    margin: 0 0 0 250px !important;
+    min-height: calc(100vh - 60px) !important;
+    padding: 30px 20px !important;
+    box-sizing: border-box !important;
+    transition: margin-left 0.3s ease, width 0.3s ease !important;
+}
+
+body.sidebar-collapse .main-content,
+body.sidebar-collapsed .main-content {
+    width: auto !important;
+    margin-left: 0 !important;
+}
+
+.content-wrapper {
+    background-color: #ffffff !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    transition: none !important;
+    box-sizing: border-box !important;
+}
+
+body.sidebar-collapse .content-wrapper,
+body.sidebar-collapsed .content-wrapper {
+    margin-left: 0 !important;
+}
+
+body:not(.dark-mode) .content-wrapper {
+    background-color: #f4f6f9 !important;
+}
+
+body.dark-mode .main-sidebar {
+    background-color: #0b1f3a !important;
+}
+
+body.dark-mode .content-wrapper {
+    background-color: #313030 !important;
+}
+
+body.dark-mode .main-header.navbar {
+    background-color: #0d47a1 !important;
+}
+
+.main-footer {
+    background-color: #1976d2 !important;
+    color: #d6d3d3 !important;
+}
+
+body.dark-mode .main-footer {
+    background-color: #0d47a1 !important;
+}
+
+/* Strong final dark mode overrides */
+body.dark-mode {
+    color: #e0e0e0 !important;
+    background-color: #101214 !important;
+}
+
+body.dark-mode .content-wrapper,
+body.dark-mode .main-content,
+body.dark-mode .shift-container,
+body.dark-mode .card,
+body.dark-mode .glass-panel,
+body.dark-mode .container,
+body.dark-mode .modal-content,
+body.dark-mode .card-body,
+body.dark-mode .approvals-table,
+body.dark-mode .data-table,
+body.dark-mode .table,
+body.dark-mode .table-container,
+body.dark-mode .info-box,
+body.dark-mode .filter-controls input,
+body.dark-mode .filter-controls select,
+body.dark-mode .form-control,
+body.dark-mode .form-select,
+body.dark-mode textarea,
+body.dark-mode .dropdown-menu,
+body.dark-mode .modal-body,
+body.dark-mode .modal-header,
+body.dark-mode .modal-footer,
+body.dark-mode .breadcrumb,
+body.dark-mode .breadcrumb a,
+body.dark-mode .page-header,
+body.dark-mode .shift-tabs,
+body.dark-mode .shift-card,
+body.dark-mode .nav-sidebar,
+body.dark-mode .nav-sidebar .nav-link,
+body.dark-mode .nav-sidebar .user-panel {
+    background-color: #1e1e1e !important;
+    border-color: rgba(255,255,255,0.08) !important;
+    color: #e0e0e0 !important;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.35) !important;
+}
+
+body.dark-mode .main-header.navbar,
+body.dark-mode .main-footer {
+    box-shadow: none !important;
+}
+
+body.dark-mode .card:hover,
+body.dark-mode .shift-card:hover,
+body.dark-mode .modal-content,
+body.dark-mode .data-table tbody tr:hover,
+body.dark-mode .approvals-table tbody tr:hover,
+body.dark-mode .table tbody tr:hover,
+body.dark-mode .nav-sidebar .nav-link.active,
+body.dark-mode .nav-sidebar .nav-link:hover {
+    background-color: rgba(40,40,40,0.98) !important;
+}
+
+body.dark-mode .box,
+body.dark-mode .box-header,
+body.dark-mode .box-body,
+body.dark-mode .box-footer,
+body.dark-mode .small-box,
+body.dark-mode .info-box,
+body.dark-mode .callout,
+body.dark-mode .direct-chat,
+body.dark-mode .timeline,
+body.dark-mode .timeline-item,
+body.dark-mode .alert,
+body.dark-mode .list-group-item,
+body.dark-mode .nav-tabs,
+body.dark-mode .tab-content,
+body.dark-mode .dropdown-menu,
+body.dark-mode .dropdown-item,
+body.dark-mode .pagination .page-link,
+body.dark-mode .input-group-text,
+body.dark-mode .well,
+body.dark-mode .panel,
+body.dark-mode .panel-body,
+body.dark-mode .panel-heading,
+body.dark-mode .panel-footer,
+body.dark-mode pre,
+body.dark-mode code {
+    background-color: #232323 !important;
+    color: #e0e0e0 !important;
+    border-color: rgba(255,255,255,0.12) !important;
+}
+
+body.dark-mode .card-header,
+body.dark-mode .card-footer {
+    background-color: #252525 !important;
+    color: #e0e0e0 !important;
+    border-color: rgba(255,255,255,0.12) !important;
+}
+
+body.dark-mode .list-group-item:hover,
+body.dark-mode .dropdown-item:hover,
+body.dark-mode .pagination .page-link:hover {
+    background-color: #2f2f2f !important;
+}
+
+body.dark-mode .badge,
+body.dark-mode .badge-success,
+body.dark-mode .badge-warning,
+body.dark-mode .badge-info,
+body.dark-mode .badge-primary,
+body.dark-mode .badge-secondary {
+    background-color: rgba(80, 120, 180, 0.18) !important;
+    color: #e0e0e0 !important;
+}
+
+body.dark-mode .form-control,
+body.dark-mode .form-select,
+body.dark-mode .filter-controls input,
+body.dark-mode .filter-controls select,
+body.dark-mode textarea,
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode button {
+    background-color: #1b1b1b !important;
+    color: #e0e0e0 !important;
+    border-color: rgba(255,255,255,0.12) !important;
+}
+
+body.dark-mode .table th,
+body.dark-mode .table td,
+body.dark-mode .approvals-table th,
+body.dark-mode .approvals-table td,
+body.dark-mode .data-table th,
+body.dark-mode .data-table td {
+    color: #e0e0e0 !important;
+    border-color: rgba(255,255,255,0.08) !important;
+}
+
+body.dark-mode [style*="background: white"],
+body.dark-mode [style*="background: #fff"],
+body.dark-mode [style*="background: #ffffff"],
+body.dark-mode [style*="background-color: white"],
+body.dark-mode [style*="background-color: #fff"],
+body.dark-mode [style*="background-color: #ffffff"],
+body.dark-mode [style*="background: rgba(255,255,255"],
+body.dark-mode [style*="background-color: rgba(255,255,255"] {
+    background-color: #1e1e1e !important;
+    color: #e0e0e0 !important;
+    border-color: rgba(255,255,255,0.08) !important;
+}
+
+/* Specific search and suggestion boxes */
+body.dark-mode #assignmentSuggestions,
+body.dark-mode #flexibleSuggestions,
+body.dark-mode #assignmentSuggestions,
+body.dark-mode #flexibleSuggestions {
+    background-color: #232323 !important;
+}
+
+/* ============================================================ */
+/* ENHANCED SIDEBAR STYLING FOR SCHEDULE CALENDAR PAGE */
+/* ============================================================ */
+
+/* User panel in sidebar */
+.user-panel {
+    padding-bottom: 1rem !important;
+    margin-bottom: 1.5rem !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.user-panel .image {
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-panel .image i {
+    font-size: 1.5rem !important;
+    color: #ffffff !important;
+}
+
+.user-panel .info {
+    flex: 1;
+    padding-left: 0.75rem !important;
+}
+
+.user-panel .info a {
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    color: #ffffff !important;
+}
+
+body.dark-mode .user-panel {
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Nav header styling */
+.nav-header {
+    padding: 0.5rem 1rem !important;
+    margin-top: 1rem !important;
+    margin-bottom: 0.5rem !important;
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.05em !important;
+    text-transform: uppercase !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+body.dark-mode .nav-header {
+    color: rgba(224, 224, 224, 0.7) !important;
+}
+
+/* Sidebar menu items spacing and styling */
+.nav-sidebar .nav-item {
+    position: relative !important;
+}
+
+.nav-sidebar .nav-link {
+    padding: 0.75rem 1rem !important;
+    font-weight: 500 !important;
+    font-size: 0.9rem !important;
+    transition: all 0.2s ease !important;
+}
+
+.nav-sidebar .nav-link.active {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.nav-sidebar .nav-link:hover:not(.active) {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.nav-sidebar .nav-link .nav-icon {
+    width: 1.5rem !important;
+    text-align: center !important;
+    margin-right: 0.75rem !important;
+    font-size: 1rem !important;
+}
+
+.nav-sidebar .nav-link p {
+    margin: 0 !important;
+}
+
+/* Animation for icons */
+.nav-sidebar .nav-link .nav-icon.animation__wobble {
+    animation: wobble 2s infinite !important;
+}
+
+@keyframes wobble {
+    0% {
+        transform: translateX(0) !important;
+    }
+    6.5% {
+        transform: translateX(-6px) rotateZ(-5deg) !important;
+    }
+    19% {
+        transform: translateX(5px) rotateZ(3deg) !important;
+    }
+    25% {
+        transform: translateX(-5px) rotateZ(-3deg) !important;
+    }
+    31.5% {
+        transform: translateX(4px) rotateZ(2deg) !important;
+    }
+    37.5% {
+        transform: translateX(-4px) rotateZ(-2deg) !important;
+    }
+    43% {
+        transform: translateX(2px) rotateZ(1deg) !important;
+    }
+    50% {
+        transform: translateX(0) !important;
+    }
+}
+
+/* Dark mode sidebar enhancements */
+body.dark-mode .nav-sidebar .nav-link.active {
+    background-color: #1565c0 !important;
+    border: none !important;
+    border-left: none !important;
+}
+
+body.dark-mode .nav-sidebar .nav-link:hover:not(.active) {
+    background-color: rgba(21, 101, 192, 0.2) !important;
+    border: none !important;
+    border-left: none !important;
+}
+
+/* Sidebar brand text in light mode */
+.brand-text {
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
+    letter-spacing: 0.05em !important;
+}
+
+/* Ensure sidebar is scrollable */
+.sidebar {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: calc(100vh - 60px) !important;
+}
+body.dark-mode div[style*="assignmentSuggestions"],
+body.dark-mode div[style*="flexibleSuggestions"] {
+    background: #232323 !important;
+    color: #e0e0e0 !important;
+    border-color: rgba(255,255,255,0.12) !important;
+}
+
+body.dark-mode div[style*="background: white"] input,
+body.dark-mode div[style*="background: rgba(255,255,255"] input {
+    background: #1b1b1b !important;
+    color: #e0e0e0 !important;
+    border-color: rgba(255,255,255,0.12) !important;
+}
+
+/* Mobile responsive sidebar */
+@media (max-width: 768px) {
+    .main-sidebar {
+        position: fixed !important;
+        left: -250px !important;
+        top: 0 !important;
+        height: 100vh !important;
+        width: 250px !important;
+        z-index: 1030 !important;
+    }
+
+    .main-sidebar.open {
+        left: 0 !important;
+    }
+
+    .main-header.navbar,
+    .content-wrapper {
+        left: 0 !important;
+        width: 100% !important;
+        margin-left: 0 !important;
+    }
+
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 20px 10px !important;
+    }
+}

@@ -175,6 +175,102 @@ class AttendanceController
         header("Location: index.php?url=dashboard");
         exit;
     }
+
+    /**
+     * QR Attendance - Shows confirmation modal before recording attendance
+     * Handles both initial token validation and attendance confirmation
+     */
+    public function qrAttendance()
+    {
+        try {
+            Session::start();
+            
+            $token = $_GET['token'] ?? '';
+            $confirm = $_POST['confirm'] ?? '';
+            $user_id = Session::get('user_id');
+
+            if (!$user_id) {
+                Session::set('error', 'Please login first.');
+                header("Location: index.php?url=auth-index");
+                exit;
+            }
+
+            // Get employee ID from logged-in user
+            $employeeData = $this->employeeModel->getByUserId($user_id);
+            if (!$employeeData) {
+                Session::set('error', 'Employee profile not found.');
+                header("Location: index.php?url=dashboard");
+                exit;
+            }
+
+            $employee_id = $employeeData['employee_id'];
+
+            // Empty token = should not happen
+            if (empty($token)) {
+                Session::set('error', 'No QR token provided.');
+                header("Location: index.php?url=dashboard");
+                exit;
+            }
+
+            // If confirmation is submitted (POST request)
+            if ($confirm === 'yes') {
+                // Process the QR attendance with confirmation
+                $result = $this->processQRAttendance($employee_id, $token);
+                
+                if ($result['success']) {
+                    Session::set('success', $result['message']);
+                } else {
+                    Session::set('error', $result['message']);
+                }
+                
+                header("Location: index.php?url=dashboard");
+                exit;
+            }
+
+            // If cancellation is submitted
+            if ($confirm === 'no') {
+                Session::set('info', 'QR scan cancelled.');
+                header("Location: index.php?url=dashboard");
+                exit;
+            }
+
+            // Show confirmation page (GET request)
+            // NOTE: We don't validate token here - just show the modal
+            // Token validation happens when user confirms
+            // This matches hakdog's approach and allows for better UX
+
+            // Check today's attendance to determine if TIME_IN or TIME_OUT
+            $todayRecord = $this->attendanceModel->getTodayAttendance($employee_id);
+            $action = 'TIME_IN';
+            $statusText = 'Record Time In';
+            
+            if ($todayRecord && !empty($todayRecord['time_in']) && empty($todayRecord['time_out'])) {
+                $action = 'TIME_OUT';
+                $statusText = 'Record Time Out';
+            } elseif ($todayRecord && !empty($todayRecord['time_out'])) {
+                Session::set('error', 'Attendance already completed for today.');
+                header("Location: index.php?url=dashboard");
+                exit;
+            }
+
+            // Load the confirmation modal view directly (standalone, mobile-friendly)
+            $qrToken = $token;
+            $currentTime = date('H:i:s');
+            $currentDate = date('Y-m-d');
+            $employee = $employeeData; // Pass employee data to view
+            $employee_id = $employee_id; // Pass employee_id for AJAX
+            
+            // Load modal view directly without layout wrapper
+            require __DIR__ . '/../views/employee-portal/qr-confirmation-modal.php';
+            exit;
+
+        } catch (Exception $e) {
+            Session::set('error', 'Error: ' . $e->getMessage());
+            header("Location: index.php?url=dashboard");
+            exit;
+        }
+    }
+
     public function processQRAttendance($employee_no, $token)
     {
         Session::start();
@@ -217,39 +313,63 @@ class AttendanceController
                 ];
             }
 
-            // Mark token as used
-            $this->qrHelper->markUsed($token, $employee_no);
-
             // Check if employee has timed in today
             $todayRecord = $this->attendanceModel->getTodayAttendance($employee_no);
+            $action = '';
 
             // Smart decision: if already timed in, do time out; otherwise do time in
             if ($todayRecord && !empty($todayRecord['time_in']) && empty($todayRecord['time_out'])) {
                 // Employee already timed in, so do TIME OUT
-                $result = $this->timeOut($employee_no, 'QR');
+                if ($this->attendanceModel->timeOut($todayRecord['attendance_id'])) {
+                    $updatedRecord = $this->attendanceModel->getTodayAttendance($employee_no);
+                    $hoursData = Helper::calculateHours($updatedRecord['time_in'], $updatedRecord['time_out'], 8);
+                    $this->attendanceModel->updateHours($todayRecord['attendance_id'], $hoursData);
+                    
+                    $action = 'TIME_OUT';
+                    $message = 'Time Out recorded at ' . Helper::formatTime($updatedRecord['time_out']) . ' | Total Hours: ' . $hoursData['total_hours'];
+                } else {
+                    return [
+                        'success' => false,
+                        'message' => 'Failed to record time out.'
+                    ];
+                }
             } else if (!$todayRecord || empty($todayRecord['time_in'])) {
                 // Employee hasn't timed in yet, so do TIME IN
-                $result = $this->timeIn($employee_no, 'QR');
+                if ($this->attendanceModel->timeIn($employee_no, 'QR')) {
+                    $record = $this->attendanceModel->getTodayAttendance($employee_no);
+                    $action = 'TIME_IN';
+                    $message = 'Time In recorded at ' . Helper::formatTime($record['time_in']);
+                } else {
+                    return [
+                        'success' => false,
+                        'message' => 'Failed to record time in.'
+                    ];
+                }
             } else {
                 // Already timed out
-                $result = [
+                return [
                     'success' => false,
                     'message' => 'You have already timed out today at ' . Helper::formatTime($todayRecord['time_out'])
                 ];
             }
 
-            if ($result['success']) {
-                $this->auditLog->log(
-                    'QR_SCAN_SUCCESS',
-                    $user_id,
-                    $employee_no,
-                    null,
-                    ['token_id' => $tokenData['token_id'], 'action' => isset($result['time_in']) ? 'TIME_IN' : 'TIME_OUT'],
-                    'SUCCESS'
-                );
-            }
+            // Mark token as used
+            $this->qrHelper->markUsed($token, $employee_no);
 
-            return $result;
+            $this->auditLog->log(
+                'QR_SCAN_SUCCESS',
+                $user_id,
+                $employee_no,
+                null,
+                ['token_id' => $tokenData['token_id'], 'action' => $action],
+                'SUCCESS'
+            );
+
+            return [
+                'success' => true,
+                'message' => $message,
+                'action' => $action
+            ];
         } catch (Exception $e) {
             $error_msg = $e->getMessage();
             error_log("QR Processing Error: " . $error_msg . " | Trace: " . $e->getTraceAsString());

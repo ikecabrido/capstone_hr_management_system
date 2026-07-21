@@ -6,7 +6,7 @@
 
 header('Content-Type: application/json');
 
-require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../../auth/database.php';
 
 try {
     $data = json_decode(file_get_contents('php://input'), true);
@@ -23,7 +23,7 @@ try {
         throw new Exception('Employee ID and date are required');
     }
 
-    $db = new Database();
+    $db = Database::getInstance();
     $conn = $db->getConnection();
 
     // Verify employee exists

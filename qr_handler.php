@@ -41,8 +41,8 @@ if ($is_logged_in && $user_id) {
     header('Location: employee_portal/index.php?url=qr-attendance');
     exit;
 } else {
-    // User is not logged in - redirect to login form with QR token
-    header('Location: login_form.php?qr_token=' . urlencode($qr_token));
+    // User is not logged in - redirect to EMPLOYEE PORTAL login form with QR token
+    header('Location: employee_portal/index.php?url=auth-index&qr_token=' . urlencode($qr_token));
     exit;
 }
 ?>

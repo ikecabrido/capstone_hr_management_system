@@ -173,10 +173,6 @@ body {
             background: #1e1e1e;
             color: #0066cc;
         }
-        .content-wrapper {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
         h1, h2 {
             color: #003d82;
             margin-bottom: 20px;
@@ -263,14 +259,14 @@ body {
         }
         
         .leave-balance-section {
-            margin-top: 40px;
+            margin-top: 15px;
         }
 
         .leave-balance-header {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 25px;
+            margin-bottom: 15px;
         }
 
         .leave-balance-header h2 {
@@ -436,7 +432,8 @@ body {
             color: white;
             padding: 25px;
             border-radius: 10px;
-            margin-bottom: 30px;
+            margin-bottom: 15px;
+            margin-top: 15px;
             box-shadow: 0 4px 15px rgba(0, 61, 130, 0.3);
         }
         

@@ -4,7 +4,7 @@
  * Employee scans QR code to perform time in/out
  */
 
-require_once "../app/config/Database.php";
+require_once "../../auth/database.php";
 require_once "../app/controllers/AuthController.php";
 require_once "../app/controllers/AttendanceController.php";
 require_once "../app/helpers/QRHelper.php";

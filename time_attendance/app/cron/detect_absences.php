@@ -14,7 +14,7 @@ ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 date_default_timezone_set('Asia/Manila');
 
-require_once __DIR__ . '/../app/config/Database.php';
+require_once __DIR__ . '/../../auth/database.php';
 require_once __DIR__ . '/../app/helpers/EnhancedAbsenceDetector.php';
 
 try {

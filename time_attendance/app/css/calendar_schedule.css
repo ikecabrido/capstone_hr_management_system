@@ -88,6 +88,34 @@
     opacity: 0.8;
 }
 
+body.dark-mode #search-results {
+    background-color: #232323 !important;
+    border-color: rgba(255,255,255,0.12) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35) !important;
+}
+
+body.dark-mode #search-results .list-group-item,
+body.dark-mode #search-results .employee-option {
+    background-color: #232323 !important;
+    color: #e0e0e0 !important;
+    border-color: rgba(255,255,255,0.08) !important;
+}
+
+body.dark-mode #search-results .list-group-item:hover,
+body.dark-mode #search-results .employee-option:hover {
+    background-color: #1565c0 !important;
+    color: white !important;
+    border-color: #1565c0 !important;
+}
+
+body.dark-mode #search-results .employee-option-name {
+    color: #e0e0e0 !important;
+}
+
+body.dark-mode #search-results .employee-option-id {
+    color: rgba(224,224,224,0.7) !important;
+}
+
 /* FullCalendar Customization */
 .fc {
     font-family: inherit;
@@ -98,7 +126,113 @@
     flex-wrap: wrap !important;
     gap: 10px !important;
     background-color: #f8f9fa;
+}
+
+body.dark-mode .fc-header-toolbar {
+    background-color: #232323 !important;
+}
+
+body.dark-mode .fc,
+body.dark-mode .fc-theme-standard {
+    background-color: #1e1e1e !important;
+    color: #e0e0e0 !important;
+}
+
+body.dark-mode .fc .fc-button-primary:not(:disabled) {
+    background-color: #1565c0 !important;
+    border-color: #1565c0 !important;
+}
+
+body.dark-mode .fc .fc-daygrid-day {
+    background-color: #232323 !important;
+    border-color: rgba(255,255,255,0.08) !important;
+}
+
+body.dark-mode .fc .fc-daygrid-day-other {
+    background-color: #1a1a1a !important;
+}
+
+body.dark-mode .fc .fc-daygrid-day.fc-day-today {
+    background-color: rgba(21,101,192,0.15) !important;
+}
+
+body.dark-mode .fc .fc-daygrid-day:hover {
+    background-color: #2f2f2f !important;
+    box-shadow: inset 0 0 0 1px #1565c0 !important;
+}
+
+body.dark-mode .fc .fc-daygrid-body {
+    background-color: #1e1e1e !important;
+}
+
+body.dark-mode .fc .fc-daygrid-body-cell {
+    background-color: #232323 !important;
+    border-color: rgba(255,255,255,0.08) !important;
+}
+
+body.dark-mode .fc .fc-daygrid-body-unselected {
+    background-color: #1e1e1e !important;
+}
+
+body.dark-mode .fc-daygrid-body-cell {
+    background-color: #232323 !important;
+    border-color: rgba(255,255,255,0.08) !important;
+}
+
+body.dark-mode .fc .fc-daygrid-day-number,
+body.dark-mode .fc .fc-daygrid-day-frame {
+    color: #e0e0e0 !important;
+}
+
+body.dark-mode .fc .fc-daygrid-day-event-container {
+    background-color: rgba(21,101,192,0.2) !important;
+}
+
+body.dark-mode .fc .fc-event-main {
+    background-color: #1565c0 !important;
+    border-color: #1565c0 !important;
+}
+
+body.dark-mode .fc .fc-timegrid-slot {
+    border-color: rgba(255,255,255,0.08) !important;
+}
+
+body.dark-mode .fc .fc-timegrid-cell {
+    background-color: #232323 !important;
+    border-color: rgba(255,255,255,0.08) !important;
     border-bottom: 1px solid #e0e0e0;
+}
+
+/* FullCalendar body row and grid container */
+body.dark-mode .fc .fc-daygrid-body-unselected td {
+    background-color: #232323 !important;
+}
+
+body.dark-mode .fc-daygrid {
+    background-color: #1e1e1e !important;
+}
+
+body.dark-mode .fc-table {
+    background-color: #1e1e1e !important;
+}
+
+body.dark-mode .fc tbody {
+    background-color: #1e1e1e !important;
+}
+
+body.dark-mode .fc tbody td,
+body.dark-mode .fc tbody th {
+    background-color: #232323 !important;
+    border-color: rgba(255,255,255,0.08) !important;
+}
+
+body.dark-mode .fc thead {
+    background-color: #1976d2 !important;
+}
+
+body.dark-mode .fc thead th {
+    background-color: #1976d2 !important;
+    color: #ffffff !important;
 }
 
 .fc .fc-toolbar-title {
@@ -116,6 +250,11 @@
     max-width: 100% !important;
     overflow-x: hidden !important;
     box-sizing: border-box !important;
+}
+
+body.dark-mode #calendar {
+    background-color: #1e1e1e !important;
+    border-color: rgba(255,255,255,0.12) !important;
 }
 
 .fc {
@@ -167,6 +306,12 @@
 
 .fc-daygrid-col-header {
     background-color: #1976d2 !important;
+    color: #ffffff !important;
+}
+
+.fc-daygrid-col-header .fc-col-header-cell {
+    color: #ffffff !important;
+}
     color: #ffffff !important;
 }
 
@@ -734,4 +879,214 @@
 .fc-daygrid-body {
     width: 100% !important;
     overflow-x: hidden !important;
+}
+
+/* ============================================================ */
+/* DARK MODE STYLING FOR CONTAINER CARDS AND SECTIONS */
+/* ============================================================ */
+
+/* Light mode for controls grid cards */
+#controls-grid > div {
+    background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%) !important;
+    border: 2px solid rgba(0, 61, 130, 0.08) !important;
+    box-shadow: 0 4px 16px rgba(0, 61, 130, 0.08) !important;
+}
+
+/* Light mode card headers */
+#controls-grid h6 {
+    color: #003d82 !important;
+}
+
+/* Light mode legend items text */
+#controls-grid span[style*="color: #333"] {
+    color: #333 !important;
+}
+
+/* Light mode view options buttons */
+#controls-grid .btn-group-vertical .btn {
+    background: #f8f9fa !important;
+    color: #003d82 !important;
+    border-color: #e0e0e0 !important;
+}
+
+#controls-grid .btn-group-vertical .btn:hover {
+    background: #e8f1ff !important;
+    border-color: #003d82 !important;
+}
+
+/* Light mode calendar section container */
+#calendar-section {
+    background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%) !important;
+    border: 2px solid rgba(0, 61, 130, 0.08) !important;
+    box-shadow: 0 4px 16px rgba(0, 61, 130, 0.08) !important;
+}
+
+/* Light mode calendar container */
+#calendar-container {
+    background: #ffffff !important;
+    border-color: #e0e0e0 !important;
+}
+
+/* Light mode day timeline container */
+#day-timeline-container {
+    background: #ffffff !important;
+    border-color: #e0e0e0 !important;
+}
+
+/* Light mode day timeline canvas */
+#day-timeline-canvas {
+    border-color: #e0e0e0 !important;
+}
+
+/* Light mode form controls in cards */
+#controls-grid .form-control {
+    background: #ffffff !important;
+    color: #333 !important;
+    border-color: #e0e0e0 !important;
+}
+
+#controls-grid .form-control::placeholder {
+    color: rgba(0,0,0,0.5) !important;
+}
+
+#controls-grid .form-control:focus {
+    background: #ffffff !important;
+    color: #333 !important;
+    border-color: #1976d2 !important;
+    box-shadow: 0 0 0 0.2rem rgba(25, 118, 210, 0.25) !important;
+}
+
+/* Light mode selected employee indicator */
+#selected-employee {
+    background: #e3f2fd !important;
+    border-left-color: #003d82 !important;
+}
+
+#selected-employee p {
+    color: #003d82 !important;
+}
+
+/* Light mode clear button */
+.btn-outline-secondary {
+    color: #003d82 !important;
+    border-color: #e0e0e0 !important;
+}
+
+.btn-outline-secondary:hover {
+    background: #1976d2 !important;
+    border-color: #1976d2 !important;
+    color: white !important;
+}
+
+/* Light mode text in control grid */
+#controls-grid p,
+#controls-grid span {
+    color: #333 !important;
+}
+
+#controls-grid i {
+    color: #003d82 !important;
+}
+
+/* Dark mode for controls grid cards */
+body.dark-mode #controls-grid > div {
+    background: linear-gradient(135deg, #1e1e1e 0%, #232323 100%) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Dark mode for card headers */
+body.dark-mode #controls-grid h6 {
+    color: #1976d2 !important;
+}
+
+/* Dark mode for legend items text */
+body.dark-mode #controls-grid span[style*="color: #333"] {
+    color: #e0e0e0 !important;
+}
+
+/* Dark mode for view options buttons */
+body.dark-mode #controls-grid .btn-group-vertical .btn {
+    background: #232323 !important;
+    color: #e0e0e0 !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+body.dark-mode #controls-grid .btn-group-vertical .btn:hover {
+    background: #2f2f2f !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Dark mode for calendar section container */
+body.dark-mode #calendar-section {
+    background: linear-gradient(135deg, #1e1e1e 0%, #232323 100%) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Dark mode for calendar container */
+body.dark-mode #calendar-container {
+    background: #232323 !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Dark mode for day timeline container */
+body.dark-mode #day-timeline-container {
+    background: #232323 !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Dark mode for day timeline canvas */
+body.dark-mode #day-timeline-canvas {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Dark mode for form controls in cards */
+body.dark-mode #controls-grid .form-control {
+    background: #2a2a2a !important;
+    color: #e0e0e0 !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+body.dark-mode #controls-grid .form-control::placeholder {
+    color: rgba(224, 224, 224, 0.5) !important;
+}
+
+body.dark-mode #controls-grid .form-control:focus {
+    background: #2a2a2a !important;
+    color: #e0e0e0 !important;
+    border-color: #1565c0 !important;
+    box-shadow: 0 0 0 0.2rem rgba(21, 101, 192, 0.25) !important;
+}
+
+/* Dark mode for selected employee indicator */
+body.dark-mode #selected-employee {
+    background: rgba(21, 101, 192, 0.2) !important;
+    border-left-color: #1976d2 !important;
+}
+
+body.dark-mode #selected-employee p {
+    color: #1976d2 !important;
+}
+
+/* Dark mode for clear button */
+body.dark-mode .btn-outline-secondary {
+    color: #e0e0e0 !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+body.dark-mode .btn-outline-secondary:hover {
+    background: #1565c0 !important;
+    border-color: #1565c0 !important;
+    color: white !important;
+}
+
+/* Ensure all text in control grid is readable */
+body.dark-mode #controls-grid p,
+body.dark-mode #controls-grid span {
+    color: #e0e0e0 !important;
+}
+
+body.dark-mode #controls-grid i {
+    color: #1976d2 !important;
 }

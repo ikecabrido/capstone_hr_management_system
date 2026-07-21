@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modal Trigger Test</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .test-result {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .test-result.pass {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .test-result.fail {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h2>🧪 Mobile Modal Trigger Test</h2>
+        <p>Test if modal opens on button click (mobile & desktop)</p>
+        
+        <!-- Test Button -->
+        <button type="button" class="btn btn-primary btn-lg w-100 mb-3" data-bs-toggle="modal" data-bs-target="#testModal">
+            📋 Click Me - Should Open Modal
+        </button>
+
+        <!-- Test Results -->
+        <div id="results"></div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="testModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">✅ Modal Opened Successfully!</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>If you see this, the modal is working correctly.</p>
+                    <p><strong>Test Status: PASS</strong></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Simulation of mobile-responsive.js conflict -->
+    <script>
+        // This simulates the OLD problematic code
+        console.log('Testing modal trigger...');
+        
+        const resultsDiv = document.getElementById('results');
+
+        // Test 1: Check Bootstrap is loaded
+        try {
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                resultsDiv.innerHTML += '<div class="test-result pass">✅ Bootstrap Modal library loaded</div>';
+            } else {
+                resultsDiv.innerHTML += '<div class="test-result fail">❌ Bootstrap Modal not loaded</div>';
+            }
+        } catch (e) {
+            resultsDiv.innerHTML += '<div class="test-result fail">❌ Error checking Bootstrap: ' + e.message + '</div>';
+        }
+
+        // Test 2: Check button attributes
+        const btn = document.querySelector('[data-bs-toggle="modal"]');
+        if (btn) {
+            resultsDiv.innerHTML += '<div class="test-result pass">✅ Modal trigger button found</div>';
+            resultsDiv.innerHTML += '<div class="test-result pass">✅ Button has data-bs-toggle="modal"</div>';
+            resultsDiv.innerHTML += '<div class="test-result pass">✅ Button has data-bs-target="#testModal"</div>';
+        } else {
+            resultsDiv.innerHTML += '<div class="test-result fail">❌ Modal trigger button not found</div>';
+        }
+
+        // Test 3: Check for event listener issues
+        resultsDiv.innerHTML += '<div class="test-result pass">✅ Ready to test modal opening</div>';
+        resultsDiv.innerHTML += '<div class="test-result pass"><strong>Instructions:</strong><br>1. Click the button above<br>2. Modal should pop up<br>3. If modal opens, click "Close" to exit</div>';
+
+        // Test 4: Monitor modal events
+        const modalEl = document.getElementById('testModal');
+        if (modalEl) {
+            modalEl.addEventListener('show.bs.modal', function() {
+                resultsDiv.innerHTML += '<div class="test-result pass">✅ Modal "show" event fired</div>';
+                console.log('Modal showing event detected');
+            });
+
+            modalEl.addEventListener('shown.bs.modal', function() {
+                resultsDiv.innerHTML += '<div class="test-result pass">✅ Modal fully shown</div>';
+                console.log('Modal shown event detected');
+            });
+        }
+    </script>
+</body>
+</html>

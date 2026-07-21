@@ -26,6 +26,7 @@ class AuthController
         try {
             $employee_no = Helper::sanitize($_POST['employee_no'] ?? '');
             $password   = trim($_POST['password'] ?? '');
+            $qr_token   = trim($_POST['qr_token'] ?? '');
 
             if (empty($employee_no) || empty($password)) {
                 throw new Exception("Please fill in all fields");
@@ -33,7 +34,7 @@ class AuthController
 
             $user = $this->userModel->login($employee_no);
 
-            if (!$user || empty($user['user_id'])) {
+            if (!$user || empty($user['id'])) {
                 throw new Exception("Invalid credentials");
             }
 
@@ -41,14 +42,21 @@ class AuthController
                 throw new Exception("Invalid credentials");
             }
 
-            Session::set('user_id', $user['user_id']);
+            Session::set('user_id', $user['id']);
             Session::set('employee_no', $user['employee_no']);
             Session::set('username', $user['username']);
             Session::set('role', $user['role']);
             Session::set('full_name', $user['full_name']);
             Session::set('success', "Login successful!");
 
-            Helper::redirect('index.php?url=dashboard');
+            // If QR token is present, store it and redirect to QR confirmation
+            if (!empty($qr_token)) {
+                Session::set('qr_token', $qr_token);
+                Helper::redirect('index.php?url=qr-attendance&token=' . urlencode($qr_token));
+            } else {
+                // Normal login redirect
+                Helper::redirect('index.php?url=dashboard');
+            }
         } catch (Exception $e) {
             Session::set('error', $e->getMessage());
             Helper::redirect('index.php?url=auth-index');
@@ -109,6 +117,7 @@ class AuthController
     public function index()
     {
         $title = "Employee Portal Login";
+        $qr_token = $_GET['qr_token'] ?? '';
         require __DIR__ . '/../views/auth/login.php';
     }
 

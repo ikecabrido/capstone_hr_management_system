@@ -50,6 +50,7 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
     <title>Reports - Time & Attendance System</title>
     <link rel="icon" href="../Bestlink College of the Philippines.jpeg" type="image/jpeg">
     <link rel="stylesheet" href="../assets/style.css">
+    <link rel="stylesheet" href="../assets/adminlte-overrides.css">
     <script src="../assets/mobile-responsive.js" defer></script>
     <style>
         body {
@@ -59,23 +60,6 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
             transition: margin-left 0.3s ease;
         }
 
-        body.sidebar-collapsed {
-            margin-left: 0;
-        }
-
-        .main-content {
-            width: calc(100% - 250px);
-            margin-left: 250px;
-            margin-top: 60px;
-            min-height: calc(100vh - 60px);
-            padding: 20px;
-            transition: width 0.3s ease, margin-left 0.3s ease, background-color 0.3s ease, color 0.3s ease;
-        }
-
-        body.sidebar-collapsed .main-content {
-            width: 100%;
-            margin-left: 0;
-        }
         .content-wrapper {
             max-width: 1200px;
             margin: 0 auto;
@@ -375,9 +359,16 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
     </div>
 
     <script>
-        // Load dark mode preference on page load
+        // Load dark mode preference (default to light mode for time_attendance)
         window.addEventListener('load', function() {
-            const darkMode = localStorage.getItem('darkMode') === 'true';
+            const darkModeSetting = localStorage.getItem('darkMode');
+            const darkMode = darkModeSetting === 'true'; // Only true if explicitly set
+            
+            // Reset to light mode by default on each page load for time_attendance
+            if (!darkModeSetting) {
+                localStorage.setItem('darkMode', 'false');
+            }
+            
             if (darkMode) {
                 document.body.classList.add('dark-mode');
             }

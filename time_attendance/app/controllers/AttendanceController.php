@@ -7,8 +7,11 @@
 // Set PHP timezone to Philippines (UTC+8)
 date_default_timezone_set('Asia/Manila');
 
+require_once __DIR__ . '/../../../auth/database.php';
 require_once __DIR__ . '/../models/Attendance.php';
 require_once __DIR__ . '/../models/Employee.php';
+require_once __DIR__ . '/../models/EmployeeShift.php';
+require_once __DIR__ . '/../services/AttendanceValidationService.php';
 require_once __DIR__ . '/../helpers/QRHelper.php';
 require_once __DIR__ . '/../helpers/Helper.php';
 require_once __DIR__ . '/../helpers/AuditLog.php';
@@ -18,6 +21,8 @@ class AttendanceController
 {
     private $attendanceModel;
     private $employeeModel;
+    private $employeeShiftModel;
+    private $validationService;
     private $qrHelper;
     private $auditLog;
 
@@ -25,6 +30,8 @@ class AttendanceController
     {
         $this->attendanceModel = new Attendance();
         $this->employeeModel = new Employee();
+        $this->employeeShiftModel = new EmployeeShift(Database::getInstance());
+        $this->validationService = new \App\Services\AttendanceValidationService();
         $this->qrHelper = new QRHelper();
         $this->auditLog = new AuditLog();
     }
@@ -40,22 +47,26 @@ class AttendanceController
     {
         Session::start();
         $user_id = Session::get('user_id');
+        $todayDate = date('Y-m-d');
 
         try {
-            // Check if today is a holiday
-            $todayDate = date('Y-m-d');
-            if ($this->attendanceModel->isHoliday($todayDate)) {
-                $holiday = $this->attendanceModel->getHolidayInfo($todayDate);
+            // STEP 1: Validate if employee can time-in (shift check, holiday check, weekend check)
+            $validation = $this->validationService->validateTimeIn($employee_id, $todayDate);
+
+            // If not valid or cannot time-in, return error
+            if (!$validation['can_timein']) {
                 $this->auditLog->log('TIME_IN_FAILED', $user_id, $employee_id, null, 
-                    ['reason' => 'Holiday'], 'FAILED', 'Cannot time in on holiday: ' . $holiday['holiday_name']);
+                    ['reason' => $validation['reason'], 'status' => $validation['status']], 'FAILED', $validation['message']);
+                
                 return [
                     'success' => false,
-                    'message' => 'Today is a holiday (' . $holiday['holiday_name'] . '). No attendance recording required.',
-                    'holiday_name' => $holiday['holiday_name']
+                    'message' => $validation['message'],
+                    'status' => $validation['status'],
+                    'can_timein' => false
                 ];
             }
 
-            // Check if employee has already timed in today
+            // STEP 2: Check if employee has already timed in today
             $existingRecord = $this->attendanceModel->getTodayAttendance($employee_id);
 
             if ($existingRecord && !empty($existingRecord['time_in'])) {
@@ -67,27 +78,40 @@ class AttendanceController
                 ];
             }
 
-            // Insert time in record
-            if ($this->attendanceModel->timeIn($employee_id, $method)) {
+            // STEP 3: Determine status based on shift time
+            $status = $this->validationService->determineStatus($employee_id, date('Y-m-d H:i:s'), $todayDate);
+
+            // STEP 4: Insert time in record with status
+            if ($this->attendanceModel->timeIn($employee_id, $method, $status)) {
                 // Get the record to get attendance_id
                 $record = $this->attendanceModel->getTodayAttendance($employee_id);
 
-                // Determine status (Present or Late based on current time)
-                $status = Helper::determineStatus($record['time_in']);
+                // Calculate minutes late if applicable
+                $minutesLate = 0;
+                if ($status === 'LATE') {
+                    $minutesLate = $this->validationService->calculateMinutesLate($employee_id, $record['time_in'], $todayDate);
+                }
 
                 // Get full employee name
                 $employee = $this->employeeModel->getById($employee_id);
 
                 // Log success
                 $this->auditLog->log('TIME_IN_SUCCESS', $user_id, $employee_id, $record['attendance_id'], 
-                    ['method' => $method, 'status' => $status], 'SUCCESS');
+                    ['method' => $method, 'status' => $status, 'minutes_late' => $minutesLate], 'SUCCESS');
+
+                // Build response message
+                $message = 'Time In recorded successfully at ' . Helper::formatTime($record['time_in']);
+                if ($status === 'LATE') {
+                    $message .= " (LATE by {$minutesLate} minutes)";
+                }
 
                 return [
                     'success' => true,
-                    'message' => 'Time In recorded successfully at ' . Helper::formatTime($record['time_in']),
+                    'message' => $message,
                     'employee_name' => $employee['full_name'],
                     'time_in' => $record['time_in'],
-                    'status' => $status
+                    'status' => $status,
+                    'minutes_late' => $minutesLate
                 ];
             } else {
                 $this->auditLog->log('TIME_IN_FAILED', $user_id, $employee_id, null, 

@@ -14,10 +14,24 @@ class Employee {
     }
 
     /**
-     * Get all employees
+     * Get all employees with age_group calculated from birthdate
      */
     public function getAllEmployees() {
-        $query = "SELECT * FROM employees ORDER BY name ASC";
+        $query = "SELECT 
+                    *,
+                    CASE 
+                        WHEN birthdate IS NOT NULL THEN
+                            CASE 
+                                WHEN YEAR(CURDATE()) - YEAR(birthdate) - (DATE_FORMAT(birthdate, '%m%d') > DATE_FORMAT(CURDATE(), '%m%d')) < 25 THEN '18-24'
+                                WHEN YEAR(CURDATE()) - YEAR(birthdate) - (DATE_FORMAT(birthdate, '%m%d') > DATE_FORMAT(CURDATE(), '%m%d')) < 35 THEN '25-34'
+                                WHEN YEAR(CURDATE()) - YEAR(birthdate) - (DATE_FORMAT(birthdate, '%m%d') > DATE_FORMAT(CURDATE(), '%m%d')) < 45 THEN '35-44'
+                                WHEN YEAR(CURDATE()) - YEAR(birthdate) - (DATE_FORMAT(birthdate, '%m%d') > DATE_FORMAT(CURDATE(), '%m%d')) < 55 THEN '45-54'
+                                ELSE '55+'
+                            END
+                        ELSE 'Unknown'
+                    END as age_group
+                FROM employees 
+                ORDER BY full_name ASC";
         return $this->db->fetchAll($query);
     }
 
@@ -25,7 +39,7 @@ class Employee {
      * Get employee by ID
      */
     public function getEmployeeById($id) {
-        $query = "SELECT * FROM employees WHERE id = ?";
+        $query = "SELECT * FROM employees WHERE employee_id = ?";
         return $this->db->fetchOne($query, [$id], 'i');
     }
 
@@ -33,7 +47,7 @@ class Employee {
      * Get employees by department
      */
     public function getEmployeesByDepartment($department) {
-        $query = "SELECT * FROM employees WHERE department = ? ORDER BY name ASC";
+        $query = "SELECT * FROM employees WHERE department = ? ORDER BY full_name ASC";
         return $this->db->fetchAll($query, [$department], 's');
     }
 
@@ -41,7 +55,7 @@ class Employee {
      * Get employees by employment status
      */
     public function getEmployeesByStatus($status) {
-        $query = "SELECT * FROM employees WHERE employment_status = ? ORDER BY name ASC";
+        $query = "SELECT * FROM employees WHERE employment_status = ? ORDER BY full_name ASC";
         return $this->db->fetchAll($query, [$status], 's');
     }
 
@@ -77,7 +91,7 @@ class Employee {
      */
     public function getNewHiresThisYear() {
         $currentYear = date('Y');
-        $query = "SELECT COUNT(*) as count FROM employees WHERE YEAR(hire_date) = ?";
+        $query = "SELECT COUNT(*) as count FROM employees WHERE YEAR(date_hired) = ?";
         $result = $this->db->fetchOne($query, [$currentYear], 'i');
         return $result['count'];
     }

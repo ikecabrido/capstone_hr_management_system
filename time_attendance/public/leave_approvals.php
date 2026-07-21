@@ -52,20 +52,26 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $remarks = Helper::sanitize($_POST['remarks'] ?? '');
     $is_hr = ($role === 'time');
 
+    // Debug logging
+    error_log("DEBUG: POST received - Action: $action, LeaveID: $leave_request_id, User: $user_id");
+
     if ($action === 'approve' && $leave_request_id) {
-        $new_status = $is_hr ? 'APPROVED_BY_HR' : 'APPROVED_BY_HEAD';
+        $new_status = 'Approved';
+        error_log("DEBUG: Attempting to approve leave request ID: $leave_request_id");
         if ($leaveModel->updateStatus($leave_request_id, $new_status, $user_id, $remarks)) {
+            error_log("DEBUG: Approval successful for leave ID: $leave_request_id");
             $message = "Leave request approved successfully!";
             $messageType = "success";
             // Optionally refresh the list
             header("Location: " . $_SERVER['PHP_SELF']);
             exit;
         } else {
+            error_log("DEBUG: Approval FAILED for leave ID: $leave_request_id");
             $message = "Failed to process approval.";
             $messageType = "error";
         }
     } elseif ($action === 'reject' && $leave_request_id) {
-        if ($leaveModel->updateStatus($leave_request_id, 'REJECTED', $user_id, $remarks)) {
+        if ($leaveModel->updateStatus($leave_request_id, 'Rejected', $user_id, $remarks)) {
             $message = "Leave request rejected.";
             $messageType = "warning";
         } else {
@@ -90,68 +96,29 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Leave Approvals - Time & Attendance System</title>
     <link rel="icon" href="../Bestlink College of the Philippines.jpeg" type="image/jpeg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <link rel="stylesheet" href="../../assets/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="../../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
     <link rel="stylesheet" href="../assets/style.css">
+    <link rel="stylesheet" href="../assets/dashboard.css">
+    <link rel="stylesheet" href="../../payroll/custom.css">
+    <link rel="stylesheet" href="../assets/adminlte-overrides.css">
     <script src="../assets/mobile-responsive.js" defer></script>
-    <style>
-        body {
-            background: #f5f5f5;
-            margin: 0;
-            padding: 0;
-            transition: margin-left 0.3s ease;
-        }
-
-        body.sidebar-collapsed {
-            margin-left: 0;
-        }
-
-        .main-content {
-            width: calc(100% - 250px);
-            margin-left: 250px;
-            margin-top: 60px;
-            min-height: calc(100vh - 60px);
-            padding: 20px;
-            transition: width 0.3s ease, margin-left 0.3s ease;
-        }
-
-        body.sidebar-collapsed .main-content {
-            width: 100%;
-            margin-left: 0;
-        }
-        .content-wrapper {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        h1, h2 {
-            color: #003d82;
-            margin-bottom: 20px;
-            font-weight: 700;
-            margin-bottom: 20px;
-        }
-        body.dark-mode h1,
-        body.dark-mode h2 {
-            color: #b0c4de;
-        }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 61, 130, 0.08);
-            margin-bottom: 25px;
-            border: 1px solid #e8eef7;
-        }
+<style>
         body.dark-mode .container {
-            background: #1e1e1e;
+            background: rgba(30, 30, 30, 0.85);
             color: #e0e0e0;
-            border: 1px solid #404040;
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
         .approvals-table {
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
-            background: white;
-            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 14px;
             overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0, 61, 130, 0.08);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
         }
         body.dark-mode .approvals-table {
             background: #1e1e1e;
@@ -353,6 +320,58 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
         .modal-button-group button {
             margin-left: 10px;
         }
+        .page-header {
+            background: linear-gradient(135deg, #003d82 0%, #005ba8 100%);
+            padding: 35px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 61, 130, 0.15);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .page-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 800;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .page-title i {
+            font-size: 36px;
+            opacity: 0.95;
+        }
+
+        .page-subtitle {
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 14px;
+            margin: 8px 0 0 0;
+            position: relative;
+            z-index: 1;
+        }
+
         @media (max-width: 768px) {
             .main-content {
                 margin-left: 0;
@@ -360,13 +379,18 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
         }
     </style>
 </head>
-<body>
+<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
     <?php require_once "../app/components/Sidebar.php"; ?>
 
     <div class="main-content">
         <div class="content-wrapper">
-            <h1>Leave Request Approvals</h1>
-            <p>Review and approve leave requests.</p>
+            <div class="page-header">
+                <div>
+                    <div class="page-title">
+                        <i class="fas fa-file-signature"></i> Leave Request Approvals
+                    </div>
+                </div>
+            </div>
 
             <?php if (!empty($message)): ?>
                 <div class="alert alert-<?php echo $messageType; ?>">
@@ -374,7 +398,7 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
                 </div>
             <?php endif; ?>
 
-            <div class="container">
+            <div class="container glass-panel">
                 <?php if (empty($pendingRequests)): ?>
                     <div class="alert alert-info">
                         No pending leave requests to review.
@@ -406,8 +430,8 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
                                         </span>
                                     </td>
                                     <td>
-                                        <button class="action-btn btn-approve" onclick="openApproveModal(<?php echo $req['leave_request_id']; ?>)">Approve</button>
-                                        <button class="action-btn btn-reject" onclick="openRejectModal(<?php echo $req['leave_request_id']; ?>)">Reject</button>
+                                        <button class="action-btn btn-approve" onclick="openApproveModal(<?php echo intval($req['id']); ?>)">Approve</button>
+                                        <button class="action-btn btn-reject" onclick="openRejectModal(<?php echo intval($req['id']); ?>)">Reject</button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -475,9 +499,16 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
             }
         }
 
-        // Load dark mode preference on page load
+        // Load dark mode preference (default to light mode for time_attendance)
         window.addEventListener('load', function() {
-            const darkMode = localStorage.getItem('darkMode') === 'true';
+            const darkModeSetting = localStorage.getItem('darkMode');
+            const darkMode = darkModeSetting === 'true'; // Only true if explicitly set
+            
+            // Reset to light mode by default on each page load for time_attendance
+            if (!darkModeSetting) {
+                localStorage.setItem('darkMode', 'false');
+            }
+            
             if (darkMode) {
                 document.body.classList.add('dark-mode');
             }

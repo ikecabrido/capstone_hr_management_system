@@ -13,9 +13,9 @@ class Attendance
     }
 
     public function getTodayAttendance($employee_id)
-    {
+    { 
         $query = "SELECT * FROM $this->table 
-                  WHERE employee_no = :employee_id 
+                  WHERE employee_id = :employee_id 
                   AND attendance_date = CURDATE() 
                   LIMIT 1";
 
@@ -29,11 +29,11 @@ class Attendance
     public function timeIn($employee_id, $method)
     {
         $query = "INSERT INTO $this->table 
-                  (employee_no, time_in, attendance_date, recorded_by)
-                  VALUES (:employee_no, NOW(), CURDATE(), :method)";
+                  (employee_id, time_in, attendance_date, recorded_by)
+                  VALUES (:employee_id, NOW(), CURDATE(), :method)";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':employee_no', $employee_id);
+        $stmt->bindParam(':employee_id', $employee_id);
         $stmt->bindParam(':method', $method);
 
         return $stmt->execute();
@@ -55,11 +55,11 @@ class Attendance
     {
         $query = "SELECT a.*, e.full_name, e.department, e.position
                   FROM $this->table a
-                  JOIN employees e ON a.employee_no = e.employee_no
+                  JOIN employees e ON a.employee_id = e.employee_id
                   WHERE a.attendance_date BETWEEN :start_date AND :end_date";
 
         if (!is_null($employee_no)) {
-            $query .= " AND a.employee_no = :employee_no";
+            $query .= " AND a.employee_id = :employee_no";
         }
 
         $query .= " ORDER BY a.attendance_date DESC, a.created_at DESC
@@ -99,7 +99,7 @@ class Attendance
     {
         $query = "SELECT a.*, e.full_name, e.department, e.position
                   FROM $this->table a
-                  RIGHT JOIN employees e ON a.employee_no = e.employee_no 
+                  RIGHT JOIN employees e ON a.employee_id = e.employee_id 
                     AND a.attendance_date = CURDATE()
                   WHERE e.employment_status = 'Active'
                   ORDER BY e.full_name
@@ -133,7 +133,7 @@ class Attendance
     {
         $query = "SELECT a.*, e.full_name, e.department
                   FROM $this->table a
-                  JOIN employees e ON a.employee_no = e.employee_no
+                  JOIN employees e ON a.employee_id = e.employee_id
                   WHERE a.is_approved = 0
                   ORDER BY a.created_at DESC
                   LIMIT :limit OFFSET :offset";
@@ -253,7 +253,7 @@ class Attendance
         $query = "SELECT *,
                      TIME_TO_SEC(TIMEDIFF(time_out, time_in)) / 3600 AS total_hours_worked
               FROM ta_attendance
-              WHERE employee_no = :employee_id
+              WHERE employee_id = :employee_id
                 AND MONTH(attendance_date) = :month
                 AND YEAR(attendance_date) = :year
               ORDER BY attendance_date DESC";

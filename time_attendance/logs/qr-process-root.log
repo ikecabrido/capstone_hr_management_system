@@ -1,0 +1,8 @@
+[05-Apr-2026 13:09:59 Europe/Berlin] QR Process Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'hr_management.hr_employees' doesn't exist
+[05-Apr-2026 13:13:30 Europe/Berlin] QR Process Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'hr_management.hr_employees' doesn't exist
+[05-Apr-2026 13:17:25 Europe/Berlin] QR Process Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'employee_first_name' in 'field list'
+[05-Apr-2026 13:21:49 Europe/Berlin] QR Process Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'shift_date' in 'where clause'
+[05-Apr-2026 23:16:35 Europe/Berlin] QR Process Error: Token has already been used
+[05-Apr-2026 23:16:38 Europe/Berlin] QR Process Error: Token has already been used
+[05-Apr-2026 23:16:47 Europe/Berlin] QR Process Error: Token has already been used
+[05-Apr-2026 23:17:02 Europe/Berlin] QR Process Error: Token has already been used

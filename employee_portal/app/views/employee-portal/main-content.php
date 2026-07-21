@@ -1,93 +1,92 @@
-<div class="ml-16 flex-1 w-full">
+<div class="content-wrapper w-full max-w-none" style="padding: 25px 30px;">
     <?php require __DIR__ . '/../partials/notif.php'; ?>
 
-    <div class="content-wrapper w-full max-w-none">
-        <div style="display: flex; align-items: center; margin-bottom: 20px;">
-            <div class="live-clock" id="liveClock">00:00:00</div>
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+        <div>
+            <h1 style="margin: 0 0 5px 0; font-size: 28px; font-weight: 600; color: #003d82;">Dashboard</h1>
+            <p style="margin: 0; color: #666; font-size: 14px;">Welcome back, <strong><?php echo isset($employee['full_name']) ? htmlspecialchars($employee['full_name']) : "none"; ?></strong>!</p>
         </div>
-        <h1>Dashboard</h1>
-        <p class="text-[24px]">Welcome back, <strong><?php echo isset($employee['full_name']) ? htmlspecialchars($employee['full_name']) : "none"; ?></strong>!</p>
-        <?php require __DIR__ . '/../partials/notif.php'; ?>
+        <div class="live-clock" id="liveClock" style="font-size: 24px; font-weight: bold; color: #003d82; background: #f0f4f8; padding: 10px 20px; border-radius: 8px;">00:00:00</div>
+    </div>
+    <?php require __DIR__ . '/../partials/notif.php'; ?>
 
-        <!-- Messages -->
-        <?php if (!empty($message)): ?>
-            <?php $type = $messageType ?? 'info'; ?>
-            <div class="alert alert-<?php echo htmlspecialchars($type); ?>">
-                <span class="alert-icon">
-                    <?php echo $type === 'success' ? '✔' : '✘'; ?>
-                </span>
-                <span><?php echo htmlspecialchars($message); ?></span>
-            </div>
-        <?php endif; ?>
+    <!-- Messages -->
+    <?php if (!empty($message)): ?>
+        <?php $type = $messageType ?? 'info'; ?>
+        <div class="alert alert-<?php echo htmlspecialchars($type); ?>" style="margin-bottom: 15px;">
+            <span class="alert-icon">
+                <?php echo $type === 'success' ? '✔' : '✘'; ?>
+            </span>
+            <span><?php echo htmlspecialchars($message); ?></span>
+        </div>
+    <?php endif; ?>
 
-        <!-- Time In/Out Action Section -->
-        <div class="time-action-section" style="margin-left: 16px; width: 800px;">
-            <div class="time-action-header">
-                <h3> Time In/Out</h3>
-                <span><?php echo date('l, F j, Y'); ?></span>
-            </div>
-            <div class="time-status">
-                <div class="time-status-item">
-                    <div class="time-status-label">Time In</div>
-                    <div class="time-status-value">
-                        <?php echo !empty($statusInfo['time_in'])
-                            ? Helper::formatTime($statusInfo['time_in'])
-                            : '00:00'; ?>
-                    </div>
-                </div>
-
-                <div class="time-status-item">
-                    <div class="time-status-label">Time Out</div>
-                    <div class="time-status-value">
-                        <?php echo !empty($statusInfo['time_out'])
-                            ? Helper::formatTime($statusInfo['time_out'])
-                            : '00:00'; ?>
-                    </div>
-                </div>
-
-                <div class="time-status-item">
-                    <div class="time-status-label">Duration</div>
-                    <div class="time-status-value">
-                        <?php echo !empty($statusInfo['duration'])
-                            ? $statusInfo['duration']
-                            : '00:00'; ?>
-                    </div>
+    <!-- Time In/Out Action Section -->
+    <div class="time-action-section">
+        <div class="time-action-header">
+            <h3>Time In/Out</h3>
+            <span><?php echo date('l, F j, Y'); ?></span>
+        </div>
+        <div class="time-status">
+            <div class="time-status-item">
+                <div class="time-status-label">Time In</div>
+                <div class="time-status-value">
+                    <?php echo !empty($statusInfo['time_in'])
+                        ? Helper::formatTime($statusInfo['time_in'])
+                        : '00:00'; ?>
                 </div>
             </div>
 
-            <?php if (empty($statusInfo['time_in'])): ?>
-                <form method="POST" class="btn btn-primary" action="index.php?url=employee-time-in">
-                    <input type="hidden" value="<?= $employee_id ?>" name="employee_id">
-                    <input type="hidden" value="time_in" name="time_in">
-                    <button type="submit" name="submit" class="btn-time-action btn-time-in">
-                        Time In
-                    </button>
-                    <span style="align-self: center; opacity: 0.9;" class="ml-2">Waiting for Time in</span>
-                </form>
-            <?php elseif (empty($statusInfo['time_out'])): ?>
-                <form method="POST" class="btn btn-primary" action="index.php?url=employee-time-out">
-                    <input type="hidden" value="<?= $employee_id ?>" name="employee_id">
-                    <input type="hidden" value="time_out" name="time_out">
-                    <button type="submit" name="submit" class="btn-time-action btn-time-out">
-                        Time Out
-                    </button>
-                    <span style="align-self: center; opacity: 0.9;" class="ml-2">Already timed in</span>
-                </form>
-            <?php else: ?>
-                <button type="submit" class="btn-time-action" disabled>
-                    Time In Completed
+            <div class="time-status-item">
+                <div class="time-status-label">Time Out</div>
+                <div class="time-status-value">
+                    <?php echo !empty($statusInfo['time_out'])
+                        ? Helper::formatTime($statusInfo['time_out'])
+                        : '00:00'; ?>
+                </div>
+            </div>
+
+            <div class="time-status-item">
+                <div class="time-status-label">Duration</div>
+                <div class="time-status-value">
+                    <?php echo !empty($statusInfo['duration'])
+                        ? $statusInfo['duration']
+                        : '00:00'; ?>
+                </div>
+            </div>
+        </div>
+
+        <?php if (empty($statusInfo['time_in'])): ?>
+            <form id="timeInForm" method="POST" action="index.php?url=employee-time-in">
+                <input type="hidden" value="<?= $employee_id ?>" name="employee_id">
+                <input type="hidden" value="time_in" name="time_in">
+                <button type="button" onclick="showTimeInModal()" class="btn-time-action btn-time-in">
+                    Time In
                 </button>
-            <?php endif; ?>
-        </div>
+            </form>
+        <?php elseif (empty($statusInfo['time_out'])): ?>
+            <form id="timeOutForm" method="POST" action="index.php?url=employee-time-out">
+                <input type="hidden" value="<?= $employee_id ?>" name="employee_id">
+                <input type="hidden" value="time_out" name="time_out">
+                <button type="button" onclick="showTimeOutModal()" class="btn-time-action btn-time-out">
+                    Time Out
+                </button>
+            </form>
+        <?php else: ?>
+            <button type="submit" class="btn-time-action" disabled>
+                Time In Completed
+            </button>
+        <?php endif; ?>
+    </div>
 
-        <!-- Leave Balance -->
-        <div class="leave-balance-section">
-            <div class="leave-balance-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <h2>Leave Balance</h2>
-                <a href="index.php?url=employee-leave-request" class="btn-primary" style="padding: 10px 20px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px;">
-                    ➕ Request Leave
-                </a>
-            </div>
+    <!-- Leave Balance -->
+    <div class="leave-balance-section">
+        <div class="leave-balance-header">
+            <h2 style="margin: 0; flex: 1;">Leave Balance</h2>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#leaveRequestModal" style="width: auto; text-align: center; padding: 8px 16px;">
+                ➕ Request Leave
+            </button>
+        </div>
 
             <?php if (!empty($leave_balances)): ?>
                 <div class="leave-balance-container">
@@ -136,8 +135,8 @@
         </div>
 
         <!-- Recent Attendance -->
-        <div>
-            <h2 style="margin-top: 40px;">Recent Attendance</h2>
+        <div style="margin-top: 20px;">
+            <h2 style="margin: 0 0 15px 0; font-size: 20px; color: #003d82;">Recent Attendance</h2>
             <div class="attendance-record">
                 <?php if (!empty($monthly_attendance)): ?>
                     <?php foreach (array_slice($monthly_attendance, 0, 10) as $record): ?>
@@ -165,8 +164,8 @@
         </div>
 
         <!-- Leave Requests History -->
-        <div>
-            <h2 style="margin-top: 40px;">📋 My Leave Requests</h2>
+        <div style="margin-top: 20px;">
+            <h2 style="margin: 0 0 15px 0; font-size: 20px; color: #003d82;">📋 My Leave Requests</h2>
             <div class="leave-requests-section">
                 <?php if (!empty($leave_requests)): ?>
                     <div style="display: grid; gap: 12px;">
@@ -213,3 +212,169 @@
         </div>
     </div>
 </div>
+
+<!-- Time In Confirmation Modal -->
+<div id="timeInModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="timeInModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+                <h5 class="modal-title" id="timeInModalLabel">
+                    <i class="fas fa-clock" style="margin-right: 8px;"></i>Confirm Time In
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="text-align: center; padding: 30px;">
+                <div style="margin-bottom: 20px;">
+                    <p style="color: #666; font-size: 14px; margin-bottom: 10px;">You are about to clock in at:</p>
+                    <div id="timeInDisplay" style="font-size: 32px; font-weight: bold; color: #667eea; margin: 15px 0;">
+                        00:00:00
+                    </div>
+                    <p id="dateInDisplay" style="color: #999; font-size: 13px;">Loading...</p>
+                </div>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <p style="margin: 0; color: #666; font-size: 13px;">
+                        <i class="fas fa-info-circle" style="margin-right: 8px; color: #667eea;"></i>
+                        Make sure you are ready to start your work day.
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid #eee;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times" style="margin-right: 8px;"></i>Cancel
+                </button>
+                <button type="button" class="btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;" onclick="confirmTimeIn()">
+                    <i class="fas fa-check" style="margin-right: 8px;"></i>Confirm Time In
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Time Out Confirmation Modal -->
+<div id="timeOutModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="timeOutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none;">
+                <h5 class="modal-title" id="timeOutModalLabel">
+                    <i class="fas fa-clock" style="margin-right: 8px;"></i>Confirm Time Out
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="text-align: center; padding: 30px;">
+                <div style="margin-bottom: 20px;">
+                    <p style="color: #666; font-size: 14px; margin-bottom: 10px;">You are about to clock out at:</p>
+                    <div id="timeOutDisplay" style="font-size: 32px; font-weight: bold; color: #f5576c; margin: 15px 0;">
+                        00:00:00
+                    </div>
+                    <p id="dateOutDisplay" style="color: #999; font-size: 13px;">Loading...</p>
+                </div>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <p style="margin: 0; color: #666; font-size: 13px;">
+                        <i class="fas fa-info-circle" style="margin-right: 8px; color: #f5576c;"></i>
+                        Make sure you have finished all your work tasks.
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid #eee;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times" style="margin-right: 8px;"></i>Cancel
+                </button>
+                <button type="button" class="btn" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none;" onclick="confirmTimeOut()">
+                    <i class="fas fa-check" style="margin-right: 8px;"></i>Confirm Time Out
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Update time display in modals every second
+function updateTimeDisplay() {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
+    const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    
+    document.getElementById('timeInDisplay').textContent = timeStr;
+    document.getElementById('timeOutDisplay').textContent = timeStr;
+    document.getElementById('dateInDisplay').textContent = dateStr;
+    document.getElementById('dateOutDisplay').textContent = dateStr;
+}
+
+// Show Time In confirmation modal
+function showTimeInModal() {
+    updateTimeDisplay();
+    
+    // Try Bootstrap 5+ first, fallback to jQuery/Bootstrap 4
+    const timeInModalElement = document.getElementById('timeInModal');
+    
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        const modal = new bootstrap.Modal(timeInModalElement);
+        modal.show();
+    } else if (typeof $ !== 'undefined' && $.fn.modal) {
+        $(timeInModalElement).modal('show');
+    } else {
+        // Fallback: add visible classes manually
+        timeInModalElement.classList.add('show');
+        timeInModalElement.style.display = 'block';
+        document.body.classList.add('modal-open');
+        const backdrop = document.createElement('div');
+        backdrop.classList.add('modal-backdrop', 'fade', 'show');
+        document.body.appendChild(backdrop);
+    }
+    
+    // Update time every second while modal is open
+    window.timeInInterval = setInterval(updateTimeDisplay, 1000);
+}
+
+// Show Time Out confirmation modal
+function showTimeOutModal() {
+    updateTimeDisplay();
+    
+    // Try Bootstrap 5+ first, fallback to jQuery/Bootstrap 4
+    const timeOutModalElement = document.getElementById('timeOutModal');
+    
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        const modal = new bootstrap.Modal(timeOutModalElement);
+        modal.show();
+    } else if (typeof $ !== 'undefined' && $.fn.modal) {
+        $(timeOutModalElement).modal('show');
+    } else {
+        // Fallback: add visible classes manually
+        timeOutModalElement.classList.add('show');
+        timeOutModalElement.style.display = 'block';
+        document.body.classList.add('modal-open');
+        const backdrop = document.createElement('div');
+        backdrop.classList.add('modal-backdrop', 'fade', 'show');
+        document.body.appendChild(backdrop);
+    }
+    
+    // Update time every second while modal is open
+    window.timeOutInterval = setInterval(updateTimeDisplay, 1000);
+}
+
+// Confirm Time In
+function confirmTimeIn() {
+    clearInterval(window.timeInInterval);
+    document.getElementById('timeInForm').submit();
+}
+
+// Confirm Time Out
+function confirmTimeOut() {
+    clearInterval(window.timeOutInterval);
+    document.getElementById('timeOutForm').submit();
+}
+
+// Clear interval when modal is closed
+if (document.addEventListener) {
+    document.addEventListener('hidden.bs.modal', function (e) {
+        if (e.target && e.target.id === 'timeInModal') {
+            clearInterval(window.timeInInterval);
+        }
+        if (e.target && e.target.id === 'timeOutModal') {
+            clearInterval(window.timeOutInterval);
+        }
+    });
+}
+</script>
+
+<?php require __DIR__ . '/../leave-request/modal-leave-request.php'; ?>

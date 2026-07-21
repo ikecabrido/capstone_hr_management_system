@@ -7,7 +7,7 @@
 // Set PHP timezone to Philippines (UTC+8)
 date_default_timezone_set('Asia/Manila');
 
-require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../../auth/database.php';
 require_once __DIR__ . '/Helper.php';
 
 class QRHelper
@@ -17,7 +17,7 @@ class QRHelper
 
     public function __construct()
     {
-        $db = new Database();
+        $db = Database::getInstance();
         $this->conn = $db->getConnection();
     }
 

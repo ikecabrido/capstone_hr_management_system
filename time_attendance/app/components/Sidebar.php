@@ -1,7 +1,7 @@
 <?php
 /**
  * Sidebar Navigation Component
- * Displays role-based navigation menu with AdminLTE-inspired design
+ * Displays role-based navigation menu
  */
 
 // Ensure session is started
@@ -14,404 +14,10 @@ $current_page = $current_page ?? basename($_SERVER['PHP_SELF']);
 $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
 ?>
 
-<style>
-    /* AdminLTE Sidebar Styling - Clean and Professional */
-    * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-    }
-
-    body {
-        margin: 0;
-        padding: 0;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    }
-
-    .main-header.navbar {
-        background: linear-gradient(135deg, #1e5ba8 0%, #2575d0 100%);
-        color: white;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        position: fixed;
-        top: 0;
-        left: 250px;
-        right: 0;
-        z-index: 990;
-        height: 60px;
-        padding: 0 20px;
-        display: flex;
-        align-items: center;
-        box-sizing: border-box;
-        width: calc(100% - 250px);
-        transition: left 0.3s ease, width 0.3s ease;
-    }
-
-    body.sidebar-collapsed .main-header.navbar {
-        left: 0;
-        width: 100%;
-    }
-
-    .main-sidebar {
-        width: 250px;
-        background: linear-gradient(135deg, #1e5ba8 0%, #2575d0 100%);
-        color: white;
-        position: fixed;
-        left: 0;
-        top: 0;
-        height: 100vh;
-        overflow-y: auto;
-        z-index: 1000;
-        display: flex;
-        flex-direction: column;
-        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
-        margin: 0;
-        padding: 0;
-        transition: transform 0.3s ease;
-    }
-
-    .main-sidebar.collapsed {
-        transform: translateX(-250px);
-    }
-
-    .navbar-nav {
-        display: flex;
-        flex-direction: row;
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .navbar-nav .nav-item {
-        margin: 0;
-    }
-
-    .navbar-nav .nav-link {
-        color: rgba(255, 255, 255, 0.9);
-        text-decoration: none;
-        padding: 8px 15px;
-        transition: color 0.3s ease;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .navbar-nav .nav-link:hover {
-        color: #ffffff;
-    }
-
-    .navbar-nav.ml-auto {
-        margin-left: auto !important;
-        padding-right: 20px;
-    }
-
-    .brand-link {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0 15px;
-        height: 60px;
-        background: rgba(0, 0, 0, 0.15);
-        border-bottom: 3px solid rgba(255, 255, 255, 0.2);
-        text-decoration: none;
-        color: white;
-        transition: all 0.3s ease;
-        gap: 12px;
-        flex-shrink: 0;
-        width: 100%;
-    }
-
-    .brand-link:hover {
-        background: rgba(0, 0, 0, 0.3);
-    }
-
-    .brand-image {
-        width: 40px;
-        height: 40px;
-        object-fit: contain;
-        border-radius: 4px;
-    }
-
-    .brand-text {
-        font-size: 14px;
-        font-weight: 600;
-        color: #ecf0f1;
-        line-height: 1.2;
-    }
-
-    .sidebar {
-        flex: 1;
-        overflow-y: auto;
-        padding: 0;
-    }
-
-    .sidebar::-webkit-scrollbar {
-        width: 8px;
-    }
-
-    .sidebar::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.05);
-    }
-
-    .sidebar::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 4px;
-    }
-
-    .sidebar::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.3);
-    }
-
-    .user-panel {
-        padding: 15px;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.2);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .user-panel .image {
-        width: 40px;
-        height: 40px;
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #ffffff;
-        font-weight: bold;
-        flex-shrink: 0;
-    }
-
-    .user-panel .info {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .user-panel .info a {
-        color: #ecf0f1;
-        text-decoration: none;
-        font-size: 13px;
-        font-weight: 500;
-        display: block;
-        word-break: break-word;
-        transition: color 0.3s ease;
-    }
-
-    .user-panel .info a:hover {
-        color: #3498db;
-    }
-
-    .nav-sidebar {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-
-    .nav-sidebar .nav-item {
-        display: block;
-    }
-
-    .nav-sidebar .nav-link {
-        padding: 12px 20px;
-        color: rgba(255, 255, 255, 0.8);
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        transition: all 0.3s ease;
-        border-left: 4px solid transparent;
-        font-size: 13px;
-    }
-
-    .nav-sidebar .nav-link:hover {
-        background: rgba(255, 255, 255, 0.1);
-        border-left-color: #ffffff;
-        color: #ffffff;
-    }
-
-    .nav-sidebar .nav-link.active {
-        background: rgba(255, 255, 255, 0.15);
-        border-left-color: #ffffff;
-        color: #ffffff;
-        font-weight: 600;
-    }
-
-    .nav-icon {
-        font-size: 14px;
-        width: 18px;
-        text-align: center;
-        flex-shrink: 0;
-        display: inline-flex !important;
-        align-items: center;
-        justify-content: center;
-        visibility: visible !important;
-        opacity: 1 !important;
-        z-index: 10 !important;
-    }
-
-    /* Continuous wobble animation for nav icons */
-    .nav-icon.animation__wobble {
-        animation: nav-wobble 2s infinite ease-in-out;
-    }
-
-    @keyframes nav-wobble {
-        0% {
-            transform: none;
-        }
-        15% {
-            transform: translate3d(-3px, 0, 0) rotate3d(0, 0, 1, -3deg);
-        }
-        30% {
-            transform: translate3d(3px, 0, 0) rotate3d(0, 0, 1, 2deg);
-        }
-        45% {
-            transform: translate3d(-2px, 0, 0) rotate3d(0, 0, 1, -2deg);
-        }
-        60% {
-            transform: translate3d(2px, 0, 0) rotate3d(0, 0, 1, 1deg);
-        }
-        75% {
-            transform: translate3d(-1px, 0, 0) rotate3d(0, 0, 1, -1deg);
-        }
-        100% {
-            transform: none;
-        }
-    }
-
-    .nav-link > p {
-        margin: 0;
-        flex: 1;
-    }
-    
-    /* Ensure icons stay visible on all states */
-    .nav-link:hover .nav-icon,
-    .nav-link.active .nav-icon,
-    .nav-link:focus .nav-icon {
-        display: inline-flex !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        z-index: 10 !important;
-    }
-
-    .nav-header {
-        padding: 10px 20px;
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        color: rgba(255, 255, 255, 0.6);
-        letter-spacing: 1px;
-        margin-top: 10px;
-    }
-
-    .badge {
-        padding: 3px 8px;
-        border-radius: 3px;
-        font-size: 10px;
-        font-weight: 600;
-        margin-left: auto;
-        flex-shrink: 0;
-    }
-
-    .badge-info {
-        background: #3498db;
-        color: white;
-    }
-
-    /* Dark Mode Styles */
-    body.dark-mode {
-        background-color: #1a1a1a;
-        color: #e0e0e0;
-    }
-
-    body.dark-mode .main-header.navbar {
-        background: linear-gradient(135deg, #0f3a6a 0%, #1a4f8f 100%);
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-    }
-
-    body.dark-mode .main-sidebar {
-        background: linear-gradient(135deg, #0f3a6a 0%, #1a4f8f 100%);
-        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
-    }
-
-    body.dark-mode .brand-link {
-        background: rgba(0, 0, 0, 0.25);
-        border-bottom-color: rgba(0, 0, 0, 0.3);
-    }
-
-    body.dark-mode .user-panel {
-        border-bottom-color: rgba(0, 0, 0, 0.3);
-    }
-
-    body.dark-mode .nav-link {
-        color: rgba(255, 255, 255, 0.7);
-    }
-
-    body.dark-mode .nav-link:hover {
-        color: #ffffff;
-        background: rgba(255, 255, 255, 0.1);
-    }
-
-    body.dark-mode .nav-link.active {
-        background: rgba(255, 255, 255, 0.15);
-        border-left-color: #ffffff;
-        color: #ffffff;
-    }
-
-    body.dark-mode .nav-sidebar .nav-header {
-        color: rgba(255, 255, 255, 0.5);
-    }
-
-    body.dark-mode .sidebar::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.02);
-    }
-
-    body.dark-mode .sidebar::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.1);
-    }
-
-    body.dark-mode .sidebar::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.2);
-    }
-
-    /* Sidebar collapse animation */
-    .main-sidebar {
-        transition: width 0.3s ease, margin-left 0.3s ease, z-index 0.3s ease;
-    }
-
-    .main-sidebar.collapsed {
-        width: 0;
-        overflow: hidden;
-        z-index: 0;
-    }
-
-    .main-header.navbar {
-        transition: left 0.3s ease;
-    }
-
-    .main-header.navbar.sidebar-collapsed {
-        left: 0;
-    }
-
-    @media (max-width: 768px) {
-        .main-sidebar {
-            transform: translateX(-100%);
-            transition: transform 0.3s ease;
-            top: 60px;
-            height: calc(100vh - 60px);
-        }
-
-        .main-sidebar.open {
-            transform: translateX(0);
-        }
-
-        .main-content {
-            margin-left: 0;
-        }
-    }
-</style>
+<!-- NOTE: Inline sidebar styles were intentionally removed so the module
+     uses the centralized `time_attendance/assets/dashboard.css` for layout
+     and color theming. If needed, add scoped overrides to that stylesheet.
+ -->
 
 <!-- Navbar -->
 <nav class="main-header navbar navbar-expand navbar-dark">
@@ -462,13 +68,17 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
     <!-- Sidebar -->
     <div class="sidebar">
         <!-- Sidebar user panel -->
-        <div class="user-panel">
+        <div class="user-panel mt-3 pb-3 mb-3 d-flex">
             <div class="image">
-                <i class="fas fa-user-circle" style="font-size: 20px;"></i>
+                <i class="fas fa-user-circle"></i>
             </div>
             <div class="info">
-                <a href="#">
-                    <?= htmlspecialchars($_SESSION['user']['name'] ?? $_SESSION['email'] ?? 'User'); ?>
+                <a href="#" class="d-block">
+                    <?php 
+                    $role = $current_role === 'time' ? 'HR' : 'User';
+                    $userName = htmlspecialchars($_SESSION['user']['name'] ?? $_SESSION['email'] ?? 'User');
+                    echo $role . ' ' . $userName;
+                    ?>
                 </a>
             </div>
         </div>
@@ -513,6 +123,18 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
                         <a href="approve_attendance.php" class="nav-link <?php echo $current_page === 'approve_attendance.php' ? 'active' : ''; ?>">
                             <i class="nav-icon fas fa-check-circle animation__wobble"></i>
                             <p>Approve Manual Time</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="biometrics.php" class="nav-link <?php echo $current_page === 'biometrics.php' ? 'active' : ''; ?>">
+                            <i class="nav-icon fas fa-fingerprint animation__wobble"></i>
+                            <p>Biometric Registration</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="biometric_kiosk.php" class="nav-link <?php echo $current_page === 'biometric_kiosk.php' ? 'active' : ''; ?>">
+                            <i class="nav-icon fas fa-tv animation__wobble"></i>
+                            <p>Biometric Kiosk</p>
                         </a>
                     </li>
                 <?php endif; ?>
@@ -583,10 +205,10 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
                 <!-- Logout -->
                 <li class="nav-header">SETTINGS</li>
                 <li class="nav-item">
-                    <a href="../../logout.php" class="nav-link" style="color: #e74c3c;">
-                        <i class="nav-icon fas fa-sign-out-alt animation__wobble"></i>
-                        <p>Logout</p>
-                    </a>
+                            <a href="javascript:void(0);" id="logoutLink" class="nav-link" style="color: #e74c3c;">
+                                <i class="nav-icon fas fa-sign-out-alt animation__wobble"></i>
+                                <p>Logout</p>
+                            </a>
                 </li>
             </ul>
         </nav>
@@ -599,88 +221,139 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
     function toggleSidebar() {
         const sidebar = document.getElementById('mainSidebar');
         const navbar = document.querySelector('.main-header.navbar');
-        const mainContent = document.querySelector('.main-content');
+        const contentWrapper = document.querySelector('.content-wrapper');
         const body = document.body;
+        
+        if (!sidebar) {
+            console.error('Sidebar not found');
+            return;
+        }
         
         // For mobile
         if (window.innerWidth <= 768) {
             sidebar.classList.toggle('open');
         } else {
-            // For desktop - collapse/expand animation
-            sidebar.classList.toggle('collapsed');
-            navbar.classList.toggle('sidebar-collapsed');
-            mainContent.classList.toggle('sidebar-collapsed');
+            // Use AdminLTE-compatible sidebar collapse state
+            body.classList.toggle('sidebar-collapse');
             body.classList.toggle('sidebar-collapsed');
+            if (sidebar) sidebar.classList.toggle('collapsed');
+            if (navbar) navbar.classList.toggle('sidebar-collapsed');
+            if (contentWrapper) contentWrapper.classList.toggle('sidebar-collapsed');
         }
     }
-
-    // Close sidebar when clicking on a link (mobile)
-    const navLinks = document.querySelectorAll('.nav-link');
-    navLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            if (window.innerWidth <= 768 && e.target.closest('.nav-link') !== link) {
-                return;
-            }
-            if (window.innerWidth <= 768) {
-                const sidebar = document.getElementById('mainSidebar');
-                sidebar.classList.remove('open');
-            }
-        });
-    });
-
-    // Live Clock
-    function updateClock() {
-        const now = new Date();
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const seconds = String(now.getSeconds()).padStart(2, '0');
-        const clockElement = document.getElementById('clock');
-        if (clockElement) {
-            clockElement.textContent = `${hours}:${minutes}:${seconds}`;
-        }
-    }
-
-    updateClock();
-    setInterval(updateClock, 1000);
-
-    // Dark Mode Toggle
-    const darkToggle = document.getElementById('darkToggle');
-    const themeIcon = document.getElementById('themeIcon');
     
-    if (darkToggle) {
-        darkToggle.addEventListener('click', function(e) {
-            e.preventDefault();
-            document.body.classList.toggle('dark-mode');
-            const isDarkMode = document.body.classList.contains('dark-mode');
-            localStorage.setItem('darkMode', isDarkMode);
-            
-            if (isDarkMode) {
-                themeIcon.classList.remove('fa-moon');
-                themeIcon.classList.add('fa-sun');
-            } else {
-                themeIcon.classList.remove('fa-sun');
-                themeIcon.classList.add('fa-moon');
-            }
-        });
+    function hidePreloader() {
+        const preloader = document.querySelector('.preloader');
+        if (preloader) {
+            preloader.style.display = 'none';
+            preloader.style.visibility = 'hidden';
+        }
     }
 
-    // Load dark mode preference
-    window.addEventListener('load', function() {
-        const darkMode = localStorage.getItem('darkMode') === 'true';
+    function showPreloader() {
+        const preloader = document.querySelector('.preloader');
+        if (preloader) {
+            preloader.style.visibility = 'visible';
+            preloader.style.display = 'flex';
+        }
+    }
+
+    // Make toggleSidebar globally accessible
+    window.toggleSidebar = toggleSidebar;
+
+    window.addEventListener('load', hidePreloader);
+
+    // Close sidebar when clicking on a link (mobile) and show preloader on navigation
+    document.addEventListener('DOMContentLoaded', function() {
+        hidePreloader();
+
+        const navLinks = document.querySelectorAll('a.nav-link');
+        navLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                const href = this.getAttribute('href');
+                if (href && !href.includes('logout') && !href.startsWith('javascript') && !href.startsWith('#') && !href.startsWith('mailto:') && !href.startsWith('tel:')) {
+                    showPreloader();
+                }
+
+                if (window.innerWidth <= 768) {
+                    const sidebar = document.getElementById('mainSidebar');
+                    if (sidebar) sidebar.classList.remove('open');
+                }
+            });
+        });
+
+        // Live Clock
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const clockElement = document.getElementById('clock');
+            if (clockElement) {
+                clockElement.textContent = `${hours}:${minutes}:${seconds}`;
+            }
+        }
+
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        // Dark Mode Toggle
+        const darkToggle = document.getElementById('darkToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        
+        if (darkToggle) {
+            darkToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.body.classList.toggle('dark-mode');
+                const isDarkMode = document.body.classList.contains('dark-mode');
+                localStorage.setItem('darkMode', isDarkMode);
+                
+                if (isDarkMode) {
+                    themeIcon.classList.remove('fa-moon');
+                    themeIcon.classList.add('fa-sun');
+                } else {
+                    themeIcon.classList.remove('fa-sun');
+                    themeIcon.classList.add('fa-moon');
+                }
+            });
+        }
+
+        // Load dark mode preference (default to light mode for time_attendance)
+        const darkModeSetting = localStorage.getItem('darkMode');
+        const darkMode = darkModeSetting === 'true'; // Only true if explicitly set
+        
+        // Reset to light mode by default on each page load for time_attendance
+        if (!darkModeSetting) {
+            localStorage.setItem('darkMode', 'false');
+        }
+        
         if (darkMode) {
             document.body.classList.add('dark-mode');
-            if (themeIcon) {
-                themeIcon.classList.remove('fa-moon');
-                themeIcon.classList.add('fa-sun');
+            const themeIconEl = document.getElementById('themeIcon');
+            if (themeIconEl) {
+                themeIconEl.classList.remove('fa-moon');
+                themeIconEl.classList.add('fa-sun');
             }
         }
-    });
 
-    // Handle responsive on resize
-    window.addEventListener('resize', function() {
-        if (window.innerWidth > 768) {
-            const sidebar = document.getElementById('mainSidebar');
-            sidebar.classList.remove('open');
+        // Handle responsive on resize
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                const sidebar = document.getElementById('mainSidebar');
+                if (sidebar) sidebar.classList.remove('open');
+            }
+        });
+
+        // Friendly logout confirmation
+        const logoutLink = document.getElementById('logoutLink');
+        if (logoutLink) {
+            logoutLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                const ok = confirm('Are you sure you want to logout? Have a great day!');
+                if (ok) {
+                    window.location.href = '../../logout.php';
+                }
+            });
         }
     });
 </script>

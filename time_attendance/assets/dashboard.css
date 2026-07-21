@@ -1,18 +1,101 @@
-body {
-            display: flex;
-            min-height: 100vh;
-            background: #f5f5f5;
-        }
-        .main-content {
-            margin-left: 250px;
-            margin-top: 60px;
-            flex: 1;
-            padding: 30px 20px;
-            transition: margin-left 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+            background: #f4f6f9;
         }
 
-        .main-content.sidebar-collapsed {
-            margin-left: 0;
+        body.hold-transition {
+            transition: background-color 0.3s ease;
+        }
+
+        body.dark-mode {
+            background: #121212;
+        }
+
+        /* Remove list markers from sidebar navigation */
+        .nav-sidebar,
+        .nav-sidebar ul {
+            list-style: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .nav-sidebar li,
+        .nav-sidebar li.nav-item {
+            list-style: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .wrapper {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Navbar overrides for AdminLTE compatibility */
+        .main-header.navbar {
+            margin: 0 !important;
+            padding: 0 20px !important;
+            left: 250px !important;
+            width: calc(100% - 250px) !important;
+            transition: left 0.3s ease, width 0.3s ease !important;
+        }
+
+        .main-header.navbar.sidebar-collapsed {
+            left: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+        }
+
+        .main-content,
+        .shift-container {
+            width: auto !important;
+            margin: 0 0 0 250px !important;
+            margin-top: 60px !important;
+            min-height: calc(100vh - 60px) !important;
+            padding: 30px 20px !important;
+            transition: width 0.3s ease, margin-left 0.3s ease !important;
+            box-sizing: border-box !important;
+        }
+
+        .content-wrapper {
+            width: auto !important;
+            max-width: none !important;
+            margin: 0 !important;
+            transition: none !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+        }
+
+        body.sidebar-collapse .main-content,
+        body.sidebar-collapse .shift-container {
+            width: auto !important;
+            margin-left: 0 !important;
+        }
+
+        /* Sidebar Collapse - Brand Image */
+        body.sidebar-collapse .brand-link {
+            padding: 8px !important;
+            height: auto !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            overflow: visible !important;
+        }
+
+        body.sidebar-collapse .brand-link .brand-image {
+            width: 50px !important;
+            height: 50px !important;
+            margin-right: 0 !important;
+            margin: 0 !important;
+            object-fit: contain !important;
+        }
+
+        body.sidebar-collapse .brand-link .brand-text {
+            display: none !important;
         }
 
         .live-clock {
@@ -31,9 +114,7 @@ body {
             background: #1e1e1e;
             color: #0066cc;
         }
-        .content-wrapper {
-            width: 100%;
-        }
+
         h1, h2 {
             color: #003d82;
             margin-bottom: 20px;
@@ -125,6 +206,190 @@ body {
         body.dark-mode .card-value {
             color: #e0e0e0;
         }
+
+/* ===== Payroll-style AdminLTE overrides (applied to Time & Attendance) =====
+     These rules mirror the payroll module's custom.css to produce a matching
+     blue sidebar/header look across the site. Loaded by virtue of being
+     appended to the module's dashboard stylesheet so it takes effect last.
+*/
+
+/* BLUE SIDEBAR */
+.main-sidebar {
+    background-color: #0d47a1 !important;
+}
+
+/* Sidebar brand */
+.brand-link {
+    background-color: #0b3c91 !important;
+    color: #fff !important;
+}
+
+/* Sidebar links */
+.nav-sidebar .nav-link {
+    color: #ffffff !important;
+}
+
+/* Active & hover */
+.nav-sidebar .nav-link.active,
+.nav-sidebar .nav-link:hover {
+    background-color: #1565c0 !important;
+    color: #fff !important;
+}
+
+/* MAIN CONTENT WHITE */
+.content-wrapper {
+    background-color: #ffffff !important;
+}
+.main-header.navbar {
+    background-color: #1976d2 !important;
+}
+
+/* DARK MODE CUSTOMIZATION */
+body.dark-mode .main-sidebar {
+    background-color: #0b1f3a !important;
+}
+
+body.dark-mode .content-wrapper {
+    background-color: #313030 !important;
+}
+
+body.dark-mode .main-header.navbar {
+    background-color: #0d47a1 !important;
+}
+body:not(.dark-mode) .content-wrapper {
+    background-color: #f4f6f9 !important;
+}
+.wrapper .preloader {
+    background-color: #0b3c91 !important;
+}
+.main-footer {
+    background-color: #1976d2;
+    color: #d6d3d3;
+}
+body.dark-mode .main-footer {
+    background-color: #0d47a1 !important;
+}
+
+/* Strong dark mode container and text overrides */
+body.dark-mode,
+body.dark-mode h1,
+body.dark-mode h2,
+body.dark-mode h3,
+body.dark-mode h4,
+body.dark-mode h5,
+body.dark-mode h6,
+body.dark-mode p,
+body.dark-mode span,
+body.dark-mode label,
+body.dark-mode a,
+body.dark-mode th,
+body.dark-mode td,
+body.dark-mode li,
+body.dark-mode small,
+body.dark-mode .form-label,
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea,
+body.dark-mode button,
+body.dark-mode .form-control,
+body.dark-mode .form-select,
+body.dark-mode .form-control::placeholder {
+    color: #e0e0e0 !important;
+}
+
+body.dark-mode .content-wrapper,
+body.dark-mode .main-content,
+body.dark-mode .shift-container,
+body.dark-mode .card,
+body.dark-mode .glass-panel,
+body.dark-mode .container,
+body.dark-mode .modal-content,
+body.dark-mode .card-body,
+body.dark-mode .approvals-table,
+body.dark-mode .data-table,
+body.dark-mode .table,
+body.dark-mode .info-box,
+body.dark-mode .table-container,
+body.dark-mode .filter-controls input,
+body.dark-mode .filter-controls select,
+body.dark-mode .form-control,
+body.dark-mode .form-select,
+body.dark-mode .btn,
+body.dark-mode .btn-primary,
+body.dark-mode .btn-secondary,
+body.dark-mode .page-header,
+body.dark-mode .shift-tabs,
+body.dark-mode .shift-card,
+body.dark-mode .modal-header,
+body.dark-mode .modal-footer,
+body.dark-mode .breadcrumb,
+body.dark-mode .dropdown-menu,
+body.dark-mode .nav-sidebar,
+body.dark-mode .nav-sidebar .nav-link,
+body.dark-mode .nav-sidebar .user-panel,
+body.dark-mode .main-header.navbar,
+body.dark-mode .main-footer {
+    background-color: rgba(30, 30, 30, 0.98) !important;
+    color: #e0e0e0 !important;
+    border-color: rgba(255,255,255,0.08) !important;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.35) !important;
+}
+
+body.dark-mode .main-header.navbar,
+body.dark-mode .main-footer {
+    box-shadow: none !important;
+}
+
+body.dark-mode .card:hover,
+body.dark-mode .shift-card:hover,
+body.dark-mode .modal-content,
+body.dark-mode .data-table tbody tr:hover,
+body.dark-mode .approvals-table tbody tr:hover,
+body.dark-mode .table tbody tr:hover {
+    background-color: rgba(40, 40, 40, 0.98) !important;
+}
+
+body.dark-mode .badge,
+body.dark-mode .badge-success,
+body.dark-mode .badge-warning,
+body.dark-mode .badge-info,
+body.dark-mode .badge-primary,
+body.dark-mode .badge-secondary {
+    background-color: rgba(80, 120, 180, 0.18) !important;
+    color: #e0e0e0 !important;
+}
+
+body.dark-mode .form-control,
+body.dark-mode .form-select,
+body.dark-mode .filter-controls input,
+body.dark-mode .filter-controls select,
+body.dark-mode textarea {
+    background-color: #1f1f1f !important;
+    color: #e0e0e0 !important;
+    border-color: rgba(255,255,255,0.12) !important;
+}
+
+/* Ensure default white inline containers are dark in dark mode */
+body.dark-mode [style*="background: white"],
+body.dark-mode [style*="background: #fff"],
+body.dark-mode [style*="background: #ffffff"] {
+    background-color: #1d1d1d !important;
+    color: #e0e0e0 !important;
+    border-color: rgba(255,255,255,0.08) !important;
+}
+
+/* Animate the Font Awesome icon */
+#themeIcon {
+    display: inline-block;
+    transition:
+        transform 0.35s ease,
+        opacity 0.25s ease;
+}
+
+#themeIcon.animate {
+    transform: rotate(180deg) scale(0.5);
+    opacity: 0;
+}
 
         body.dark-mode .card-unit {
             color: #b0b0b0;
@@ -221,6 +486,141 @@ body {
             background-color: #2a2a2a;
         }
 
+        .page-header {
+            background: linear-gradient(135deg, #003d82 0%, #005ba8 100%);
+            border-radius: 18px;
+            padding: 28px 30px;
+            color: #ffffff;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
+            position: relative;
+            overflow: hidden;
+            margin: 0 0 30px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+        }
+
+        .page-header::before {
+            content: '';
+            position: absolute;
+            top: -30%;
+            right: -20%;
+            width: 220px;
+            height: 220px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+            transform: rotate(25deg);
+        }
+
+        .page-title {
+            font-size: 30px;
+            font-weight: 800;
+            letter-spacing: 0.25px;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .page-title i {
+            font-size: 34px;
+            opacity: 0.95;
+        }
+
+        .page-subtitle {
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 14px;
+            margin-top: 4px;
+            line-height: 1.5;
+        }
+
+        .page-header-right {
+            display: flex;
+            flex-direction: column;
+            text-align: right;
+            gap: 8px;
+        }
+
+        .page-header-right .current-month {
+            font-size: 13px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.75);
+            letter-spacing: 0.2px;
+        }
+
+        .page-header-right .month-year {
+            font-size: 22px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .glass-panel,
+        .container {
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .glass-panel h2,
+        .glass-panel h3,
+        .container h2,
+        .container h3 {
+            color: #1f4258;
+        }
+
+        body.dark-mode .glass-panel,
+        body.dark-mode .container {
+            background: rgba(30, 30, 30, 0.85);
+            border-color: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .approvals-table,
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+        }
+
+        .approvals-table th,
+        .approvals-table td,
+        .data-table th,
+        .data-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: middle;
+        }
+
+        .approvals-table thead,
+        .data-table thead {
+            background: linear-gradient(135deg, #003d82 0%, #005ba8 100%);
+            color: #ffffff;
+        }
+
+        .approvals-table tbody tr:hover,
+        .data-table tbody tr:hover {
+            background: rgba(52, 152, 219, 0.08);
+        }
+
+        body.dark-mode .approvals-table,
+        body.dark-mode .data-table {
+            background: rgba(20, 20, 20, 0.95);
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .approvals-table th,
+        body.dark-mode .data-table th {
+            background: linear-gradient(135deg, #003d82 0%, #005ba8 100%);
+            color: #ffffff;
+        }
+
+        body.dark-mode .approvals-table td,
+        body.dark-mode .data-table td {
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+
         /* Search and Filter Controls */
         .filter-controls {
             display: flex;
@@ -302,4 +702,121 @@ body {
                 width: 100%;
                 min-height: 48px;
             }
+        }
+
+        /* Payroll dashboard refinements */
+        .page-header {
+            background: linear-gradient(135deg, #0b3c91 0%, #1976d2 100%) !important;
+            border-radius: 18px !important;
+            padding: 28px 30px !important;
+            box-shadow: 0 18px 40px rgba(0, 61, 130, 0.14) !important;
+            margin: 0 0 30px !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            position: relative !important;
+            overflow: hidden !important;
+            color: #ffffff !important;
+        }
+
+        .page-header::before {
+            content: '' !important;
+            position: absolute !important;
+            top: -50% !important;
+            right: -50% !important;
+            width: 220px !important;
+            height: 220px !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+            border-radius: 50% !important;
+            transform: rotate(25deg) !important;
+        }
+
+        .calendar-container,
+        .holiday-container,
+        .glass-panel,
+        .container,
+        .shift-container {
+            background: rgba(255, 255, 255, 0.95) !important;
+            border: 1px solid rgba(229, 236, 246, 0.65) !important;
+            border-radius: 18px !important;
+            box-shadow: 0 18px 40px rgba(0, 61, 130, 0.08) !important;
+        }
+
+        body.dark-mode .calendar-container,
+        body.dark-mode .holiday-container,
+        body.dark-mode .glass-panel,
+        body.dark-mode .container,
+        body.dark-mode .shift-container {
+            background: rgba(28, 28, 28, 0.95) !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        .holiday-container {
+            grid-template-columns: 1fr 2fr !important;
+            gap: 20px !important;
+        }
+
+        .calendar-body,
+        .calendar-header,
+        .shift-header,
+        .calendar-container,
+        .holiday-container,
+        .content-wrapper,
+        .main-content,
+        .shift-container {
+            padding: 0 !important;
+            margin: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+
+        .holiday-container .holiday-list,
+        .holiday-container .holiday-details {
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+
+        .breadcrumb-nav {
+            color: rgba(255, 255, 255, 0.85) !important;
+        }
+
+        .breadcrumb-nav a {
+            color: rgba(255, 255, 255, 0.95) !important;
+        }
+
+        .page-title,
+        .page-title span,
+        .page-subtitle,
+        .page-header-right .current-month,
+        .page-header-right .month-year {
+            color: #ffffff !important;
+        }
+
+        .page-title,
+        .page-title span,
+        .page-subtitle,
+        .page-header-right .current-month,
+        .page-header-right .month-year {
+            color: #ffffff !important;
+        }
+
+        .holiday-list-item,
+        .holiday-card,
+        .stat-card,
+        .info-box,
+        .approval-card {
+            background: rgba(255,255,255,0.95) !important;
+        }
+
+        body.dark-mode .holiday-list-item,
+        body.dark-mode .holiday-card,
+        body.dark-mode .stat-card,
+        body.dark-mode .info-box,
+        body.dark-mode .approval-card {
+            background: rgba(30, 30, 30, 0.95) !important;
+        }
+
+        .btn-primary,
+        .btn {
+            border-radius: 0.65rem !important;
+            font-weight: 600 !important;
         }

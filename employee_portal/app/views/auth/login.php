@@ -7,7 +7,7 @@
     <title><?= $title ?? 'HR Management System'; ?></title>
     <link rel="stylesheet" href="/capstone_hr_management_system/assets/dist/css/adminlte.min.css" />
     <link rel="stylesheet" href="/capstone_hr_management_system/assets/plugins/toastr/toastr.min.css" />
-    <link rel="stylesheet" href="/capstone_hr_management_system/assets/plugins/bootstrap/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="/capstone_hr_management_system/employee_portal/public/assets/bootstrap/css/bootstrap.min.css" />
     <link rel="stylesheet" href="/capstone_hr_management_system/login.css" />
 </head>
 
@@ -32,6 +32,10 @@
                     <h1>Login</h1>
                     <div></div>
                 </div>
+                <!-- Hidden QR Token field if present -->
+                <?php if (!empty($qr_token)): ?>
+                    <input type="hidden" name="qr_token" value="<?php echo htmlspecialchars($qr_token); ?>" />
+                <?php endif; ?>
                 <div class="label">
                     <label for="">Employee No</label>
                     <input

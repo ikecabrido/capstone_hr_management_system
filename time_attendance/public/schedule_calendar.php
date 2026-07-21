@@ -50,66 +50,24 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
     <title>Schedule Calendar - Time & Attendance System</title>
     <link rel="icon" href="../Bestlink College of the Philippines.jpeg" type="image/jpeg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <link rel="stylesheet" href="../../assets/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="../../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
     <link rel="stylesheet" href="../assets/style.css">
+    <link rel="stylesheet" href="../assets/dashboard.css">
+    <link rel="stylesheet" href="../assets/adminlte-overrides.css">
+    <link rel="stylesheet" href="../../payroll/custom.css">
     <!-- FullCalendar CSS -->
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Calendar Schedule CSS -->
     <link rel="stylesheet" href="../app/css/calendar_schedule.css">
-    <style>
-        body {
-            background: #f5f5f5;
-            margin: 0;
-            padding: 0;
-            transition: margin-left 0.3s ease;
+<style>
+        html, body {
+            overflow-x: hidden !important;
         }
 
-        body.sidebar-collapsed {
-            margin-left: 0;
-        }
-
-        .main-content {
-            width: calc(100% - 250px);
-            margin-left: 250px;
-            margin-top: 60px;
-            min-height: calc(100vh - 60px);
-            padding: 30px 20px;
-            transition: width 0.3s ease, margin-left 0.3s ease;
-        }
-
-        body.sidebar-collapsed .main-content {
-            width: 100%;
-            margin-left: 0;
-        }
-        .content-wrapper {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        .page-header {
-            margin-bottom: 35px;
-            background: linear-gradient(135deg, #003d82 0%, #005ba8 100%);
-            padding: 35px;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0, 61, 130, 0.15);
-            position: relative;
-            overflow: hidden;
-        }
-        .page-header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -50%;
-            width: 200px;
-            height: 200px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 50%;
-            animation: float 3s ease-in-out infinite;
-        }
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-        }
         .page-title {
             font-size: 32px;
             font-weight: 800;
@@ -146,13 +104,29 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
         .breadcrumb-nav a:hover {
             text-decoration: underline;
         }
+        .page-header {
+            background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+            padding: 28px;
+            border-radius: 12px;
+            margin-bottom: 28px;
+            box-shadow: 0 4px 12px rgba(0, 61, 130, 0.15);
+        }
+        body.dark-mode .page-header {
+            background: linear-gradient(135deg, #0d47a1 0%, #0b3c91 100%);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
         .calendar-container {
             background: white;
-            border-radius: 16px;
+            border-radius: 12px;
             box-shadow: 0 4px 16px rgba(0, 61, 130, 0.08);
             padding: 0;
             margin-bottom: 30px;
             overflow: hidden;
+        }
+        body.dark-mode .calendar-container {
+            background: #232323 !important;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3) !important;
+            border-color: rgba(255,255,255,0.08) !important;
         }
         .calendar-header {
             background: linear-gradient(135deg, #003d82 0%, #005ba8 100%);
@@ -215,6 +189,19 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
             box-shadow: 0 6px 20px rgba(0, 61, 130, 0.3);
             transform: translateY(-2px);
         }
+        body.dark-mode .tab-btn {
+            background: #232323 !important;
+            color: #e0e0e0 !important;
+            border-color: rgba(255,255,255,0.12) !important;
+        }
+        body.dark-mode .tab-btn:hover {
+            background: #2f2f2f !important;
+            color: #e0e0e0 !important;
+            border-color: rgba(255,255,255,0.2) !important;
+        }
+        body.dark-mode .tab-btn.active {
+            background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%) !important;
+        }
         /* Ensure Day View displays at full width */
         #calendar-section {
             width: 100% !important;
@@ -238,9 +225,33 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
             width: 100% !important;
             box-sizing: border-box !important;
         }
+        /* Schedule Calendar specific layout matching dashboard */
+        .main-content {
+            background-color: transparent !important;
+            width: auto !important;
+            margin: 0 0 0 250px !important;
+            min-height: calc(100vh - 60px) !important;
+            padding: 28px 28px !important;
+            box-sizing: border-box !important;
+        }
+        body.dark-mode .main-content {
+            background-color: transparent !important;
+        }
+        .content-wrapper {
+            width: auto !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+            background: transparent !important;
+        }
+        /* Ensure page looks consistent with dashboard */
+        .page-header {
+            color: #ffffff;
+        }
     </style>
 </head>
-<body>
+<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
     <div class="preloader flex-column justify-content-center align-items-center">
         <img class="animation__wobble" src="../assets/pics/bcpLogo.png" alt="AdminLTELogo" height="60" width="60" />
     </div>
@@ -254,13 +265,9 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
                     <i class="fas fa-calendar-alt"></i>
                     <span>Schedule Calendar</span>
                 </div>
-                <div class="page-subtitle">Create and manage employee schedules across all dates</div>
-                <div class="breadcrumb-nav">
-                    <a href="dashboard.php">Dashboard</a> / Calendar
-                </div>
             </div>
 
-            <div class="calendar-container">
+            <div class="calendar-container glass-panel">
                 <div class="calendar-body">
                     <!-- Calendar Component -->
                     <?php include '../app/components/calendar_schedule.php'; ?>
@@ -275,31 +282,35 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
     
     <!-- Calendar Schedule JS -->
     <script src="../app/js/calendar_schedule.js"></script>
-
     <script>
-        // Show preloader on navigation
-        document.addEventListener('DOMContentLoaded', function() {
+        // Show preloader on navigation and hide it after page load
+        function hidePreloader() {
             const preloader = document.querySelector('.preloader');
-            
-            // Hide preloader on initial load
-            setTimeout(() => {
-                if (preloader) {
-                    preloader.style.display = 'none';
-                }
-            }, 3000);
-            
+            if (preloader) {
+                preloader.style.display = 'none';
+                preloader.style.visibility = 'hidden';
+            }
+        }
+
+        function showPreloader() {
+            const preloader = document.querySelector('.preloader');
+            if (preloader) {
+                preloader.style.display = 'flex';
+                preloader.style.visibility = 'visible';
+            }
+        }
+
+        window.addEventListener('load', hidePreloader);
+
+        document.addEventListener('DOMContentLoaded', function() {
+            hidePreloader();
             const navLinks = document.querySelectorAll('a');
-            
+
             navLinks.forEach(link => {
-                link.addEventListener('click', function(e) {
+                link.addEventListener('click', function() {
                     const href = this.getAttribute('href');
-                    if (href && !href.includes('logout') && !href.startsWith('javascript') && !href.startsWith('#')) {
-                        if (preloader) {
-                            preloader.style.display = 'flex';
-                            setTimeout(() => {
-                                preloader.style.display = 'none';
-                            }, 3000);
-                        }
+                    if (href && !href.includes('logout') && !href.startsWith('javascript') && !href.startsWith('#') && !href.startsWith('mailto:') && !href.startsWith('tel:')) {
+                        showPreloader();
                     }
                 });
             });

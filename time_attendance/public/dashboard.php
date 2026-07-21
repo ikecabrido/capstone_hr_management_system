@@ -8,9 +8,14 @@
 require_once "../app/controllers/AuthController.php";
 require_once "../app/models/Attendance.php";
 require_once "../app/models/Employee.php";
+require_once "../app/models/Holiday.php";
+require_once "../app/models/EmployeeShift.php";
 require_once "../app/helpers/Helper.php";
 require_once "../app/helpers/AuditLog.php";
 require_once "../app/core/Session.php";
+require_once "../../auth/database.php";
+
+use App\Models\Holiday;
 
 Session::start();
 
@@ -29,6 +34,18 @@ if (!AuthController::hasRole('time')) {
 $attendanceModel = new Attendance();
 $employeeModel = new Employee();
 $auditLog = new AuditLog();
+
+// Initialize Holiday model and check if today is a holiday
+$database = Database::getInstance();
+$db = $database->getConnection();
+$holidayModel = new Holiday($db);
+$isHolidayToday = $holidayModel->isHoliday(date('Y-m-d'));
+$todayHolidayInfo = $holidayModel->getHolidayByDate(date('Y-m-d'));
+
+// Initialize EmployeeShift model and check for employees without shifts
+$employeeShiftModel = new EmployeeShift($db);
+$employeesWithoutShift = $employeeShiftModel->getEmployeesWithoutShift();
+$employeesWithoutShiftCount = count($employeesWithoutShift);
 
 // Get statistics
 $todayStats = $attendanceModel->getTodaySummary();
@@ -54,11 +71,13 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HR Dashboard - Time & Attendance System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
     <link rel="stylesheet" href="../../assets/dist/css/adminlte.min.css">
     <link rel="stylesheet" href="../../assets/plugins/toastr/toastr.min.css">
     <link rel="stylesheet" href="../assets/style.css">
     <link rel="stylesheet" href="../assets/dashboard.css">
     <link rel="stylesheet" href="../assets/realtime-dashboard.css">
+    <link rel="stylesheet" href="../assets/adminlte-overrides.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="../assets/mobile-responsive.js" defer></script>
     <script src="../assets/realtime-dashboard.js" defer></script>
@@ -84,34 +103,24 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
             background: #f5f5f5;
             margin: 0;
             padding: 0;
-            transition: margin-left 0.3s ease;
+            font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
         }
 
-        body.sidebar-collapsed {
-            margin-left: 0;
-        }
-
-        .main-content {
-            width: calc(100% - 250px);
-            margin-left: 250px;
-            margin-top: 60px;
-            min-height: calc(100vh - 60px);
-            overflow-y: auto;
-            transition: width 0.3s ease, margin-left 0.3s ease;
-        }
-
-        body.sidebar-collapsed .main-content {
-            width: 100%;
-            margin-left: 0;
+        .wrapper {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
 
         .content-wrapper {
-            width: 100%;
-            margin: 0;
-            padding: 30px 20px;
+            flex: 1;
+            padding: 24px 28px 28px;
+            margin-top: 60px;
+            transition: margin-left 0.3s ease, width 0.3s ease;
+            background: #f4f6f9;
+            min-height: calc(100vh - 60px);
         }
 
-        /* Override AdminLTE container defaults */
         .container,
         .container-fluid {
             margin: 0 !important;
@@ -119,10 +128,304 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
             width: 100% !important;
             max-width: 100% !important;
         }
+
+        .page-header {
+            background: linear-gradient(135deg, #0b3c91 0%, #1976d2 100%);
+            padding: 24px 28px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(11, 60, 145, 0.18);
+            position: relative;
+            overflow: hidden;
+            margin: 0 0 20px;
+            border: 1px solid rgba(255,255,255,0.12);
+        }
+
+        .page-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 180px;
+            height: 180px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-12px); }
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 0;
+            position: relative;
+            z-index: 1;
+            letter-spacing: 0.2px;
+        }
+
+        .page-title i {
+            font-size: 32px;
+            opacity: 0.95;
+        }
+
+        .page-subtitle {
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 14px;
+            margin: 6px 0 0 0;
+            position: relative;
+            z-index: 1;
+            font-weight: 400;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            margin-bottom: 22px;
+        }
+
+        .dashboard-grid .info-box {
+            display: flex;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+            overflow: hidden;
+            border: 0;
+        }
+
+        .info-box-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 70px;
+            min-width: 70px;
+            font-size: 32px;
+            color: white;
+            background: #1976d2;
+        }
+
+        .info-box-icon.bg-primary {
+            background: linear-gradient(135deg, #0d47a1, #1976d2);
+        }
+
+        .info-box-icon.bg-success {
+            background: linear-gradient(135deg, #2e7d32, #43a047);
+        }
+
+        .info-box-icon.bg-warning {
+            background: linear-gradient(135deg, #f57f17, #fbc02d);
+        }
+
+        .info-box-icon.bg-info {
+            background: linear-gradient(135deg, #0097a7, #00bcd4);
+        }
+
+        .info-box-content {
+            flex: 1;
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .info-box-text {
+            font-size: 12px;
+            color: #999;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .info-box-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: #0d47a1;
+            line-height: 1;
+        }
+
+        .info-box-unit {
+            font-size: 12px;
+            color: #bbb;
+            margin-top: 4px;
+        }
+
+        .dashboard-grid .card {
+            border: 0;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+            overflow: hidden;
+            border-left: 4px solid #1976d2;
+        }
+
+        .card {
+            border-radius: 12px;
+            border: 0;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+            overflow: hidden;
+        }
+
+        .main-sidebar,
+        .main-header {
+            border: 0;
+        }
+
+        .card .card-header {
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            padding: 14px 16px;
+            color: #0d47a1;
+        }
+
+        .card .card-header .card-title {
+            color: #0d47a1;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .card .card-body {
+            padding: 16px;
+        }
+
+        .content-wrapper .card,
+        .content-wrapper .page-header {
+            margin-left: 0;
+            margin-right: 0;
+        }
+
+        .realtime-dashboard-widget,
+        .container {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .container h2 {
+            font-size: 20px;
+            color: #0d47a1;
+            margin-bottom: 14px;
+            font-weight: 600;
+        }
+
+        .btn,
+        button {
+            border-radius: 6px;
+            border: 1px solid transparent;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        button:hover,
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        #realtimeRefresh {
+            background: #1976d2;
+            color: #fff;
+            padding: 7px 12px;
+            font-size: 13px;
+        }
+
+        .filter-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .filter-controls input,
+        .filter-controls select {
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 14px;
+            color: #2f3a4a;
+            background: #fff;
+            min-height: 38px;
+        }
+
+        .filter-controls input:focus,
+        .filter-controls select:focus {
+            border-color: #1976d2;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.12);
+        }
+
+        #attendanceTable {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #attendanceTable thead th {
+            background: #f8f9fa;
+            color: #0d47a1;
+            font-weight: 600;
+            text-align: left;
+            padding: 12px 10px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        #attendanceTable tbody td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #eef2f6;
+            color: #374151;
+            font-size: 14px;
+        }
+
+        #attendanceTable tbody tr:hover {
+            background: #f8fbff;
+        }
+
+        #attendanceTable tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            text-transform: uppercase;
+        }
+
+        .badge-success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .badge-warning {
+            background: #fff8e1;
+            color: #f57f17;
+        }
+
+        .badge-info {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .badge-danger {
+            background: #ffebee;
+            color: #c62828;
+        }
     </style>
 </head>
 
-<body>
+<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
     <div
         class="preloader flex-column justify-content-center align-items-center">
         <img
@@ -136,120 +439,87 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
 
     <div class="main-content">
         <div class="content-wrapper">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h1>Time & Attendance Dashboard</h1>
-                <div class="live-clock" id="liveClock">00:00:00</div>
+        <div class="page-header">
+            <div>
+                <div class="page-title">
+                    <i class="fas fa-chart-line"></i> Time & Attendance Dashboard
+                </div>
+                <div class="page-subtitle">Real-time attendance and HR analytics</div>
             </div>
+        </div>
+
+            <!-- Shift Assignment Alert -->
+            <?php if ($employeesWithoutShiftCount > 0): ?>
+            <div style="background: #fff3e0; border-left: 4px solid #FF9800; padding: 15px; margin-bottom: 20px; border-radius: 4px; display: flex; align-items: center; gap: 15px;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 28px; color: #FF9800;"></i>
+                <div style="flex: 1;">
+                    <strong style="color: #e65100; font-size: 16px;">Shift Assignment Required</strong>
+                    <p style="margin: 8px 0 0 0; color: #5d4037; font-size: 14px;">
+                        <strong><?php echo $employeesWithoutShiftCount; ?> employee<?php echo $employeesWithoutShiftCount > 1 ? 's' : ''; ?></strong> <?php echo $employeesWithoutShiftCount > 1 ? 'do' : 'does'; ?> not have an active shift assignment. This may affect attendance tracking and payroll calculations.
+                    </p>
+                    <p style="margin: 10px 0 0 0;">
+                        <a href="../shifts.php" style="background: #FF9800; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-weight: bold; display: inline-block;">Manage Shifts</a>
+                    </p>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- Holiday Alert -->
+            <?php if ($isHolidayToday && $todayHolidayInfo): ?>
+            <div style="background: #e3f2fd; border-left: 4px solid #2196F3; padding: 15px; margin-bottom: 20px; border-radius: 4px; display: flex; align-items: center; gap: 15px;">
+                <i class="fas fa-calendar-check" style="font-size: 28px; color: #2196F3;"></i>
+                <div>
+                    <strong style="color: #1565c0; font-size: 16px;">Today is a Public Holiday</strong>
+                    <p style="margin: 8px 0 0 0; color: #455a64; font-size: 14px;">
+                        <strong><?php echo htmlspecialchars($todayHolidayInfo['name']); ?></strong> - All employees are marked as HOLIDAY. No absences will be recorded.
+                    </p>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <!-- Quick Stats -->
             <div class="dashboard-grid">
-                <div class="card employees">
-                    <h3>Total Employees</h3>
-                    <div class="card-value"><?php echo $allEmployees; ?></div>
-                    <div class="card-unit">Active employees</div>
+                <div class="info-box">
+                    <div class="info-box-icon bg-primary">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="info-box-content">
+                        <span class="info-box-text">Total Employees</span>
+                        <span class="info-box-number"><?php echo $allEmployees; ?></span>
+                        <span class="info-box-unit">Active employees</span>
+                    </div>
                 </div>
 
-                <div class="card present">
-                    <h3>Present Today</h3>
-                    <div class="card-value"><?php echo $todayStats['present_count'] ?? 0; ?></div>
-                    <div class="card-unit"><?php echo $attendancePercentage; ?>% attendance</div>
+                <div class="info-box">
+                    <div class="info-box-icon bg-success">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <div class="info-box-content">
+                        <span class="info-box-text">Present Today</span>
+                        <span class="info-box-number"><?php echo $todayStats['present_count'] ?? 0; ?></span>
+                        <span class="info-box-unit"><?php echo $attendancePercentage; ?>% attendance</span>
+                    </div>
                 </div>
 
-                <div class="card absent">
-                    <h3>Absent Today</h3>
-                    <div class="card-value"><?php echo $todayStats['absent_count'] ?? 0; ?></div>
-                    <div class="card-unit">Need follow-up</div>
+                <div class="info-box">
+                    <div class="info-box-icon bg-warning">
+                        <i class="fas fa-user-times"></i>
+                    </div>
+                    <div class="info-box-content">
+                        <span class="info-box-text">Absent Today</span>
+                        <span class="info-box-number"><?php echo $todayStats['absent_count'] ?? 0; ?></span>
+                        <span class="info-box-unit">Need follow-up</span>
+                    </div>
                 </div>
 
-                <div class="card pending">
-                    <h3>Pending Approvals</h3>
-                    <div class="card-value"><?php echo count($pendingApprovals); ?></div>
-                    <div class="card-unit">Manual entries</div>
-                </div>
-            </div>
-
-            <!-- Attendance Metrics Overview -->
-            <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #007bff;">
-                <h2 style="color: #2c3e50; margin-bottom: 20px; font-size: 1.5rem;">📊 Monthly Attendance Metrics</h2>
-
-                <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                    <!-- Attendance Rate -->
-                    <div class="metric-card" style="background: #e3f2fd; border-left: 4px solid #2196F3; padding: 20px; border-radius: 4px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <span style="font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase;">Avg Attendance Rate</span>
-                            <i class="fas fa-chart-pie" style="color: #2196F3; font-size: 18px;"></i>
-                        </div>
-                        <div id="avg-attendance-rate" style="font-size: 28px; font-weight: bold; color: #2196F3;">--</div>
-                        <div style="font-size: 11px; color: #999; margin-top: 5px;">Target: 95%+</div>
+                <div class="info-box">
+                    <div class="info-box-icon bg-info">
+                        <i class="fas fa-clipboard-list"></i>
                     </div>
-
-                    <!-- Punctuality Score -->
-                    <div class="metric-card" style="background: #e8f5e9; border-left: 4px solid #4CAF50; padding: 20px; border-radius: 4px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <span style="font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase;">Avg Punctuality</span>
-                            <i class="fas fa-thumbs-up" style="color: #4CAF50; font-size: 18px;"></i>
-                        </div>
-                        <div id="avg-punctuality-score" style="font-size: 28px; font-weight: bold; color: #4CAF50;">--</div>
-                        <div style="font-size: 11px; color: #999; margin-top: 5px;">Grade Scale: A-F</div>
-                    </div>
-
-                    <!-- Absence Rate -->
-                    <div class="metric-card" style="background: #ffebee; border-left: 4px solid #f44336; padding: 20px; border-radius: 4px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <span style="font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase;">Avg Absence Rate</span>
-                            <i class="fas fa-ban" style="color: #f44336; font-size: 18px;"></i>
-                        </div>
-                        <div id="avg-absence-rate" style="font-size: 28px; font-weight: bold; color: #f44336;">--</div>
-                        <div style="font-size: 11px; color: #999; margin-top: 5px;">Alert if >20%</div>
-                    </div>
-
-                    <!-- Performance Score -->
-                    <div class="metric-card" style="background: #fff3e0; border-left: 4px solid #FF9800; padding: 20px; border-radius: 4px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <span style="font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase;">Performance Score</span>
-                            <i class="fas fa-star" style="color: #FF9800; font-size: 18px;"></i>
-                        </div>
-                        <div id="avg-performance-score" style="font-size: 28px; font-weight: bold; color: #FF9800;">--</div>
-                        <div style="font-size: 11px; color: #999; margin-top: 5px;">Weighted: 40-35-25</div>
-                    </div>
-
-                    <!-- Late Incidents -->
-                    <div class="metric-card" style="background: #e1f5fe; border-left: 4px solid #03A9F4; padding: 20px; border-radius: 4px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <span style="font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase;">Late Incidents</span>
-                            <i class="fas fa-hourglass-end" style="color: #03A9F4; font-size: 18px;"></i>
-                        </div>
-                        <div id="total-late-incidents" style="font-size: 28px; font-weight: bold; color: #03A9F4;">--</div>
-                        <div style="font-size: 11px; color: #999; margin-top: 5px;">Current Month</div>
-                    </div>
-
-                    <!-- Overtime Hours -->
-                    <div class="metric-card" style="background: #f3e5f5; border-left: 4px solid #9C27B0; padding: 20px; border-radius: 4px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <span style="font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase;">Overtime Hours</span>
-                            <i class="fas fa-bolt" style="color: #9C27B0; font-size: 18px;"></i>
-                        </div>
-                        <div id="total-overtime-hours" style="font-size: 28px; font-weight: bold; color: #9C27B0;">--</div>
-                        <div style="font-size: 11px; color: #999; margin-top: 5px;">Total for Month</div>
-                    </div>
-
-                    <!-- Excellent Performers -->
-                    <div class="metric-card" style="background: #e0f2f1; border-left: 4px solid #009688; padding: 20px; border-radius: 4px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <span style="font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase;">Excellent (A Grade)</span>
-                            <i class="fas fa-check-circle" style="color: #009688; font-size: 18px;"></i>
-                        </div>
-                        <div id="excellent-performers" style="font-size: 28px; font-weight: bold; color: #009688;">--</div>
-                        <div style="font-size: 11px; color: #999; margin-top: 5px;">Score ≥90</div>
-                    </div>
-
-                    <!-- Critical Issues -->
-                    <div class="metric-card" style="background: #ffe0b2; border-left: 4px solid #FF6F00; padding: 20px; border-radius: 4px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <span style="font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase;">Critical Issues</span>
-                            <i class="fas fa-exclamation-triangle" style="color: #FF6F00; font-size: 18px;"></i>
-                        </div>
-                        <div id="critical-issues" style="font-size: 28px; font-weight: bold; color: #FF6F00;">--</div>
-                        <div style="font-size: 11px; color: #999; margin-top: 5px;">Needs Action</div>
+                    <div class="info-box-content">
+                        <span class="info-box-text">Pending Approvals</span>
+                        <span class="info-box-number"><?php echo count($pendingApprovals); ?></span>
+                        <span class="info-box-unit">Manual entries</span>
                     </div>
                 </div>
             </div>
@@ -335,49 +605,9 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
     </div>
 
     <script>
-        // Load attendance metrics
-        function loadAttendanceMetrics() {
-            const monthYear = new Date().toISOString().slice(0, 7);
-            $.ajax({
-                url: '../app/api/metrics.php',
-                type: 'GET',
-                data: {
-                    action: 'get_attendance_metrics_summary',
-                    month_year: monthYear
-                },
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success && response.summary) {
-                        $('#avg-attendance-rate').text(Math.round(response.summary.avg_attendance_rate) + '%');
-                        $('#avg-punctuality-score').text(Math.round(response.summary.avg_punctuality_score));
-                        $('#avg-absence-rate').text(Math.round(response.summary.avg_absence_rate) + '%');
-                        $('#avg-performance-score').text(Math.round(response.summary.avg_overall_performance));
-                        $('#total-late-incidents').text(Math.round(response.summary.total_late_incidents));
-                        $('#total-overtime-hours').text(Math.round(response.summary.total_overtime_hours * 10) / 10);
-                        $('#excellent-performers').text(response.summary.excellent_performers);
-                        $('#critical-issues').text(response.summary.critical_issues);
-                    }
-                },
-                error: function(error) {
-                    console.log('Error loading metrics:', error);
-                    // Set default values on error
-                    const defaultElements = ['#avg-attendance-rate', '#avg-punctuality-score', '#avg-absence-rate',
-                        '#avg-performance-score', '#total-late-incidents', '#total-overtime-hours',
-                        '#excellent-performers', '#critical-issues'
-                    ];
-                    defaultElements.forEach(el => $(el).text('N/A'));
-                }
-            });
-        }
-
-        // Load metrics on page load
-        $(document).ready(function() {
-            loadAttendanceMetrics();
-            // Auto-refresh metrics every 5 minutes
-            setInterval(loadAttendanceMetrics, 5 * 60 * 1000);
-        });
-
         // Attendance data from PHP
+        const isHolidayToday = <?php echo json_encode($isHolidayToday); ?>;
+        const holidayInfo = <?php echo json_encode($todayHolidayInfo); ?>;
         const attendanceData = <?php echo json_encode($todayRecords); ?>;
 
         // Display records
@@ -392,8 +622,20 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
 
             records.forEach(record => {
                 const row = document.createElement('tr');
-                const status = record.time_in ? (new Date(record.time_in).getHours() > 9 ? 'LATE' : 'PRESENT') : 'ABSENT';
-                const statusClass = status === 'PRESENT' ? 'badge-success' : (status === 'LATE' ? 'badge-warning' : 'badge-danger');
+                
+                // Check if today is a holiday - if so, mark status as HOLIDAY
+                let status;
+                if (isHolidayToday) {
+                    status = 'HOLIDAY';
+                } else {
+                    status = record.time_in ? (new Date(record.time_in).getHours() > 9 ? 'LATE' : 'PRESENT') : 'ABSENT';
+                }
+                
+                const statusClass = status === 'PRESENT' ? 'badge-success' : (
+                    status === 'LATE' ? 'badge-warning' : (
+                        status === 'HOLIDAY' ? 'badge-info' : 'badge-danger'
+                    )
+                );
 
                 row.innerHTML = `
                     <td>
@@ -460,8 +702,17 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
                     break;
                 case 'status':
                     filtered.sort((a, b) => {
-                        const statusA = a.time_in ? 'PRESENT' : 'ABSENT';
-                        const statusB = b.time_in ? 'PRESENT' : 'ABSENT';
+                        let statusA;
+                        let statusB;
+                        
+                        if (isHolidayToday) {
+                            statusA = 'HOLIDAY';
+                            statusB = 'HOLIDAY';
+                        } else {
+                            statusA = a.time_in ? 'PRESENT' : 'ABSENT';
+                            statusB = b.time_in ? 'PRESENT' : 'ABSENT';
+                        }
+                        
                         return statusB.localeCompare(statusA);
                     });
                     break;
@@ -477,9 +728,16 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
         // Initial display
         displayRecords(attendanceData);
 
-        // Load dark mode preference on page load
+        // Load dark mode preference (default to light mode for time_attendance)
         window.addEventListener('load', function() {
-            const darkMode = localStorage.getItem('darkMode') === 'true';
+            const darkModeSetting = localStorage.getItem('darkMode');
+            const darkMode = darkModeSetting === 'true'; // Only true if explicitly set
+            
+            // Reset to light mode by default on each page load for time_attendance
+            if (!darkModeSetting) {
+                localStorage.setItem('darkMode', 'false');
+            }
+            
             if (darkMode) {
                 document.body.classList.add('dark-mode');
             }

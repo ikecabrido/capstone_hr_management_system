@@ -4,6 +4,7 @@
  */
 
 const API_BASE = '../api/';
+const chartInstances = {};
 
 // ============ INITIALIZATION ============
 document.addEventListener('DOMContentLoaded', function() {
@@ -105,9 +106,6 @@ function switchTab(tabName) {
 function loadDashboard() {
     loadDashboardMetrics();
     loadDepartmentChart();
-    loadGenderChart();
-    loadAgeChart();
-    loadTenureChart();
 }
 
 /**
@@ -118,12 +116,18 @@ function loadDashboardMetrics() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                document.getElementById('total-employees').textContent = data.data.total_employees;
-                document.getElementById('total-teachers').textContent = data.data.total_teachers;
-                document.getElementById('total-staff').textContent = data.data.total_staff;
-                document.getElementById('new-hires').textContent = data.data.new_hires;
-                document.getElementById('avg-salary').textContent = '$' + data.data.avg_salary.toLocaleString();
-                document.getElementById('avg-performance').textContent = data.data.avg_performance.toFixed(2) + ' / 5';
+                const metrics = data.data;
+                document.getElementById('total-employees').textContent = metrics.total_employees || 0;
+                document.getElementById('attendance-rate').textContent = (metrics.attendance_rate || 0).toFixed(1) + '%';
+                const lateCount = metrics.late_count || 0;
+                const absentCount = metrics.absent_count || 0;
+                document.getElementById('late-absent').textContent = `${lateCount + absentCount} (${lateCount} late / ${absentCount} absent)`;
+                document.getElementById('avg-performance').textContent = (metrics.avg_performance || 0).toFixed(2) + ' / 5';
+                document.getElementById('turnover-rate').textContent = (metrics.turnover_rate || 0).toFixed(2) + '%';
+
+                loadAttendanceChart(metrics.attendance_breakdown || []);
+                loadPerformanceRatingChart(metrics.performance_ratings || []);
+                loadTurnoverChart(metrics.turnover_trend || []);
             }
         })
         .catch(error => console.error('Error loading metrics:', error));
@@ -187,6 +191,130 @@ function loadDepartmentChart() {
             }
         })
         .catch(error => console.error('Error loading department chart:', error));
+}
+
+/**
+ * Load attendance breakdown chart
+ */
+function loadAttendanceChart(attendanceData) {
+    if (!document.getElementById('attendanceChart')) return;
+
+    const labels = attendanceData.map(item => item.status || item.category || 'Unknown');
+    const counts = attendanceData.map(item => parseInt(item.count) || 0);
+    const ctx = document.getElementById('attendanceChart').getContext('2d');
+
+    if (chartInstances.attendance) {
+        chartInstances.attendance.destroy();
+    }
+
+    chartInstances.attendance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: counts,
+                backgroundColor: ['#2ecc71', '#f1c40f', '#e74c3c', '#3498db'],
+                borderColor: '#ffffff',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+/**
+ * Load performance rating distribution chart
+ */
+function loadPerformanceRatingChart(ratingData) {
+    if (!document.getElementById('performanceChart')) return;
+
+    const labels = ratingData.map(item => item.rating || item.performance_level || 'Unknown');
+    const counts = ratingData.map(item => parseInt(item.count) || 0);
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+
+    if (chartInstances.performance) {
+        chartInstances.performance.destroy();
+    }
+
+    chartInstances.performance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Rating Count',
+                data: counts,
+                backgroundColor: '#8e44ad',
+                borderColor: '#6441a5',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+/**
+ * Load turnover trend chart
+ */
+function loadTurnoverChart(turnoverData) {
+    if (!document.getElementById('turnoverChart')) return;
+
+    const labels = turnoverData.map(item => item.month);
+    const counts = turnoverData.map(item => parseInt(item.count) || 0);
+    const ctx = document.getElementById('turnoverChart').getContext('2d');
+
+    if (chartInstances.turnover) {
+        chartInstances.turnover.destroy();
+    }
+
+    chartInstances.turnover = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Turnover',
+                data: counts,
+                borderColor: '#e67e22',
+                backgroundColor: 'rgba(230, 126, 34, 0.2)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
 }
 
 /**

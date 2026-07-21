@@ -1,0 +1,141 @@
+2026-04-05 13:09:59 - Root API called
+2026-04-05 13:13:30 - START - Root API called
+2026-04-05 13:13:30 - Input received
+2026-04-05 13:13:30 - Input validated
+2026-04-05 13:13:30 - Requiring database.php from: C:\xampp\htdocs\capstone_hr_management_system/auth/database.php
+2026-04-05 13:13:30 - Getting database instance
+2026-04-05 13:13:30 - Database connected successfully
+2026-04-05 13:13:30 - Preparing query
+2026-04-05 13:13:30 - Executing query with token
+2026-04-05 13:13:30 - Query executed
+2026-04-05 13:13:30 - Token fetched: found
+2026-04-05 13:13:30 - Exception: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'hr_management.hr_employees' doesn't exist
+2026-04-05 13:17:25 - START - Root API called
+2026-04-05 13:17:25 - Input received
+2026-04-05 13:17:25 - Input validated
+2026-04-05 13:17:25 - Requiring database.php from: C:\xampp\htdocs\capstone_hr_management_system/auth/database.php
+2026-04-05 13:17:25 - Getting database instance
+2026-04-05 13:17:25 - Database connected successfully
+2026-04-05 13:17:25 - Preparing query
+2026-04-05 13:17:25 - Executing query with token
+2026-04-05 13:17:25 - Query executed
+2026-04-05 13:17:25 - Token fetched: found
+2026-04-05 13:17:25 - Verifying employee
+2026-04-05 13:17:25 - Exception: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'employee_first_name' in 'field list'
+2026-04-05 13:21:49 - START - Root API called
+2026-04-05 13:21:49 - Input received
+2026-04-05 13:21:49 - Input validated
+2026-04-05 13:21:49 - Requiring database.php from: C:\xampp\htdocs\capstone_hr_management_system/auth/database.php
+2026-04-05 13:21:49 - Getting database instance
+2026-04-05 13:21:49 - Database connected successfully
+2026-04-05 13:21:49 - Preparing query
+2026-04-05 13:21:49 - Executing query with token
+2026-04-05 13:21:49 - Query executed
+2026-04-05 13:21:49 - Token fetched: found
+2026-04-05 13:21:49 - Verifying employee
+2026-04-05 13:21:49 - Employee: found
+2026-04-05 13:21:49 - Exception: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'shift_date' in 'where clause'
+2026-04-05 13:24:55 - START - Root API called
+2026-04-05 13:24:55 - Input received
+2026-04-05 13:24:55 - Input validated
+2026-04-05 13:24:55 - Requiring database.php from: C:\xampp\htdocs\capstone_hr_management_system/auth/database.php
+2026-04-05 13:24:55 - Getting database instance
+2026-04-05 13:24:55 - Database connected successfully
+2026-04-05 13:24:55 - Preparing query
+2026-04-05 13:24:55 - Executing query with token
+2026-04-05 13:24:55 - Query executed
+2026-04-05 13:24:55 - Token fetched: found
+2026-04-05 13:24:55 - Verifying employee
+2026-04-05 13:24:55 - Employee: found
+2026-04-05 13:26:31 - START - Root API called
+2026-04-05 13:26:31 - Input received
+2026-04-05 13:26:31 - Input validated
+2026-04-05 13:26:31 - Requiring database.php from: C:\xampp\htdocs\capstone_hr_management_system/auth/database.php
+2026-04-05 13:26:31 - Getting database instance
+2026-04-05 13:26:31 - Database connected successfully
+2026-04-05 13:26:31 - Preparing query
+2026-04-05 13:26:31 - Executing query with token
+2026-04-05 13:26:31 - Query executed
+2026-04-05 13:26:31 - Token fetched: found
+2026-04-05 13:26:31 - Verifying employee
+2026-04-05 13:26:31 - Employee: found
+2026-04-05 23:14:40 - START - Root API called
+2026-04-05 23:14:40 - Input received
+2026-04-05 23:14:40 - Input validated
+2026-04-05 23:14:40 - Requiring database.php from: C:\xampp\htdocs\capstone_hr_management_system/auth/database.php
+2026-04-05 23:14:40 - Getting database instance
+2026-04-05 23:14:40 - Database connected successfully
+2026-04-05 23:14:40 - Preparing query
+2026-04-05 23:14:40 - Executing query with token
+2026-04-05 23:14:40 - Query executed
+2026-04-05 23:14:40 - Token fetched: found
+2026-04-05 23:14:40 - Verifying employee
+2026-04-05 23:14:40 - Employee: found
+2026-04-05 23:16:31 - START - Root API called
+2026-04-05 23:16:31 - Input received
+2026-04-05 23:16:31 - Input validated
+2026-04-05 23:16:31 - Requiring database.php from: C:\xampp\htdocs\capstone_hr_management_system/auth/database.php
+2026-04-05 23:16:31 - Getting database instance
+2026-04-05 23:16:31 - Database connected successfully
+2026-04-05 23:16:31 - Preparing query
+2026-04-05 23:16:31 - Executing query with token
+2026-04-05 23:16:31 - Query executed
+2026-04-05 23:16:31 - Token fetched: found
+2026-04-05 23:16:31 - Verifying employee
+2026-04-05 23:16:31 - Employee: found
+2026-04-05 23:16:35 - START - Root API called
+2026-04-05 23:16:35 - Input received
+2026-04-05 23:16:35 - Input validated
+2026-04-05 23:16:35 - Requiring database.php from: C:\xampp\htdocs\capstone_hr_management_system/auth/database.php
+2026-04-05 23:16:35 - Getting database instance
+2026-04-05 23:16:35 - Database connected successfully
+2026-04-05 23:16:35 - Preparing query
+2026-04-05 23:16:35 - Executing query with token
+2026-04-05 23:16:35 - Query executed
+2026-04-05 23:16:35 - Token fetched: found
+2026-04-05 23:16:35 - Exception: Token has already been used
+2026-04-05 23:16:37 - START - Root API called
+2026-04-05 23:16:37 - Input received
+2026-04-05 23:16:37 - Input validated
+2026-04-05 23:16:38 - Requiring database.php from: C:\xampp\htdocs\capstone_hr_management_system/auth/database.php
+2026-04-05 23:16:38 - Getting database instance
+2026-04-05 23:16:38 - Database connected successfully
+2026-04-05 23:16:38 - Preparing query
+2026-04-05 23:16:38 - Executing query with token
+2026-04-05 23:16:38 - Query executed
+2026-04-05 23:16:38 - Token fetched: found
+2026-04-05 23:16:38 - Exception: Token has already been used
+2026-04-05 23:16:47 - START - Root API called
+2026-04-05 23:16:47 - Input received
+2026-04-05 23:16:47 - Input validated
+2026-04-05 23:16:47 - Requiring database.php from: C:\xampp\htdocs\capstone_hr_management_system/auth/database.php
+2026-04-05 23:16:47 - Getting database instance
+2026-04-05 23:16:47 - Database connected successfully
+2026-04-05 23:16:47 - Preparing query
+2026-04-05 23:16:47 - Executing query with token
+2026-04-05 23:16:47 - Query executed
+2026-04-05 23:16:47 - Token fetched: found
+2026-04-05 23:16:47 - Exception: Token has already been used
+2026-04-05 23:17:01 - START - Root API called
+2026-04-05 23:17:01 - Input received
+2026-04-05 23:17:01 - Input validated
+2026-04-05 23:17:01 - Requiring database.php from: C:\xampp\htdocs\capstone_hr_management_system/auth/database.php
+2026-04-05 23:17:01 - Getting database instance
+2026-04-05 23:17:01 - Database connected successfully
+2026-04-05 23:17:01 - Preparing query
+2026-04-05 23:17:01 - Executing query with token
+2026-04-05 23:17:01 - Query executed
+2026-04-05 23:17:01 - Token fetched: found
+2026-04-05 23:17:01 - Exception: Token has already been used
+2026-04-06 06:38:54 - START - Root API called
+2026-04-06 06:38:54 - Input received
+2026-04-06 06:38:54 - Input validated
+2026-04-06 06:38:54 - Requiring database.php from: C:\xampp\htdocs\capstone_hr_management_system/auth/database.php
+2026-04-06 06:38:54 - Getting database instance
+2026-04-06 06:38:54 - Database connected successfully
+2026-04-06 06:38:54 - Preparing query
+2026-04-06 06:38:54 - Executing query with token
+2026-04-06 06:38:54 - Query executed
+2026-04-06 06:38:54 - Token fetched: found
+2026-04-06 06:38:54 - Verifying employee
+2026-04-06 06:38:54 - Employee: found

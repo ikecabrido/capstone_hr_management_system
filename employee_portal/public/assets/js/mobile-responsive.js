@@ -6,15 +6,10 @@
 (function() {
     'use strict';
 
-    // Prevent double-tap zoom on buttons
-    document.addEventListener('touchend', function(event) {
-        if (event.target.tagName === 'BUTTON' || 
-            event.target.tagName === 'A' || 
-            event.target.closest('button') || 
-            event.target.closest('a')) {
-            event.preventDefault();
-        }
-    }, false);
+    // COMPLETELY DISABLED: touchend preventDefault handler
+    // This was causing issues with Bootstrap modal triggers on mobile devices
+    // Bootstrap 5 handles touch events internally and we should not interfere with them
+    // Removed the entire touchend event listener that was preventing clicks on modal buttons
 
     // Handle viewport meta tag
     function ensureViewportMeta() {
@@ -30,10 +25,20 @@
     }
 
     // Add touch feedback to clickable elements on mobile
+    // IMPORTANT: Exclude Bootstrap modal controls to prevent visual interference
     function addTouchFeedback() {
         if (!('ontouchstart' in window)) return;
 
-        const clickableElements = document.querySelectorAll('button, a, [role="button"], .nav-item');
+        // Only add touch feedback to non-Bootstrap interactive elements
+        // Exclude: data-bs-toggle, data-bs-dismiss, btn-close, and elements within modals
+        const clickableElements = document.querySelectorAll(
+            'button:not([data-bs-toggle]):not([data-toggle]):not([data-bs-dismiss]):not(.btn-close), ' +
+            'a:not([data-bs-toggle]):not([data-toggle]):not([data-bs-dismiss]), ' +
+            '[role="button"]:not([data-bs-toggle]):not([data-toggle]):not([data-bs-dismiss]), ' +
+            '.nav-item, ' +
+            'input[type="button"], ' +
+            'input[type="submit"]'
+        );
         
         clickableElements.forEach(el => {
             el.addEventListener('touchstart', function() {

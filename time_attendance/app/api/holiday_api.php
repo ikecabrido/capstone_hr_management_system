@@ -55,6 +55,10 @@ try {
             echo $controller->isHoliday();
             break;
 
+        case 'fix_empty_names':
+            echo $controller->fixEmptyNames();
+            break;
+
         case 'get_page_data':
             echo $controller->getPageData();
             break;

@@ -4,7 +4,7 @@
  * Shows individual employee attendance stats, leave balance, and performance
  */
 
-require_once "../app/config/Database.php";
+require_once "../../auth/database.php";
 require_once "../app/controllers/AuthController.php";
 require_once "../app/controllers/AttendanceController.php";
 require_once "../app/models/Employee.php";
@@ -27,7 +27,7 @@ $user_id = AuthController::getCurrentUserId();
 $employeeModel = new Employee();
 $attendanceModel = new Attendance();
 $leaveModel = new Leave();
-$db = new Database();
+$db = Database::getInstance();
 $conn = $db->getConnection();
 $employeeShiftModel = new EmployeeShift($conn);
 $attendanceController = new AttendanceController();
@@ -96,7 +96,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 // Get attendance period - from hire date to today (not just current month)
 $query_employee = "SELECT date_hired FROM employees WHERE employee_id = ?";
-$db = new Database();
+$db = Database::getInstance();
 $conn = $db->getConnection();
 $stmt_emp = $conn->prepare($query_employee);
 $stmt_emp->execute([$employee_id]);

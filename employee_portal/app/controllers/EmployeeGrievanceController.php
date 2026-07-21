@@ -18,7 +18,7 @@ class EmployeeGrievanceController
     {
         $user_id = $_SESSION['user_id'] ?? null;
         $employee = $this->employeeModel->findByUserId($user_id);
-        $employee_id = $employee['id'] ?? null;
+        $employee_id = $employee['employee_id'] ?? null;
 
         $content = __DIR__ . '/../views/engagement-relations/main-content.php';
         require __DIR__ . '/../views/engagement-relations/index.php';

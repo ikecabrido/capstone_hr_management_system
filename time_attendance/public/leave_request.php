@@ -4,7 +4,7 @@
  * Employees can submit leave requests for approval
  */
 
-require_once "../app/config/Database.php";
+require_once "../../auth/database.php";
 require_once "../app/controllers/AuthController.php";
 require_once "../app/controllers/LeaveController.php";
 require_once "../app/models/Employee.php";
@@ -79,8 +79,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 }
 
 // Get leave types using Database class
-require_once "../app/config/Database.php";
-$database = new Database();
+require_once "../../auth/database.php";
+$database = Database::getInstance();
 $db = $database->getConnection();
 $query = "SELECT * FROM ta_leave_types WHERE is_deductible = 1 ORDER BY leave_type_name";
 $stmt = $db->prepare($query);
@@ -95,7 +95,9 @@ $leaveTypes = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Leave Request - Time & Attendance System</title>
     <link rel="icon" href="../Bestlink College of the Philippines.jpeg" type="image/jpeg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/style.css">
+    <link rel="stylesheet" href="../assets/adminlte-overrides.css">
     <script src="../assets/mobile-responsive.js" defer></script>
     <style>
         body {
@@ -105,23 +107,6 @@ $leaveTypes = $stmt->fetchAll(PDO::FETCH_ASSOC);
             transition: margin-left 0.3s ease;
         }
 
-        body.sidebar-collapsed {
-            margin-left: 0;
-        }
-
-        .main-content {
-            width: calc(100% - 250px);
-            margin-left: 250px;
-            margin-top: 60px;
-            min-height: calc(100vh - 60px);
-            padding: 30px 20px;
-            transition: width 0.3s ease, margin-left 0.3s ease;
-        }
-
-        body.sidebar-collapsed .main-content {
-            width: 100%;
-            margin-left: 0;
-        }
         .content-wrapper {
             max-width: 900px;
             margin: 0 auto;

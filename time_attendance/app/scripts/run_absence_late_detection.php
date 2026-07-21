@@ -19,7 +19,7 @@ ini_set('log_errors', 1);
 date_default_timezone_set('Asia/Manila');
 
 // Require files
-require_once __DIR__ . '/../app/config/Database.php';
+require_once __DIR__ . '/../../auth/database.php';
 require_once __DIR__ . '/../app/helpers/AbsenceAndLateDetector.php';
 
 try {

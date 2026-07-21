@@ -34,7 +34,7 @@ class OnlineMeetingController
         }
         $meetings = $this->meetingModel->getAll();
         $employee = $this->employeeModel->findByUserId($user_id);
-        $employee_id = $employee['id'] ?? null;
+        $employee_id = $employee['employee_id'] ?? null;
 
         $title = "Admin Online Meeting";
         $content = __DIR__ . '/../views/admin/online-meeting/main-content.php';

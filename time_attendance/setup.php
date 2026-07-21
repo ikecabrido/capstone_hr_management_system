@@ -7,7 +7,7 @@
  */
 
 session_start();
-require_once __DIR__ . '/app/config/Database.php';
+require_once __DIR__ . '/../auth/database.php';
 require_once __DIR__ . '/app/models/ShiftValidator.php';
 require_once __DIR__ . '/app/models/UnexpectedHoliday.php';
 
@@ -18,7 +18,7 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? $_SESSION['role']
 }
 
 try {
-    $database = new Database();
+    $database = Database::getInstance();
     $conn = $database->getConnection();
     
     echo "<h2>Time & Attendance System - Database Setup</h2>";

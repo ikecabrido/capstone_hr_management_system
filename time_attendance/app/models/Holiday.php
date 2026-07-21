@@ -20,7 +20,20 @@ class Holiday
      */
     public function getAllHolidays($filters = [])
     {
-        $query = "SELECT * FROM {$this->table} WHERE is_active = 1";
+        // Use COALESCE to provide fallback names - if name is empty, use description, otherwise use a default
+        $query = "SELECT 
+                    id,
+                    COALESCE(NULLIF(name, ''), description, 'Holiday') as name,
+                    holiday_date,
+                    is_recurring,
+                    country_code,
+                    description,
+                    category,
+                    is_active,
+                    created_by,
+                    created_at,
+                    updated_at
+                  FROM {$this->table} WHERE is_active = 1";
 
         if (isset($filters['year'])) {
             $query .= " AND YEAR(holiday_date) = :year";
@@ -57,7 +70,19 @@ class Holiday
      */
     public function getUpcomingHolidays($days = 30)
     {
-        $query = "SELECT * FROM {$this->table} 
+        $query = "SELECT 
+                    id,
+                    COALESCE(NULLIF(name, ''), description, 'Holiday') as name,
+                    holiday_date,
+                    is_recurring,
+                    country_code,
+                    description,
+                    category,
+                    is_active,
+                    created_by,
+                    created_at,
+                    updated_at
+                  FROM {$this->table} 
                  WHERE is_active = 1 
                  AND holiday_date BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL :days DAY)
                  ORDER BY holiday_date ASC";
@@ -74,7 +99,19 @@ class Holiday
      */
     public function getHolidaysByRange($startDate, $endDate)
     {
-        $query = "SELECT * FROM {$this->table}
+        $query = "SELECT 
+                    id,
+                    COALESCE(NULLIF(name, ''), description, 'Holiday') as name,
+                    holiday_date,
+                    is_recurring,
+                    country_code,
+                    description,
+                    category,
+                    is_active,
+                    created_by,
+                    created_at,
+                    updated_at
+                  FROM {$this->table}
                  WHERE is_active = 1
                  AND holiday_date BETWEEN :startDate AND :endDate
                  ORDER BY holiday_date ASC";
@@ -109,7 +146,19 @@ class Holiday
      */
     public function getHolidayByDate($date)
     {
-        $query = "SELECT * FROM {$this->table}
+        $query = "SELECT 
+                    id,
+                    COALESCE(NULLIF(name, ''), description, 'Holiday') as name,
+                    holiday_date,
+                    is_recurring,
+                    country_code,
+                    description,
+                    category,
+                    is_active,
+                    created_by,
+                    created_at,
+                    updated_at
+                  FROM {$this->table}
                  WHERE is_active = 1
                  AND DATE(holiday_date) = DATE(:date)
                  LIMIT 1";
@@ -196,7 +245,19 @@ class Holiday
      */
     public function getRecurringHolidaysForYear($year)
     {
-        $query = "SELECT * FROM {$this->table}
+        $query = "SELECT 
+                    id,
+                    COALESCE(NULLIF(name, ''), description, 'Holiday') as name,
+                    holiday_date,
+                    is_recurring,
+                    country_code,
+                    description,
+                    category,
+                    is_active,
+                    created_by,
+                    created_at,
+                    updated_at
+                  FROM {$this->table}
                  WHERE is_active = 1
                  AND is_recurring = 1
                  AND YEAR(holiday_date) <= :year

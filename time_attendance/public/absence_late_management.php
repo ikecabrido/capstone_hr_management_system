@@ -47,203 +47,96 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Absence & Late Management</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <link rel="stylesheet" href="../../assets/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="../../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
     <link rel="stylesheet" href="../../assets/plugins/toastr/toastr.min.css">
     <link rel="stylesheet" href="../assets/style.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    <link rel="stylesheet" href="../assets/dashboard.css">
+    <link rel="stylesheet" href="../../payroll/custom.css">
+    <link rel="stylesheet" href="../assets/adminlte-overrides.css">
+<style>
 
-        html, body {
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            background: #f5f5f5;
-            margin: 0;
-            padding: 0;
-            transition: margin-left 0.3s ease;
-        }
-
-        body.sidebar-collapsed {
-            margin-left: 0;
-        }
-
-        .main-content {
-            width: calc(100% - 250px);
-            margin-left: 250px;
-            margin-top: 60px;
-            min-height: calc(100vh - 60px);
-            overflow-y: auto;
-            transition: width 0.3s ease, margin-left 0.3s ease;
-        }
-
-        body.sidebar-collapsed .main-content {
-            width: 100%;
-            margin-left: 0;
-        }
-
-        .content-wrapper {
-            width: 100%;
-            margin: 0;
-            padding: 30px 20px;
-        }
-
-        .container, .container-fluid {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            max-width: 100%;
-        }
-
-        .preloader {
-            margin: 0;
-            padding: 0;
-        }
-
-        /* Page Header */
-        .page-header {
-            margin-bottom: 35px;
-            margin-top: 0;
-            background: linear-gradient(135deg, #003d82 0%, #005ba8 100%);
-            padding: 35px;
-            border-radius: 0;
-            box-shadow: 0 4px 20px rgba(0, 61, 130, 0.15);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .page-header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -50%;
-            width: 200px;
-            height: 200px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 50%;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-        }
-
-        .page-title {
-            font-size: 32px;
-            font-weight: 800;
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 8px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .page-title i {
-            font-size: 36px;
-            opacity: 0.95;
-        }
-
-        .page-subtitle {
-            color: rgba(255, 255, 255, 0.85);
-            font-size: 14px;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* Stats Grid */
+        /* Stats Grid - Dashboard Style */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            margin-bottom: 24px;
         }
 
         .stat-card {
-            background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
-            padding: 28px;
-            border-radius: 16px;
-            box-shadow: 0 4px 16px rgba(0, 61, 130, 0.08);
-            border: 2px solid rgba(0, 61, 130, 0.08);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
+            display: flex;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
             overflow: hidden;
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 5px;
-            background: linear-gradient(90deg, #003d82, #005ba8);
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform 0.3s ease;
-        }
-
-        .stat-card::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -50%;
-            width: 120px;
-            height: 120px;
-            background: linear-gradient(135deg, #003d82, #005ba8);
-            border-radius: 50%;
-            opacity: 0.05;
+            border: 0;
             transition: all 0.3s ease;
         }
 
         .stat-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 12px 32px rgba(0, 61, 130, 0.2);
-            border-color: rgba(0, 61, 130, 0.15);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(15, 23, 42, 0.12);
         }
 
-        .stat-card:hover::before {
-            transform: scaleX(1);
+        .stat-card::before {
+            content: '';
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 70px;
+            min-width: 70px;
+            background: linear-gradient(135deg, #0d47a1, #1976d2);
+            color: white;
+            font-size: 28px;
+            flex-shrink: 0;
         }
 
-        .stat-card:hover::after {
-            opacity: 0.08;
+        .stat-card.pending::before {
+            background: linear-gradient(135deg, #f57f17, #fbc02d);
+        }
+
+        .stat-card.approved::before {
+            background: linear-gradient(135deg, #2e7d32, #43a047);
+        }
+
+        .stat-card.rejected::before {
+            background: linear-gradient(135deg, #c62828, #e53935);
+        }
+
+        .stat-card::after {
+            display: none;
         }
 
         .stat-card h4 {
-            color: #666;
-            font-size: 13px;
-            margin: 0 0 10px 0;
+            color: #999;
+            font-size: 12px;
+            margin: 0;
             text-transform: uppercase;
             font-weight: 600;
-            position: relative;
-            z-index: 1;
+            letter-spacing: 0.5px;
+            line-height: 1.2;
         }
 
         .stat-value {
-            font-size: 32px;
-            font-weight: 800;
-            color: #003d82;
-            position: relative;
-            z-index: 1;
+            font-size: 28px;
+            font-weight: 700;
+            color: #0d47a1;
+            line-height: 1;
+            margin-top: 4px;
         }
 
         .stat-card.pending .stat-value {
-            color: #ffc107;
+            color: #f57f17;
         }
 
         .stat-card.approved .stat-value {
-            color: #28a745;
+            color: #2e7d32;
         }
 
         .stat-card.rejected .stat-value {
-            color: #dc3545;
+            color: #c62828;
         }
 
         /* Filter Section */
@@ -591,7 +484,7 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
         }
     </style>
 </head>
-<body>
+<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
     <?php require_once "../app/components/Sidebar.php"; ?>
 
     <div class="main-content">
@@ -602,41 +495,70 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
                     <i class="fas fa-calendar-times"></i>
                     <span>Absence & Late Management</span>
                 </div>
-                <div class="page-subtitle">Review and manage employee absence and late arrival records</div>
             </div>
 
-            <div class="absence-late-container">
+            <div class="absence-late-container glass-panel">
 
                 <!-- Statistics -->
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <h4>Total Records</h4>
-                        <div class="stat-value"><?php echo $summaryStats['total_records'] ?? 0; ?></div>
+                        <div style="width: 70px; min-width: 70px; background: linear-gradient(135deg, #0d47a1, #1976d2); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div style="flex: 1; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center;">
+                            <h4>Total Records</h4>
+                            <div class="stat-value"><?php echo $summaryStats['total_records'] ?? 0; ?></div>
+                        </div>
                     </div>
                     <div class="stat-card">
-                        <h4>Total Absences</h4>
-                        <div class="stat-value"><?php echo $summaryStats['total_absents'] ?? 0; ?></div>
+                        <div style="width: 70px; min-width: 70px; background: linear-gradient(135deg, #c62828, #e53935); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
+                            <i class="fas fa-user-slash"></i>
+                        </div>
+                        <div style="flex: 1; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center;">
+                            <h4>Total Absences</h4>
+                            <div class="stat-value"><?php echo $summaryStats['total_absents'] ?? 0; ?></div>
+                        </div>
                     </div>
                     <div class="stat-card">
-                        <h4>Total Late Arrivals</h4>
-                        <div class="stat-value"><?php echo $summaryStats['total_lates'] ?? 0; ?></div>
+                        <div style="width: 70px; min-width: 70px; background: linear-gradient(135deg, #f57f17, #fbc02d); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div style="flex: 1; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center;">
+                            <h4>Total Late Arrivals</h4>
+                            <div class="stat-value"><?php echo $summaryStats['total_lates'] ?? 0; ?></div>
+                        </div>
                     </div>
                     <div class="stat-card pending">
-                        <h4>Pending Reviews</h4>
-                        <div class="stat-value"><?php echo $summaryStats['pending_reviews'] ?? 0; ?></div>
+                        <div style="width: 70px; min-width: 70px; background: linear-gradient(135deg, #0097a7, #00bcd4); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
+                            <i class="fas fa-hourglass-half"></i>
+                        </div>
+                        <div style="flex: 1; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center;">
+                            <h4>Pending Reviews</h4>
+                            <div class="stat-value"><?php echo $summaryStats['pending_reviews'] ?? 0; ?></div>
+                        </div>
                     </div>
                     <div class="stat-card approved">
-                        <h4>Approved Excuses</h4>
-                        <div class="stat-value"><?php echo $summaryStats['approved_excuses'] ?? 0; ?></div>
+                        <div style="width: 70px; min-width: 70px; background: linear-gradient(135deg, #2e7d32, #43a047); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div style="flex: 1; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center;">
+                            <h4>Approved Excuses</h4>
+                            <div class="stat-value"><?php echo $summaryStats['approved_excuses'] ?? 0; ?></div>
+                        </div>
                     </div>
                     <div class="stat-card rejected">
-                        <h4>Rejected Excuses</h4>
-                        <div class="stat-value"><?php echo $summaryStats['rejected_excuses'] ?? 0; ?></div>
+                        <div style="width: 70px; min-width: 70px; background: linear-gradient(135deg, #c62828, #e53935); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div style="flex: 1; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center;">
+                            <h4>Rejected Excuses</h4>
+                            <div class="stat-value"><?php echo $summaryStats['rejected_excuses'] ?? 0; ?></div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Filters -->
-                <div class="filter-section">
+                <div class="filter-section glass-panel">
                     <input type="date" id="startDate" value="<?php echo $filters['start_date']; ?>" placeholder="Start Date">
                     <input type="date" id="endDate" value="<?php echo $filters['end_date']; ?>" placeholder="End Date">
                     
@@ -663,7 +585,7 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
                 </div>
 
                 <!-- Records Table -->
-                <div class="records-table">
+                <div class="records-table glass-panel">
                     <?php if (count($records) > 0): ?>
                     <table id="recordsTable">
                         <thead>
@@ -696,16 +618,10 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
                                     </span>
                                 </td>
                                 <td>
-                                    <?php if ($record['is_excused']): ?>
-                                        <?php if ($record['excuse_type'] === 'APPROVED_LEAVE'): ?>
-                                            <span class="badge badge-success" title="Excused due to approved leave request">
-                                                <i class="fas fa-check-circle"></i> Leave Approved
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="badge badge-excused">
-                                                <i class="fas fa-check"></i> Excused
-                                            </span>
-                                        <?php endif; ?>
+                                    <?php if ($record['excuse_status'] === 'APPROVED'): ?>
+                                        <span class="badge badge-success">
+                                            <i class="fas fa-check"></i> Excused
+                                        </span>
                                     <?php else: ?>
                                         <span class="badge badge-unexcused">
                                             <i class="fas fa-times"></i> Unexcused
@@ -713,19 +629,15 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <?php if ($record['excuse_type'] === 'APPROVED_LEAVE'): ?>
-                                        <em>Approved Leave</em>
-                                    <?php else: ?>
-                                        <?php echo htmlspecialchars(substr($record['reason'] ?? '', 0, 30)); ?>
-                                    <?php endif; ?>
+                                    <?php echo htmlspecialchars(substr($record['reason'] ?? '', 0, 30)); ?>
                                 </td>
-                                <td><?php echo date('M d, Y', strtotime($record['submitted_date'])); ?></td>
+                                <td><?php echo date('M d, Y', strtotime($record['created_at'])); ?></td>
                                 <td>
                                     <div class="action-buttons">
                                         <button class="btn-action btn-view" onclick="viewRecord(<?php echo $record['record_id']; ?>)">
                                             <i class="fas fa-eye"></i> View
                                         </button>
-                                        <?php if ($record['excuse_status'] === 'PENDING' && $record['excuse_type'] !== 'APPROVED_LEAVE' && (AuthController::hasRole('time') || AuthController::hasRole('hr'))): ?>
+                                        <?php if ($record['excuse_status'] === 'PENDING' && (AuthController::hasRole('time') || AuthController::hasRole('hr'))): ?>
                                         <button class="btn-action btn-approve" onclick="approveExcuse(<?php echo $record['record_id']; ?>)">
                                             <i class="fas fa-check"></i> Approve
                                         </button>
@@ -873,31 +785,52 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
             openModal('reviewModal');
         }
 
-        document.getElementById('reviewForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const status = document.getElementById('reviewDecision').value;
-            const notes = document.getElementById('reviewNotes').value;
+        // Ensure form exists before attaching listener
+        document.addEventListener('DOMContentLoaded', function() {
+            const reviewForm = document.getElementById('reviewForm');
+            if (reviewForm) {
+                reviewForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const status = document.getElementById('reviewDecision').value;
+                    const notes = document.getElementById('reviewNotes').value;
 
-            fetch('../app/api/absence_late_management.php?action=review_excuse', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    record_id: currentRecordId,
-                    status: status,
-                    notes: notes
-                })
-            })
-            .then(r => r.json())
-            .then(res => {
-                if (res.success) {
-                    toastr.success(res.message);
-                    closeModal('reviewModal');
-                    setTimeout(() => location.reload(), 1500);
-                } else {
-                    toastr.error(res.message);
-                }
-            })
-            .catch(err => toastr.error('Failed to submit review'));
+                    // Validate that record_id was set
+                    if (!currentRecordId) {
+                        toastr.error('Error: No record selected');
+                        return;
+                    }
+
+                    // Validate that status was selected
+                    if (!status) {
+                        toastr.error('Error: Please select a decision (Approve or Reject)');
+                        return;
+                    }
+
+                    fetch('../app/api/absence_late_management.php?action=review_excuse', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            record_id: currentRecordId,
+                            status: status,
+                            notes: notes
+                        })
+                    })
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res.success) {
+                            toastr.success(res.message);
+                            closeModal('reviewModal');
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            toastr.error(res.message || 'Failed to review excuse');
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error:', err);
+                        toastr.error('Failed to submit review');
+                    });
+                });
+            }
         });
 
         function generateReport() {
@@ -923,9 +856,9 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
         }
 
         function downloadReport(data) {
-            let csv = 'Employee,Department,Type,Date,Status,Excused,Reason,Reviewed By,Review Date\n';
+            let csv = 'Employee,Department,Type,Date,Status,Reason\n';
             data.forEach(record => {
-                csv += `"${record.full_name}","${record.department}","${record.type}","${record.absence_date}","${record.excuse_status}","${record.is_excused ? 'Yes' : 'No'}","${record.reason || ''}","${record.reviewed_by_name || ''}","${record.reviewed_date || ''}"\n`;
+                csv += `"${record.full_name}","${record.department}","${record.type}","${record.absence_date}","${record.excuse_status}","${record.reason || ''}"\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv' });

@@ -6,7 +6,7 @@
 
 header('Content-Type: application/json');
 
-require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../../auth/database.php';
 
 try {
     $date = $_GET['date'] ?? null;
@@ -15,7 +15,7 @@ try {
         throw new Exception('Date is required');
     }
 
-    $db = new Database();
+    $db = Database::getInstance();
     $conn = $db->getConnection();
 
     // Get all attendance records for the date

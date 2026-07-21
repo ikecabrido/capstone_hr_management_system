@@ -6,7 +6,7 @@
 
 // Start session and check authentication
 session_start();
-require_once(__DIR__ . '/../app/config/Database.php');
+require_once(__DIR__ . '/../../auth/database.php');
 require_once(__DIR__ . '/../app/core/Session.php');
 require_once(__DIR__ . '/../app/controllers/ShiftController.php');
 require_once(__DIR__ . '/../app/helpers/Helper.php');
@@ -24,7 +24,7 @@ if ($user_role !== 'time' && $user_role !== 'HR_ADMIN' && $user_role !== 'payrol
     exit();
 }
 
-$database = new Database();
+$database = Database::getInstance();
 $db = $database->getConnection();
 $shiftController = new ShiftController($db);
 
@@ -385,32 +385,23 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shift Management</title>
+    <link rel="stylesheet" href="../../assets/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="../../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
     <link rel="stylesheet" href="../assets/style.css">
+    <link rel="stylesheet" href="../assets/dashboard.css">
+    <link rel="stylesheet" href="../assets/adminlte-overrides.css">
+    <link rel="stylesheet" href="../../payroll/custom.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
+<style>
         body {
-            background: #f5f5f5;
-            margin: 0;
-            padding: 0;
             transition: margin-left 0.3s ease;
+            font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
         }
 
-        body.sidebar-collapsed {
-            margin-left: 0;
-        }
-
-        .shift-container {
-            width: calc(100% - 250px);
-            margin-left: 250px;
-            margin-top: 60px;
-            min-height: calc(100vh - 60px);
-            padding: 30px 20px;
-            transition: width 0.3s ease, margin-left 0.3s ease;
-        }
-
-        body.sidebar-collapsed .shift-container {
-            width: 100%;
-            margin-left: 0;
+        .main-content .shift-container {
+            margin-left: 0 !important;
+            margin-top: 0 !important;
         }
 
         .page-header {
@@ -1158,7 +1149,7 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
     </style>
     <script src="../assets/mobile-responsive.js" defer></script>
 </head>
-<body>
+<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
     <div
       class="preloader flex-column justify-content-center align-items-center">
       <img
@@ -1170,17 +1161,17 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
     </div>
     <?php include(__DIR__ . '/../app/components/Sidebar.php'); ?>
 
-    <div class="shift-container">
-        <div class="page-header">
-            <h1 class="page-title">
-                <i class="fas fa-clock"></i>
-                Shift Management
-            </h1>
-            <p class="page-subtitle">
-                <i class="fas fa-info-circle"></i> Create and manage shifts, assign employees, and view shift statistics
-            </p>
+    <div class="main-content">
+        <div class="content-wrapper">
+            <div class="shift-container">
+                <div class="page-header">
+                    <h1 class="page-title">
+                        <i class="fas fa-clock"></i>
+                        Shift Management
+                    </h1>
         </div>
 
+        <div class="container glass-panel">
         <?php if ($message): ?>
             <div class="alert alert-success">
                 <i class="fas fa-check-circle"></i>
@@ -1196,7 +1187,7 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
         <?php endif; ?>
         <!-- Action Buttons for Modals -->
         <div class="shift-action-buttons">
-            <button class="btn btn-primary" onclick="openModal('createShiftModal');">
+            <button class="btn btn-primary" onclick="openCreateShiftModal();">
                 <i class="fas fa-plus-circle"></i>
                 Create Shift
             </button>
@@ -1210,7 +1201,7 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
             </button>
         </div>
 
-    <div id="overview" class="tab-content" style="display: block;">
+    <div id="overview" class="tab-content glass-panel" style="display: block;">
         <h2 style="margin-bottom: 30px; font-size: 24px; font-weight: 700; color: #2c3e50;">
             <i class="fas fa-chart-bar"></i>
             Shift Management Overview
@@ -1275,7 +1266,7 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                                     </span>
                                 </td>
                                 <td style="display: flex; gap: 8px;">
-                                    <button type="button" class="btn btn-sm btn-primary" onclick="openEditShiftModal(<?php echo $shift['shift_id']; ?>, '<?php echo htmlspecialchars($shift['shift_name']); ?>', '<?php echo $shift['start_time']; ?>', '<?php echo $shift['end_time']; ?>', <?php echo $shift['break_duration']; ?>, '<?php echo htmlspecialchars($shift['description'] ?? ''); ?>', <?php echo $shift['is_active'] ? 'true' : 'false'; ?>);">
+                                    <button type="button" class="btn btn-sm btn-primary" onclick="openEditShiftModalSafe(<?php echo $shift['shift_id']; ?>, <?php echo json_encode($shift['shift_name']); ?>, <?php echo json_encode($shift['start_time']); ?>, <?php echo json_encode($shift['end_time']); ?>, <?php echo (int)($shift['break_duration'] ?? 0); ?>, <?php echo json_encode($shift['description'] ?? ''); ?>, <?php echo $shift['is_active'] ? 'true' : 'false'; ?>, <?php echo isset($shift['exclude_saturday']) && $shift['exclude_saturday'] ? 'true' : 'false'; ?>);">
                                         <i class="fas fa-edit"></i> Edit
                                     </button>
                                     <form method="POST" style="display: inline;">
@@ -1313,7 +1304,7 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
             </button>
         </div>
         
-        <div class="table-container">
+        <div class="table-container glass-panel">
             <table id="assignmentTable">
                 <thead>
                     <tr>
@@ -1397,7 +1388,7 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
 
         <script>
         // Assignment Table Data
-        let assignmentTableData = <?php echo json_encode($assignmentData); ?>;
+        let assignmentTableData = <?php echo json_encode($assignmentData ?? [], JSON_HEX_TAG | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_HEX_APOS); ?>;
         let assignmentCurrentPage = 1;
         let assignmentPageSize = 10;
         let assignmentSortField = 'employee';
@@ -1598,14 +1589,14 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
 
         // Initial render
         renderAssignmentTable();
-        </script>
+    </script>
 
         <h3 style="margin-top: 50px; font-size: 22px; font-weight: 700; color: #2c3e50;">
             <i class="fas fa-calendar-check"></i> Flexible Schedules
         </h3>
         
         <!-- Search and Controls for Flexible -->
-        <div style="margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+        <div style="margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; background: rgba(255,255,255,0.9); padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
             <div style="flex: 1; min-width: 200px; position: relative;">
                 <input type="text" id="flexibleSearch" placeholder="Search by employee name or notes..." style="width: 100%; padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;" autocomplete="off">
                 <div id="flexibleSuggestions" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 2px solid #e0e0e0; border-top: none; border-radius: 0 0 6px 6px; max-height: 200px; overflow-y: auto; display: none; z-index: 1000; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
@@ -1681,7 +1672,7 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                     </tbody>
                 </table>
                 <!-- Pagination for Flexible Schedules -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding: 15px; background: white; border-radius: 10px; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.8); border-radius: 10px; flex-wrap: wrap; gap: 10px;">
                     <div>
                         <span id="flexibleInfo" style="font-size: 14px; color: #666;">Showing 0 of 0 records</span>
                     </div>
@@ -1973,7 +1964,7 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                                         <td><?php echo $flex['contract_end_date'] ? date('M d, Y', strtotime($flex['contract_end_date'])) : '—'; ?></td>
                                         <td><?php echo $flex['notes'] ? htmlspecialchars(substr($flex['notes'], 0, 50)) . (strlen($flex['notes']) > 50 ? '...' : '') : '—'; ?></td>
                                         <td style="display: flex; gap: 8px;">
-                                            <button type="button" class="btn btn-sm btn-primary" onclick="openFlexibleScheduleEdit(<?php echo $flex['id']; ?>, '<?php echo $flex['employee_id']; ?>', '<?php echo $flex['schedule_date']; ?>', '<?php echo $flex['start_time']; ?>', '<?php echo $flex['end_time']; ?>', '<?php echo htmlspecialchars($flex['notes']); ?>', '<?php echo $flex['repeat_until'] ?? ''; ?>', '<?php echo $flex['contract_end_date'] ?? ''; ?>');">
+                                            <button type="button" class="btn btn-sm btn-primary" onclick="openFlexibleScheduleEdit(<?php echo $flex['id']; ?>, '<?php echo $flex['employee_id']; ?>', '<?php echo $flex['schedule_date']; ?>', '<?php echo $flex['start_time']; ?>', '<?php echo $flex['end_time']; ?>', '<?php echo htmlspecialchars($flex['notes'], ENT_QUOTES); ?>', '<?php echo $flex['repeat_until'] ?? ''; ?>', '<?php echo $flex['contract_end_date'] ?? ''; ?>');">
                                                 <i class="fas fa-edit"></i> Edit
                                             </button>
                                             <form method="POST" style="display: inline;">
@@ -2136,8 +2127,15 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                     </div>
                     <div class="form-group">
                         <label class="checkbox-group">
-                            <input type="checkbox" name="is_active" checked>
+                            <input type="checkbox" name="is_active" value="1" checked>
                             <span><i class="fas fa-check"></i> Active</span>
+                        </label>
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 12px; background: #f0f8ff; padding: 15px; border-radius: 6px; border-left: 4px solid #2196F3;">
+                        <input type="checkbox" id="create_exclude_saturday" name="exclude_saturday" style="width: 20px; height: 20px; cursor: pointer;">
+                        <label for="create_exclude_saturday" style="margin: 0; cursor: pointer; flex: 1;">
+                            <strong style="color: #1565c0;">Exclude Saturdays?</strong>
+                            <p style="margin: 5px 0 0 0; color: #666; font-size: 12px;">Check this if the shift does not operate on Saturdays</p>
                         </label>
                     </div>
                 </div>
@@ -2185,6 +2183,13 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                             <span><i class="fas fa-check"></i> Active</span>
                         </label>
                     </div>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 12px; background: #f0f8ff; padding: 15px; border-radius: 6px; border-left: 4px solid #2196F3;">
+                        <input type="checkbox" id="edit_exclude_saturday" name="exclude_saturday" style="width: 20px; height: 20px; cursor: pointer;">
+                        <label for="edit_exclude_saturday" style="margin: 0; cursor: pointer; flex: 1;">
+                            <strong style="color: #1565c0;">Exclude Saturdays?</strong>
+                            <p style="margin: 5px 0 0 0; color: #666; font-size: 12px;">Check this if the shift does not operate on Saturdays</p>
+                        </label>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('editShiftModal')">Cancel</button>
@@ -2198,23 +2203,46 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
     <div id="assignmentModal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h2><i class="fas fa-user-check"></i> Assign Shift to Employee</h2>
+                <h2><i class="fas fa-user-check"></i> Assign Shift to Employees</h2>
                 <button class="modal-close" onclick="closeModal('assignmentModal')">&times;</button>
             </div>
             <form method="POST" class="shift-form" style="padding: 0;">
                 <div class="modal-body">
-                    <div class="form-group">
-                        <label for="employee_id"><i class="fas fa-user"></i> Employee *</label>
-                        <select id="employee_id" name="employee_id" required>
-                            <option value="">Select an employee...</option>
-                            <?php
-                            $stmt = $db->query("SELECT employee_id, full_name FROM employees ORDER BY full_name");
-                            while ($emp = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                                echo '<option value="' . $emp['employee_id'] . '">' . htmlspecialchars($emp['full_name']) . '</option>';
-                            }
-                            ?>
+                    <!-- Search and Filter Section -->
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 250px; position: relative;">
+                            <input 
+                                type="text" 
+                                id="employeeSearchInput" 
+                                placeholder="Search employees..." 
+                                style="width: 100%; padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;"
+                                oninput="filterEmployeeList(this.value)"
+                            >
+                        </div>
+                        <button type="button" class="btn btn-info" onclick="searchEmployees()" title="Search" style="padding: 10px 15px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        <select id="employeeFilterStatus" style="padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; cursor: pointer;" onchange="filterEmployeeByStatus(this.value)">
+                            <option value="">All Employees</option>
+                            <option value="assigned">Assigned</option>
+                            <option value="unassigned">Unassigned</option>
                         </select>
                     </div>
+
+                    <!-- Multi-Select Employee List -->
+                    <div class="form-group">
+                        <label><i class="fas fa-users"></i> Select Employees (Multi-select) *</label>
+                        <div id="employeeListContainer" style="border: 2px solid #e0e0e0; border-radius: 6px; max-height: 300px; overflow-y: auto; background: #f9f9f9; display: none;">
+                            <div id="employeeCheckboxList" style="padding: 10px;">
+                                <!-- Checkboxes will be populated by JavaScript -->
+                            </div>
+                        </div>
+                        <small style="color: #666; margin-top: 8px; display: block;">
+                            <strong>Selected:</strong> <span id="selectedCount">0</span> employee(s)
+                        </small>
+                    </div>
+
+                    <!-- Shift Selection -->
                     <div class="form-group">
                         <label for="shift_id"><i class="fas fa-briefcase"></i> Shift *</label>
                         <select id="shift_id" name="shift_id" required>
@@ -2228,18 +2256,43 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                             <?php endforeach; ?>
                         </select>
                     </div>
+
+                    <!-- Date Selection -->
                     <div class="form-group">
                         <label for="effective_from"><i class="fas fa-calendar-check"></i> Effective From *</label>
                         <input type="date" id="effective_from" name="effective_from" required value="<?php echo date('Y-m-d'); ?>">
                     </div>
+
                     <div class="form-group">
                         <label for="effective_to"><i class="fas fa-calendar-times"></i> Effective To (Optional)</label>
                         <input type="date" id="effective_to" name="effective_to">
                     </div>
+
+                    <!-- No Saturday Checkbox -->
+                    <div class="form-group" style="display: flex; align-items: center; gap: 12px; background: #f0f8ff; padding: 15px; border-radius: 6px; border-left: 4px solid #2196F3;">
+                        <input 
+                            type="checkbox" 
+                            id="exclude_saturday" 
+                            name="exclude_saturday"
+                            style="width: 20px; height: 20px; cursor: pointer;"
+                        >
+                        <label for="exclude_saturday" style="margin: 0; cursor: pointer; flex: 1;">
+                            <strong style="color: #1565c0;">No Saturday?</strong>
+                            <p style="margin: 5px 0 0 0; color: #666; font-size: 12px;">
+                                Check this to exclude Saturdays from the shift assignment
+                            </p>
+                        </label>
+                    </div>
+
+                    <!-- Hidden field to store selected employees -->
+                    <input type="hidden" id="selected_employees" name="selected_employees" value="">
                 </div>
+
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('assignmentModal')">Cancel</button>
-                    <button type="submit" name="assign_shift" class="btn btn-primary"><i class="fas fa-check"></i> Assign Shift</button>
+                    <button type="button" class="btn btn-primary" onclick="assignMultipleEmployees()" style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-check"></i> Assign to Selected
+                    </button>
                 </div>
             </form>
         </div>
@@ -2353,33 +2406,44 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                     <p style="color: #666; margin-bottom: 20px; font-size: 14px;">
                         <i class="fas fa-info-circle"></i> Assign specific days and times for part-time or contract employees.
                     </p>
-                    <div class="form-group">
-                        <label for="flex_employee_id"><i class="fas fa-user"></i> Employee *</label>
-                        <select id="flex_employee_id" name="flex_employee_id" required onchange="console.log('Employee selected:', this.value)">
-                            <option value="">-- Select an employee --</option>
-                            <?php
-                            try {
-                                $emp_stmt = $db->query("SELECT employee_id, full_name FROM employees ORDER BY full_name");
-                                $emp_count = 0;
-                                $emp_list = [];
-                                while ($emp = $emp_stmt->fetch(PDO::FETCH_ASSOC)) {
-                                    echo '<option value="' . htmlspecialchars($emp['employee_id']) . '">' . htmlspecialchars($emp['full_name']) . '</option>';
-                                    $emp_count++;
-                                    $emp_list[] = $emp['employee_id'];
-                                }
-                                if ($emp_count === 0) {
-                                    echo '<option value="" disabled style="color: red;">❌ No employees found in system</option>';
-                                    echo '<script>console.error("WARNING: No employees in database. Employee dropdown is empty!");</script>';
-                                } else {
-                                    echo '<script>console.log("✓ Employees loaded: ' . implode(', ', $emp_list) . '");</script>';
-                                }
-                            } catch (Exception $e) {
-                                echo '<option value="" disabled>Error loading employees: ' . htmlspecialchars($e->getMessage()) . '</option>';
-                                echo '<script>console.error("Employee query error:", ' . json_encode($e->getMessage()) . ');</script>';
-                            }
-                            ?>
+
+                    <!-- Search and Filter Section -->
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 250px; position: relative;">
+                            <input 
+                                type="text" 
+                                id="flexEmployeeSearchInput" 
+                                placeholder="Search employees..." 
+                                style="width: 100%; padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;"
+                                oninput="filterFlexEmployeeList(this.value)"
+                            >
+                        </div>
+                        <button type="button" class="btn btn-info" onclick="searchFlexEmployees()" title="Search" style="padding: 10px 15px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        <select id="flexEmployeeFilterStatus" style="padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; cursor: pointer;" onchange="filterFlexEmployeeByStatus(this.value)">
+                            <option value="">All Employees</option>
+                            <option value="assigned">Assigned</option>
+                            <option value="unassigned">Unassigned</option>
                         </select>
                     </div>
+
+                    <!-- Employee Selection List -->
+                    <div class="form-group">
+                        <label><i class="fas fa-users"></i> Select an Employee *</label>
+                        <div id="flexEmployeeListContainer" style="border: 2px solid #e0e0e0; border-radius: 6px; max-height: 300px; overflow-y: auto; background: #f9f9f9; display: none;">
+                            <div id="flexEmployeeCheckboxList" style="padding: 10px;">
+                                <!-- Employee list will be populated by JavaScript -->
+                            </div>
+                        </div>
+                        <small style="color: #666; margin-top: 8px; display: block;">
+                            <i class="fas fa-info-circle"></i> <strong>Selected:</strong> <span id="flexSelectedEmployee" style="color: #333; font-weight: bold;">None</span>
+                        </small>
+                    </div>
+
+                    <!-- Hidden field to store selected employee -->
+                    <input type="hidden" id="flex_employee_id" name="flex_employee_id" value="">
+                    <input type="hidden" id="flex_employee_name" name="flex_employee_name" value="">
                     <div class="form-group">
                         <label for="flex_date"><i class="fas fa-calendar"></i> Date *</label>
                         <input type="date" id="flex_date" name="flex_date" required>
@@ -2408,26 +2472,46 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                         <label for="flex_notes"><i class="fas fa-sticky-note"></i> Notes (Optional)</label>
                         <textarea id="flex_notes" name="flex_notes" style="height: 100px; resize: vertical;"></textarea>
                     </div>
-                    <div class="form-group">
-                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0;">
-                            <input type="checkbox" name="flex_repeat_until" id="flex_repeat_until">
-                            <span>Set Repeat End Date</span>
+                    <!-- Repeat Until Checkbox -->
+                    <div class="form-group" style="display: flex; align-items: center; gap: 12px; background: #f0f8ff; padding: 15px; border-radius: 6px; border-left: 4px solid #2196F3;">
+                        <input 
+                            type="checkbox" 
+                            name="flex_repeat_until" 
+                            id="flex_repeat_until"
+                            style="width: 20px; height: 20px; cursor: pointer;"
+                            onchange="toggleFlexRepeatUntil()"
+                        >
+                        <label for="flex_repeat_until" style="margin: 0; cursor: pointer; flex: 1;">
+                            <strong style="color: #1565c0;">Set Repeat End Date?</strong>
+                            <p style="margin: 5px 0 0 0; color: #666; font-size: 12px;">
+                                Check this to set when this weekly schedule repeats until
+                            </p>
                         </label>
                     </div>
                     <div class="form-group" id="flex_repeat_until_container" style="display: none;">
                         <label for="flex_repeat_end_date"><i class="fas fa-calendar-times"></i> Repeat Until (Optional)</label>
                         <input type="date" id="flex_repeat_end_date" name="flex_repeat_end_date">
                     </div>
-                    <div class="form-group">
-                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0;">
-                            <input type="checkbox" name="flex_contract_end" id="flex_contract_end">
-                            <span>Set Contract End Date</span>
+
+                    <!-- Contract End Date Checkbox -->
+                    <div class="form-group" style="display: flex; align-items: center; gap: 12px; background: #fff3e0; padding: 15px; border-radius: 6px; border-left: 4px solid #FF9800;">
+                        <input 
+                            type="checkbox" 
+                            name="flex_contract_end" 
+                            id="flex_contract_end"
+                            style="width: 20px; height: 20px; cursor: pointer;"
+                            onchange="toggleFlexContractEnd()"
+                        >
+                        <label for="flex_contract_end" style="margin: 0; cursor: pointer; flex: 1;">
+                            <strong style="color: #e65100;">Set Contract End Date?</strong>
+                            <p style="margin: 5px 0 0 0; color: #666; font-size: 12px;">
+                                Check this for temporary contracts with a specific end date
+                            </p>
                         </label>
                     </div>
                     <div class="form-group" id="flex_contract_end_container" style="display: none;">
                         <label for="flex_contract_end_date"><i class="fas fa-briefcase"></i> Contract Ends On (Optional)</label>
                         <input type="date" id="flex_contract_end_date" name="flex_contract_end_date">
-                        <p style="font-size: 12px; color: #999; margin-top: 8px;">Use this for temporary contracts with a specific end date</p>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -2435,6 +2519,9 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                     <button type="submit" name="create_flexible" class="btn btn-primary"><i class="fas fa-save"></i> Create Schedule</button>
                 </div>
             </form>
+        </div>
+    </div>
+            </div>
         </div>
     </div>
 
@@ -2678,18 +2765,257 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
             }
         }
 
-        function openEditShiftModal(shiftId, shiftName, startTime, endTime, breakDuration, description, isActive) {
-            // Populate the edit modal with current values
-            document.getElementById('edit_shift_id').value = shiftId;
-            document.getElementById('edit_shift_name').value = shiftName;
-            document.getElementById('edit_start_time').value = startTime;
-            document.getElementById('edit_end_time').value = endTime;
-            document.getElementById('edit_break_duration').value = breakDuration;
-            document.getElementById('edit_description').value = description;
-            document.getElementById('edit_is_active').checked = isActive;
+        // ============ MULTI-SELECT EMPLOYEE FUNCTIONS ============
+        let allEmployees = [];
+        let filteredEmployees = [];
+        let selectedEmployees = new Set();
+
+        // Load employees when modal opens
+        function loadEmployeeList() {
+            fetch('../app/api/get_employees_for_shift.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        allEmployees = data.employees;
+                        filteredEmployees = [...allEmployees];
+                        renderEmployeeCheckboxes(filteredEmployees);
+                    }
+                })
+                .catch(error => console.error('Error loading employees:', error));
+        }
+
+        // Render employee checkboxes
+        function renderEmployeeCheckboxes(employees) {
+            const container = document.getElementById('employeeCheckboxList');
+            container.innerHTML = '';
+
+            employees.forEach(emp => {
+                const isChecked = selectedEmployees.has(emp.employee_id);
+                const checkboxHTML = `
+                    <div style="padding: 12px 10px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px;">
+                        <input 
+                            type="checkbox" 
+                            id="emp_${emp.employee_id}" 
+                            value="${emp.employee_id}" 
+                            class="employee-checkbox"
+                            ${isChecked ? 'checked' : ''}
+                            onchange="updateSelectedEmployees()"
+                            style="width: 18px; height: 18px; cursor: pointer;"
+                        >
+                        <label for="emp_${emp.employee_id}" style="flex: 1; cursor: pointer; margin: 0; display: flex; align-items: center; gap: 10px;">
+                            <span style="font-weight: 600; color: #333;">${escapeHtml(emp.full_name)}</span>
+                            <span style="color: #999; font-size: 12px;">${escapeHtml(emp.department || 'N/A')}</span>
+                            ${emp.has_shift ? '<span style="background: #4CAF50; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">ASSIGNED</span>' : '<span style="background: #FF9800; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">UNASSIGNED</span>'}
+                        </label>
+                    </div>
+                `;
+                container.innerHTML += checkboxHTML;
+            });
+
+            if (employees.length === 0) {
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No employees found</div>';
+            }
+        }
+
+        // Update selected employees and count
+        function updateSelectedEmployees() {
+            selectedEmployees.clear();
+            document.querySelectorAll('.employee-checkbox:checked').forEach(checkbox => {
+                selectedEmployees.add(checkbox.value);
+            });
+            document.getElementById('selectedCount').textContent = selectedEmployees.size;
+        }
+
+        // Filter employees by search term
+        function filterEmployeeList(searchTerm) {
+            const term = searchTerm.toLowerCase();
+            const container = document.getElementById('employeeListContainer');
             
+            filteredEmployees = allEmployees.filter(emp => 
+                emp.full_name.toLowerCase().includes(term) || 
+                emp.department.toLowerCase().includes(term)
+            );
+            
+            // Show container only if there's search text
+            if (term.length > 0) {
+                container.style.display = 'block';
+                renderEmployeeCheckboxes(filteredEmployees);
+            } else {
+                container.style.display = 'none';
+            }
+            
+            // Re-check previously selected employees
+            selectedEmployees.forEach(empId => {
+                const checkbox = document.getElementById('emp_' + empId);
+                if (checkbox) checkbox.checked = true;
+            });
+        }
+
+        // Filter employees by assignment status
+        function filterEmployeeByStatus(status) {
+            const container = document.getElementById('employeeListContainer');
+            
+            if (status === '') {
+                container.style.display = 'none';
+                filteredEmployees = [...allEmployees];
+            } else if (status === 'assigned') {
+                container.style.display = 'block';
+                filteredEmployees = allEmployees.filter(emp => emp.has_shift);
+            } else if (status === 'unassigned') {
+                container.style.display = 'block';
+                filteredEmployees = allEmployees.filter(emp => !emp.has_shift);
+            }
+            renderEmployeeCheckboxes(filteredEmployees);
+            // Re-check previously selected employees
+            selectedEmployees.forEach(empId => {
+                const checkbox = document.getElementById('emp_' + empId);
+                if (checkbox) checkbox.checked = true;
+            });
+        }
+
+        // Search employees
+        function searchEmployees() {
+            const searchTerm = document.getElementById('employeeSearchInput').value;
+            const container = document.getElementById('employeeListContainer');
+            
+            if (searchTerm.length > 0) {
+                container.style.display = 'block';
+                filterEmployeeList(searchTerm);
+            } else {
+                container.style.display = 'none';
+            }
+        }
+
+        // Assign shift to multiple employees
+        function assignMultipleEmployees() {
+            if (selectedEmployees.size === 0) {
+                alert('Please select at least one employee');
+                return;
+            }
+
+            const shiftId = document.getElementById('shift_id').value;
+            const effectiveFrom = document.getElementById('effective_from').value;
+            const effectiveTo = document.getElementById('effective_to').value;
+            const excludeSaturday = document.getElementById('exclude_saturday').checked;
+
+            if (!shiftId) {
+                alert('Please select a shift');
+                return;
+            }
+
+            if (!effectiveFrom) {
+                alert('Please select an effective from date');
+                return;
+            }
+
+            // Send request to assign shift to multiple employees
+            const formData = new FormData();
+            formData.append('action', 'assign_multiple');
+            formData.append('employee_ids', JSON.stringify(Array.from(selectedEmployees)));
+            formData.append('shift_id', shiftId);
+            formData.append('effective_from', effectiveFrom);
+            formData.append('effective_to', effectiveTo || null);
+            formData.append('exclude_saturday', excludeSaturday ? '1' : '0');
+
+            fetch('../app/api/assign_shift_multiple.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Shifts assigned successfully to ' + selectedEmployees.size + ' employee(s)');
+                    closeModal('assignmentModal');
+                    location.reload(); // Reload to see updates
+                } else {
+                    alert('Error: ' + (data.message || 'Failed to assign shifts'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error assigning shifts: ' + error.message);
+            });
+        }
+
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Initialize employee list when modal opens
+        const originalOpenModal = openModal;
+        openModal = function(modalId) {
+            if (modalId === 'assignmentModal') {
+                loadEmployeeList();
+                selectedEmployees.clear();
+                document.getElementById('selectedCount').textContent = '0';
+            }
+            originalOpenModal(modalId);
+        };
+
+        function openCreateShiftModal() {
+            // Reset the form completely
+            const form = document.querySelector('#createShiftModal .shift-form');
+            if (form) {
+                // Clear all input fields explicitly
+                document.getElementById('shift_name').value = '';
+                document.getElementById('start_time').value = '';
+                document.getElementById('end_time').value = '';
+                document.getElementById('break_duration').value = '60';
+                document.getElementById('description').value = '';
+                
+                // Reset checkboxes
+                document.querySelector('#createShiftModal input[name="is_active"]').checked = true;
+                document.getElementById('create_exclude_saturday').checked = false;
+            }
             // Open the modal
-            openModal('editShiftModal');
+            openModal('createShiftModal');
+        }
+
+        function openEditShiftModalSafe(shiftId, shiftName, startTime, endTime, breakDuration, description, isActive, excludeSaturday) {
+            try {
+                // Ensure values are the correct type
+                const params = {
+                    shiftId: parseInt(shiftId),
+                    shiftName: String(shiftName),
+                    startTime: String(startTime),
+                    endTime: String(endTime),
+                    breakDuration: parseInt(breakDuration) || 0,
+                    description: String(description),
+                    isActive: Boolean(isActive && isActive !== 'false'),
+                    excludeSaturday: Boolean(excludeSaturday && excludeSaturday !== 'false')
+                };
+                
+                // Populate the edit modal with current values
+                const editForm = document.getElementById('editShiftModal');
+                if (!editForm) {
+                    console.error('Edit shift modal not found');
+                    return;
+                }
+                
+                document.getElementById('edit_shift_id').value = params.shiftId;
+                document.getElementById('edit_shift_name').value = params.shiftName;
+                document.getElementById('edit_start_time').value = params.startTime;
+                document.getElementById('edit_end_time').value = params.endTime;
+                document.getElementById('edit_break_duration').value = params.breakDuration;
+                document.getElementById('edit_description').value = params.description;
+                document.getElementById('edit_is_active').checked = params.isActive;
+                document.getElementById('edit_exclude_saturday').checked = params.excludeSaturday;
+                
+                console.log('Edit modal populated:', params);
+                
+                // Open the modal
+                openModal('editShiftModal');
+            } catch (error) {
+                console.error('Error opening edit modal:', error);
+            }
         }
 
         function openFlexibleScheduleEdit(flexId, employeeId, date, startTime, endTime, notes, repeatUntil, contractEndDate) {
@@ -2899,6 +3225,178 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                 console.log('✓ All validations passed. Form will submit with employee_id:', employeeId);
             }
         });
+
+        // Flexible Schedule Employee Search and Filter Functions
+        let flexibleEmployeesData = [];
+        let filteredFlexEmployees = [];
+        let selectedFlexEmployee = null;
+
+        // Load flexible schedule employees on modal open
+        function loadFlexibleScheduleEmployees() {
+            fetch('../app/api/get_employees.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        flexibleEmployeesData = data.employees;
+                        // Don't render until user searches or filters
+                        console.log('✓ Employees loaded: ' + data.count);
+                    } else {
+                        console.error('Error loading employees:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        // Render flexible schedule employee list with styled indicators
+        function renderFlexEmployeeList(employees) {
+            const container = document.getElementById('flexEmployeeCheckboxList');
+            container.innerHTML = '';
+
+            employees.forEach(emp => {
+                const isSelected = selectedFlexEmployee && selectedFlexEmployee.employee_id == emp.employee_id;
+                const employeeHTML = `
+                    <div style="padding: 12px 10px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; cursor: pointer; background: ${isSelected ? '#e3f2fd' : 'transparent'}; border-left: 3px solid ${isSelected ? '#2196F3' : 'transparent'}; transition: all 0.2s;" onclick="selectFlexEmployee(${emp.employee_id}, '${escapeHtml(emp.full_name)}')">
+                        <div style="width: 20px; height: 20px; border-radius: 50%; background: ${isSelected ? '#2196F3' : '#ddd'}; display: flex; align-items: center; justify-content: center;">
+                            ${isSelected ? '<i class="fas fa-check" style="color: white; font-size: 12px;"></i>' : ''}
+                        </div>
+                        <div style="flex: 1; display: flex; align-items: center; gap: 10px;">
+                            <span style="font-weight: 600; color: #333;">${escapeHtml(emp.full_name)}</span>
+                            ${emp.has_flexible_schedule ? '<span style="background: #4CAF50; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">ASSIGNED</span>' : '<span style="background: #FF9800; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">UNASSIGNED</span>'}
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += employeeHTML;
+            });
+
+            if (employees.length === 0) {
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No employees found</div>';
+            }
+        }
+
+        // Select employee from list
+        function selectFlexEmployee(employeeId, employeeName) {
+            selectedFlexEmployee = {
+                employee_id: employeeId,
+                full_name: employeeName
+            };
+            document.getElementById('flex_employee_id').value = employeeId;
+            document.getElementById('flex_employee_name').value = employeeName;
+            document.getElementById('flexSelectedEmployee').textContent = employeeName;
+            
+            // Re-render to show selection highlight
+            renderFlexEmployeeList(filteredFlexEmployees);
+            console.log('Selected flex employee:', employeeId, employeeName);
+        }
+
+        // Filter flexible employees by search term
+        function filterFlexEmployeeList(searchTerm) {
+            const term = searchTerm.toLowerCase();
+            const container = document.getElementById('flexEmployeeListContainer');
+            
+            filteredFlexEmployees = flexibleEmployeesData.filter(emp => 
+                emp.full_name.toLowerCase().includes(term)
+            );
+            
+            // Show container only if there's search text
+            if (term.length > 0) {
+                container.style.display = 'block';
+                renderFlexEmployeeList(filteredFlexEmployees);
+            } else {
+                container.style.display = 'none';
+            }
+            
+            // Re-select if previously selected
+            if (selectedFlexEmployee) {
+                const stillExists = filteredFlexEmployees.some(emp => emp.employee_id == selectedFlexEmployee.employee_id);
+                if (!stillExists) {
+                    selectedFlexEmployee = null;
+                    document.getElementById('flex_employee_id').value = '';
+                    document.getElementById('flexSelectedEmployee').textContent = 'None';
+                }
+            }
+        }
+
+        // Filter flex employees by assignment status
+        function filterFlexEmployeeByStatus(status) {
+            const container = document.getElementById('flexEmployeeListContainer');
+            
+            if (status === '') {
+                container.style.display = 'none';
+                filteredFlexEmployees = [...flexibleEmployeesData];
+            } else if (status === 'assigned') {
+                container.style.display = 'block';
+                filteredFlexEmployees = flexibleEmployeesData.filter(emp => emp.has_flexible_schedule);
+            } else if (status === 'unassigned') {
+                container.style.display = 'block';
+                filteredFlexEmployees = flexibleEmployeesData.filter(emp => !emp.has_flexible_schedule);
+            }
+            renderFlexEmployeeList(filteredFlexEmployees);
+        }
+
+        // Search flex employees
+        function searchFlexEmployees() {
+            const searchTerm = document.getElementById('flexEmployeeSearchInput').value;
+            const container = document.getElementById('flexEmployeeListContainer');
+            
+            if (searchTerm.length > 0) {
+                container.style.display = 'block';
+                filterFlexEmployeeList(searchTerm);
+            } else {
+                container.style.display = 'none';
+            }
+        }
+
+        // Load employees when flexible modal opens
+        document.addEventListener('click', function(e) {
+            if (e.target && e.target.closest('button[onclick*="flexibleModal"]')) {
+                loadFlexibleScheduleEmployees();
+            }
+        });
+
+        // Also load on modal open event
+        const flexibleModal = document.getElementById('flexibleModal');
+        if (flexibleModal) {
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.attributeName === 'style' && flexibleModal.style.display !== 'none') {
+                        loadFlexibleScheduleEmployees();
+                    }
+                });
+            });
+            observer.observe(flexibleModal, { attributes: true });
+        }
+
+        // Toggle Repeat Until date input
+        function toggleFlexRepeatUntil() {
+            const checkbox = document.getElementById('flex_repeat_until');
+            const container = document.getElementById('flex_repeat_until_container');
+            const input = document.getElementById('flex_repeat_end_date');
+            
+            if (checkbox.checked) {
+                container.style.display = 'block';
+                input.focus();
+            } else {
+                container.style.display = 'none';
+                input.value = ''; // Clear the value when unchecked
+            }
+        }
+
+        // Toggle Contract End date input
+        function toggleFlexContractEnd() {
+            const checkbox = document.getElementById('flex_contract_end');
+            const container = document.getElementById('flex_contract_end_container');
+            const input = document.getElementById('flex_contract_end_date');
+            
+            if (checkbox.checked) {
+                container.style.display = 'block';
+                input.focus();
+            } else {
+                container.style.display = 'none';
+                input.value = ''; // Clear the value when unchecked
+            }
+        }
     </script>
 </body>
 </html>

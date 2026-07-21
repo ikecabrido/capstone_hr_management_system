@@ -511,9 +511,16 @@ $current_role = $_SESSION['role'] ?? 'EMPLOYEE';
         });
     }
 
-    // Load dark mode preference
+    // Load dark mode preference (default to light mode for time_attendance)
     window.addEventListener('load', function() {
-        const darkMode = localStorage.getItem('darkMode') === 'true';
+        const darkModeSetting = localStorage.getItem('darkMode');
+        const darkMode = darkModeSetting === 'true'; // Only true if explicitly set
+        
+        // Reset to light mode by default on each page load for time_attendance
+        if (!darkModeSetting) {
+            localStorage.setItem('darkMode', 'false');
+        }
+        
         if (darkMode) {
             document.body.classList.add('dark-mode');
             if (themeIcon) {
@@ -582,6 +589,7 @@ $current_role = $_SESSION['role'] ?? 'EMPLOYEE';
         justify-content: center;
         align-items: center;
         gap: 10px;
+        overflow: hidden;
     }
 
     .sidebar-brand-logo {
@@ -591,6 +599,7 @@ $current_role = $_SESSION['role'] ?? 'EMPLOYEE';
         object-fit: contain;
         border-radius: 4px;
         mix-blend-mode: screen;
+        transition: width 0.3s ease, height 0.3s ease;
     }
 
     .sidebar-brand h3 {
@@ -617,7 +626,13 @@ $current_role = $_SESSION['role'] ?? 'EMPLOYEE';
         display: none;
     }
 
+    .sidebar.collapsed .sidebar-brand {
+        padding: 10px 5px;
+    }
+
     .sidebar.collapsed .sidebar-brand-logo {
+        width: 50px;
+        height: 50px;
         margin: auto;
     }
 

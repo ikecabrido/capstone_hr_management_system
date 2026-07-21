@@ -6,9 +6,9 @@ class Database
     private PDO $conn;
 
     private  $host = "localhost";
-    private  $db   = "hr_management";
-    private  $user = "root";
-    private  $pass = "";
+    private  $db   = "hr-management";
+    private  $user = "localhost";
+    private  $pass = "admin123";
 
     private function __construct()
     {

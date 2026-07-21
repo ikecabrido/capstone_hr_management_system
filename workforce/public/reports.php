@@ -1,4 +1,4 @@
-<!-- TAB 5: CUSTOM REPORTS -->
+<!-- TAB: CUSTOM REPORTS -->
 <div class="wfa-container" id="reportsContainer">
     <div class="wfa-loading">
         <i class="fas fa-spinner fa-spin"></i> Loading Reports Data...
@@ -6,274 +6,349 @@
 </div>
 
 <script>
-async function loadReportsTab() {
-    const container = document.getElementById('reportsContainer');
-    
-    try {
-        const basePath = '/capstone_hr_management_system';
-        const deptResponse = await fetch(`${basePath}/api/wfa/dashboard_metrics.php`);
-        const deptData = await deptResponse.json();
-        const empResponse = await fetch(`${basePath}/api/wfa/department_analytics.php`);
-        const empData = await empResponse.json();
-        
-        const departments = empData.data?.departments || [];
-        const totalEmployees = deptData.data?.total_employees || 0;
-        
+class EmployeeReportsManager {
+    constructor(containerId) {
+        this.containerId = containerId;
+        this.allEmployees = [];
+        this.basePath = '/capstone_hr_management_system';
+    }
+
+    async loadReportsTab() {
+        console.log('loadReportsTab() called');
+        const container = document.getElementById(this.containerId);
+
+        if (!container) {
+            console.error('Reports container not found');
+            return;
+        }
+
+        try {
+            console.log('Fetching employee data for reports...');
+
+            const data = await this.fetchEmployeeData();
+            this.allEmployees = data.data?.employees || [];
+
+            // Get unique departments
+            const departments = [...new Set(this.allEmployees.map(e => e.department).filter(d => d))];
+
+            const html = this.generateHTML(departments);
+
+            console.log('Reports HTML generated');
+            container.innerHTML = html;
+
+            // Initial statistics
+            this.updateReportStats(this.allEmployees);
+
+        } catch (error) {
+            console.error('Error loading reports data:', error);
+            container.innerHTML = '<div style="padding: 20px; color: #d32f2f;">Error loading reports data: ' + error.message + '</div>';
+        }
+    }
+
+    async fetchEmployeeData() {
+        const response = await fetch(`${this.basePath}/api/wfa/employees_data.php`);
+        console.log('Response status:', response.status);
+
+        if (!response.ok) {
+            throw new Error(`API Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Employee data:', data);
+        return data;
+    }
+
+    generateHTML(departments) {
         let html = `
+            <!-- Report Statistics Cards -->
+            <div class="wfa-metrics-grid">
+                <div class="wfa-metric-card">
+                    <div class="wfa-metric-label">Total Employees</div>
+                    <div class="wfa-metric-value" id="reportTotalCount">0</div>
+                    <div class="wfa-metric-change">In Organization</div>
+                </div>
+
+                <div class="wfa-metric-card success">
+                    <div class="wfa-metric-label">Active Employees</div>
+                    <div class="wfa-metric-value" id="reportActiveCount">0</div>
+                    <div class="wfa-metric-change">Currently Active</div>
+                </div>
+
+                <div class="wfa-metric-card info">
+                    <div class="wfa-metric-label">Filtered Results</div>
+                    <div class="wfa-metric-value" id="reportFilteredCount">0</div>
+                    <div class="wfa-metric-change">Matching Criteria</div>
+                </div>
+
+                <div class="wfa-metric-card warning">
+                    <div class="wfa-metric-label">Departments</div>
+                    <div class="wfa-metric-value" id="reportDeptCount">0</div>
+                    <div class="wfa-metric-change">Unique Departments</div>
+                </div>
+            </div>
+
             <!-- Report Filters -->
             <div class="wfa-filters-container">
                 <div class="wfa-filter-row">
                     <div class="wfa-filter-group">
                         <label>Department:</label>
-                        <select id="reportDeptFilter" class="wfa-filter-select">
-                            <option value="">All Departments</option>
-        `;
-        
-        departments.forEach(dept => {
-            html += `<option value="${dept.department}">${dept.department}</option>`;
+                        <select id="reportDeptFilter" class="wfa-filter-select" onchange="reportsManager.generateReport()">
+                            <option value="">All Departments</option>`;
+
+        departments.sort().forEach(dept => {
+            html += `<option value="${dept}">${dept}</option>`;
         });
-        
+
         html += `
                         </select>
                     </div>
-                    
+
                     <div class="wfa-filter-group">
-                        <label>Employment Type:</label>
-                        <select id="reportEmpTypeFilter" class="wfa-filter-select">
-                            <option value="">All Types</option>
-                            <option value="full_time">Full-Time</option>
-                            <option value="part_time">Part-Time</option>
-                            <option value="contract">Contract</option>
-                            <option value="intern">Intern</option>
-                        </select>
-                    </div>
-                    
-                    <div class="wfa-filter-group">
-                        <label>Status:</label>
-                        <select id="reportStatusFilter" class="wfa-filter-select">
+                        <label>Employment Status:</label>
+                        <select id="reportStatusFilter" class="wfa-filter-select" onchange="reportsManager.generateReport()">
                             <option value="">All Status</option>
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
                         </select>
                     </div>
-                </div>
-                
-                <div class="wfa-filter-row">
+
                     <div class="wfa-filter-group">
-                        <label>Hire Date From:</label>
-                        <input type="date" id="reportHireDateFrom" class="wfa-filter-input">
-                    </div>
-                    
-                    <div class="wfa-filter-group">
-                        <label>Hire Date To:</label>
-                        <input type="date" id="reportHireDateTo" class="wfa-filter-input">
+                        <label>Search by Name/Email:</label>
+                        <input type="text" id="reportSearchFilter" class="wfa-filter-input" placeholder="Enter name or email" onkeyup="reportsManager.generateReport()">
                     </div>
                 </div>
-                
+
                 <div class="wfa-filter-actions">
-                    <button class="wfa-btn wfa-btn-primary" onclick="generateReport()">
+                    <button class="wfa-btn wfa-btn-primary" onclick="reportsManager.generateReport()">
                         <i class="fas fa-search"></i> Generate Report
                     </button>
-                    <button class="wfa-btn wfa-btn-secondary" onclick="exportReportCSV()">
-                        <i class="fas fa-download"></i> Export to CSV
+                    <button class="wfa-btn wfa-btn-info" onclick="reportsManager.exportReportCSV()">
+                        <i class="fas fa-file-csv"></i> Export to CSV
                     </button>
-                    <button class="wfa-btn wfa-btn-secondary" onclick="clearReportFilters()">
-                        <i class="fas fa-redo"></i> Clear Filters
+                    <button class="wfa-btn wfa-btn-secondary" onclick="reportsManager.clearReportFilters()">
+                        <i class="fas fa-times"></i> Clear Filters
+                    </button>
+                    <button class="wfa-btn wfa-btn-warning" onclick="reportsManager.archiveReportData()">
+                        <i class="fas fa-archive"></i> Archive Data
                     </button>
                 </div>
+                <div id="reportStatusMessage" class="wfa-report-status" style="margin-top:12px;color:#111827;background:#eef2ff;border:1px solid #c7d2fe;padding:10px 14px;border-radius:8px;display:inline-block;">Ready to generate report.</div>
             </div>
-            
-            <!-- Report Statistics -->
-            <div class="wfa-metrics-grid">
-                <div class="wfa-metric-card">
-                    <div class="wfa-metric-label">Total Employees</div>
-                    <div class="wfa-metric-value" id="reportTotalCount">${totalEmployees}</div>
-                    <div class="wfa-metric-change">In Organization</div>
-                </div>
-                
-                <div class="wfa-metric-card info">
-                    <div class="wfa-metric-label">Departments</div>
-                    <div class="wfa-metric-value">${departments.length}</div>
-                    <div class="wfa-metric-change">Active</div>
-                </div>
-                
-                <div class="wfa-metric-card success">
-                    <div class="wfa-metric-label">Avg Salary</div>
-                    <div class="wfa-metric-value" id="reportAvgSalary">
-                        $${departments.length > 0 ? parseFloat((departments.reduce((sum, d) => sum + (d.average_salary || 0), 0) / departments.length / 1000).toFixed(0)) : 0}K
-                    </div>
-                    <div class="wfa-metric-change">Organization</div>
-                </div>
-                
-                <div class="wfa-metric-card warning">
-                    <div class="wfa-metric-label">Report Rows</div>
-                    <div class="wfa-metric-value" id="reportRowCount">0</div>
-                    <div class="wfa-metric-change">Filtered Results</div>
-                </div>
-            </div>
-            
-            <!-- Report Table -->
+
+            <!-- Employee Report Data Table -->
             <div class="wfa-table-container">
                 <h3 style="margin-bottom: 15px;">Employee Report Data</h3>
                 <table class="wfa-table" id="reportTable">
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Name</th>
-                            <th>Department</th>
+                            <th>Full Name</th>
                             <th>Position</th>
-                            <th>Employment Type</th>
+                            <th>Department</th>
+                            <th>Email</th>
+                            <th>Contact</th>
                             <th>Hire Date</th>
-                            <th>Salary</th>
                             <th>Status</th>
                         </tr>
                     </thead>
                     <tbody id="reportTableBody">
-                        <tr>
-                            <td colspan="8" style="text-align: center; padding: 20px;">Click "Generate Report" to view results</td>
-                        </tr>
+                        <tr><td colspan="8" style="text-align: center; padding: 20px;">Click "Generate Report" to view results</td></tr>
                     </tbody>
                 </table>
             </div>
         `;
-        
-        container.innerHTML = html;
-        
-    } catch (error) {
-        console.error('Error loading reports:', error);
-        container.innerHTML = '<div class="wfa-error">Error loading reports interface</div>';
-    }
-}
 
-async function generateReport() {
-    const dept = document.getElementById('reportDeptFilter')?.value || '';
-    const empType = document.getElementById('reportEmpTypeFilter')?.value || '';
-    const status = document.getElementById('reportStatusFilter')?.value || '';
-    const hireFrom = document.getElementById('reportHireDateFrom')?.value || '';
-    const hireTo = document.getElementById('reportHireDateTo')?.value || '';
-    
-    try {
-        const basePath = '/capstone_hr_management_system';
-        const url = new URL(`${basePath}/api/employees/get_filtered_employees.php`, window.location.origin);
-        if (dept) url.searchParams.append('department', dept);
-        if (empType) url.searchParams.append('employment_type', empType);
-        if (status) url.searchParams.append('status', status);
-        if (hireFrom) url.searchParams.append('hire_date_from', hireFrom);
-        if (hireTo) url.searchParams.append('hire_date_to', hireTo);
-        
-        const response = await fetch(url.toString());
-        let employees = await response.json();
-        
-        // Fallback: if no API, use mock data
-        if (!Array.isArray(employees)) {
-            employees = generateMockEmployees(dept, empType, status);
-        }
-        
-        document.getElementById('reportRowCount').textContent = employees.length;
-        
-        let tableHtml = '';
-        if (employees.length > 0) {
-            employees.forEach(emp => {
-                tableHtml += `
-                    <tr>
-                        <td>${emp.id || 'N/A'}</td>
-                        <td><strong>${emp.employee_name || emp.name || 'N/A'}</strong></td>
-                        <td>${emp.department || 'N/A'}</td>
-                        <td>${emp.position || 'N/A'}</td>
-                        <td>${emp.employment_type || 'N/A'}</td>
-                        <td>${emp.hire_date || 'N/A'}</td>
-                        <td>$${emp.salary ? (emp.salary / 1000).toFixed(1) : 0}K</td>
-                        <td><span class="wfa-status-badge">${emp.status || 'active'}</span></td>
-                    </tr>
-                `;
-            });
-        } else {
-            tableHtml = '<tr><td colspan="8" style="text-align: center; padding: 20px;">No employees match your filters</td></tr>';
-        }
-        
-        document.getElementById('reportTableBody').innerHTML = tableHtml;
-        
-    } catch (error) {
-        console.error('Error generating report:', error);
-        document.getElementById('reportTableBody').innerHTML = '<tr><td colspan="8" style="text-align: center; color: red;">Error generating report</td></tr>';
+        return html;
     }
-}
 
-function exportReportCSV() {
-    const table = document.getElementById('reportTable');
-    if (!table) return;
-    
-    let csv = [];
-    
-    // Headers
-    const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent);
-    csv.push(headers.join(','));
-    
-    // Rows
-    Array.from(table.querySelectorAll('tbody tr')).forEach(row => {
-        const cells = Array.from(row.querySelectorAll('td')).map(td => {
-            let text = td.textContent.trim();
-            text = text.replace(/"/g, '""');
-            return `"${text}"`;
+    generateReport() {
+        const deptFilter = document.getElementById('reportDeptFilter')?.value || '';
+        const statusFilter = document.getElementById('reportStatusFilter')?.value || '';
+        const searchFilter = document.getElementById('reportSearchFilter')?.value.toLowerCase() || '';
+
+        let filtered = this.allEmployees.filter(emp => {
+            const deptMatch = !deptFilter || emp.department === deptFilter;
+            const statusMatch = !statusFilter || emp.employment_status === statusFilter;
+            const searchMatch = !searchFilter ||
+                               emp.full_name.toLowerCase().includes(searchFilter) ||
+                               emp.email.toLowerCase().includes(searchFilter);
+            return deptMatch && statusMatch && searchMatch;
         });
-        csv.push(cells.join(','));
-    });
-    
-    const csvContent = csv.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `employee_report_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-}
 
-function clearReportFilters() {
-    document.getElementById('reportDeptFilter').value = '';
-    document.getElementById('reportEmpTypeFilter').value = '';
-    document.getElementById('reportStatusFilter').value = '';
-    document.getElementById('reportHireDateFrom').value = '';
-    document.getElementById('reportHireDateTo').value = '';
-    document.getElementById('reportTableBody').innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">Click "Generate Report" to view results</td></tr>';
-    document.getElementById('reportRowCount').textContent = '0';
-}
+        this.updateReportTable(filtered);
+        this.updateReportStats(filtered);
+        this.setReportStatusMessage(`Report generated. Showing ${filtered.length} result${filtered.length === 1 ? '' : 's'}.`);
+    }
 
-function generateMockEmployees(dept, empType, status) {
-    // Mock data generator for demonstration
-    const departments = ['Sales', 'IT', 'HR', 'Finance', 'Operations'];
-    const positions = ['Manager', 'Developer', 'Analyst', 'Coordinator', 'Specialist'];
-    const empTypes = ['full_time', 'part_time', 'contract'];
-    
-    const employees = [];
-    for (let i = 1; i <= 25; i++) {
-        const emp = {
-            id: 'EMP' + String(i).padStart(4, '0'),
-            employee_name: `Employee ${i}`,
-            department: dept || departments[Math.floor(Math.random() * departments.length)],
-            position: positions[Math.floor(Math.random() * positions.length)],
-            employment_type: empType || empTypes[Math.floor(Math.random() * empTypes.length)],
-            hire_date: '2022-' + String(Math.floor(Math.random() * 12) + 1).padStart(2, '0') + '-01',
-            salary: 40000 + Math.random() * 80000,
-            status: status || 'active'
-        };
-        
-        if (!dept || emp.department === dept) {
-            if (!empType || emp.employment_type === empType) {
-                if (!status || emp.status === status) {
-                    employees.push(emp);
-                }
+    setReportStatusMessage(message, timeout = 5000) {
+        const status = document.getElementById('reportStatusMessage');
+        if (!status) return;
+        status.textContent = message;
+        status.classList.add('active');
+        if (timeout > 0) {
+            clearTimeout(status.hideTimeout);
+            status.hideTimeout = setTimeout(() => {
+                status.classList.remove('active');
+            }, timeout);
+        }
+    }
+
+    updateReportTable(filteredEmployees) {
+        const tbody = document.getElementById('reportTableBody');
+
+        if (!tbody) return;
+
+        if (filteredEmployees.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">No employees match the selected criteria</td></tr>';
+            return;
+        }
+
+        let html = '';
+        filteredEmployees.forEach(emp => {
+            const hireDate = new Date(emp.date_hired).toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'});
+            const statusClass = emp.employment_status === 'Active' ? 'success' : 'danger';
+            html += `
+                <tr>
+                    <td>${emp.employee_id}</td>
+                    <td><strong>${emp.full_name}</strong></td>
+                    <td>${emp.position || 'N/A'}</td>
+                    <td>${emp.department || 'N/A'}</td>
+                    <td>${emp.email || 'N/A'}</td>
+                    <td>${emp.contact_number || 'N/A'}</td>
+                    <td>${hireDate}</td>
+                    <td><span class="wfa-risk-badge ${statusClass}">${emp.employment_status}</span></td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    updateReportStats(filteredEmployees) {
+        const totalCount = this.allEmployees.length;
+        const activeCount = this.allEmployees.filter(e => e.employment_status === 'Active').length;
+        const filteredCount = filteredEmployees.length;
+        const deptCount = [...new Set(this.allEmployees.map(e => e.department).filter(d => d))].length;
+
+        document.getElementById('reportTotalCount').textContent = totalCount;
+        document.getElementById('reportActiveCount').textContent = activeCount;
+        document.getElementById('reportFilteredCount').textContent = filteredCount;
+        document.getElementById('reportDeptCount').textContent = deptCount;
+    }
+
+    exportReportCSV() {
+        const deptFilter = document.getElementById('reportDeptFilter')?.value || '';
+        const statusFilter = document.getElementById('reportStatusFilter')?.value || '';
+        const searchFilter = document.getElementById('reportSearchFilter')?.value.toLowerCase() || '';
+
+        let filtered = this.allEmployees.filter(emp => {
+            const deptMatch = !deptFilter || emp.department === deptFilter;
+            const statusMatch = !statusFilter || emp.employment_status === statusFilter;
+            const searchMatch = !searchFilter ||
+                               emp.full_name.toLowerCase().includes(searchFilter) ||
+                               emp.email.toLowerCase().includes(searchFilter);
+            return deptMatch && statusMatch && searchMatch;
+        });
+
+        if (filtered.length === 0) {
+            alert('No data to export');
+            return;
+        }
+
+        // Calculate statistics
+        const activeCount = filtered.filter(e => e.employment_status === 'Active').length;
+        const inactiveCount = filtered.filter(e => e.employment_status !== 'Active').length;
+        const deptGroups = {};
+        filtered.forEach(emp => {
+            deptGroups[emp.department] = (deptGroups[emp.department] || 0) + 1;
+        });
+
+        const reportDate = new Date();
+        let csv = '';
+
+        // Header Section
+        csv += 'EMPLOYEE REPORT\n';
+        csv += `Generated: ${reportDate.toLocaleString('en-US')}\n`;
+        csv += '\n';
+
+        // Report Summary Section
+        csv += 'REPORT SUMMARY\n';
+        csv += `Total Employees: ${filtered.length}\n`;
+        csv += `Active Employees: ${activeCount}\n`;
+        csv += `Inactive Employees: ${inactiveCount}\n`;
+        if (deptFilter) csv += `Department Filter: ${deptFilter}\n`;
+        if (statusFilter) csv += `Status Filter: ${statusFilter}\n`;
+        csv += '\n';
+
+        // Department Breakdown
+        csv += 'DEPARTMENT BREAKDOWN\n';
+        csv += 'Department,Count\n';
+        Object.entries(deptGroups).forEach(([dept, count]) => {
+            csv += `"${dept}","${count}"\n`;
+        });
+        csv += '\n';
+
+        // Employee Data Section
+        csv += 'EMPLOYEE DIRECTORY\n';
+        csv += 'Employee ID,Full Name,Position,Department,Email,Contact Number,Hire Date,Years Employed,Employment Status\n';
+
+        // Sort by department then name
+        filtered.sort((a, b) => {
+            const deptCompare = a.department.localeCompare(b.department);
+            return deptCompare !== 0 ? deptCompare : a.full_name.localeCompare(b.full_name);
+        });
+
+        let lastDept = '';
+        filtered.forEach(emp => {
+            // Add department separator
+            if (emp.department !== lastDept) {
+                csv += `\n--- ${emp.department} ---\n`;
+                lastDept = emp.department;
             }
-        }
+
+            const hireDate = new Date(emp.date_hired).toLocaleDateString('en-US');
+            const yearsEmployed = (parseFloat(emp.years_employed) || 0).toFixed(1);
+
+            csv += `"${emp.employee_id}","${emp.full_name}","${emp.position || 'N/A'}","${emp.department || 'N/A'}","${emp.email || 'N/A'}","${emp.contact_number || 'N/A'}","${hireDate}","${yearsEmployed}","${emp.employment_status}"\n`;
+        });
+
+        // Download CSV
+        const filename = `Employee_Report_${reportDate.toISOString().split('T')[0]}.csv`;
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
-    
-    return employees;
+
+    clearReportFilters() {
+        document.getElementById('reportDeptFilter').value = '';
+        document.getElementById('reportStatusFilter').value = '';
+        document.getElementById('reportSearchFilter').value = '';
+        this.generateReport();
+        this.setReportStatusMessage('Filters cleared. Displaying all employees.');
+    }
+
+    archiveReportData() {
+        const confirmArchive = confirm('Archive the current report data? This action is currently a placeholder and may require backend implementation.');
+        if (!confirmArchive) {
+            return;
+        }
+
+        // TODO: Implement archive logic here, such as calling an API endpoint
+        alert('Archive Data action selected. Backend archive functionality is not yet implemented.');
+    }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    const reportsTab = document.querySelector('a[href="#reports"]');
-    if (reportsTab) {
-        reportsTab.addEventListener('click', function() {
-            loadReportsTab();
-        });
-    }
-});
+// Initialize the reports manager
+const reportsManager = new EmployeeReportsManager('reportsContainer');
+
+// Legacy function for backward compatibility
+function loadReportsTab() {
+    reportsManager.loadReportsTab();
+}
 </script>

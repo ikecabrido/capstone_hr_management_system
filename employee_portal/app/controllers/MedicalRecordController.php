@@ -15,7 +15,7 @@ class MedicalRecordController
 
         $user_id = $_SESSION['user_id'] ?? null;
         $employee = $this->employeeModel->findByUserId($user_id);
-        $employee_id = $employee['id'] ?? null;
+        $employee_id = $employee['employee_id'] ?? null;
         $records = $this->medicalRecordModel->getByEmployee($employee_id);
 
         $title = "Medical Records";

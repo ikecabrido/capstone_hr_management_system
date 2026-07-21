@@ -7,7 +7,7 @@
 
 namespace App\Helpers;
 
-require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../../auth/database.php';
 require_once __DIR__ . '/HolidayHelper.php';
 require_once __DIR__ . '/../models/UnexpectedHoliday.php';
 

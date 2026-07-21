@@ -4,7 +4,7 @@
  * Handles all attendance-related database operations
  */
 
-require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../../../auth/database.php';
 
 class Attendance
 {
@@ -13,7 +13,7 @@ class Attendance
 
     public function __construct()
     {
-        $database = new Database();
+        $database = Database::getInstance();
         $this->conn = $database->getConnection();
     }
 
@@ -35,17 +35,18 @@ class Attendance
     }
 
     /**
-     * Record Time In
+     * Record Time In with status
      */
-    public function timeIn($employee_id, $method)
+    public function timeIn($employee_id, $method, $status = 'PRESENT')
     {
         $query = "INSERT INTO $this->table 
-                  (employee_id, time_in, attendance_date, recorded_by)
-                  VALUES (:employee_id, NOW(), CURDATE(), :method)";
+                  (employee_id, time_in, attendance_date, recorded_by, status)
+                  VALUES (:employee_id, NOW(), CURDATE(), :method, :status)";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':employee_id', $employee_id);
         $stmt->bindParam(':method', $method);
+        $stmt->bindParam(':status', $status);
 
         return $stmt->execute();
     }
@@ -120,9 +121,9 @@ class Attendance
      */
     public function getTodayAllEmployees($limit = 100, $offset = 0)
     {
-        $query = "SELECT a.*, e.full_name, e.department, e.position_id
+        $query = "SELECT a.*, e.full_name, e.department, e.position
                   FROM $this->table a
-                  RIGHT JOIN employees e ON a.employee_no = e.employee_no 
+                  RIGHT JOIN employees e ON a.employee_id = e.employee_id 
                     AND a.attendance_date = CURDATE()
                   WHERE e.employment_status = 'Active'
                   ORDER BY e.full_name
@@ -162,7 +163,7 @@ class Attendance
     {
         $query = "SELECT a.*, e.full_name, e.department
                   FROM $this->table a
-                  JOIN employees e ON a.employee_no = e.employee_no
+                  JOIN employees e ON a.employee_id = e.employee_id
                   WHERE a.is_approved = 0
                   ORDER BY a.created_at DESC
                   LIMIT :limit OFFSET :offset";
@@ -282,5 +283,35 @@ class Attendance
         $stmt->execute();
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Check if employee has a shift exclusion for a given date (e.g., Saturday exclusion)
+     */
+    public function hasShiftExclusionForDate($employee_id, $date)
+    {
+        $query = "SELECT COUNT(*) as exclusion_count 
+                  FROM ta_shift_exclusions se
+                  WHERE se.exclusion_date = :date
+                  AND se.employee_shift_id IN (
+                      SELECT employee_shift_id FROM ta_employee_shifts 
+                      WHERE employee_id = :employee_id 
+                      AND is_active = 1
+                      AND effective_from <= :date
+                      AND (effective_to IS NULL OR effective_to >= :date)
+                  )";
+
+        try {
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':employee_id', $employee_id);
+            $stmt->bindParam(':date', $date);
+            $stmt->execute();
+
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result['exclusion_count'] > 0;
+        } catch (Exception $e) {
+            // If table doesn't exist yet, return false
+            return false;
+        }
     }
 }

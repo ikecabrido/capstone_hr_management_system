@@ -45,7 +45,7 @@ try {
     $absenceModel = new AbsenceLateMgmt();
 
     // Get database connection
-    $db = new Database();
+    $db = Database::getInstance();
     $conn = $db->getConnection();
 
     // Get today's status - use null coalescing to handle missing data

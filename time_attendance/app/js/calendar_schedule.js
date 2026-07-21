@@ -439,6 +439,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Day-by-day format with date/shift/attendance structure
                 console.log('✓ Processing day-by-day format:', schedule.length, 'days');
                 schedule.forEach(day => {
+                    // Skip if employee has a shift exclusion for this date (e.g., Saturday exclusion)
+                    if (day.has_exclusion) {
+                        console.log('⊘ Skipping', day.date, '- employee has shift exclusion');
+                        return; // Skip this day entirely
+                    }
+
                     // Skip Sunday shifts
                     if (day.shift && !isSunday(day.date)) {
                         events.push({
@@ -543,13 +549,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const dayHeight = canvas.height;
         const hourHeight = dayHeight / 24;
 
+        // Detect dark mode
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        
+        // Set colors based on dark mode
+        const bgColor = isDarkMode ? '#232323' : '#f9f9f9';
+        const lineColor = isDarkMode ? '#404040' : '#e0e0e0';
+        const textColor = isDarkMode ? '#e0e0e0' : '#666';
+
         // Draw timeline background
-        ctx.fillStyle = '#f9f9f9';
+        ctx.fillStyle = bgColor;
         ctx.fillRect(0, 0, canvas.width, dayHeight);
 
         // Draw hour lines and labels
-        ctx.strokeStyle = '#e0e0e0';
-        ctx.fillStyle = '#666';
+        ctx.strokeStyle = lineColor;
+        ctx.fillStyle = textColor;
         ctx.font = '12px Arial';
         ctx.textAlign = 'right';
 
@@ -693,8 +707,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const ctx = canvas.getContext('2d');
 
+        // Detect dark mode
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        const textColor = isDarkMode ? '#e0e0e0' : '#666';
+        const lineColor = isDarkMode ? '#404040' : '#ddd';
+        const bgColor = isDarkMode ? '#232323' : 'transparent';
+
+        // Draw background if dark mode
+        if (isDarkMode) {
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, width, height);
+        }
+
         // Draw timeline hours
-        ctx.fillStyle = '#666';
+        ctx.fillStyle = textColor;
         ctx.font = '12px Arial';
         ctx.textAlign = 'right';
 
@@ -706,7 +732,7 @@ document.addEventListener('DOMContentLoaded', function() {
             ctx.fillText(hourLabel, 45, y + 20);
 
             // Draw hour line
-            ctx.strokeStyle = '#ddd';
+            ctx.strokeStyle = lineColor;
             ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(50, y);
@@ -742,15 +768,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const endY = (endHour + endMin / 60) * 50;
         const blockHeight = endY - startY;
 
+        // Detect dark mode
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        const fillColor = isDarkMode ? 'rgba(76, 175, 80, 0.5)' : 'rgba(76, 175, 80, 0.7)';
+        const borderColor = isDarkMode ? '#5faa6f' : '#2e7d32';
+        const textColor = isDarkMode ? '#b0e57c' : '#2e7d32';
+
         // Draw shift block
-        ctx.fillStyle = 'rgba(76, 175, 80, 0.7)';
-        ctx.strokeStyle = '#2e7d32';
+        ctx.fillStyle = fillColor;
+        ctx.strokeStyle = borderColor;
         ctx.lineWidth = 2;
         ctx.fillRect(50, startY, width - 60, blockHeight);
         ctx.strokeRect(50, startY, width - 60, blockHeight);
 
         // Draw text
-        ctx.fillStyle = '#2e7d32';
+        ctx.fillStyle = textColor;
         ctx.font = 'bold 12px Arial';
         ctx.textAlign = 'left';
         ctx.fillText(shift.shift_name, 60, startY + 15);
@@ -769,15 +801,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const startY = startHour * 50;
         const blockHeight = timeOut ? ((timeOut.getHours() + timeOut.getMinutes() / 60) - startHour) * 50 : 40;
 
+        // Detect dark mode
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        const fillColor = isDarkMode ? 'rgba(23, 162, 184, 0.4)' : 'rgba(23, 162, 184, 0.6)';
+        const borderColor = isDarkMode ? '#5cc0d4' : '#0c5460';
+        const textColor = isDarkMode ? '#a8d8e8' : '#0c5460';
+
         // Draw attendance block
-        ctx.fillStyle = 'rgba(23, 162, 184, 0.6)';
-        ctx.strokeStyle = '#0c5460';
+        ctx.fillStyle = fillColor;
+        ctx.strokeStyle = borderColor;
         ctx.lineWidth = 2;
         ctx.fillRect(50, startY, width - 60, blockHeight);
         ctx.strokeRect(50, startY, width - 60, blockHeight);
 
         // Draw text
-        ctx.fillStyle = '#0c5460';
+        ctx.fillStyle = textColor;
         ctx.font = 'bold 12px Arial';
         ctx.textAlign = 'left';
         ctx.fillText('Check-in', 60, startY + 15);

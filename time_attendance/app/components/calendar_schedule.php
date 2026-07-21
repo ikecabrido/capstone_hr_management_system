@@ -9,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
     header('Content-Type: application/json');
     
     if ($_GET['action'] === 'search_employees') {
-        require_once __DIR__ . '/../config/Database.php';
+        require_once __DIR__ . '/../../../auth/database.php';
         
         $search = $_GET['q'] ?? '';
         
@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
                   ORDER BY full_name
                   LIMIT 20";
         
-        $db = new Database();
+        $db = Database::getInstance();
         $conn = $db->getConnection();
         $stmt = $conn->prepare($query);
         $search_param = "%$search%";
