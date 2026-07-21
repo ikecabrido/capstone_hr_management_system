@@ -162,12 +162,19 @@
                             <i class="right fas fa-chevron-left"></i>
                         </p>
                     </a>
-
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="index.php?url=user-profile" class="nav-link">
+                            <a href="#" class="nav-link">
                                 <i class="far fa-circle nav-icon text-warning"></i>
                                 <p>Course Enrollment Training</p>
+                            </a>
+                        </li>
+                    </ul>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="index.php?url=learning-and-development" class="nav-link">
+                                <i class="fas fa-book-reader nav-icon text-warning"></i>
+                                <p>Training Records</p>
                             </a>
                         </li>
                     </ul>

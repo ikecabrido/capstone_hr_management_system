@@ -25,6 +25,7 @@ require 'app/controllers/EmployeeDocumentsController.php';
 require 'app/controllers/EmployeeGrievanceController.php';
 require 'app/controllers/PerformanceFeedbackController.php';
 require 'app/controllers/BenefitsAndGovContribController.php';
+require 'app/controllers/LearningAndDevelopmentController.php';
 
 $url = $_GET['url'] ?? 'auth-index';
 
@@ -226,6 +227,11 @@ switch ($url) {
 
     case 'benefits-and-gov-contrib':
         (new BenefitsAndGovContribController)->employeeBenefits();
+        break;
+
+    //Training and Development 
+    case 'learning-and-development':
+        (new LearningAndDevelopmentController)->index();
         break;
 
     default:
