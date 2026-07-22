@@ -1,4 +1,7 @@
 <?php
+
+require __DIR__ . '/../../core/NotificationHelper.php';
+
 $notificationCount = 0;
 $latestNotifications = [];
 

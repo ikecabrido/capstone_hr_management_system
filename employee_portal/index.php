@@ -35,12 +35,7 @@ require 'app/controllers/PerformanceFeedbackController.php';
 |
 */
 $url = $_GET['url'] ?? 'auth-index';
-if (in_array($url, $protectedRoutes)) {
-    if (!isset($_SESSION['user_id'])) {
-        header("Location: index.php?url=auth-login");
-        exit;
-    }
-}
+
 
 /*
 |--------------------------------------------------------------------------
