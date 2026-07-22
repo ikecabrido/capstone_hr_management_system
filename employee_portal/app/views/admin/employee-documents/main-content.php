@@ -1,7 +1,7 @@
 <div class="w-full mt-4">
-    <div class="content-wrapper">
-        <div class="pt-5 pl-4">
-            <h5 class="fw-bold mb-3 text-5xl">Employee Documents</h5>
+    <div class="content-wrapper text-3xl">
+        <div class="pt-10 pl-2">
+            <h5 class="fw-bold mb-3 text-primary">Employee Documents</h5>
 
             <table class="table table-striped table-hover align-middle mb-0">
                 <?php require __DIR__ . '/../../../views/partials/notif.php'; ?>
@@ -48,12 +48,12 @@
                                     <?= htmlspecialchars($doc['title'] ?? 'N/A'); ?>
                                 </td>
 
-                                <td>
+                                <td class="text-[12px]">
                                     <?= htmlspecialchars($doc['submitter_name'] ?? '-'); ?>
                                 </td>
 
                                 <td>
-                                    <span class="badge bg-info text-dark">
+                                    <span class="badge p-3 bg-info text-dark">
                                         <?= htmlspecialchars($doc['department_name'] ?? '-'); ?>
                                     </span>
                                 </td>
@@ -63,21 +63,26 @@
                                 </td>
 
                                 <td class="text-center">
-                                    <span class="badge <?= $badgeClass ?>">
+                                    <span class="badge p-3 <?= $badgeClass ?>">
                                         <?= ucfirst($decision); ?>
                                     </span>
                                 </td>
 
-                                <td class="text-center">
+                                <td class="text-center flex">
 
                                     <?php if (!empty($doc['file_path'])): ?>
 
                                         <a href="<?= $base . '/employee_portal/public/' . ltrim($doc['file_path'], '/') ?>"
                                             target="_blank"
-                                            class="btn btn-sm btn-outline-primary">
+                                            class="btn mr-1 btn-primary btn-sm">
+                                            View
+                                        </a>
 
-                                            <i class="fas fa-eye"></i> View
-
+                                        <a
+                                            href="<?= htmlspecialchars($doc['file_path']); ?>"
+                                            download="<?= htmlspecialchars($doc['title']); ?>"
+                                            class="btn btn-success btn-sm">
+                                            Download
                                         </a>
 
                                     <?php else: ?>

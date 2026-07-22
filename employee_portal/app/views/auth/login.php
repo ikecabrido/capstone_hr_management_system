@@ -56,7 +56,7 @@
                 <p class="para mt-3 d-flex justify-content-center">
                     Looking for Admin Login?
                     <span>
-                        <a class="link" href="http://localhost/capstone_hr_management_system/">
+                        <a class="link" href="http://localhost/capstone_hr_management_system/login_form.php">
                             Click Here!
                         </a>
                     </span>

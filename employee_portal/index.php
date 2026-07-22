@@ -24,9 +24,12 @@ require 'app/controllers/NotificationController.php';
 require 'app/controllers/MedicalRecordController.php';
 require 'app/controllers/OnlineMeetingController.php';
 require 'app/controllers/EmployeePortalController.php';
-require 'app/controllers/TrainingProgramController.php';
-require 'app/controllers/EnrollmentProgramController.php';
+require 'app/controllers/TrainingRequestController.php';
+require 'app/controllers/EmployeeDocumentsController.php';
+require 'app/controllers/EmployeeGrievanceController.php';
 require 'app/controllers/PerformanceFeedbackController.php';
+require 'app/controllers/BenefitsAndGovContribController.php';
+require 'app/controllers/LearningAndDevelopmentController.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -208,13 +211,11 @@ switch ($url) {
         (new AnnouncementController)->index();
         break;
 
-    /*
-|--------------------------------------------------------------------------
-| Performance Feedback Routes
-|--------------------------------------------------------------------------
-| These routes handle employee performance feedback functionality.
-|
-*/
+    //Performance Feedback
+    case 'admin-performance-feedback':
+        (new PerformanceFeedbackController)->adminIndex();
+        break;
+
     case 'performance-feedback':
         (new PerformanceFeedbackController)->index();
         break;
@@ -284,6 +285,57 @@ switch ($url) {
 
     case 'employee-notification-mark-all-read':
         (new NotificationController)->markAllRead();
+        break;
+
+    //Benefits and Gov Contrib
+    case 'admin-benefits-and-gov-contrib':
+        (new BenefitsAndGovContribController)->index();
+        break;
+
+    case 'benefits-and-gov-contrib-store':
+        (new BenefitsAndGovContribController)->create();
+        break;
+
+    case 'benefits-and-gov-contrib-update':
+        (new BenefitsAndGovContribController)->update();
+        break;
+
+    case 'benefits-and-gov-contrib-delete':
+        (new BenefitsAndGovContribController)->delete();
+        break;
+
+    case 'benefits-and-gov-contrib':
+        (new BenefitsAndGovContribController)->employeeBenefits();
+        break;
+
+    //Training and Development 
+    case 'learning-and-development':
+        (new LearningAndDevelopmentController)->index();
+        break;
+
+    //Training Request
+    case 'admin-training-request':
+        (new TrainingRequestController)->index();
+        break;
+
+    case 'admin-create-training-request':
+        (new TrainingRequestController)->adminCreate();
+        break;
+
+    case 'admin-training-request-update':
+        (new TrainingRequestController)->update();
+        break;
+
+    case 'admin-training-request-delete':
+        (new TrainingRequestController)->delete();
+        break;
+
+    case 'training-request':
+        (new TrainingRequestController)->employeeIndex();
+        break;
+        
+    case 'training-request-store':
+        (new TrainingRequestController)->employeeCreate();
         break;
 
     default:

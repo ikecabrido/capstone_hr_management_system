@@ -14,7 +14,7 @@ class ProfileController
 
         $title = "Employee Profile";
         $content = __DIR__ . '/../views/profile/main-content.php';
-        require __DIR__ . '/../views/index.php';
+        require __DIR__ . '/../views/employee-portal/index.php';
     }
     public function updateName()
     {

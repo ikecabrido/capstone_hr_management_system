@@ -1,11 +1,9 @@
 <?php
 require_once __DIR__ . '/../config/Database.php';
-
 class Payslip
 {
     private $conn;
     private $table = 'pr_payslips';
-
     public function __construct()
     {
         $database = new Database();
@@ -21,6 +19,18 @@ class Payslip
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    public function find($id)
+    {
+        $query = "SELECT p.*, 
+                     CONCAT(e.first_name, ' ', e.last_name) AS full_name
+              FROM {$this->table} p
+              JOIN employees e ON p.employee_id = e.id
+              WHERE p.id = ?";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([$id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
     public function getByEmployee($id)
     {

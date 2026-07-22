@@ -59,8 +59,7 @@
 
                 <?php foreach ($latestNotifications as $notification): ?>
 
-                    <a href="index.php?url=employee-notification-view&id=<?= $notification['notification_id']; ?>"
-                        class="text-decoration-none text-dark">
+                    <div class="text-decoration-none text-dark">
 
                         <div class="notification-item d-flex align-items-start px-3 py-3">
 
@@ -102,7 +101,7 @@
 
                         </div>
 
-                    </a>
+                    </div>
 
                 <?php endforeach; ?>
 

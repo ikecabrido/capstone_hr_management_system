@@ -15,37 +15,22 @@ class NotificationRecipient
 
     public function createRecipients($notificationId, array $employeeIds)
     {
-        $query = "INSERT INTO {$this->table}
-                (
-                    notification_id,
-                    employee_id
-                )
-              VALUES
-                (
-                    :notification_id,
-                    :employee_id
-                )";
+        $employeeIds = array_unique($employeeIds);
+
+        $query = "
+        INSERT INTO {$this->table}
+        (notification_id, employee_id)
+        VALUES (:notification_id, :employee_id)
+    ";
 
         $stmt = $this->conn->prepare($query);
 
         foreach ($employeeIds as $employeeId) {
 
-            if (!$stmt->execute([
+            $stmt->execute([
                 ':notification_id' => $notificationId,
-                ':employee_id'     => $employeeId
-            ])) {
-
-                throw new Exception(
-                    implode(' | ', $stmt->errorInfo())
-                );
-            }
-
-            // Verify that a row was actually inserted
-            if ($stmt->rowCount() !== 1) {
-                throw new Exception(
-                    "Failed to insert recipient ID {$employeeId}."
-                );
-            }
+                ':employee_id' => $employeeId
+            ]);
         }
 
         return true;

@@ -27,7 +27,7 @@ class AnnouncementController
         $announcements = $this->announcementModel->all();
 
         $title = "Employee Announcements";
-        $content = __DIR__ . '/../views/engagement-relations/announcements/main-content.php';
-        require __DIR__ . '/../views/index.php';
+        $content = __DIR__ . '/../views/announcements/main-content.php';
+        require __DIR__ . '/../views/employee-portal/index.php';
     }
 }

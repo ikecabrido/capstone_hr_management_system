@@ -13,6 +13,7 @@ $content = $content ?? __DIR__ . '/main-content.php';
 
     <title><?= $title ?? 'HR Management System'; ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
+
     <script src="<?= $base ?>/employee_portal/public/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= $base ?>/employee_portal/public/assets/bootstrap/css/bootstrap.min.css">
@@ -27,6 +28,8 @@ $content = $content ?? __DIR__ . '/main-content.php';
     <link rel="stylesheet" href="/capstone_hr_management_system/employee_portal/public/assets/css/employeeDashboard.css">
     <link rel="stylesheet" href="/capstone_hr_management_system/employee_portal/public/assets/css/style.css">
     <script src="/capstone_hr_management_system/employee_portal/public/assets/js/mobile-responsive.js" defer></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 
 <body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed">
@@ -56,33 +59,8 @@ $content = $content ?? __DIR__ . '/main-content.php';
     <script src="<?= $base ?>/assets/dist/js/adminlte.min.js"></script>
     <script src="<?= $base ?>/employee_portal/app/views/partials/custom.js"></script>
     <script src="<?= $base ?>/employee_portal/public/assets/js/time.js"></script>
-    <script>
-        function copyLink(link) {
-            navigator.clipboard.writeText(link).then(function() {
-
-                const toast = document.getElementById('copyToast');
-
-                toast.style.display = 'block';
-                toast.style.opacity = '0';
-                toast.style.transition = 'opacity 0.5s ease';
-
-                setTimeout(() => {
-                    toast.style.opacity = '1';
-                }, 10);
-
-                setTimeout(() => {
-                    toast.style.opacity = '0';
-
-                    setTimeout(() => {
-                        toast.style.display = 'none';
-                    }, 500);
-                }, 4000);
-
-            }, function() {
-                alert("Failed to copy link.");
-            });
-        }
-    </script>
+    <script src="<?= $base ?>/employee_portal/public/assets/js/leaveRequestAndProfile.js"></script>
+    <script src="<?= $base ?>/employee_portal/public/assets/js/payslipAndOnlineMeeting.js"></script>
     <div id="copyToast"
         class="position-fixed bottom-0 end-0 p-3"
         style="z-index: 9999; display: none;">
@@ -92,6 +70,7 @@ $content = $content ?? __DIR__ . '/main-content.php';
             Meeting link copied!
         </div>
     </div>
+
 </body>
 
 </html>

@@ -19,6 +19,6 @@ class MedicalRecordController
 
         $title = "Medical Records";
         $content = __DIR__ . '/../views/medical-records/main-content.php';
-        require __DIR__ . '/../views/index.php';
+        require __DIR__ . '/../views/employee-portal/index.php';
     }
 }

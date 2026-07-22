@@ -12,15 +12,15 @@ class PayslipController
     }
     public function index()
     {
-        // get user id from session and then get employee id from user id
-        $user_id = AuthController::getCurrentUserId();
-        $employee = $this->employeeModel->getByUserId($user_id);
-        $employee_id = $employee['id'];
-        $records = $this->payslipModel->getByEmployee($employee_id);
+        $employee = $this->employeeModel->findByUserId(
+            Session::get('user_id')
+        );
+
+        $records = $this->payslipModel->getByEmployee($employee['id']);
 
         $title = "My Payslips";
         $content = __DIR__ . '/../views/payslips/main-content.php';
-        require __DIR__ . '/../views/index.php';
+        require __DIR__ . '/../views/employee-portal/index.php';
     }
     public function viewPayslip()
     {
@@ -37,12 +37,18 @@ class PayslipController
         }
 
         $content = __DIR__ . '/../views/payslips/view_payslip.php';
-        require __DIR__ . '/../views/index.php';
+        require __DIR__ . '/../views/employee-portal/index.php';
     }
     public function exportCsv()
     {
+        $employee = $this->employeeModel->findByUserId(
+            Session::get('user_id')
+        );
+
+        $filename = preg_replace('/[^A-Za-z0-9_-]/', '_', $employee['full_name']) . "_payslip" . '.csv';
+
         header('Content-Type: text/csv');
-        header('Content-Disposition: attachment; filename="payslips.csv"');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
 
         $output = fopen('php://output', 'w');
 
@@ -55,7 +61,12 @@ class PayslipController
             'Date Generated'
         ]);
 
-        $employee_id = $_SESSION['employee_id'];
+        $employee = $this->employeeModel->findByUserId(
+            Session::get('user_id')
+        );
+
+        $employee_id = $employee['id'];
+
         $records = $this->payslipModel->getByEmployee($employee_id);
 
         foreach ($records as $r) {

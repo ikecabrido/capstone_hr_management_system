@@ -31,39 +31,69 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-id-card-alt nav-icon"></i>
+                        <p>View Employee List</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-user-check nav-icon"></i>
+                        <p>View Attendance</p>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="/capstone_hr_management_system/employee_portal/index.php?url=admin-leave-request" class="nav-link">
                         <i class="fas fa-calendar-alt nav-icon"></i>
-                        <p>Leave Request</p>
+                        <p>Manage Leave Request</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/capstone_hr_management_system/employee_portal/index.php?url=admin-benefits-and-gov-contrib" class="nav-link d-flex align-items-center">
+                        <i class="fas fa-hand-holding-heart nav-icon mr-3"></i>
+                        <p class="m-0">Manage Benefits & <br> Government <br> Contributions</p>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a href="/capstone_hr_management_system/employee_portal/index.php?url=admin-online-meeting" class="nav-link">
                         <i class="fas fa-video nav-icon"></i>
-                        <p>Online Meeting</p>
+                        <p>Manage Online Meeting</p>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a href="/capstone_hr_management_system/employee_portal/index.php?url=admin-documents-index" class="nav-link">
                         <i class="fas fa-file-alt nav-icon"></i>
-                        <p>Employee Documents</p>
+                        <p>Manage Documents</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/capstone_hr_management_system/employee_portal/index.php?url=admin-performance-feedback" class="nav-link">
+                        <i class="nav-icon fas fa-chart-line"></i>
+                        <p>Performance Evaluation</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/capstone_hr_management_system/employee_portal/index.php?url=admin-training-request" class="nav-link">
+                        <i class="nav-icon fas fa-book-reader"></i>
+                        <p>Training Request</p>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a href="/capstone_hr_management_system/employee_portal/index.php?url=admin-notification" class="nav-link">
                         <i class="fa-solid fa-bell nav-icon"></i>
-                        <p>Notification</p>
+                        <p>Manage Notification</p>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a href="#" class="nav-link">
                         <i class="fas fa-file-invoice-dollar nav-icon"></i>
-                        <p>Payslip Request</p>
+                        <p>Manage Payslip Request</p>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link">
-                        <i class="fas fa-chalkboard-teacher nav-icon"></i>
-                        <p>Online Training Request</p>
+                    <a href="#" class="nav-link d-flex align-items-center">
+                        <i class="fas fa-chalkboard-teacher nav-icon mr-3"></i>
+                        <p class="m-0">Manage Online <br> Training Request</p>
                     </a>
                 </li>
                 <li class="nav-item">

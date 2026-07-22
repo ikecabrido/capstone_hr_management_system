@@ -57,9 +57,7 @@ $content = $content ?? __DIR__ . '/main-content.php';
     <script src="<?= $base ?>/assets/dist/js/adminlte.min.js"></script>
     <script src="<?= $base ?>/employee_portal/app/views/partials/custom.js"></script>
     <script src="<?= $base ?>/employee_portal/public/assets/js/time.js"></script>
-    <script>
-        function copyLink(link) {
-            navigator.clipboard.writeText(link).then(function() {
+    <script src="<?= $base ?>/employee_portal/public/assets/js/benefitsAndGovContrib.js"></script>
 
                 const toast = document.getElementById('copyToast');
 

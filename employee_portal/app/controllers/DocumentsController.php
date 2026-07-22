@@ -16,34 +16,38 @@ class DocumentsController
     }
     public function index()
     {
-        $departmentId = $_GET['department'] ?? null;
+        $userId = $_SESSION['user_id'];
 
-        if ($departmentId) {
-            $empdocs = $this->documentsModel->getByDepartment($departmentId);
-        } else {
-            $empdocs = $this->documentsModel->all();
-        }
-
+        $empdocs = $this->employeeDocumentsModel->getBySubmittedBy($userId);
+        
         $departments = $this->departmentsModel->all();
         $employees = $this->employeeModel->all();
 
         $title = "Employee Documents";
         $content = __DIR__ . '/../views/employee-documents/main-content.php';
-        require __DIR__ . '/../views/index.php';
+
+        require __DIR__ . '/../views/employee-portal/index.php';
     }
     public function adminDocsIndex()
     {
+        $employeeDocumentsModel = new EmployeeDocuments();
+
         try {
-            $empdocs = $this->documentsModel->all();
+            $empdocs = $employeeDocumentsModel->all();
+
             if (!is_array($empdocs)) {
                 $empdocs = [];
             }
 
             $title   = "Admin - Employee Documents";
             $content = __DIR__ . '/../views/admin/employee-documents/main-content.php';
-            require __DIR__ . '/../views/admin/index.php';
+
+            require __DIR__ . '/../views/admin/employee-documents/index.php';
         } catch (PDOException $e) {
             echo "<div class='alert alert-danger'>Database Error: " . htmlspecialchars($e->getMessage()) . "</div>";
+            $empdocs = [];
+        } catch (Exception $e) {
+            echo "<div class='alert alert-danger'>Error: " . htmlspecialchars($e->getMessage()) . "</div>";
             $empdocs = [];
         }
     }

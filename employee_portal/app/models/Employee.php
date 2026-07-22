@@ -17,10 +17,6 @@ class Employee
         $database = new Database();
         $this->conn = $database->getConnection();
     }
-
-    /**
-     * Get employee by user_id
-     */
     public function getByUserId($user_id)
     {
         $query = "SELECT e.*, u.username, u.role 
@@ -34,10 +30,6 @@ class Employee
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
-    /**
-     * Get employee by employee_no
-     */
     public function getById($employee_no)
     {
         die;
@@ -52,10 +44,6 @@ class Employee
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
-    /**
-     * Get all active employees
-     */
     public function getAll($status = 'Active', $limit = 100, $offset = 0)
     {
         $query = "SELECT e.*, u.username, u.role 
@@ -73,10 +61,6 @@ class Employee
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-
-    /**
-     * Get employee full name
-     */
     public function getFullName($employee_no)
     {
         $query = "SELECT full_name 
@@ -90,10 +74,6 @@ class Employee
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return $result['full_name'] ?? 'Unknown';
     }
-
-    /**
-     * Update employee information
-     */
     public function update($employee_no, $data)
     {
         $query = "UPDATE " . $this->table . " SET ";
@@ -114,10 +94,6 @@ class Employee
 
         return $stmt->execute();
     }
-
-    /**
-     * Get employee count
-     */
     public function getTotalCount($status = 'Active')
     {
         $query = "SELECT COUNT(*) as count FROM " . $this->table . " WHERE employment_status = :status";
@@ -128,7 +104,6 @@ class Employee
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return $result['count'] ?? 0;
     }
-
     public function all()
     {
         $query = "
@@ -142,7 +117,6 @@ class Employee
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-
     public function findByUserId($user_id)
     {
         $query = "SELECT * FROM $this->table WHERE user_id = :user_id LIMIT 1";
@@ -151,5 +125,37 @@ class Employee
         $stmt->execute([':user_id' => $user_id]);
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    public function getByEmployeeId($id)
+    {
+        $query = "SELECT e.*, u.username, u.role
+              FROM " . $this->table . " e
+              LEFT JOIN users u ON e.user_id = u.id
+              WHERE e.id = :id
+              LIMIT 1";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([
+            ':id' => $id
+        ]);
+
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    public function getNonAdminEmployees()
+    {
+        $query = "
+        SELECT 
+            e.*
+        FROM employees e
+        INNER JOIN users u 
+            ON e.user_id = u.id
+        WHERE u.is_admin = 0
+        ORDER BY e.full_name ASC
+    ";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

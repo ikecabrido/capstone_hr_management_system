@@ -35,7 +35,7 @@ class LeaveRequestController
         $leaveBalances = $this->leaveModel->getLeaveBalances($employee_id);
 
         $content = __DIR__ . '/../views/leave-request/main-content.php';
-        require __DIR__ . '/../views/index.php';
+        require __DIR__ . '/../views/employee-portal/index.php';
     }
     public function indexAdmin()
     {

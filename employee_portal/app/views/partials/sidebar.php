@@ -40,58 +40,23 @@
                 </li>
                 <li class="nav-item has-treeview">
                     <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-graduation-cap"></i>
+                        <i class="nav-icon fas fa-inbox"></i>
                         <p>
-                            Learning & Development
-                            <i class="right fas fa-chevron-left"></i>
+                            Request
+                            <i class="right fas fa-angle-left"></i>
                         </p>
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="index.php?url=training-program-index" class="nav-link">
+                            <a href="index.php?url=employee-leave-request" class="nav-link">
+                                <i class="fas fa-calendar-alt nav-icon text-warning"></i>
+                                <p>Leave Request</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="index.php?url=training-request" class="nav-link">
                                 <i class="fas fa-chalkboard-teacher nav-icon text-warning"></i>
-                                <p>Browse Training</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="index.php?url=career-path-plans-index" class="nav-link">
-                                <i class="fas fa-route nav-icon text-warning"></i>
-                                <p>Career Path</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="index.php?url=training-program-index" class="nav-link">
-                                <i class="fas fa-crown nav-icon text-warning"></i>
-                                <p>Leadership Program</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="index.php?url=training-program-index" class="nav-link">
-                                <i class="fas fa-sitemap nav-icon text-warning"></i>
-                                <p class="text-xs">Organizational Development</p>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-                <li class="nav-item has-treeview">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-users"></i>
-                        <p>
-                            Engagement Relations
-                            <i class="right fas fa-angle-left"></i>
-                        </p>
-                    </a>
-                    <ul class="nav nav-treeview sub-menu">
-                        <li class="nav-item">
-                            <a href="index.php?url=employee-grievance" class="nav-link sub-link">
-                                <i class="fas fa-comments nav-icon text-warning"></i>
-                                <p>Grievance</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="index.php?url=employee-announcements" class="nav-link sub-link">
-                                <i class="fas fa-bullhorn nav-icon text-warning"></i>
-                                <p>Announcements</p>
+                                <p>Training Request</p>
                             </a>
                         </li>
                     </ul>
@@ -123,6 +88,65 @@
                 </li>
                 <li class="nav-item has-treeview">
                     <a href="#" class="nav-link">
+                        <i class="nav-icon fas fa-hand-holding-heart"></i>
+                        <p>
+                            Benefits & Gov Contrib
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="index.php?url=benefits-and-gov-contrib" class="nav-link">
+                                <i class="fas fa-receipt nav-icon text-warning"></i>
+                                <p class="small">View Benefits</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-item has-treeview">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon fas fa-bullhorn"></i>
+                        <p>
+                            Announcements & Notifs
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="index.php?url=employee-announcements" class="nav-link">
+                                <i class="fas fa-bullhorn nav-icon text-warning"></i>
+                                <p>Announcements</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="index.php?url=employee-notifications" class="nav-link">
+                                <i class="fas fa-bell nav-icon text-warning"></i>
+                                <p>Notifications</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-item has-treeview">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon fas fa-folder-open"></i>
+                        <p>
+                            Documents
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="index.php?url=employee-documents-index" class="nav-link">
+                                <i class="fas fa-file-alt nav-icon text-warning"></i>
+                                <p>Employee Documents</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-item has-treeview">
+                    <a href="#" class="nav-link">
                         <i class="nav-icon fas fa-chart-line"></i>
                         <p>
                             Performance
@@ -134,6 +158,49 @@
                             <a href="index.php?url=performance-feedback" class="nav-link">
                                 <i class="fas fa-comments nav-icon text-warning"></i>
                                 <p>360 Degree Feedback</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-item has-treeview">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon fas fa-graduation-cap"></i>
+                        <p>
+                            Learning & Development
+                            <i class="right fas fa-chevron-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="far fa-circle nav-icon text-warning"></i>
+                                <p>Course Enrollment Training</p>
+                            </a>
+                        </li>
+                    </ul>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="index.php?url=learning-and-development" class="nav-link">
+                                <i class="fas fa-book-reader nav-icon text-warning"></i>
+                                <p>Training Records</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-item has-treeview">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon fas fa-video"></i>
+                        <p>
+                            Online Meetings
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="index.php?url=online-meeting" class="nav-link">
+                                <i class="fas fa-video nav-icon text-warning"></i>
+                                <p>Meeting Schedule</p>
                             </a>
                         </li>
                     </ul>
@@ -157,37 +224,30 @@
                 </li>
                 <li class="nav-item has-treeview">
                     <a href="#" class="nav-link">
+                        <i class="nav-icon fas fa-users"></i>
+                        <p>
+                            Engagement Relations
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview sub-menu">
+                        <li class="nav-item">
+                            <a href="index.php?url=employee-grievance" class="nav-link sub-link">
+                                <i class="fas fa-comments nav-icon text-warning"></i>
+                                <p>Grievance</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-item has-treeview">
+                    <a href="#" class="nav-link">
                         <i class="nav-icon fas fa-inbox"></i>
                         <p>
-                            Request & Others
+                            Others
                             <i class="right fas fa-angle-left"></i>
                         </p>
                     </a>
                     <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="index.php?url=employee-leave-request" class="nav-link">
-                                <i class="fas fa-calendar-alt nav-icon text-warning"></i>
-                                <p>Leave Request</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="index.php?url=employee-documents-index" class="nav-link">
-                                <i class="fas fa-file-alt nav-icon text-warning"></i>
-                                <p>Employee Documents</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="index.php?url=online-meeting" class="nav-link">
-                                <i class="fas fa-video nav-icon text-warning"></i>
-                                <p>Online Meeting</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="#" class="nav-link">
-                                <i class="fas fa-chalkboard-teacher nav-icon text-warning"></i>
-                                <p>Online Training Request</p>
-                            </a>
-                        </li>
                         <li class="nav-item">
                             <a href="#" class="nav-link">
                                 <i class="fas fa-clock nav-icon text-warning"></i>
