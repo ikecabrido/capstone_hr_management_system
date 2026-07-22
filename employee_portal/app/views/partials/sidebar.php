@@ -54,9 +54,9 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="online-training.php" class="nav-link">
+                            <a href="index.php?url=training-request" class="nav-link">
                                 <i class="fas fa-chalkboard-teacher nav-icon text-warning"></i>
-                                <p>Online Training Request</p>
+                                <p>Training Request</p>
                             </a>
                         </li>
                     </ul>

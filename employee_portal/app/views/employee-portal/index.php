@@ -59,7 +59,17 @@ $content = $content ?? __DIR__ . '/main-content.php';
     <script src="<?= $base ?>/assets/dist/js/adminlte.min.js"></script>
     <script src="<?= $base ?>/employee_portal/app/views/partials/custom.js"></script>
     <script src="<?= $base ?>/employee_portal/public/assets/js/time.js"></script>
+    <script src="<?= $base ?>/employee_portal/public/assets/js/leaveRequestAndProfile.js"></script>
+    <script src="<?= $base ?>/employee_portal/public/assets/js/payslipAndOnlineMeeting.js"></script>
+    <div id="copyToast"
+        class="position-fixed bottom-0 end-0 p-3"
+        style="z-index: 9999; display: none;">
 
+        <div class="alert alert-success shadow-sm rounded-3 mb-0">
+            <i class="fas fa-check-circle me-2"></i>
+            Meeting link copied!
+        </div>
+    </div>
 
 </body>
 

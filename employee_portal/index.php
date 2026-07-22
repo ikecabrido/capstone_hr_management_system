@@ -21,6 +21,7 @@ require 'app/controllers/NotificationController.php';
 require 'app/controllers/MedicalRecordController.php';
 require 'app/controllers/OnlineMeetingController.php';
 require 'app/controllers/EmployeePortalController.php';
+require 'app/controllers/TrainingRequestController.php';
 require 'app/controllers/EmployeeDocumentsController.php';
 require 'app/controllers/EmployeeGrievanceController.php';
 require 'app/controllers/PerformanceFeedbackController.php';
@@ -232,6 +233,31 @@ switch ($url) {
     //Training and Development 
     case 'learning-and-development':
         (new LearningAndDevelopmentController)->index();
+        break;
+
+    //Training Request
+    case 'admin-training-request':
+        (new TrainingRequestController)->index();
+        break;
+
+    case 'admin-create-training-request':
+        (new TrainingRequestController)->adminCreate();
+        break;
+
+    case 'admin-training-request-update':
+        (new TrainingRequestController)->update();
+        break;
+
+    case 'admin-training-request-delete':
+        (new TrainingRequestController)->delete();
+        break;
+
+    case 'training-request':
+        (new TrainingRequestController)->employeeIndex();
+        break;
+        
+    case 'training-request-store':
+        (new TrainingRequestController)->employeeCreate();
         break;
 
     default:

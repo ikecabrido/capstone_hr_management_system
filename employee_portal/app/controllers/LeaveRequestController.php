@@ -49,7 +49,7 @@ class LeaveRequestController
         $remainingLeaves = $totalLeaves - $usedLeaves;
 
         $content = __DIR__ . '/../views/leave-request/main-content.php';
-        require __DIR__ . '/../views/leave-request/index.php';
+        require __DIR__ . '/../views/employee-portal/index.php';
     }
 
     public function indexAdmin()

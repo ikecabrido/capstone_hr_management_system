@@ -21,7 +21,7 @@ class OnlineMeetingController
 
         $title = "Admin Online Meeting";
         $content = __DIR__ . '/../views/online-meeting/main-content.php';
-        require __DIR__ . '/../views/online-meeting/index.php';
+        require __DIR__ . '/../views/employee-portal/index.php';
     }
     public function adminIndex()
     {

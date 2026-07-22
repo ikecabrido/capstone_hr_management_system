@@ -12,10 +12,6 @@ class LearningAndDevelopment
         $database = new Database();
         $this->conn = $database->getConnection();
     }
-
-    /**
-     * Get all training programs
-     */
     public function getAll()
     {
         $sql = "SELECT *
@@ -27,10 +23,6 @@ class LearningAndDevelopment
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-
-    /**
-     * Upcoming trainings
-     */
     public function getUpcoming()
     {
         $sql = "SELECT *
@@ -43,10 +35,6 @@ class LearningAndDevelopment
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-
-    /**
-     * Completed trainings
-     */
     public function getCompleted()
     {
         $sql = "SELECT *
@@ -59,7 +47,6 @@ class LearningAndDevelopment
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-
     public function getTrainingRecords($employee_id)
     {
         $sql = "SELECT
@@ -84,7 +71,7 @@ class LearningAndDevelopment
 
             WHERE r.employee_id = :employee_id
 
-            ORDER BY r.received_at DESC";
+            ORDER BY p.start_date ASC, r.received_at DESC";
 
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([

@@ -72,6 +72,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="/capstone_hr_management_system/employee_portal/index.php?url=admin-training-request" class="nav-link">
+                        <i class="nav-icon fas fa-book-reader"></i>
+                        <p>Training Request</p>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="/capstone_hr_management_system/employee_portal/index.php?url=admin-notification" class="nav-link">
                         <i class="fa-solid fa-bell nav-icon"></i>
                         <p>Manage Notification</p>

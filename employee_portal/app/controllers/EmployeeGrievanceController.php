@@ -13,7 +13,6 @@ class EmployeeGrievanceController
         $this->grievanceModel = new Grievance();
         $this->employeeModel = new Employee();
     }
-
     public function index()
     {
         $user_id = $_SESSION['user_id'] ?? null;
@@ -21,9 +20,8 @@ class EmployeeGrievanceController
         $employee_id = $employee['id'] ?? null;
 
         $content = __DIR__ . '/../views/engagement-relations/main-content.php';
-        require __DIR__ . '/../views/engagement-relations/index.php';
+        require __DIR__ . '/../views/employee-portal/index.php';
     }
-
     public function create()
     {
         try {

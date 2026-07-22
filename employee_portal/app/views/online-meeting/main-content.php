@@ -42,12 +42,14 @@
                                     </a>
                                 </td>
 
-                                <td class="flex">
-                                    <button
-                                        class="btn btn-primary btn-outline-primary btn-sm"
-                                        onclick="copyLink('<?= $meeting['meeting_link'] ?>')">
-                                        <i class="fas fa-copy mr-1"></i> Copy
-                                    </button>
+                                <td>
+                                    <div class="d-flex">
+                                        <button
+                                            class="btn btn-outline-primary btn-sm"
+                                            onclick="copyLink('<?= htmlspecialchars($meeting['meeting_link'], ENT_QUOTES) ?>')">
+                                            <i class="fas fa-copy mr-1"></i> Copy
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
 

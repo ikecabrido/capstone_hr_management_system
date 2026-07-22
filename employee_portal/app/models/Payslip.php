@@ -1,11 +1,9 @@
 <?php
 require_once __DIR__ . '/../config/Database.php';
-
 class Payslip
 {
     private $conn;
     private $table = 'pr_payslips';
-
     public function __construct()
     {
         $database = new Database();
@@ -34,7 +32,6 @@ class Payslip
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
     public function getByEmployee($id)
     {
         $query = "SELECT p.*, e.full_name
@@ -47,7 +44,6 @@ class Payslip
         $stmt->execute([$id]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-
     public function viewPayslip($id)
     {
         $query = "
@@ -84,56 +80,4 @@ class Payslip
 
         return $payslip;
     }
-
-
-
-
-
-
-
-
-    // public function create($data)
-    // {
-    //     $query = "INSERT INTO {$this->table} 
-    //               (employee_id, leave_type_id, start_date, end_date, reason, status) 
-    //               VALUES (?, ?, ?, ?, ?, ?)";
-    //     $stmt = $this->conn->prepare($query);
-    //     return $stmt->execute([
-    //         $data['employee_id'],
-    //         $data['leave_type_id'],
-    //         $data['start_date'],
-    //         $data['end_date'],
-    //         $data['reason'],
-    //         $data['status'] ?? 'Pending'
-    //     ]);
-    // }
-
-    // public function update($id, $data)
-    // {
-    //     $query = "UPDATE {$this->table} SET
-    //               employee_id = ?,
-    //               leave_type_id = ?,
-    //               start_date = ?,
-    //               end_date = ?,
-    //               reason = ?,
-    //               status = ?
-    //               WHERE id = ?";
-    //     $stmt = $this->conn->prepare($query);
-    //     return $stmt->execute([
-    //         $data['employee_id'],
-    //         $data['leave_type_id'],
-    //         $data['start_date'],
-    //         $data['end_date'],
-    //         $data['reason'],
-    //         $data['status'],
-    //         $id
-    //     ]);
-    // }
-
-    // public function delete($id)
-    // {
-    //     $query = "DELETE FROM {$this->table} WHERE id = ?";
-    //     $stmt = $this->conn->prepare($query);
-    //     return $stmt->execute([$id]);
-    // }
 }
