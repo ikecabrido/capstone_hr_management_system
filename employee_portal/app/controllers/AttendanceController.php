@@ -268,7 +268,6 @@ class AttendanceController
             ];
         }
     }
-
     public function getStatus($employee_id)
     {
         $record = $this->attendanceModel->getTodayAttendance($employee_id);

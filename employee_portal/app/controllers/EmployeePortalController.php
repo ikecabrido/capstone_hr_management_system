@@ -140,6 +140,8 @@ class EmployeePortalController
     }
     public function adminIndex()
     {
+        $employees = $this->employeeModel->getNonAdminEmployees();
+
         $content = __DIR__ . '/../views/admin/main-content.php';
         require __DIR__ . '/../views/admin/index.php';
     }

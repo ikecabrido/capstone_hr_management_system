@@ -11,7 +11,6 @@ class Attendance
         $database = new Database();
         $this->conn = $database->getConnection();
     }
-
     public function getTodayAttendance($employee_id)
     {
         $query = "SELECT * FROM $this->table 
@@ -25,7 +24,6 @@ class Attendance
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
     public function timeIn($employee_id, $method)
     {
         $query = "INSERT INTO $this->table 
@@ -38,7 +36,6 @@ class Attendance
 
         return $stmt->execute();
     }
-
     public function timeOut($attendance_id)
     {
         $query = "UPDATE $this->table 
@@ -50,7 +47,6 @@ class Attendance
 
         return $stmt->execute();
     }
-
     public function getByDateRange($start_date, $end_date, $employee_no = null, $limit = 500, $offset = 0)
     {
         $query = "SELECT a.*, e.full_name, e.department, e.position
@@ -79,7 +75,6 @@ class Attendance
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-
     public function getTodaySummary()
     {
         $query = "SELECT 
@@ -94,7 +89,6 @@ class Attendance
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
     public function getTodayAllEmployees($limit = 100, $offset = 0)
     {
         $query = "SELECT a.*, e.full_name, e.department, e.position
@@ -112,7 +106,6 @@ class Attendance
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-
     public function getEmployeeHistory($employee_no, $limit = 30, $offset = 0)
     {
         $query = "SELECT * FROM $this->table
@@ -128,7 +121,6 @@ class Attendance
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-
     public function getPendingApprovals($limit = 50, $offset = 0)
     {
         $query = "SELECT a.*, e.full_name, e.department
@@ -145,7 +137,6 @@ class Attendance
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-
     public function approve($attendance_id, $approved_by, $remarks = "")
     {
         $query = "UPDATE $this->table 
@@ -162,7 +153,6 @@ class Attendance
 
         return $stmt->execute();
     }
-
     public function updateStatus($attendance_id, $status)
     {
         $query = "UPDATE $this->table 
@@ -175,7 +165,6 @@ class Attendance
 
         return $stmt->execute();
     }
-
     public function updateHours($attendance_id, $hoursData)
     {
         $query = "UPDATE $this->table 
@@ -192,7 +181,6 @@ class Attendance
 
         return $stmt->execute();
     }
-
     public function isHoliday($date)
     {
         $query = "SELECT id FROM ta_holidays 
@@ -209,7 +197,6 @@ class Attendance
 
         return $stmt->fetch(PDO::FETCH_ASSOC) ? true : false;
     }
-
     public function getHolidayInfo($date)
     {
         $query = "SELECT id, name, description, category, is_recurring
@@ -227,7 +214,6 @@ class Attendance
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
     public function getHolidaysByYear($year = null)
     {
         $year = $year ?: date('Y');
@@ -244,11 +230,10 @@ class Attendance
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-
     public function getMonthlyAttendance($employee_id, $month = null, $year = null)
     {
-        $month = $month ?? date('m'); 
-        $year = $year ?? date('Y');  
+        $month = $month ?? date('m');
+        $year = $year ?? date('Y');
 
         $query = "SELECT *,
                      TIME_TO_SEC(TIMEDIFF(time_out, time_in)) / 3600 AS total_hours_worked
@@ -264,6 +249,34 @@ class Attendance
             ':month' => $month,
             ':year' => $year
         ]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    public function getEmployeeAttendance($employeeId)
+    {
+        $query = "
+        SELECT 
+            a.*,
+            e.full_name,
+            e.employee_no
+
+        FROM ta_attendance a
+
+        LEFT JOIN employees e
+            ON a.employee_no = e.employee_no
+
+        WHERE e.id = :employee_id
+
+        ORDER BY a.attendance_date DESC
+    ";
+
+
+        $stmt = $this->conn->prepare($query);
+
+        $stmt->execute([
+            ':employee_id' => $employeeId
+        ]);
+
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

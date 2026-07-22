@@ -126,7 +126,6 @@ class Employee
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
     public function getByEmployeeId($id)
     {
         $query = "SELECT e.*, u.username, u.role
@@ -141,5 +140,22 @@ class Employee
         ]);
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    public function getNonAdminEmployees()
+    {
+        $query = "
+        SELECT 
+            e.*
+        FROM employees e
+        INNER JOIN users u 
+            ON e.user_id = u.id
+        WHERE u.is_admin = 0
+        ORDER BY e.full_name ASC
+    ";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
