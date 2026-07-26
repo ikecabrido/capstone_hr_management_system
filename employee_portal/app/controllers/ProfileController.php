@@ -1,11 +1,14 @@
 <?php
 require_once __DIR__ . '/../models/Profile.php';
+require_once __DIR__ . '/../models/Employee.php';
 class ProfileController
 {
     private $profileModel;
+    private $employeeModel;
     public function __construct()
     {
         $this->profileModel = new Profile();
+        $this->employeeModel = new Employee();
     }
     public function index()
     {
@@ -22,7 +25,7 @@ class ProfileController
         $new_name = $_POST['full_name'] ?? null;
 
         try {
-            if ($this->profileModel->updateName($user_id, $new_name)) {
+            if ($this->profileModel->updateName($user_id, $new_name) && $this->employeeModel->updateName($user_id, $new_name)) {
                 $_SESSION['success'] = "Full name updated successfully.";
             } else {
                 $_SESSION['error'] = "Failed to update full name.";

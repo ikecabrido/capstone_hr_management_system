@@ -146,7 +146,7 @@ class Employee
         $query = "
         SELECT 
             e.*
-        FROM employees e
+        FROM $this->table e
         INNER JOIN users u 
             ON e.user_id = u.id
         WHERE u.is_admin = 0
@@ -157,5 +157,19 @@ class Employee
         $stmt->execute();
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    public function updateName($user_id, $new_name)
+    {
+        if (!$user_id || !$new_name) {
+            return false;
+        }
+
+        $query = "UPDATE $this->table SET full_name = :full_name WHERE user_id = :user_id";
+        $stmt = $this->conn->prepare($query);
+
+        return $stmt->execute([
+            ':full_name' => $new_name,
+            ':user_id' => $user_id
+        ]);
     }
 }

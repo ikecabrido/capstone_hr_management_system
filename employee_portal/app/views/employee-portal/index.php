@@ -61,16 +61,8 @@ $content = $content ?? __DIR__ . '/main-content.php';
     <script src="<?= $base ?>/employee_portal/public/assets/js/time.js"></script>
     <script src="<?= $base ?>/employee_portal/public/assets/js/leaveRequestAndProfile.js"></script>
     <script src="<?= $base ?>/employee_portal/public/assets/js/payslipAndOnlineMeeting.js"></script>
-    <div id="copyToast"
-        class="position-fixed bottom-0 end-0 p-3"
-        style="z-index: 9999; display: none;">
-
-        <div class="alert alert-success shadow-sm rounded-3 mb-0">
-            <i class="fas fa-check-circle me-2"></i>
-            Meeting link copied!
-        </div>
-    </div>
-
+    <link rel="stylesheet" href="/capstone_hr_management_system/employee_portal/public/assets/css/badge.css">
+    <?php require __DIR__ . '/toast.php'; ?>
 </body>
 
 </html>

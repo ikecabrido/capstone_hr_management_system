@@ -18,7 +18,7 @@ class DocumentsController
     {
         $userId = $_SESSION['user_id'];
 
-        $empdocs = $this->employeeDocumentsModel->getBySubmittedBy($userId);
+        $empdocs = $this->documentsModel->getBySubmittedBy($userId);
         
         $departments = $this->departmentsModel->all();
         $employees = $this->employeeModel->all();
@@ -30,10 +30,9 @@ class DocumentsController
     }
     public function adminDocsIndex()
     {
-        $employeeDocumentsModel = new EmployeeDocuments();
 
         try {
-            $empdocs = $employeeDocumentsModel->all();
+            $empdocs = $this->documentsModel->all();
 
             if (!is_array($empdocs)) {
                 $empdocs = [];

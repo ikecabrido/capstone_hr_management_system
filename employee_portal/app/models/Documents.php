@@ -114,4 +114,14 @@ class Documents
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function delete($approval_id)
+    {
+        $sql = "DELETE FROM {$this->table} WHERE approval_id = :approval_id";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':approval_id', $approval_id, PDO::PARAM_INT);
+
+        return $stmt->execute();
+    }
 }

@@ -17,8 +17,8 @@
 
 <body>
     <div class="bigbox">
-        <div class="box1 text-6xl">
-            <h1>
+        <div class="box1" >
+            <h1 style="font-size: 60px;">
                 Employee <br />
                 Portal <br />
                 Login

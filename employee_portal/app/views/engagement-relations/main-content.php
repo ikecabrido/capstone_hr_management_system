@@ -2,7 +2,7 @@
     <div class="content-wrapper w-full">
         <div class="card shadow-lg border-0 rounded-4 w-full">
 
-            <?php require __DIR__ . '/../../partials/notif.php' ?>
+            <?php require __DIR__ . '/../partials/notif.php' ?>
 
             <div class="card-header bg-gradient bg-primary text-white rounded-top-4 d-flex align-items-center">
                 <i class="bi bi-exclamation-circle me-2 fs-4"></i>
