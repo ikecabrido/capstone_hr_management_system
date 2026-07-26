@@ -1,4 +1,10 @@
 <?php
+
+require_once __DIR__ . '/vendor/autoload.php';
+
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv->load();
+
 session_start();
 
 if (isset($_SESSION['user']) && !isset($_SESSION['user_id'])) {
@@ -331,10 +337,25 @@ switch ($url) {
     case 'training-request':
         (new TrainingRequestController)->employeeIndex();
         break;
-        
+
     case 'training-request-store':
         (new TrainingRequestController)->employeeCreate();
         break;
+
+    //Forgot password
+    case 'auth-forgot-password':
+        (new AuthController)->send();
+        break;
+
+    case 'auth-reset-password':
+        (new AuthController)->resetPassword();
+        break;
+
+    case 'auth-update-password':
+        (new AuthController)->updatePassword();
+        break;
+
+
 
     default:
         $title = "Page Not Found";

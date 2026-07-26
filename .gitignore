@@ -1,2 +1,5 @@
-".env" 
-employee_portal/.env
+# Environment variables
+.env
+
+# Composer dependencies
+vendor/

@@ -13,11 +13,37 @@
     $password = 'employee123';
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
     ?>
+<style>
+    .forgot-password-btn {
+        background: none;
+        border: none;
+        padding: 0;
+        color: #6c757d;
+        font-size: 14px;
+        cursor: pointer;
+        transition: color 0.2s ease;
+    }
+
+    .forgot-password-btn span {
+        color: inherit;
+    }
+
+    .forgot-password-btn:hover {
+        color: #343a40;
+        text-decoration: underline;
+    }
+
+    .forgot-password-btn:focus,
+    .forgot-password-btn:active {
+        outline: none;
+        box-shadow: none;
+    }
+</style>
 </head>
 
 <body>
     <div class="bigbox">
-        <div class="box1" >
+        <div class="box1">
             <h1 style="font-size: 60px;">
                 Employee <br />
                 Portal <br />
@@ -53,14 +79,24 @@
                         required />
                 </div>
                 <button type="submit" name="login">Login</button>
-                <p class="para mt-3 d-flex justify-content-center">
-                    Looking for Admin Login?
-                    <span>
-                        <a class="link" href="http://localhost/capstone_hr_management_system/login_form.php">
-                            Click Here!
-                        </a>
-                    </span>
-                </p>
+                <div class="text-center">
+                    <button
+                        type="button"
+                        class="forgot-password-btn"
+                        data-toggle="modal"
+                        data-target="#resetPasswordModal">
+                        Forgot password? <span>Click Here!</span>
+                    </button>
+                    <p class="para mt-3 d-flex justify-content-center">
+                        Looking for Admin Login?
+                        <span>
+                            <a class="link ml-2" href="http://localhost/capstone_hr_management_system/login_form.php">
+                                Click Here!
+                            </a>
+                        </span>
+                    </p>
+                </div>
+
             </form>
         </div>
     </div>
@@ -69,7 +105,7 @@
     <script src="/capstone_hr_management_system/assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="/capstone_hr_management_system/assets/plugins/toastr/toastr.min.js"></script>
     <script src="/capstone_hr_management_system/assets/dist/js/adminlte.js"></script>
-
+    <?php require __DIR__ . '/forgot-password-modal.php'; ?>
     <?php if (isset($error) && $error): ?>
         <script>
             $(document).Toasts('create', {
