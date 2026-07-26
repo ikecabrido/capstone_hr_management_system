@@ -104,7 +104,7 @@ $qrToken = isset($_GET['qr_token']) ? trim($_GET['qr_token']) : '';
             autocomplete="current-password" />
         </div>
         <button type="submit" name="login" id="loginBtn">Login</button>
-        <p class="para mt-3 d-flex justify-content-center">Looking for Portal?<span><a class="link" href="index.php"> Click Here!</a></span></p>
+        <p class="para mt-3 d-flex justify-content-center">Looking for Portal?<span><a class="link" href="employee_portal/"> Click Here!</a></span></p>
       </form>
 
     </div>

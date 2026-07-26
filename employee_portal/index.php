@@ -25,8 +25,6 @@ require 'app/controllers/MedicalRecordController.php';
 require 'app/controllers/OnlineMeetingController.php';
 require 'app/controllers/EmployeePortalController.php';
 require 'app/controllers/TrainingRequestController.php';
-require 'app/controllers/EmployeeDocumentsController.php';
-require 'app/controllers/EmployeeGrievanceController.php';
 require 'app/controllers/PerformanceFeedbackController.php';
 require 'app/controllers/BenefitsAndGovContribController.php';
 require 'app/controllers/LearningAndDevelopmentController.php';

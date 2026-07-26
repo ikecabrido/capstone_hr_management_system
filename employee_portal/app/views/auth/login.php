@@ -17,7 +17,7 @@
 
 <body>
     <div class="bigbox">
-        <div class="box1">
+        <div class="box1 text-6xl">
             <h1>
                 Employee <br />
                 Portal <br />
