@@ -172,4 +172,20 @@ class Employee
             ':user_id' => $user_id
         ]);
     }
+    public function find($id)
+    {
+        $query = "
+        SELECT *
+        FROM {$this->table}
+        WHERE id = :id
+        LIMIT 1
+    ";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([
+            ':id' => $id
+        ]);
+
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 }

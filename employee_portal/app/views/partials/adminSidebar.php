@@ -85,7 +85,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link">
+                    <a href="/capstone_hr_management_system/employee_portal/index.php?url=admin-payroll-request" class="nav-link">
                         <i class="fas fa-file-invoice-dollar nav-icon"></i>
                         <p>Manage Payslip Request</p>
                     </a>

@@ -122,4 +122,21 @@ class User
             ':id' => $userId
         ]);
     }
+    public function findById($id)
+    {
+        $sql = "
+        SELECT *
+        FROM {$this->table}
+        WHERE id = :id
+        LIMIT 1
+    ";
+
+        $stmt = $this->conn->prepare($sql);
+
+        $stmt->execute([
+            ':id' => $id
+        ]);
+
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 }

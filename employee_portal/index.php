@@ -29,6 +29,7 @@ require 'app/controllers/AnnouncementController.php';
 require 'app/controllers/NotificationController.php';
 require 'app/controllers/MedicalRecordController.php';
 require 'app/controllers/OnlineMeetingController.php';
+require 'app/controllers/PayrollRequestController.php';
 require 'app/controllers/EmployeePortalController.php';
 require 'app/controllers/TrainingRequestController.php';
 require 'app/controllers/PerformanceFeedbackController.php';
@@ -353,6 +354,27 @@ switch ($url) {
 
     case 'auth-update-password':
         (new AuthController)->updatePassword();
+        break;
+
+    //Payroll Request
+    case 'admin-payroll-request':
+        (new PayrollRequestController)->adminIndex();
+        break;
+
+    case 'admin-payroll-request-update-status':
+        (new PayrollRequestController)->updateStatus();
+        break;
+
+    case 'admin-payroll-request-delete':
+        (new PayrollRequestController)->delete();
+        break;
+
+    case 'payroll-request-store':
+        (new PayrollRequestController)->store();
+        break;
+
+    case 'employee-payroll-request':
+        (new PayrollRequestController)->employeeIndex();
         break;
 
 

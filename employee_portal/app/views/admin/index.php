@@ -58,28 +58,29 @@ $content = $content ?? __DIR__ . '/main-content.php';
     <script src="<?= $base ?>/employee_portal/app/views/partials/custom.js"></script>
     <script src="<?= $base ?>/employee_portal/public/assets/js/time.js"></script>
     <script src="<?= $base ?>/employee_portal/public/assets/js/benefitsAndGovContrib.js"></script>
+    <script>
+        const toast = document.getElementById('copyToast');
 
-                const toast = document.getElementById('copyToast');
+        toast.style.display = 'block';
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.5s ease';
 
-                toast.style.display = 'block';
-                toast.style.opacity = '0';
-                toast.style.transition = 'opacity 0.5s ease';
+        setTimeout(() => {
+            toast.style.opacity = '1';
+        }, 10);
 
-                setTimeout(() => {
-                    toast.style.opacity = '1';
-                }, 10);
+        setTimeout(() => {
+            toast.style.opacity = '0';
 
-                setTimeout(() => {
-                    toast.style.opacity = '0';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 500);
+        }, 4000);
 
-                    setTimeout(() => {
-                        toast.style.display = 'none';
-                    }, 500);
-                }, 4000);
-
-            }, function() {
-                alert("Failed to copy link.");
-            });
+        },
+        function() {
+            alert("Failed to copy link.");
+        });
         }
     </script>
     <div id="copyToast"
