@@ -188,3 +188,9 @@ FOREIGN KEY (employee_id)
 REFERENCES employees(id)
 ON DELETE CASCADE
 ON UPDATE CASCADE;
+
+
+-- NEW COLUMN ADDED
+ALTER TABLE users
+ADD COLUMN password_reset_token VARCHAR(255) NULL,
+ADD COLUMN password_reset_expires DATETIME NULL;
