@@ -1,5 +1,4 @@
 <?php
-
 /**
  * HR Dashboard - Time & Attendance System
  * Main interface for HR to view attendance, generate QR codes, and manage approvals
@@ -21,7 +20,7 @@ Session::start();
 
 // Check if user is authenticated
 if (!AuthController::isAuthenticated()) {
-    header("Location: ../../login_form.php");
+    header("Location:../../login_form.php");
     exit;
 }
 
@@ -53,6 +52,9 @@ $allEmployees = $employeeModel->getTotalCount('ACTIVE');
 $todayRecords = $attendanceModel->getTodayAllEmployees(100);
 $pendingApprovals = $attendanceModel->getPendingApprovals(10);
 
+// Get all active employees for QR Directory
+$activeEmployees = $employeeModel->getAll('Active');
+
 // Calculate today's attendance percentage
 $attendancePercentage = 0;
 if ($allEmployees > 0 && $todayStats) {
@@ -60,422 +62,104 @@ if ($allEmployees > 0 && $todayStats) {
 }
 
 $current_page = 'dashboard.php';
-$current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
+$current_role = $_SESSION['user']['role']?? $_SESSION['role']?? 'time';
+
+$page_title = 'HR Dashboard - Time & Attendance System';
+$page_head_extra = '';
 ?>
-
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR Dashboard - Time & Attendance System</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-    <link rel="stylesheet" href="../../assets/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="../../assets/plugins/toastr/toastr.min.css">
-    <link rel="stylesheet" href="../assets/style.css">
-    <link rel="stylesheet" href="../assets/dashboard.css">
-    <link rel="stylesheet" href="../assets/realtime-dashboard.css">
-    <link rel="stylesheet" href="../assets/adminlte-overrides.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="../assets/mobile-responsive.js" defer></script>
-    <script src="../assets/realtime-dashboard.js" defer></script>
-    <script src="../../assets/plugins/jquery/jquery.min.js"></script>
-    <script src="../../assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script src="../../assets/plugins/toastr/toastr.min.js"></script>
-    <script src="../../assets/dist/js/adminlte.js"></script>
+<?php require_once __DIR__. '/../layout/page_start.php';?>
+<?php require_once __DIR__. '/../layout/sidebar.php';?>
+<?php $page_title = 'Time & Attendance Dashboard'; $page_subtitle = 'Real-time attendance and HR analytics'; $page_icon = 'fa-chart-line';?>
+<?php require_once __DIR__. '/../layout/content_header.php';?>
 
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    .ta-dashboard * { margin: 0; padding: 0; box-sizing: border-box; }
+    .ta-dashboard { font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; }
 
-        html,
-        body {
-            margin: 0;
-            padding: 0;
-        }
+    .ta-dashboard .dashboard-grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); margin-bottom:22px }
+    .ta-dashboard .info-box { display:flex; background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(15,23,42,.08); overflow:hidden; border:0 }
+    .ta-dashboard .info-box-icon { display:flex; align-items:center; justify-content:center; width:70px; min-width:70px; font-size:32px; color:#fff; background:#1976d2 }
+    .ta-dashboard .info-box-icon.bg-primary{ background: linear-gradient(135deg,#0d47a1,#1976d2) }
+    .ta-dashboard .info-box-icon.bg-success{ background: linear-gradient(135deg,#2e7d32,#43a047) }
+    .ta-dashboard .info-box-icon.bg-warning{ background: linear-gradient(135deg,#f57f17,#fbc02d) }
+    .ta-dashboard .info-box-icon.bg-info{ background: linear-gradient(135deg,#0097a7,#00bcd4) }
+    .ta-dashboard .info-box-content{ flex:1; padding:12px 16px; display:flex; flex-direction:column; justify-content:center }
+    .ta-dashboard .info-box-text{ font-size:12px; color:#999; font-weight:600; text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px }
+    .ta-dashboard .info-box-number{ font-size:28px; font-weight:700; color:#0d47a1 }
+    .ta-dashboard .info-box-unit{ font-size:12px; color:#bbb; margin-top:4px }
 
-        body {
-            background: #f5f5f5;
-            margin: 0;
-            padding: 0;
-            font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-        }
+    .ta-dashboard .card{ border-radius:12px; border:0; box-shadow:0 2px 8px rgba(15,23,42,.08); overflow:hidden }
+    .ta-dashboard .card.card-header{ background:#f8f9fa; border-bottom:1px solid #e9ecef; padding:14px 16px; color:#0d47a1 }
+    .ta-dashboard .card.card-header.card-title{ color:#0d47a1; font-weight:600; font-size:16px }
+    .ta-dashboard .card.card-body{ padding:16px }
 
-        .wrapper {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
+    .ta-dashboard .realtime-dashboard-widget,.ta-dashboard .container { background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(15,23,42,.08); padding:16px; margin-bottom:20px }
+    .ta-dashboard .container h2 { font-size:20px; color:#0d47a1; margin-bottom:14px; font-weight:600 }
 
-        .content-wrapper {
-            flex: 1;
-            padding: 24px 28px 28px;
-            margin-top: 60px;
-            transition: margin-left 0.3s ease, width 0.3s ease;
-            background: #f4f6f9;
-            min-height: calc(100vh - 60px);
-        }
+    .ta-dashboard .btn,.ta-dashboard button { border-radius:6px; border:1px solid transparent; font-weight:600; transition: all .2s ease }
+    .ta-dashboard button:hover,.ta-dashboard .btn:hover { transform: translateY(-1px) }
+    .ta-dashboard #realtimeRefresh { background:#1976d2; color:#fff; padding:7px 12px; font-size:13px }
 
-        .container,
-        .container-fluid {
-            margin: 0 !important;
-            padding: 0 !important;
-            width: 100% !important;
-            max-width: 100% !important;
-        }
+    .ta-dashboard .filter-controls{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px }
+    .ta-dashboard .filter-controls input,.ta-dashboard .filter-controls select{ border:1px solid #d0d7de; border-radius:6px; padding:8px 10px; font-size:14px; color:#2f3a4a; background:#fff; min-height:38px }
+    .ta-dashboard .filter-controls input:focus,.ta-dashboard .filter-controls select:focus{ border-color:#1976d2; outline:none; box-shadow:0 0 0 2px rgba(25,118,210,.12) }
 
-        .page-header {
-            background: linear-gradient(135deg, #0b3c91 0%, #1976d2 100%);
-            padding: 24px 28px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(11, 60, 145, 0.18);
-            position: relative;
-            overflow: hidden;
-            margin: 0 0 20px;
-            border: 1px solid rgba(255,255,255,0.12);
-        }
+    .ta-dashboard #attendanceTable{ width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden }
+    .ta-dashboard #attendanceTable thead th{ background:#f8f9fa; color:#0d47a1; font-weight:600; text-align:left; padding:12px 10px; border-bottom:1px solid #e9ecef }
+    .ta-dashboard #attendanceTable tbody td{ padding:12px 10px; border-bottom:1px solid #eef2f6; color:#374151; font-size:14px }
+    .ta-dashboard #attendanceTable tbody tr:hover{ background:#f8fbff }
+    .ta-dashboard #attendanceTable tbody tr:last-child td{ border-bottom:0 }
 
-        .page-header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -50%;
-            width: 180px;
-            height: 180px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 50%;
-            animation: float 3s ease-in-out infinite;
-        }
+    .ta-dashboard .badge{ display:inline-block; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:700; letter-spacing:.2px; text-transform:uppercase }
+    .ta-dashboard .badge-success{ background:#e8f5e9; color:#2e7d32 }
+    .ta-dashboard .badge-warning{ background:#fff8e1; color:#f57f17 }
+    .ta-dashboard .badge-info{ background:#e3f2fd; color:#1565c0 }
+    .ta-dashboard .badge-danger{ background:#ffebee; color:#c62828 }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-12px); }
-        }
+    /* QR Directory specific styles */
+    .qr-item { border-bottom: 1px solid #eee; padding: 10px 0; display: flex; align-items: center; justify-content: space-between; }
+    .qr-info { display: flex; align-items: center; gap: 15px; }
+    .qr-thumb { width: 40px; height: 40px; }
 
-        .page-title {
-            font-size: 28px;
-            font-weight: 700;
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin: 0;
-            position: relative;
-            z-index: 1;
-            letter-spacing: 0.2px;
-        }
+    #qrModal.modal-dialog { max-width: 400px; }
+    #qrModal.modal-content { text-align: center; padding: 20px; }
+    #qrModal #qrcode { display: flex; justify-content: center; margin: 20px 0; }
 
-        .page-title i {
-            font-size: 32px;
-            opacity: 0.95;
-        }
-
-        .page-subtitle {
-            color: rgba(255, 255, 255, 0.85);
-            font-size: 14px;
-            margin: 6px 0 0 0;
-            position: relative;
-            z-index: 1;
-            font-weight: 400;
-        }
-
-        .dashboard-grid {
-            display: grid;
-            gap: 16px;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            margin-bottom: 22px;
-        }
-
-        .dashboard-grid .info-box {
-            display: flex;
-            background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
-            overflow: hidden;
-            border: 0;
-        }
-
-        .info-box-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 70px;
-            min-width: 70px;
-            font-size: 32px;
-            color: white;
-            background: #1976d2;
-        }
-
-        .info-box-icon.bg-primary {
-            background: linear-gradient(135deg, #0d47a1, #1976d2);
-        }
-
-        .info-box-icon.bg-success {
-            background: linear-gradient(135deg, #2e7d32, #43a047);
-        }
-
-        .info-box-icon.bg-warning {
-            background: linear-gradient(135deg, #f57f17, #fbc02d);
-        }
-
-        .info-box-icon.bg-info {
-            background: linear-gradient(135deg, #0097a7, #00bcd4);
-        }
-
-        .info-box-content {
-            flex: 1;
-            padding: 12px 16px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .info-box-text {
-            font-size: 12px;
-            color: #999;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
-        }
-
-        .info-box-number {
-            font-size: 28px;
-            font-weight: 700;
-            color: #0d47a1;
-            line-height: 1;
-        }
-
-        .info-box-unit {
-            font-size: 12px;
-            color: #bbb;
-            margin-top: 4px;
-        }
-
-        .dashboard-grid .card {
-            border: 0;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
-            overflow: hidden;
-            border-left: 4px solid #1976d2;
-        }
-
-        .card {
-            border-radius: 12px;
-            border: 0;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
-            overflow: hidden;
-        }
-
-        .main-sidebar,
-        .main-header {
-            border: 0;
-        }
-
-        .card .card-header {
-            background: #f8f9fa;
-            border-bottom: 1px solid #e9ecef;
-            padding: 14px 16px;
-            color: #0d47a1;
-        }
-
-        .card .card-header .card-title {
-            color: #0d47a1;
-            font-weight: 600;
-            font-size: 16px;
-        }
-
-        .card .card-body {
-            padding: 16px;
-        }
-
-        .content-wrapper .card,
-        .content-wrapper .page-header {
-            margin-left: 0;
-            margin-right: 0;
-        }
-
-        .realtime-dashboard-widget,
-        .container {
-            background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
-            padding: 16px;
-            margin-bottom: 20px;
-        }
-
-        .container h2 {
-            font-size: 20px;
-            color: #0d47a1;
-            margin-bottom: 14px;
-            font-weight: 600;
-        }
-
-        .btn,
-        button {
-            border-radius: 6px;
-            border: 1px solid transparent;
-            font-weight: 600;
-            transition: all 0.2s ease;
-        }
-
-        button:hover,
-        .btn:hover {
-            transform: translateY(-1px);
-        }
-
-        #realtimeRefresh {
-            background: #1976d2;
-            color: #fff;
-            padding: 7px 12px;
-            font-size: 13px;
-        }
-
-        .filter-controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-
-        .filter-controls input,
-        .filter-controls select {
-            border: 1px solid #d0d7de;
-            border-radius: 6px;
-            padding: 8px 10px;
-            font-size: 14px;
-            color: #2f3a4a;
-            background: #fff;
-            min-height: 38px;
-        }
-
-        .filter-controls input:focus,
-        .filter-controls select:focus {
-            border-color: #1976d2;
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.12);
-        }
-
-        #attendanceTable {
-            width: 100%;
-            border-collapse: collapse;
-            background: #fff;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        #attendanceTable thead th {
-            background: #f8f9fa;
-            color: #0d47a1;
-            font-weight: 600;
-            text-align: left;
-            padding: 12px 10px;
-            border-bottom: 1px solid #e9ecef;
-        }
-
-        #attendanceTable tbody td {
-            padding: 12px 10px;
-            border-bottom: 1px solid #eef2f6;
-            color: #374151;
-            font-size: 14px;
-        }
-
-        #attendanceTable tbody tr:hover {
-            background: #f8fbff;
-        }
-
-        #attendanceTable tbody tr:last-child td {
-            border-bottom: 0;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.2px;
-            text-transform: uppercase;
-        }
-
-        .badge-success {
-            background: #e8f5e9;
-            color: #2e7d32;
-        }
-
-        .badge-warning {
-            background: #fff8e1;
-            color: #f57f17;
-        }
-
-        .badge-info {
-            background: #e3f2fd;
-            color: #1565c0;
-        }
-
-        .badge-danger {
-            background: #ffebee;
-            color: #c62828;
-        }
+    /* Preloader styles left global intentionally */
+    .preloader { position: fixed; top:0; left:0; width:100%; height:100%; background: linear-gradient(135deg,#0d47a1 0%,#0b3c91 100%); display:flex; align-items:center; justify-content:center; flex-direction:column; z-index:99999 }
+    .animation__wobble { animation: wobble 2.5s infinite ease-in-out }
+    @keyframes wobble { 0%{transform:translateX(0)}15%{transform:translateX(-5px) rotate(-5deg)}30%{transform:translateX(3px) rotate(3deg)}45%{transform:translateX(-3px) rotate(-3deg)}60%{transform:translateX(2px) rotate(2deg)}75%{transform:translateX(-1px) rotate(-1deg)}100%{transform:translateX(0)} }
     </style>
-</head>
 
-<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
-    <div
-        class="preloader flex-column justify-content-center align-items-center">
-        <img
-            class="animation__wobble"
-            src="../../assets/pics/bcpLogo.png"
-            alt="AdminLTELogo"
-            height="60"
-            width="60" />
-    </div>
-    <?php require_once "../app/components/Sidebar.php"; ?>
-
-    <div class="main-content">
-        <div class="content-wrapper">
-        <div class="page-header">
-            <div>
-                <div class="page-title">
-                    <i class="fas fa-chart-line"></i> Time & Attendance Dashboard
-                </div>
-                <div class="page-subtitle">Real-time attendance and HR analytics</div>
-            </div>
-        </div>
-
+    <div class="ta-dashboard">
             <!-- Shift Assignment Alert -->
-            <?php if ($employeesWithoutShiftCount > 0): ?>
+            <?php if ($employeesWithoutShiftCount > 0):?>
             <div style="background: #fff3e0; border-left: 4px solid #FF9800; padding: 15px; margin-bottom: 20px; border-radius: 4px; display: flex; align-items: center; gap: 15px;">
                 <i class="fas fa-exclamation-triangle" style="font-size: 28px; color: #FF9800;"></i>
                 <div style="flex: 1;">
                     <strong style="color: #e65100; font-size: 16px;">Shift Assignment Required</strong>
                     <p style="margin: 8px 0 0 0; color: #5d4037; font-size: 14px;">
-                        <strong><?php echo $employeesWithoutShiftCount; ?> employee<?php echo $employeesWithoutShiftCount > 1 ? 's' : ''; ?></strong> <?php echo $employeesWithoutShiftCount > 1 ? 'do' : 'does'; ?> not have an active shift assignment. This may affect attendance tracking and payroll calculations.
+                        <strong><?php echo $employeesWithoutShiftCount;?> <?php echo $employeesWithoutShiftCount > 1? 'employees' : 'employee';?></strong> <?php echo $employeesWithoutShiftCount > 1? 'do' : 'does';?> not have an active shift assignment. This may affect attendance tracking and payroll calculations.
                     </p>
                     <p style="margin: 10px 0 0 0;">
                         <a href="../shifts.php" style="background: #FF9800; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-weight: bold; display: inline-block;">Manage Shifts</a>
                     </p>
                 </div>
             </div>
-            <?php endif; ?>
+            <?php endif;?>
 
             <!-- Holiday Alert -->
-            <?php if ($isHolidayToday && $todayHolidayInfo): ?>
+            <?php if ($isHolidayToday && $todayHolidayInfo):?>
             <div style="background: #e3f2fd; border-left: 4px solid #2196F3; padding: 15px; margin-bottom: 20px; border-radius: 4px; display: flex; align-items: center; gap: 15px;">
                 <i class="fas fa-calendar-check" style="font-size: 28px; color: #2196F3;"></i>
                 <div>
                     <strong style="color: #1565c0; font-size: 16px;">Today is a Public Holiday</strong>
                     <p style="margin: 8px 0 0 0; color: #455a64; font-size: 14px;">
-                        <strong><?php echo htmlspecialchars($todayHolidayInfo['name']); ?></strong> - All employees are marked as HOLIDAY. No absences will be recorded.
+                        <strong><?php echo htmlspecialchars($todayHolidayInfo['name']);?></strong> - All employees are marked as HOLIDAY. No absences will be recorded.
                     </p>
                 </div>
             </div>
-            <?php endif; ?>
+            <?php endif;?>
 
             <!-- Quick Stats -->
             <div class="dashboard-grid">
@@ -485,7 +169,7 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
                     </div>
                     <div class="info-box-content">
                         <span class="info-box-text">Total Employees</span>
-                        <span class="info-box-number"><?php echo $allEmployees; ?></span>
+                        <span class="info-box-number"><?php echo $allEmployees;?></span>
                         <span class="info-box-unit">Active employees</span>
                     </div>
                 </div>
@@ -496,8 +180,8 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
                     </div>
                     <div class="info-box-content">
                         <span class="info-box-text">Present Today</span>
-                        <span class="info-box-number"><?php echo $todayStats['present_count'] ?? 0; ?></span>
-                        <span class="info-box-unit"><?php echo $attendancePercentage; ?>% attendance</span>
+                        <span class="info-box-number"><?php echo $todayStats['present_count']?? 0;?></span>
+                        <span class="info-box-unit"><?php echo $attendancePercentage;?>% attendance</span>
                     </div>
                 </div>
 
@@ -507,7 +191,7 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
                     </div>
                     <div class="info-box-content">
                         <span class="info-box-text">Absent Today</span>
-                        <span class="info-box-number"><?php echo $todayStats['absent_count'] ?? 0; ?></span>
+                        <span class="info-box-number"><?php echo $todayStats['absent_count']?? 0;?></span>
                         <span class="info-box-unit">Need follow-up</span>
                     </div>
                 </div>
@@ -518,8 +202,55 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
                     </div>
                     <div class="info-box-content">
                         <span class="info-box-text">Pending Approvals</span>
-                        <span class="info-box-number"><?php echo count($pendingApprovals); ?></span>
+                        <span class="info-box-number"><?php echo count($pendingApprovals);?></span>
                         <span class="info-box-unit">Manual entries</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Employee QR Directory -->
+            <div class="container">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2 style="margin-bottom: 0;"><i class="fas fa-qrcode"></i> Employee QR Directory</h2>
+                    <button class="btn btn-primary" onclick="toggleQRDirectory()"><i class="fas fa-qrcode"></i> Show/Hide Directory</button>
+                </div>
+                <p class="text-muted">Use the directory below to view and print unique QR codes for employee IDs.</p>
+                
+                <div class="filter-controls">
+                    <input type="text" id="qrEmployeeSearch" placeholder="Search employee by name or ID..." onkeyup="filterQRDirectory()" />
+                </div>
+                
+                <div id="qrDirectoryWrapper" style="display:none;">
+                    <div id="qrDirectoryContainer" style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px;">
+                        <table class="table table-striped mb-0" id="qrDirectoryTable">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th style="width: 80px;">QR</th>
+                                    <th style="width: 120px;">Employee ID</th>
+                                    <th>Full Name</th>
+                                    <th>Department</th>
+                                    <th style="width: 100px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="qrDirectoryBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kiosk Section -->
+            <div class="container">
+                <div class="card card-info">
+                    <div class="card-header">
+                        <h4 class="card-title"><i class="fas fa-camera"></i> Kiosk Mode (Attendance Scanner)</h4>
+                    </div>
+                    <div class="card-body text-center">
+                        <div id="kioskScanner"></div>
+                        <div id="kioskStatus" class="mt-4 p-3 rounded alert alert-info" style="display: none;">
+                            Ready to scan...
+                        </div>
                     </div>
                 </div>
             </div>
@@ -570,9 +301,8 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
 
             <!-- Today's Attendance Table -->
             <div class="container">
-                <h2>Today's Attendance (<?php echo count($todayRecords); ?> employees)</h2>
+                <h2>Today's Attendance (<?php echo count($todayRecords);?> employees)</h2>
 
-                <!-- Search and Sort Controls -->
                 <div class="filter-controls">
                     <input type="text" id="attendanceSearch" placeholder="Search by name, employee #, or department..." />
                     <select id="attendanceSort">
@@ -588,6 +318,7 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
                 <table id="attendanceTable">
                     <thead>
                         <tr>
+                            <th style="width: 100px;">QR / ID</th>
                             <th>Employee</th>
                             <th>Department</th>
                             <th>Position</th>
@@ -604,55 +335,167 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
         </div>
     </div>
 
-    <script>
-        // Attendance data from PHP
-        const isHolidayToday = <?php echo json_encode($isHolidayToday); ?>;
-        const holidayInfo = <?php echo json_encode($todayHolidayInfo); ?>;
-        const attendanceData = <?php echo json_encode($todayRecords); ?>;
+    <!-- QR Print Modal -->
+    <div class="modal fade" id="qrModal" tabindex="-1" role="dialog" aria-labelledby="qrModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="qrModalLabel">Employee QR Code</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="qrcode"></div>
+                    <div id="qrEmployeeInfo" style="margin-top: 15px;">
+                        <h4 id="modalEmpName"></h4>
+                        <p id="modalEmpDetails" class="text-muted"></p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-success" onclick="printQR()">
+                        <i class="fas fa-print"></i> Print QR
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        // Display records
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <script>
+        // Data from PHP
+        const isHolidayToday = <?php echo json_encode($isHolidayToday);?>;
+        const holidayInfo = <?php echo json_encode($todayHolidayInfo);?>;
+        const attendanceData = <?php echo json_encode($todayRecords);?>;
+        const employees = <?php echo json_encode($activeEmployees);?>;
+
+        // --- QR Directory Logic ---
+        function toggleQRDirectory() {
+            const wrapper = document.getElementById('qrDirectoryWrapper');
+            wrapper.style.display = (wrapper.style.display === 'none' || wrapper.style.display === '')? 'block' : 'none';
+        }
+
+        function filterQRDirectory() {
+            const search = document.getElementById('qrEmployeeSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('#qrDirectoryBody tr');
+            
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(search)? '' : 'none';
+            });
+        }
+
+        function renderQRDirectory() {
+            const tbody = document.getElementById('qrDirectoryBody');
+            tbody.innerHTML = '';
+
+            employees.forEach(emp => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><div id="qr-box-${emp.employee_id}" class="qr-thumb-container"></div></td>
+                    <td><strong>${escapeHtml(emp.employee_no || emp.employee_id)}</strong></td>
+                    <td>${escapeHtml(emp.full_name)}</td>
+                    <td>${escapeHtml(emp.department || 'N/A')}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="viewQR(${emp.employee_id}, '${escapeHtml(emp.full_name)}', '${escapeHtml(emp.department || 'N/A')}', '${escapeHtml(emp.position || 'N/A')}')">View</button>
+                        <button class="btn btn-sm btn-info" onclick="printQR('${emp.employee_id}')"><i class="fas fa-print"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+
+                // Pre-generate small QR for table if needed, but let's do it on demand for performance
+                const qrBox = document.createElement('div');
+                qrBox.id = 'qr-box-' + emp.employee_id;
+                qrBox.className = 'qr-thumb-container';
+                row.cells[0].appendChild(qrBox);
+                new QRCode(qrBox, {
+                    text: emp.employee_id.toString(),
+                    width: 50,
+                    height: 50
+                });
+            });
+        }
+
+        let currentQRInstance = null;
+        function viewQR(id, name, dept, pos) {
+            $('#qrModal').modal('show');
+            $('#modalEmpName').text(name);
+            $('#modalEmpDetails').text(dept + ' - ' + pos);
+            
+            const container = document.getElementById('qrcode');
+            container.innerHTML = '';
+            currentQRInstance = new QRCode(container, {
+                text: id.toString(),
+                width: 200,
+                height: 200,
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+
+        function printQR(id) {
+            const emp = employees.find(e => e.employee_id == id);
+            if (emp) {
+                viewQR(emp.employee_id, emp.full_name, emp.department || 'N/A', emp.position || 'N/A');
+                setTimeout(performPrint, 500);
+            }
+        }
+
+        function performPrint() {
+            const content = document.getElementById('qrcode').innerHTML;
+            const win = window.open('', '', 'width=400,height=400');
+            win.document.write(`
+                <html>
+                <head><title>Print QR</title></head>
+                <body style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh;">
+                    <div style="padding:20px; border:1px solid #000; text-align:center;">
+                        ${content}
+                        <h3 style="margin-top:10px;">${$('#modalEmpName').text()}</h3>
+                        <p>${$('#modalEmpDetails').text()}</p>
+                    </div>
+                </body>
+                </html>
+            `);
+            win.document.close();
+            win.print();
+        }
+
+        // --- Attendance Display Logic ---
         function displayRecords(records) {
             const tbody = document.getElementById('attendanceBody');
             tbody.innerHTML = '';
 
             if (records.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #999;">No records found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #999;">No records found</td></tr>';
                 return;
             }
 
             records.forEach(record => {
                 const row = document.createElement('tr');
-                
-                // Check if today is a holiday - if so, mark status as HOLIDAY
                 let status;
                 if (isHolidayToday) {
                     status = 'HOLIDAY';
                 } else {
-                    status = record.time_in ? (new Date(record.time_in).getHours() > 9 ? 'LATE' : 'PRESENT') : 'ABSENT';
+                    status = record.time_in? (new Date(record.time_in).getHours() > 9? 'LATE' : 'PRESENT') : 'ABSENT';
                 }
                 
-                const statusClass = status === 'PRESENT' ? 'badge-success' : (
-                    status === 'LATE' ? 'badge-warning' : (
-                        status === 'HOLIDAY' ? 'badge-info' : 'badge-danger'
+                const statusClass = status === 'PRESENT'? 'badge-success' : (
+                    status === 'LATE'? 'badge-warning' : (
+                        status === 'HOLIDAY'? 'badge-info' : 'badge-danger'
                     )
                 );
 
                 row.innerHTML = `
-                    <td>
-                        <strong>${escapeHtml(record.full_name)}</strong>
-                    </td>
+                    <td><strong>${escapeHtml(record.employee_no || record.employee_id)}</strong></td>
+                    <td>${escapeHtml(record.full_name)}</td>
                     <td>${escapeHtml(record.department || 'N/A')}</td>
                     <td>${escapeHtml(record.position || 'N/A')}</td>
-                    <td>
-                        ${record.time_in 
-                            ? new Date(record.time_in).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: true})
-                            : '<span style="color: #e74c3c;">Not recorded</span>'}
-                    </td>
-                    <td>
-                        ${record.time_out 
-                            ? new Date(record.time_out).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: true})
-                            : '<span style="color: #f39c12;">Pending</span>'}
-                    </td>
+                    <td>${record.time_in? new Date(record.time_in).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: true}) : '<span style="color: #e74c3c;">Not recorded</span>'}</td>
+                    <td>${record.time_out? new Date(record.time_out).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: true}) : '<span style="color: #f39c12;">Pending</span>'}</td>
                     <td>${record.duration || 'N/A'}</td>
                     <td><span class="badge ${statusClass}">${status}</span></td>
                 `;
@@ -660,19 +503,6 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
             });
         }
 
-        // Escape HTML
-        function escapeHtml(text) {
-            const map = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
-            };
-            return text.replace(/[&<>"']/g, m => map[m]);
-        }
-
-        // Search and filter functionality
         function filterAndSort() {
             const searchTerm = document.getElementById('attendanceSearch').value.toLowerCase();
             const sortOption = document.getElementById('attendanceSort').value;
@@ -683,114 +513,85 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
                 return name.includes(searchTerm) || dept.includes(searchTerm);
             });
 
-            // Sort
             switch (sortOption) {
-                case 'name':
-                    filtered.sort((a, b) => a.full_name.localeCompare(b.full_name));
-                    break;
-                case 'name-desc':
-                    filtered.sort((a, b) => b.full_name.localeCompare(a.full_name));
-                    break;
-                case 'time':
-                    filtered.sort((a, b) => new Date(b.time_in || 0) - new Date(a.time_in || 0));
-                    break;
-                case 'time-asc':
-                    filtered.sort((a, b) => new Date(a.time_in || 0) - new Date(b.time_in || 0));
-                    break;
-                case 'department':
-                    filtered.sort((a, b) => (a.department || '').localeCompare(b.department || ''));
-                    break;
+                case 'name': filtered.sort((a, b) => a.full_name.localeCompare(b.full_name)); break;
+                case 'name-desc': filtered.sort((a, b) => b.full_name.localeCompare(a.full_name)); break;
+                case 'time': filtered.sort((a, b) => new Date(b.time_in || 0) - new Date(a.time_in || 0)); break;
+                case 'time-asc': filtered.sort((a, b) => new Date(a.time_in || 0) - new Date(b.time_in || 0)); break;
+                case 'department': filtered.sort((a, b) => (a.department || '').localeCompare(b.department || '')); break;
                 case 'status':
                     filtered.sort((a, b) => {
-                        let statusA;
-                        let statusB;
-                        
-                        if (isHolidayToday) {
-                            statusA = 'HOLIDAY';
-                            statusB = 'HOLIDAY';
-                        } else {
-                            statusA = a.time_in ? 'PRESENT' : 'ABSENT';
-                            statusB = b.time_in ? 'PRESENT' : 'ABSENT';
-                        }
-                        
-                        return statusB.localeCompare(statusA);
+                        let sA = isHolidayToday? 'HOLIDAY' : (a.time_in? 'PRESENT' : 'ABSENT');
+                        let sB = isHolidayToday? 'HOLIDAY' : (b.time_in? 'PRESENT' : 'ABSENT');
+                        return sB.localeCompare(sA);
                     });
                     break;
             }
-
             displayRecords(filtered);
         }
 
-        // Event listeners
-        document.getElementById('attendanceSearch').addEventListener('keyup', filterAndSort);
-        document.getElementById('attendanceSort').addEventListener('change', filterAndSort);
+        function escapeHtml(text) {
+            const map = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'};
+            return text? String(text).replace(/[&<>"']/g, m => map[m]) : '';
+        }
 
-        // Initial display
-        displayRecords(attendanceData);
-
-        // Load dark mode preference (default to light mode for time_attendance)
-        window.addEventListener('load', function() {
-            const darkModeSetting = localStorage.getItem('darkMode');
-            const darkMode = darkModeSetting === 'true'; // Only true if explicitly set
-            
-            // Reset to light mode by default on each page load for time_attendance
-            if (!darkModeSetting) {
-                localStorage.setItem('darkMode', 'false');
-            }
-            
-            if (darkMode) {
-                document.body.classList.add('dark-mode');
-            }
+        $(document).ready(function() {
+            renderQRDirectory();
+            displayRecords(attendanceData);
+            $('#attendanceSearch').on('keyup', filterAndSort);
+            $('#attendanceSort').on('change', filterAndSort);
         });
 
-        // Live Clock
+        // --- Kiosk Logic ---
+        async function processScan(employeeId) {
+            const statusDiv = document.getElementById('kioskStatus');
+            statusDiv.style.display = 'block';
+            statusDiv.className = 'mt-4 p-3 rounded alert alert-info';
+            statusDiv.innerText = 'Processing...';
+
+            try {
+                const response = await fetch(`processStaticQR.php?id=${employeeId}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    statusDiv.className = 'mt-4 p-3 rounded alert alert-success';
+                    statusDiv.innerHTML = `<strong>${result.message}</strong><br>${result.employee_info.full_name}`;
+                } else {
+                    statusDiv.className = 'mt-4 p-3 rounded alert alert-danger';
+                    statusDiv.innerText = result.message;
+                }
+            } catch (e) {
+                statusDiv.className = 'mt-4 p-3 rounded alert alert-danger';
+                statusDiv.innerText = 'Error connecting to server.';
+            }
+        }
+
+        function initKiosk() {
+            const html5QrCode = new Html5Qrcode("kioskScanner");
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+            html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
+                processScan(decodedText);
+            }).catch(err => console.error(err));
+        }
+
+        $(document).ready(function() {
+            initKiosk();
+        });
+
         function updateClock() {
             const clockElement = document.getElementById('liveClock');
             if (clockElement) {
                 const now = new Date();
-                const hours = String(now.getHours()).padStart(2, '0');
-                const minutes = String(now.getMinutes()).padStart(2, '0');
-                const seconds = String(now.getSeconds()).padStart(2, '0');
-                clockElement.textContent = `${hours}:${minutes}:${seconds}`;
+                clockElement.textContent = now.toLocaleTimeString();
             }
         }
-
-        updateClock();
         setInterval(updateClock, 1000);
-    </script>
-
-    <!-- Preloader Management Script -->
-    <script>
-        // Show preloader when navigating to a link
-        document.addEventListener('DOMContentLoaded', function() {
-            const preloader = document.querySelector('.preloader');
-
-            // Hide preloader after page load (with delay to make it visible)
-            setTimeout(() => {
-                if (preloader) {
-                    preloader.style.display = 'none';
-                }
-            }, 3000); // Show for 3 seconds (allows animation to loop multiple times)
-
-            // Show preloader on navigation links
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    // Don't show preloader for logout or external links
-                    const href = this.getAttribute('href');
-                    if (href && !href.includes('logout') && !href.startsWith('javascript')) {
-                        if (preloader) {
-                            preloader.style.display = 'flex';
-                            // Auto-hide after navigation loads
-                            setTimeout(() => {
-                                preloader.style.display = 'none';
-                            }, 3000); // Allow animation to loop
-                        }
-                    }
-                });
-            });
+        $('#realtimeRefresh').click(function() {
+            location.reload();
         });
     </script>
+</div>
 
-</body>
-
-</html>
+<?php require_once __DIR__. '/../layout/content_footer.php';?>
+<?php require_once __DIR__. '/../layout/page_end.php';?>
