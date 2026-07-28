@@ -116,7 +116,7 @@ $page_head_extra = '';
         }
 
         .stat-card.approved::before {
-            background: linear-gradient(135deg, #2e7d32, #43a047);
+            background: linear-gradient(135deg, #0d47a1, #1976d2);
         }
 
         .stat-card.rejected::before {
@@ -150,7 +150,7 @@ $page_head_extra = '';
         }
 
         .stat-card.approved .stat-value {
-            color: #2e7d32;
+            color: #0d47a1;
         }
 
         .stat-card.rejected .stat-value {
@@ -256,8 +256,8 @@ $page_head_extra = '';
         }
 
         .badge-approved {
-            background: #e8f5e9;
-            color: #28a745;
+            background: #e3f2fd;
+            color: #1565c0;
         }
 
         .badge-rejected {
@@ -291,13 +291,13 @@ $page_head_extra = '';
         }
 
         .btn-approve {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
             color: white;
-            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);
+            box-shadow: 0 2px 8px rgba(13, 71, 161, 0.2);
         }
 
         .btn-approve:hover {
-            box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+            box-shadow: 0 6px 16px rgba(13, 71, 161, 0.4);
         }
 
         .btn-reject {
@@ -459,7 +459,7 @@ $page_head_extra = '';
         }
 
         .btn-success {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
             color: white;
         }
 
