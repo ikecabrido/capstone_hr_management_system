@@ -42,7 +42,18 @@
                     <div class="divide-y divide-gray-200">
 
                         <?php foreach ($userInfos as $key => $value): ?>
-                            <?php if ($key === 'password') continue; ?>
+                            <?php
+                            $hiddenFields = [
+                                'password',
+                                'role',
+                                'is_admin',
+                                'theme',
+                                'password_reset_token',
+                                'password_reset_expires'
+                            ];
+
+                            if (in_array($key, $hiddenFields)) continue;
+                            ?>
 
                             <div class="flex justify-between items-center py-3">
                                 <span class="text-black text-md">
