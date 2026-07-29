@@ -110,6 +110,10 @@ switch ($url) {
         (new AttendanceController)->timeOut();
         break;
 
+    case 'employee-index':
+        (new AttendanceController)->index();
+        break;
+
     /*
 |--------------------------------------------------------------------------
 | Grievance Routes

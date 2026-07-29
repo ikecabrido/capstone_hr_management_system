@@ -21,45 +21,23 @@
                         <p>Dashboard</p>
                     </a>
                 </li>
-                <li class="nav-item has-treeview">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-user-cog"></i>
-                        <p>
-                            Profile
-                            <i class="right fas fa-angle-left"></i>
-                        </p>
+                <li class="nav-item">
+                    <a href="index.php?url=user-profile" class="nav-link">
+                        <i class="nav-icon fas fa-user-edit"></i>
+                        <p>Manage Profile</p>
                     </a>
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="index.php?url=user-profile" class="nav-link">
-                                <i class="nav-icon fas fa-user-edit text-warning"></i>
-                                <p>Manage Profile</p>
-                            </a>
-                        </li>
-                    </ul>
                 </li>
-                <li class="nav-item has-treeview">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-inbox"></i>
-                        <p>
-                            Request
-                            <i class="right fas fa-angle-left"></i>
-                        </p>
+                <li class="nav-item">
+                    <a href="index.php?url=" class="nav-link">
+                        <i class="fas fa-clock nav-icon"></i>
+                        <p>Attendance View</p>
                     </a>
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="index.php?url=employee-leave-request" class="nav-link">
-                                <i class="fas fa-calendar-alt nav-icon text-warning"></i>
-                                <p>Leave Request</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="index.php?url=training-request" class="nav-link">
-                                <i class="fas fa-chalkboard-teacher nav-icon text-warning"></i>
-                                <p>Training Request</p>
-                            </a>
-                        </li>
-                    </ul>
+                </li>
+                <li class="nav-item">
+                    <a href="index.php?url=employee-leave-request" class="nav-link">
+                        <i class="fas fa-calendar-alt nav-icon"></i>
+                        <p>Leave Request</p>
+                    </a>
                 </li>
                 <li class="nav-item has-treeview">
                     <a href="#" class="nav-link">
@@ -86,23 +64,11 @@
                         </li>
                     </ul>
                 </li>
-                <li class="nav-item has-treeview">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-hand-holding-heart"></i>
-                        <p>
-                            Benefits & Gov Contrib
-                            <i class="right fas fa-angle-left"></i>
-                        </p>
+                <li class="nav-item">
+                    <a href="index.php?url=benefits-and-gov-contrib" class="nav-link">
+                        <i class="fas fa-receipt nav-icon"></i>
+                        <p class="small">Benefits & Gov Contrib View</p>
                     </a>
-
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="index.php?url=benefits-and-gov-contrib" class="nav-link">
-                                <i class="fas fa-receipt nav-icon text-warning"></i>
-                                <p class="small">View Benefits</p>
-                            </a>
-                        </li>
-                    </ul>
                 </li>
                 <li class="nav-item has-treeview">
                     <a href="#" class="nav-link">
@@ -127,40 +93,17 @@
                         </li>
                     </ul>
                 </li>
-                <li class="nav-item has-treeview">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-folder-open"></i>
-                        <p>
-                            Documents
-                            <i class="right fas fa-angle-left"></i>
-                        </p>
+                <li class="nav-item">
+                    <a href="index.php?url=employee-documents-index" class="nav-link">
+                        <i class="fas fa-file-alt nav-icon"></i>
+                        <p>Employee Documents</p>
                     </a>
-
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="index.php?url=employee-documents-index" class="nav-link">
-                                <i class="fas fa-file-alt nav-icon text-warning"></i>
-                                <p>Employee Documents</p>
-                            </a>
-                        </li>
-                    </ul>
                 </li>
-                <li class="nav-item has-treeview">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-chart-line"></i>
-                        <p>
-                            Performance
-                            <i class="right fas fa-angle-left"></i>
-                        </p>
+                <li class="nav-item">
+                    <a href="index.php?url=performance-feedback" class="nav-link">
+                        <i class="fas fa-comments nav-icon "></i>
+                        <p>Performance View</p>
                     </a>
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="index.php?url=performance-feedback" class="nav-link">
-                                <i class="fas fa-comments nav-icon text-warning"></i>
-                                <p>360 Degree Feedback</p>
-                            </a>
-                        </li>
-                    </ul>
                 </li>
                 <li class="nav-item has-treeview">
                     <a href="#" class="nav-link">
@@ -187,57 +130,29 @@
                         </li>
                     </ul>
                 </li>
-                <li class="nav-item has-treeview">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-video"></i>
-                        <p>
-                            Online Meetings
-                            <i class="right fas fa-angle-left"></i>
-                        </p>
+                <li class="nav-item">
+                    <a href="index.php?url=online-meeting" class="nav-link">
+                        <i class="fas fa-video nav-icon"></i>
+                        <p>Meeting Schedule</p>
                     </a>
-
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="index.php?url=online-meeting" class="nav-link">
-                                <i class="fas fa-video nav-icon text-warning"></i>
-                                <p>Meeting Schedule</p>
-                            </a>
-                        </li>
-                    </ul>
                 </li>
-                <li class="nav-item has-treeview">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-clinic-medical"></i>
-                        <p>
-                            Clinic
-                            <i class="right fas fa-angle-left"></i>
-                        </p>
+                <li class="nav-item">
+                    <a href="index.php?url=" class="nav-link">
+                        <i class="fas fa-comment-alt nav-icon"></i>
+                        <p>Employee Complaint</p>
                     </a>
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="index.php?url=employee-medical-records" class="nav-link">
-                                <i class="fas fa-notes-medical nav-icon text-warning"></i>
-                                <p>Medical Records</p>
-                            </a>
-                        </li>
-                    </ul>
                 </li>
-                <li class="nav-item has-treeview">
-                    <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-users"></i>
-                        <p>
-                            Engagement Relations
-                            <i class="right fas fa-angle-left"></i>
-                        </p>
+                <li class="nav-item">
+                    <a href="index.php?url=employee-medical-records" class="nav-link">
+                        <i class="fas fa-notes-medical nav-icon"></i>
+                        <p>Medical Records</p>
                     </a>
-                    <ul class="nav nav-treeview sub-menu">
-                        <li class="nav-item">
-                            <a href="index.php?url=employee-grievance" class="nav-link sub-link">
-                                <i class="fas fa-comments nav-icon text-warning"></i>
-                                <p>Grievance</p>
-                            </a>
-                        </li>
-                    </ul>
+                </li>
+                <li class="nav-item">
+                    <a href="index.php?url=employee-grievance" class="nav-link sub-link">
+                        <i class="fas fa-comments nav-icon"></i>
+                        <p>Grievance</p>
+                    </a>
                 </li>
                 <li class="nav-item has-treeview">
                     <a href="#" class="nav-link">
@@ -252,6 +167,12 @@
                             <a href="#" class="nav-link">
                                 <i class="fas fa-clock nav-icon text-warning"></i>
                                 <p>View Schedule</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="index.php?url=training-request" class="nav-link">
+                                <i class="fas fa-chalkboard-teacher nav-icon text-warning"></i>
+                                <p>Training Request</p>
                             </a>
                         </li>
                     </ul>

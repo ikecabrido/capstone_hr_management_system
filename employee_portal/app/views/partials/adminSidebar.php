@@ -98,8 +98,8 @@
                 </li>
                 <li class="nav-item">
                     <a href="#" class="nav-link">
-                        <i class="fas fa-clock nav-icon"></i>
-                        <p>View Schedule</p>
+                        <i class="fas fa-user-cog nav-icon"></i>
+                        <p>User Account Management</p>
                     </a>
                 </li>
                 <li class="nav-item">

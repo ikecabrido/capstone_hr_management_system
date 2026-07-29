@@ -289,4 +289,7 @@ class AttendanceController
             'method' => $record['recorded_by'] ?? 'MANUAL'
         ];
     }
+    public function index(){
+        
+    }
 }
