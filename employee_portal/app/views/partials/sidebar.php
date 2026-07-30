@@ -10,7 +10,7 @@
                 <img src="<?= $base ?>/assets/dist/img/user2-160x160.jpg" class="img-circle elevation-2" alt="User Image" />
             </div>
             <div class="info">
-                <a href="#" class="d-block"><?php echo isset($_SESSION['full_name']) ? $_SESSION['full_name'] : 'User'; ?></a>
+                <a href="#" class="d-block"><?php echo isset($_SESSION['username']) ? $_SESSION['username'] : 'User'; ?></a>
             </div>
         </div>
         <nav class="mt-2">

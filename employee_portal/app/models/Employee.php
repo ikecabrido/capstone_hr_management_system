@@ -158,20 +158,6 @@ class Employee
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    public function updateName($user_id, $new_name)
-    {
-        if (!$user_id || !$new_name) {
-            return false;
-        }
-
-        $query = "UPDATE $this->table SET full_name = :full_name WHERE user_id = :user_id";
-        $stmt = $this->conn->prepare($query);
-
-        return $stmt->execute([
-            ':full_name' => $new_name,
-            ':user_id' => $user_id
-        ]);
-    }
     public function find($id)
     {
         $query = "

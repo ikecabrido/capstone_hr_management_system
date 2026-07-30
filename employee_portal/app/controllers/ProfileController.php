@@ -22,10 +22,10 @@ class ProfileController
     public function updateName()
     {
         $user_id = $_SESSION['user_id'] ?? null;
-        $new_name = $_POST['full_name'] ?? null;
+        $new_name = $_POST['username'] ?? null;
 
         try {
-            if ($this->profileModel->updateName($user_id, $new_name) && $this->employeeModel->updateName($user_id, $new_name)) {
+            if ($this->profileModel->updateName($user_id, $new_name)) {
                 $_SESSION['success'] = "Full name updated successfully.";
             } else {
                 $_SESSION['error'] = "Failed to update full name.";

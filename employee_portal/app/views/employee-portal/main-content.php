@@ -6,8 +6,7 @@
             <div style="display: flex; align-items: center; margin-bottom: 20px;">
                 <div class="live-clock" id="liveClock">00:00:00</div>
             </div>
-            <h1>Dashboard</h1>
-            <p class="text-[24px]">Welcome back, <strong><?php echo isset($employee['full_name']) ? htmlspecialchars($employee['full_name']) : "none"; ?></strong>!</p>
+            <p class="text-[24px]">Welcome back, <strong><?php echo isset($employee['first_name']) ? htmlspecialchars($employee['first_name']) : "none"; ?></strong>!</p>
             <?php require __DIR__ . '/../partials/notif.php'; ?>
 
             <!-- Messages -->

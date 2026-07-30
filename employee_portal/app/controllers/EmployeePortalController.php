@@ -39,13 +39,13 @@ class EmployeePortalController
 
     public function index()
     {
-        Auth::requireAuth();
 
         $title = "Employee Portal";
 
         $user_id = Session::get('user_id');
         $employee = $this->authController->checkUserEmployee($user_id);
-        $employee_id = $employee['id'];
+
+        $employee_id = $employee['employee_id'];
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $action = $_POST['action'];
@@ -64,9 +64,11 @@ class EmployeePortalController
             exit;
         }
 
+
         $statusInfo = $this->attendanceController->getStatus($employee_id);
 
         $message = Session::get('success') ?? Session::get('error') ?? null;
+        
         $messageType = Session::get('success') ? 'success' : (Session::get('error') ? 'danger' : 'info');
 
         Session::set('success', null);
@@ -134,7 +136,7 @@ class EmployeePortalController
         });
 
         $notifications = $this->notificationModel->getEmployeeNotifications($employee_id);
-
+        
         $content = __DIR__ . '/../views/employee-portal/main-content.php';
         require __DIR__ . '/../views/employee-portal/index.php';
     }

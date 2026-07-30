@@ -26,16 +26,16 @@ class AuthController
         Session::start();
 
         try {
-            $employee_no = Helper::sanitize($_POST['employee_no'] ?? '');
+            $username = Helper::sanitize($_POST['username'] ?? '');
             $password   = trim($_POST['password'] ?? '');
 
-            if (empty($employee_no) || empty($password)) {
+            if (empty($username) || empty($password)) {
                 throw new Exception("Please fill in all fields");
             }
 
-            $user = $this->userModel->login($employee_no);
+            $user = $this->userModel->login($username);
 
-            if (!$user || empty($user['user_id'])) {
+            if (!$user || empty($user['id'])) {
                 throw new Exception("Invalid credentials");
             }
 
@@ -43,8 +43,7 @@ class AuthController
                 throw new Exception("Invalid credentials");
             }
 
-            Session::set('user_id', $user['user_id']);
-            Session::set('employee_no', $user['employee_no']);
+            Session::set('user_id', $user['id']);
             Session::set('username', $user['username']);
             Session::set('role', $user['role']);
             Session::set('full_name', $user['full_name']);
@@ -89,7 +88,6 @@ class AuthController
     }
     public function index()
     {
-        $title = "Employee Portal Login";
         require __DIR__ . '/../views/auth/login.php';
     }
     public static function hasRole($role)

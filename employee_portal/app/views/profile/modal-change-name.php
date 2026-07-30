@@ -5,7 +5,7 @@
             <!-- Header -->
             <div class="modal-header">
                 <h5 class="modal-title" id="changeNameModalLabel">
-                    Change Full Name
+                    Change Username
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -16,20 +16,20 @@
 
                     <!-- Current Name -->
                     <div class="mb-3">
-                        <label class="form-label text-muted">Current Full Name</label>
+                        <label class="form-label text-muted">Current userame</label>
                         <input type="text" 
                                class="form-control" 
-                               value="<?= htmlspecialchars($userInfos['full_name']); ?>" 
+                               value="<?= htmlspecialchars($userInfos['username']); ?>" 
                                disabled>
                     </div>
 
                     <!-- New Name -->
                     <div class="mb-3">
-                        <label class="form-label">New Full Name</label>
+                        <label class="form-label">New Username</label>
                         <input type="text" 
-                               name="full_name"
+                               name="username"
                                class="form-control" 
-                               placeholder="Enter new full name" 
+                               placeholder="Enter new username" 
                                required>
                     </div>
 

@@ -10,13 +10,18 @@
 
                     <!-- Avatar -->
                     <div class="w-20 h-20 rounded-full bg-white text-blue-600 flex items-center justify-center text-3xl font-bold shadow-md">
-                        <?= strtoupper(substr($userInfos['full_name'], 0, 1)); ?>
+                        <?= strtoupper(substr($userInfos['username'], 0, 1)); ?>
                     </div>
 
                     <!-- Name + Username -->
                     <div>
                         <h2 class="text-2xl font-bold">
-                            <?= htmlspecialchars($userInfos['full_name']); ?>
+                            <?= htmlspecialchars(trim(
+                                $userInfos['first_name'] . ' ' .
+                                    ($userInfos['middle_name'] ? $userInfos['middle_name'] . ' ' : '') .
+                                    $userInfos['last_name'] .
+                                    ($userInfos['suffix'] ? ' ' . $userInfos['suffix'] : '')
+                            )); ?>
                         </h2>
                         <p class="text-blue-100">
                             @<?= htmlspecialchars($userInfos['username']); ?>
@@ -44,6 +49,9 @@
                         <?php foreach ($userInfos as $key => $value): ?>
                             <?php
                             $hiddenFields = [
+                                'first_name',
+                                'middle_name',
+                                'last_name',
                                 'password',
                                 'role',
                                 'is_admin',
@@ -99,7 +107,7 @@
                             data-bs-toggle="modal"
                             data-bs-target="#changeNameModal">
                             <i class="fas fa-user-edit"></i>
-                            Change Name
+                            Change Username
                         </a>
                         <a class="btn btn-dark d-inline-flex align-items-center gap-2"
                             data-bs-toggle="modal"

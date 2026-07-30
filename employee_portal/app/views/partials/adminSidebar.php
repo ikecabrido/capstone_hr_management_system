@@ -16,7 +16,7 @@
 
             <div class="info">
                 <a href="#" class="d-block">
-                    <?= htmlspecialchars($_SESSION['user']['name'] ?? 'Admin') ?>
+                    <?= htmlspecialchars($_SESSION['username'] ?? 'Admin') ?>
                 </a>
             </div>
         </div>

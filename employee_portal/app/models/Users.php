@@ -5,37 +5,34 @@ class User
 {
     private $conn;
     private $table = "users";
-
     public function __construct()
     {
         $database = new Database();
         $this->conn = $database->getConnection();
     }
-
-    public function login($employee_no)
+    public function login($username)
     {
         $query = "
-            SELECT 
-                e.employee_no,
-                e.full_name,
-                e.user_id,
-                u.id AS user_id_ref,
-                u.username,
-                u.password,
-                u.role
-            FROM employees e
-            LEFT JOIN {$this->table} u ON e.user_id = u.id
-            WHERE e.employee_no = :employee_no
-            LIMIT 1
-        ";
+        SELECT
+            id,
+            username,
+            password,
+            email,
+            role,
+            is_admin,
+            theme,
+            created_at
+        FROM {$this->table}
+        WHERE username = :username
+        LIMIT 1
+    ";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':employee_no', $employee_no);
+        $stmt->bindParam(':username', $username, PDO::PARAM_STR);
         $stmt->execute();
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
     public function findByEmail($email)
     {
         $sql = "
@@ -53,7 +50,6 @@ class User
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
     public function savePasswordResetToken($userId, $token, $expires)
     {
         $sql = "
@@ -71,7 +67,6 @@ class User
             ':id' => $userId
         ]);
     }
-
     public function findByResetToken($token)
     {
         $sql = "
@@ -90,7 +85,6 @@ class User
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
     public function updatePassword($userId, $hashedPassword)
     {
         $sql = "
@@ -106,7 +100,6 @@ class User
             ':id' => $userId
         ]);
     }
-
     public function clearPasswordResetToken($userId)
     {
         $sql = "
