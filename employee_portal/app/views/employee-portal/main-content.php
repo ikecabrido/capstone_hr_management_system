@@ -1,7 +1,5 @@
 
 <div class="ml-4 flex-1 w-full">
-    <?php require __DIR__ . '/../partials/notif.php'; ?>
-
     <div class="content-wrapper w-full max-w-none">
         <!-- header -->
         <div>

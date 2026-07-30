@@ -7,24 +7,37 @@
 
 // Set PHP timezone to Philippines (UTC+8)
 date_default_timezone_set('Asia/Manila');
-
-require_once __DIR__ . '/../models/Attendance.php';
-require_once __DIR__ . '/../models/Employee.php';
-require_once __DIR__ . '/../core/QRHelper.php';
+require_once __DIR__ . '/../core/Auth.php';
+require_once __DIR__ . '/AuthController.php';
 require_once __DIR__ . '/../core/Helper.php';
-require_once __DIR__ . '/../core/AuditLog.php';
+require_once __DIR__ . '/../models/Leave.php';
 require_once __DIR__ . '/../core/Session.php';
+require_once __DIR__ . '/../models/Leave.php';
+require_once __DIR__ . '/../core/QRHelper.php';
+require_once __DIR__ . '/../core/AuditLog.php';
+require_once __DIR__ . '/../models/Employee.php';
+require_once __DIR__ . '/../models/LeaveType.php';
+require_once __DIR__ . '/../models/Attendance.php';
+require_once __DIR__ . '/../models/LearningAndDevelopment.php';
 
 class AttendanceController
 {
     private $attendanceModel;
     private $qrHelper;
     private $auditLog;
+    private $leaveModel;
+    private $leaveTypeModel;
+    private $authController;
+    private $attendanceController;
+
     public function __construct()
     {
-        $this->attendanceModel = new Attendance();
+        $this->leaveModel = new Leave();
         $this->qrHelper = new QRHelper();
         $this->auditLog = new AuditLog();
+        $this->leaveTypeModel = new LeaveType();
+        $this->attendanceModel = new Attendance();
+        $this->authController = new AuthController();
     }
     public function timeIn()
     {
@@ -37,6 +50,8 @@ class AttendanceController
                 header("Location: index.php?url=dashboard");
                 exit;
             }
+            $sample = $_POST['attendance_view'];
+
             $user_id = Session::get('user_id');
             $method = 'MANUAL';
             $todayDate = date('Y-m-d');
@@ -117,60 +132,82 @@ class AttendanceController
             }
 
             //REDIRECT 
-            header("Location: index.php?url=dashboard");
+            if ($sample == "true") {
+                header("Location: index.php?url=employee-attendance-index");
+            } else {
+                header("Location: index.php?url=dashboard");
+            }
             exit;
         } catch (Exception $e) {
 
             Session::set('error', $e->getMessage() ?: "Something went wrong.");
-            header("Location: index.php?url=dashboard");
+            if ($sample == "true") {
+                header("Location: index.php?url=employee-attendance-index");
+            } else {
+                header("Location: index.php?url=dashboard");
+            }
             exit;
         }
     }
     public function timeOut()
     {
-        Session::start();
+        try {
+            Session::start();
 
-        $employee_id = $_POST['employee_id'] ?? null;
-        $user_id = Session::get('user_id');
+            $employee_id = $_POST['employee_id'] ?? null;
+            $sample = $_POST['attendance_view'];
 
-        if (!$employee_id) {
-            Session::set('error', 'Employee not found');
-            header("Location: index.php?url=dashboard");
+            if (!$employee_id) {
+                Session::set('error', 'Employee not found');
+                header("Location: index.php?url=dashboard");
+                exit;
+            }
+
+            $record = $this->attendanceModel->getTodayAttendance($employee_id);
+
+            if (!$record) {
+                Session::set('error', 'Please record Time In first.');
+                header("Location: index.php?url=dashboard");
+                exit;
+            }
+
+            if (!empty($record['time_out'])) {
+                Session::set('error', 'Already timed out at ' . Helper::formatTime($record['time_out']));
+                header("Location: index.php?url=dashboard");
+                exit;
+            }
+
+            if ($this->attendanceModel->timeOut($record['attendance_id'])) {
+
+                $updatedRecord = $this->attendanceModel->getTodayAttendance($employee_id);
+                $hoursData = Helper::calculateHours($updatedRecord['time_in'], $updatedRecord['time_out'], 8);
+
+                $this->attendanceModel->updateHours($record['attendance_id'], $hoursData);
+
+                Session::set(
+                    'success',
+                    'Time Out at ' . Helper::formatTime($updatedRecord['time_out']) .
+                        ' | Total Hours: ' . $hoursData['total_hours']
+                );
+            } else {
+                Session::set('error', 'Failed to record time out.');
+            }
+
+            if ($sample == "true") {
+                header("Location: index.php?url=employee-attendance-index");
+            } else {
+                header("Location: index.php?url=dashboard");
+            }
+            exit;
+        } catch (Exception $e) {
+            Session::set('error', $e->getMessage() ?: "Something went wrong.");
+            if ($sample == "true") {
+                header("Location: index.php?url=employee-attendance-index");
+            } else {
+                header("Location: index.php?url=dashboard");
+            }
             exit;
         }
-
-        $record = $this->attendanceModel->getTodayAttendance($employee_id);
-
-        if (!$record) {
-            Session::set('error', 'Please record Time In first.');
-            header("Location: index.php?url=dashboard");
-            exit;
-        }
-
-        if (!empty($record['time_out'])) {
-            Session::set('error', 'Already timed out at ' . Helper::formatTime($record['time_out']));
-            header("Location: index.php?url=dashboard");
-            exit;
-        }
-
-        if ($this->attendanceModel->timeOut($record['attendance_id'])) {
-
-            $updatedRecord = $this->attendanceModel->getTodayAttendance($employee_id);
-            $hoursData = Helper::calculateHours($updatedRecord['time_in'], $updatedRecord['time_out'], 8);
-
-            $this->attendanceModel->updateHours($record['attendance_id'], $hoursData);
-
-            Session::set(
-                'success',
-                'Time Out at ' . Helper::formatTime($updatedRecord['time_out']) .
-                    ' | Total Hours: ' . $hoursData['total_hours']
-            );
-        } else {
-            Session::set('error', 'Failed to record time out.');
-        }
-
-        header("Location: index.php?url=dashboard");
-        exit;
     }
     public function processQRAttendance($employee_no, $token)
     {
@@ -289,7 +326,85 @@ class AttendanceController
             'method' => $record['recorded_by'] ?? 'MANUAL'
         ];
     }
-    public function index(){
-        
+    public function index()
+    {
+        Auth::requireAuth();
+
+        $title = "Employee Portal";
+
+        $user_id = Session::get('user_id');
+        $employee = $this->authController->checkUserEmployee($user_id);
+        $employee_id = $employee['id'];
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+            $action = $_POST['action'];
+
+            if ($action === 'time_in') {
+                $this->attendanceController->timeIn($employee_id);
+            } elseif ($action === 'time_out') {
+                $this->attendanceController->timeOut($employee_id);
+            }
+            exit;
+        }
+
+        if (!$employee) {
+            Session::set('error', 'Employee not found');
+            header("Location: index.php?url=auth-index");
+            exit;
+        }
+
+        $statusInfo = $this->getStatus($employee_id);
+
+        $message = Session::get('success') ?? Session::get('error') ?? null;
+        $messageType = Session::get('success') ? 'success' : (Session::get('error') ? 'danger' : 'info');
+
+        Session::set('success', null);
+        Session::set('error', null);
+
+        $leave_balances = $this->leaveModel->getLeaveBalances($employee_id);
+        $monthly_attendance = $this->attendanceModel->getMonthlyAttendance($employee_id);
+        $leave_requests = $this->leaveModel->getLeaveRequestsByEmployee($employee_id);
+
+        $pendingRequests = array_filter($leave_requests, function ($leave) {
+            return $leave['status'] === 'Pending';
+        });
+
+        $allLeaveTypes = $this->leaveTypeModel->getAllLeaveTypes();
+
+        $leaveTypeMap = [];
+        foreach ($allLeaveTypes as $type) {
+            $leaveTypeMap[$type['leave_type_id']] = $type['leave_type_name'];
+        }
+
+        foreach ($pendingRequests as &$request) {
+            $request['leave_type_name'] = $leaveTypeMap[$request['leave_type_id']] ?? 'Unknown';
+        }
+        unset($request);
+
+
+        $recentActivities = [];
+
+        foreach ($leave_requests as $leave) {
+            $recentActivities[] = [
+                'icon' => 'fas fa-calendar-check',
+                'title' => 'Leave Request Submitted',
+                'description' => $leave['leave_type_name'],
+                'date' => $leave['date_submitted']
+            ];
+        }
+
+        foreach ($monthly_attendance as $attendance) {
+            if (!empty($attendance['time_in'])) {
+                $recentActivities[] = [
+                    'icon' => 'fas fa-clock',
+                    'title' => 'Timed In',
+                    'description' => Helper::formatTime($attendance['time_in']),
+                    'date' => $attendance['time_in']
+                ];
+            }
+        }
+
+        $content = __DIR__ . '/../views/attendance-view/main-content.php';
+        require __DIR__ . '/../views/employee-portal/index.php';
     }
 }

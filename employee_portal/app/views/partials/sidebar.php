@@ -28,7 +28,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="index.php?url=" class="nav-link">
+                    <a href="index.php?url=employee-attendance-index" class="nav-link">
                         <i class="fas fa-clock nav-icon"></i>
                         <p>Attendance View</p>
                     </a>

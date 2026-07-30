@@ -49,7 +49,6 @@
                     </thead>
 
                     <tbody>
-
                         <?php if (!empty($empdocs)): ?>
 
                             <?php foreach ($empdocs as $doc): ?>
@@ -121,8 +120,8 @@
                                     </td>
 
                                     <td>
-                                        <?= !empty($doc['created_at'])
-                                            ? date('M d, Y', strtotime($doc['created_at']))
+                                        <?= !empty($doc['submitted_on'])
+                                            ? date('M d, Y', strtotime($doc['submitted_on']))
                                             : '-'; ?>
                                     </td>
 

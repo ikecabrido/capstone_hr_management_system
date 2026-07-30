@@ -110,7 +110,7 @@ switch ($url) {
         (new AttendanceController)->timeOut();
         break;
 
-    case 'employee-index':
+    case 'employee-attendance-index':
         (new AttendanceController)->index();
         break;
 
@@ -263,7 +263,12 @@ switch ($url) {
         (new ProfileController)->changePassword();
         break;
 
-    //Notification
+    /*
+|--------------------------------------------------------------------------
+| Notification Routes
+|--------------------------------------------------------------------------
+|
+*/
     case 'admin-notification':
         (new NotificationController)->index();
         break;
@@ -296,7 +301,12 @@ switch ($url) {
         (new NotificationController)->markAllRead();
         break;
 
-    //Benefits and Gov Contrib
+    /*
+|--------------------------------------------------------------------------
+| Benefits and Contrib Routes
+|--------------------------------------------------------------------------
+|
+*/
     case 'admin-benefits-and-gov-contrib':
         (new BenefitsAndGovContribController)->index();
         break;
@@ -317,7 +327,12 @@ switch ($url) {
         (new BenefitsAndGovContribController)->employeeBenefits();
         break;
 
-    //Training and Development 
+    /*
+|--------------------------------------------------------------------------
+| Training and Development Routes
+|--------------------------------------------------------------------------
+|
+*/
     case 'learning-and-development':
         (new LearningAndDevelopmentController)->index();
         break;
@@ -347,7 +362,12 @@ switch ($url) {
         (new TrainingRequestController)->employeeCreate();
         break;
 
-    //Forgot password
+    /*
+|--------------------------------------------------------------------------
+| Forgot Password Routes
+|--------------------------------------------------------------------------
+|
+*/
     case 'auth-forgot-password':
         (new AuthController)->send();
         break;
@@ -360,7 +380,12 @@ switch ($url) {
         (new AuthController)->updatePassword();
         break;
 
-    //Payroll Request
+    /*
+|--------------------------------------------------------------------------
+| Payroll Routes
+|--------------------------------------------------------------------------
+|
+*/
     case 'admin-payroll-request':
         (new PayrollRequestController)->adminIndex();
         break;
