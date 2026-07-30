@@ -150,7 +150,7 @@ class Employee
         INNER JOIN users u 
             ON e.user_id = u.id
         WHERE u.is_admin = 0
-        ORDER BY e.full_name ASC
+        ORDER BY e.last_name ASC
     ";
 
         $stmt = $this->conn->prepare($query);

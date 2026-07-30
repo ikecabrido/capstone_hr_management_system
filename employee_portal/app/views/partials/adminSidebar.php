@@ -97,7 +97,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link">
+                    <a href="/capstone_hr_management_system/employee_portal/index.php?url=admin-manage-user" class="nav-link">
                         <i class="fas fa-user-cog nav-icon"></i>
                         <p>User Account Management</p>
                     </a>

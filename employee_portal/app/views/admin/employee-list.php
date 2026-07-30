@@ -80,15 +80,22 @@
 
 
                                 <td>
-                                    <?= htmlspecialchars($employee['employee_no']); ?>
+                                    <?= htmlspecialchars($employee['employee_code']); ?>
                                 </td>
 
 
                                 <td>
 
-                                    <strong>
-                                        <?= htmlspecialchars($employee['full_name']); ?>
-                                    </strong>
+                                    <?php
+                                    $fullName = trim(
+                                        $employee['first_name'] . ' ' .
+                                            (!empty($employee['middle_name']) ? $employee['middle_name'] . ' ' : '') .
+                                            $employee['last_name'] .
+                                            (!empty($employee['suffix']) ? ' ' . $employee['suffix'] : '')
+                                    );
+                                    ?>
+
+                                    <strong><?= htmlspecialchars($fullName); ?></strong>
 
                                 </td>
 
@@ -140,7 +147,7 @@
                                         type="button"
                                         class="btn btn-info btn-sm"
                                         data-bs-toggle="modal"
-                                        data-bs-target="#employeeModal<?= (int) $employee['id']; ?>">
+                                        data-bs-target="#employeeModal<?= (int) $employee['employee_id']; ?>">
 
                                         <i class="fas fa-eye"></i>
 
@@ -152,7 +159,7 @@
 
                             </tr>
 
-                        <?php require __DIR__ . '/view-modal.php'; ?>
+                            <?php require __DIR__ . '/view-modal.php'; ?>
                         <?php endforeach; ?>
 
 

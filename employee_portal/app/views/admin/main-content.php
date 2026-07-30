@@ -7,7 +7,7 @@
                 <h4 class="fw-bold mb-1">📊 Admin Dashboard</h4>
                 <small class="text-muted">Manage employee documents and approvals</small>
             </div>
-            <a href="index.php?url=employee-documents-create" class="btn btn-primary rounded-3">
+            <a href="index.php?url=admin-documents-index" class="btn btn-primary rounded-3">
                 + New Document
             </a>
         </div>

@@ -1,11 +1,16 @@
 <?php foreach ($employees as $employee): ?>
 
     <?php
-    $employeeId = (int) $employee['id'];
+    $employeeId = (int) $employee['employee_id'];
     $status = strtolower($employee['employment_status'] ?? 'inactive');
     $statusBadge = $status === 'active' ? 'success' : 'secondary';
+    $fullName = trim(
+        $employee['first_name'] . ' ' .
+            (!empty($employee['middle_name']) ? $employee['middle_name'] . ' ' : '') .
+            $employee['last_name'] .
+            (!empty($employee['suffix']) ? ' ' . $employee['suffix'] : '')
+    );
     ?>
-
     <div
         class="modal fade"
         id="employeeModal<?= $employeeId; ?>"
@@ -35,13 +40,13 @@
                                 class="modal-title font-weight-bold mb-1"
                                 id="employeeModalLabel<?= $employeeId; ?>">
 
-                                <?= htmlspecialchars($employee['full_name'] ?? 'Employee'); ?>
+                                <?= htmlspecialchars($fullName ?? 'Employee'); ?>
 
                             </h5>
 
                             <div class="small text-white-50">
                                 <i class="fas fa-id-badge mr-1"></i>
-                                <?= htmlspecialchars($employee['employee_no'] ?? 'N/A'); ?>
+                                <?= htmlspecialchars($employee['employee_code'] ?? 'N/A'); ?>
                             </div>
 
                         </div>
@@ -78,7 +83,7 @@
                                         </small>
 
                                         <strong>
-                                            <?= htmlspecialchars($employee['employee_no'] ?? 'N/A'); ?>
+                                            <?= htmlspecialchars($employee['employee_code'] ?? 'N/A'); ?>
                                         </strong>
                                     </div>
 
@@ -173,9 +178,8 @@
                                 <label class="small font-weight-bold text-muted mb-1">
                                     Full Name
                                 </label>
-
                                 <div class="form-control bg-light">
-                                    <?= htmlspecialchars($employee['full_name'] ?? 'N/A'); ?>
+                                    <?= htmlspecialchars($fullName ?? 'N/A'); ?>
                                 </div>
 
                             </div>
@@ -189,8 +193,8 @@
 
                                 <div class="form-control bg-light">
 
-                                    <?= !empty($employee['date_hired'])
-                                        ? date('F d, Y', strtotime($employee['date_hired']))
+                                    <?= !empty($employee['hire_date'])
+                                        ? date('F d, Y', strtotime($employee['hire_date']))
                                         : 'N/A'; ?>
 
                                 </div>
@@ -218,7 +222,7 @@
                                 </label>
 
                                 <div class="form-control bg-light">
-                                    <?= htmlspecialchars($employee['employment_type_id'] ?? 'N/A'); ?>
+                                    <?= htmlspecialchars($employee['employment_type'] ?? 'N/A'); ?>
                                 </div>
 
                             </div>

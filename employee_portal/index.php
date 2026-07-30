@@ -24,6 +24,7 @@ require 'app/controllers/PayslipController.php';
 require 'app/controllers/GrievanceController.php';
 require 'app/controllers/DocumentsController.php';
 require 'app/controllers/CareerPathController.php';
+require 'app/controllers/ManageUserController.php';
 require 'app/controllers/LeaveRequestController.php';
 require 'app/controllers/AnnouncementController.php';
 require 'app/controllers/NotificationController.php';
@@ -405,8 +406,27 @@ switch ($url) {
     case 'employee-payroll-request':
         (new PayrollRequestController)->employeeIndex();
         break;
+    /*
+|--------------------------------------------------------------------------
+| Manage User Routes
+|--------------------------------------------------------------------------
+|
+*/
+    case 'admin-manage-user':
+        (new ManageUserController)->adminIndex();
+        break;
 
+    case 'admin-create-user':
+        (new ManageUserController)->create();
+        break;
 
+    case 'admin-update-user':
+        (new ManageUserController)->update();
+        break;
+
+    case 'admin-toggle-user':
+        (new ManageUserController)->update();
+        break;
 
     default:
         $title = "Page Not Found";
