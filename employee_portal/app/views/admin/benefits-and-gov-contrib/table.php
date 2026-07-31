@@ -26,7 +26,7 @@
 
                         <td><?= $benefit['benefit_id']; ?></td>
 
-                        <td><?= htmlspecialchars($benefit['full_name']); ?></td>
+                        <td><?= htmlspecialchars($benefit['last_name']); ?>, <?= htmlspecialchars($benefit['first_name']); ?></td>
 
                         <td>
                             <span class="badge badge-primary px-4 py-2">
@@ -55,7 +55,7 @@
                             <?php endif; ?>
                         </td>
 
-                        <td class="font-bold">Admin: <?= htmlspecialchars($benefit['uploaded_by']); ?></td>
+                        <td class="font-bold">ID: <?= htmlspecialchars($benefit['uploaded_by']); ?></td>
 
                         <td>
                             <?= date('M d, Y | g:i A', strtotime($benefit['uploaded_at'])); ?>
@@ -68,7 +68,7 @@
                                 data-bs-toggle="modal"
                                 data-bs-target="#viewBenefitModal"
 
-                                data-employee="<?= htmlspecialchars($benefit['full_name']); ?>"
+                                data-employee="<?= htmlspecialchars($benefit['first_name'] . ' ' . $benefit['last_name']); ?>"
                                 data-record="<?= htmlspecialchars($benefit['record_type']); ?>"
                                 data-period="<?= htmlspecialchars($benefit['period']); ?>"
                                 data-description="<?= htmlspecialchars($benefit['description']); ?>"
@@ -85,7 +85,7 @@
                                 data-bs-target="#editBenefitModal"
 
                                 data-id="<?= $benefit['benefit_id']; ?>"
-                                data-employee="<?= htmlspecialchars($benefit['full_name']); ?>"
+                                data-employee="<?= htmlspecialchars($benefit['first_name'] . ' ' . $benefit['last_name']); ?>"
                                 data-record="<?= htmlspecialchars($benefit['record_type']); ?>"
                                 data-period="<?= htmlspecialchars($benefit['period']); ?>"
                                 data-description="<?= htmlspecialchars($benefit['description']); ?>">

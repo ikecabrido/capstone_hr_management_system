@@ -14,13 +14,13 @@ class Documents
     {
         $stmt = $this->conn->prepare("
         SELECT DISTINCT ed.*, 
-               d.department_name, 
-               e.full_name AS approver_name, 
-               s.full_name AS submitter_name
+            d.department_name, 
+            CONCAT(e.first_name, ' ', e.last_name) AS approver_name,
+            CONCAT(s.first_name, ' ', s.last_name) AS submitter_name
         FROM {$this->table} ed
         LEFT JOIN departments d ON ed.department = d.id
-        LEFT JOIN employees e ON ed.approver_id = e.id
-        LEFT JOIN employees s ON ed.submit_by = s.id
+        LEFT JOIN employees e ON ed.approver_id = e.employee_id
+        LEFT JOIN employees s ON ed.submit_by = s.employee_id
         ORDER BY ed.submitted_on DESC
     ");
         $stmt->execute();
@@ -30,12 +30,12 @@ class Documents
     {
         $stmt = $this->conn->prepare("
         SELECT DISTINCT ed.*, 
-               d.department_name, 
-               e.full_name AS approver_name, 
-               s.full_name AS submitter_name
+            d.department_name, 
+            CONCAT(e.first_name, ' ', e.last_name) AS approver_name,
+            CONCAT(s.first_name, ' ', s.last_name) AS submitter_name
         FROM {$this->table} ed
         LEFT JOIN departments d ON ed.department = d.id
-        LEFT JOIN employees e ON ed.approver_id = e.id
+        LEFT JOIN employees e ON ed.approver_id = e.employee_id
         LEFT JOIN employees s ON ed.submit_by = s.id
         WHERE ed.department = :department
         ORDER BY ed.submitted_on DESC
@@ -93,7 +93,8 @@ class Documents
     {
         $sql = "SELECT
                 ed.*,
-                e.full_name,
+                e.first_name, 
+                e.last_name,
                 d.department_name
             FROM ep_employee_documents ed
             LEFT JOIN employees e

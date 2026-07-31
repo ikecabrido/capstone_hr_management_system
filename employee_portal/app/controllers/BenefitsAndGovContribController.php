@@ -19,14 +19,76 @@ class BenefitsAndGovContribController
         $benefitsAndGovContrib =
             $this->benefitsAndGovContribModel->all();
         $employeeList = $this->employeeModel->all();
-
-
+        
         $title = "Benefits & Government Contributions";
 
         $content =
             __DIR__ . '/../views/admin/benefits-and-gov-contrib/main-content.php';
 
         require __DIR__ . '/../views/admin/index.php';
+    }
+    public function adminCreate()
+    {
+        try {
+
+            $uploadDir = __DIR__ . '/../../public/uploads/benefits/';
+
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+
+            $fileName = null;
+            $filePath = null;
+
+            if (isset($_FILES['benefit_file']) && $_FILES['benefit_file']['error'] === UPLOAD_ERR_OK) {
+
+                $extension = strtolower(pathinfo($_FILES['benefit_file']['name'], PATHINFO_EXTENSION));
+
+                $allowed = ['pdf', 'jpg', 'jpeg', 'png'];
+
+                if (!in_array($extension, $allowed)) {
+                    throw new Exception("Invalid file type. Only PDF, JPG, JPEG, and PNG files are allowed.");
+                }
+
+                $fileName = time() . '_' . basename($_FILES['benefit_file']['name']);
+                $destination = $uploadDir . $fileName;
+
+                if (!move_uploaded_file($_FILES['benefit_file']['tmp_name'], $destination)) {
+                    throw new Exception("Failed to upload the file.");
+                }
+
+                $filePath = 'public/uploads/benefits/' . $fileName;
+            }
+
+            $data = [
+                'employee_id' => $_POST['employee_id'],
+                'record_type' => $_POST['record_type'],
+                'period' => $_POST['period'],
+                'description' => $_POST['description'],
+                'file_name' => $fileName,
+                'file_path' => $filePath,
+                'uploaded_by' => $_SESSION['user_id']
+            ];
+
+            if (!$this->benefitsAndGovContribModel->create($data)) {
+                throw new Exception("Failed to save the record to the database.");
+            }
+
+            $_SESSION['success'] = "Record uploaded successfully.";
+        } catch (Exception $e) {
+
+            $_SESSION['error'] = $e->getMessage();
+            error_log($e->getMessage());
+        }
+
+        if (isset($_SESSION['is_admin']) && $_SESSION['is_admin'] == 1) {
+
+            header('Location: index.php?url=admin-benefits-and-gov-contrib');
+        } else {
+
+            header('Location: index.php?url=admin-benefits-and-gov-contrib');
+        }
+        exit;
     }
     public function create()
     {
@@ -84,7 +146,7 @@ class BenefitsAndGovContribController
 
         if (isset($_SESSION['is_admin']) && $_SESSION['is_admin'] == 1) {
 
-            header('Location: index.php?url=admin-benefits-and-gov-contrib');
+            header('Location: index.php?url=benefits-and-gov-contrib');
         } else {
 
             header('Location: index.php?url=benefits-and-gov-contrib');

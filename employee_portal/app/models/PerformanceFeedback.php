@@ -47,11 +47,12 @@ class PerformanceFeedback
     {
         $sql = "SELECT
                 f.*,
-                e.full_name,
-                e.employee_no
+                e.first_name,
+                e.last_name,
+                e.employee_code
             FROM pm_360_feedback f
             LEFT JOIN employees e
-                ON f.employee_id = e.id
+                ON f.employee_id = e.employee_id
             ORDER BY f.evaluation_date DESC";
 
         $stmt = $this->conn->prepare($sql);

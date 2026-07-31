@@ -120,10 +120,10 @@ class BenefitsAndGovContrib
     {
         $sql = "SELECT
                 b.*,
-                e.full_name
+                e.first_name, last_name
             FROM {$this->table} b
             INNER JOIN employees e
-                ON e.id = b.employee_id
+                ON e.employee_id = b.employee_id
             WHERE e.user_id = :user_id
             ORDER BY b.uploaded_at DESC";
 
@@ -138,8 +138,8 @@ class BenefitsAndGovContrib
     public function getEmployeeByUserId($userId)
     {
         $sql = "SELECT 
-                id,
-                full_name
+                employee_id,
+                first_name, last_name
             FROM employees
             WHERE user_id = :user_id
             LIMIT 1";

@@ -41,7 +41,7 @@ class DocumentsController
             $title   = "Admin - Employee Documents";
             $content = __DIR__ . '/../views/admin/employee-documents/main-content.php';
 
-            require __DIR__ . '/../views/admin/employee-documents/index.php';
+            require __DIR__ . '/../views/admin/index.php';
         } catch (PDOException $e) {
             echo "<div class='alert alert-danger'>Database Error: " . htmlspecialchars($e->getMessage()) . "</div>";
             $empdocs = [];

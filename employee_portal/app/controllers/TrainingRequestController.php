@@ -23,26 +23,16 @@ class TrainingRequestController
     }
     public function adminCreate()
     {
+
         try {
-
-            if (empty($_POST['employee_id'])) {
-                throw new Exception("Please select an employee.");
-            }
-
 
             $employee = $this->employeeModel->getByEmployeeId(
                 $_POST['employee_id']
             );
 
-
-            if (!$employee) {
-                throw new Exception("Employee not found.");
-            }
-
-
             $data = [
                 'employee_user_id'       => $employee['user_id'],
-                'employee_id'            => $employee['id'],
+                'employee_id'            => $employee['employee_id'],
                 'goal_id'                => !empty($_POST['goal_id'])
                     ? $_POST['goal_id']
                     : null,
@@ -53,9 +43,9 @@ class TrainingRequestController
                 'requested_program'      => trim($_POST['requested_program']),
                 'requested_course'       => trim($_POST['requested_course']),
                 'ld_training_program_id' => null,
-                'ld_course_id'           => null
+                'ld_course_id'           => null,
+                'request_status'           => 'New',
             ];
-
 
             if (!$this->trainingRequestModel->create($data)) {
                 throw new Exception("Failed to create training request.");
@@ -77,7 +67,6 @@ class TrainingRequestController
 
         exit;
     }
-
     public function update()
     {
         try {
@@ -171,7 +160,6 @@ class TrainingRequestController
 
         exit;
     }
-
     public function employeeIndex()
     {
 
@@ -194,7 +182,6 @@ class TrainingRequestController
 
         require __DIR__ . '/../views/employee-portal/index.php';
     }
-
     public function employeeCreate()
     {
         try {
@@ -266,6 +253,27 @@ class TrainingRequestController
         );
 
 
+        exit;
+    }
+    public function updateRequestStatus()
+    {
+        
+        $id = $_POST['id'] ?? null;
+        $status = $_POST['request_status'] ?? null;
+
+        if (!$id || !$status) {
+            $_SESSION['error'] = "Invalid request.";
+            header("Location: index.php?url=admin-training-request");
+            exit;
+        }
+
+        if ($this->trainingRequestModel->updateStatus($id, $status)) {
+            $_SESSION['success'] = "Request status updated successfully.";
+        } else {
+            $_SESSION['error'] = "Failed to update request status.";
+        }
+
+        header("Location: index.php?url=admin-training-request");
         exit;
     }
 }

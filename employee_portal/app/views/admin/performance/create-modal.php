@@ -48,36 +48,31 @@
                             </option>
 
                             <?php foreach ($employees as $employee): ?>
-                                <option value="<?= $employee['id'] ?>">
-                                    <?= htmlspecialchars($employee['full_name']) ?>
-                                    (<?= htmlspecialchars($employee['employee_no']) ?>)
+                                <option value="<?= $employee['employee_id'] ?>">
+                                    <?= htmlspecialchars(trim(
+                                        $employee['first_name'] . ' ' .
+                                            ($employee['middle_name'] ? $employee['middle_name'] . ' ' : '') .
+                                            $employee['last_name'] .
+                                            ($employee['suffix'] ? ' ' . $employee['suffix'] : '')
+                                    )) ?>
+                                    (<?= htmlspecialchars($employee['employee_code']) ?>)
                                 </option>
                             <?php endforeach; ?>
 
                         </select>
-
                     </div>
                     <div class="form-group">
                         <label>Evaluator</label>
-
-                        <select name="evaluator_type"
-                            class="form-control"
-                            required>
-
-                            <option value="">-- Select Evaluator --</option>
-                            <option value="Manager">Manager</option>
-                            <option value="Peer">Peer</option>
-                            <option value="Subordinate">Subordinate</option>
-                            <option value="Self">Self</option>
-                            <option>Communication</option>
-                            <option>Teamwork</option>
-                            <option>Leadership</option>
-                            <option>Problem Solving</option>
-                            <option>Work Quality</option>
-                            <option>Productivity</option>
-                            <option>Professionalism</option>
-                            <option>Initiative</option>
-
+                        <select name="evaluator_type" class="form-control" required>
+                            <option value="">-- Select Category --</option>
+                            <option value="Communication">Communication</option>
+                            <option value="Teamwork">Teamwork</option>
+                            <option value="Leadership">Leadership</option>
+                            <option value="Problem Solving">Problem Solving</option>
+                            <option value="Work Quality">Work Quality</option>
+                            <option value="Productivity">Productivity</option>
+                            <option value="Professionalism">Professionalism</option>
+                            <option value="Initiative">Initiative</option>
                         </select>
                     </div>
 

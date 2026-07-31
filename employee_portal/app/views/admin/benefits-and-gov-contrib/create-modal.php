@@ -2,7 +2,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
 
-            <form action="index.php?url=benefits-and-gov-contrib-store"
+            <form action="index.php?url=benefits-admin-store"
                 method="POST"
                 enctype="multipart/form-data">
 

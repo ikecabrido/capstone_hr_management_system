@@ -320,6 +320,10 @@ switch ($url) {
         (new BenefitsAndGovContribController)->index();
         break;
 
+    case 'benefits-admin-store':
+        (new BenefitsAndGovContribController)->adminCreate();
+        break;
+
     case 'benefits-and-gov-contrib-store':
         (new BenefitsAndGovContribController)->create();
         break;
@@ -369,6 +373,10 @@ switch ($url) {
 
     case 'training-request-store':
         (new TrainingRequestController)->employeeCreate();
+        break;
+
+    case 'training-status-update':
+        (new TrainingRequestController)->updateRequestStatus();
         break;
 
     /*

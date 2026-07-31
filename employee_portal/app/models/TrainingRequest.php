@@ -16,12 +16,13 @@ class TrainingRequest
     {
         $sql = "SELECT
                 r.*,
-                e.full_name,
+                e.first_name,
+                e.last_name,
                 p.title AS training_title,
                 p.trainer
             FROM {$this->table} r
             LEFT JOIN employees e
-                ON r.employee_id = e.id
+                ON r.employee_id = e.employee_id
             LEFT JOIN ld_training_programs p
                 ON r.ld_training_program_id = p.ld_training_programs_id
             ORDER BY r.created_at DESC";
@@ -152,5 +153,19 @@ class TrainingRequest
 
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    public function updateStatus($id, $status)
+    {
+
+        $query = "UPDATE {$this->table}
+              SET request_status = :status
+              WHERE ld_request_id = :id";
+
+        $stmt = $this->conn->prepare($query);
+        
+        return $stmt->execute([
+            ':id' => $id,
+            ':status' => $status
+        ]);
     }
 }

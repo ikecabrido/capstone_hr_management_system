@@ -13,8 +13,8 @@ class PerformanceFeedbackController
     public function adminIndex()
     {
         $employees = $this->employeeModel->getAll();
-        $feedbacks = $this->performanceFeedbackModel->getAll();
 
+        $feedbacks = $this->performanceFeedbackModel->getAll();
         $title = "Performance Feedback";
         $content = __DIR__ . '/../views/admin/performance/main-content.php';
 
@@ -42,7 +42,7 @@ class PerformanceFeedbackController
                 header("Location: " . ($_SERVER['HTTP_REFERER'] ?? "index.php?url=employee-grievance"));
                 exit;
             }
-
+            
             $employee_id  = $_POST['employee_id'] ?? null;
             $evaluator_type  = trim($_POST['evaluator_type'] ?? '');
             $rating   = $_POST['rating'] ?? null;

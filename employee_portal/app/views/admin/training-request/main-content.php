@@ -89,7 +89,7 @@
                                     <td><?= $request['ld_request_id']; ?></td>
 
                                     <td>
-                                        <?= htmlspecialchars($request['full_name'] ?? '-') ?>
+                                        <?= htmlspecialchars($request['first_name'] ?? '-') ?> <?= htmlspecialchars($request['last_name'] ?? '-') ?>
                                     </td>
 
                                     <td>
@@ -103,11 +103,15 @@
                                     <td>
                                         <?= htmlspecialchars($request['request_reason']) ?>
                                     </td>
-
-                                    <td>
-                                        <span class="badge badge-<?= $badge; ?>">
+                                    <td class="text-center">
+                                        <button
+                                            class="btn btn-sm badge badge-<?= $badge; ?> border-0"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#updateStatusModal"
+                                            data-id="<?= $request['ld_request_id']; ?>"
+                                            data-status="<?= $request['request_status']; ?>">
                                             <?= htmlspecialchars($request['request_status']) ?>
-                                        </span>
+                                        </button>
                                     </td>
 
                                     <td>
@@ -152,6 +156,7 @@
                                 <?php require __DIR__ . '/view-modal.php'; ?>
                                 <?php require __DIR__ . '/edit-modal.php'; ?>
                                 <?php require __DIR__ . '/delete-modal.php'; ?>
+                                <?php require __DIR__ . '/status.php'; ?>
                             <?php endforeach; ?>
 
                         <?php else: ?>
@@ -181,3 +186,17 @@
 </div>
 
 <?php require __DIR__ . '/create-modal.php'; ?>
+<script>
+    const statusModal = document.getElementById('updateStatusModal');
+
+    statusModal.addEventListener('show.bs.modal', function(event) {
+
+        const button = event.relatedTarget;
+
+        document.getElementById('status_request_id').value =
+            button.getAttribute('data-id');
+
+        document.getElementById('status_request').value =
+            button.getAttribute('data-status');
+    });
+</script>

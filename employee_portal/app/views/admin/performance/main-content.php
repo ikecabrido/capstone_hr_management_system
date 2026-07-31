@@ -1,3 +1,50 @@
+<style>
+    .evaluation-badge {
+        display: inline-block;
+        min-width: 120px;
+        padding: 8px 16px;
+        border-radius: 50px;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: .3px;
+        text-align: center;
+        border: 2px solid transparent;
+        transition: all .2s ease;
+    }
+
+    /* Manager */
+    .evaluation-badge.manager {
+        background: #e8f0ff;
+        color: #1d4ed8;
+        border-color: #bfdbfe;
+    }
+
+    /* Peer */
+    .evaluation-badge.peer {
+        background: #ecfeff;
+        color: #0f766e;
+        border-color: #99f6e4;
+    }
+
+    /* Subordinate */
+    .evaluation-badge.subordinate {
+        background: #fff7ed;
+        color: #c2410c;
+        border-color: #fdba74;
+    }
+
+    /* Self */
+    .evaluation-badge.self {
+        background: #ecfdf5;
+        color: #15803d;
+        border-color: #86efac;
+    }
+
+    .evaluation-badge:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, .12);
+    }
+</style>
 <div class="content-wrapper px-4 py-3">
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center flex-wrap mb-4">
@@ -61,31 +108,6 @@
 
                         <?php foreach ($feedbacks as $index => $feedback): ?>
 
-                            <?php
-
-                            switch ($feedback['evaluator_type']) {
-
-                                case 'Manager':
-                                    $badge = 'primary';
-                                    break;
-
-                                case 'Peer':
-                                    $badge = 'info';
-                                    break;
-
-                                case 'Subordinate':
-                                    $badge = 'warning';
-                                    break;
-
-                                case 'Self':
-                                    $badge = 'success';
-                                    break;
-
-                                default:
-                                    $badge = 'secondary';
-                            }
-
-                            ?>
 
                             <tr>
 
@@ -94,9 +116,9 @@
                                 </td>
 
                                 <td>
-                                    <?= htmlspecialchars($feedback['full_name']) ?><br>
+                                    <?= htmlspecialchars($feedback['first_name']) ?><?= htmlspecialchars($feedback['last_name']) ?><br>
                                     <small class="text-muted">
-                                        <?= htmlspecialchars($feedback['employee_no']) ?>
+                                        <?= htmlspecialchars($feedback['employee_code']) ?>
                                     </small>
                                 </td>
 
@@ -104,12 +126,14 @@
                                     <?= date('M d, Y', strtotime($feedback['evaluation_date'])) ?>
                                 </td>
 
+                                <?php
+                                $type = strtolower(trim($feedback['evaluator_type']));
+                                ?>
+
                                 <td class="text-center">
-
-                                    <span class="badge badge-<?= $badge ?> px-3 py-2">
-                                        <?= htmlspecialchars($feedback['evaluator_type']) ?>
+                                    <span class="evaluation-badge <?= $type ?>">
+                                        <?= htmlspecialchars($type) ?>
                                     </span>
-
                                 </td>
 
                                 <td>

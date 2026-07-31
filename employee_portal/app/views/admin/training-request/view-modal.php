@@ -33,7 +33,7 @@
 
                         <input
                             class="form-control"
-                            value="<?= htmlspecialchars($request['full_name']); ?>"
+                            value="<?= htmlspecialchars($request['first_name']); ?> <?= htmlspecialchars($request['last_name']); ?>"
                             readonly>
 
                     </div>

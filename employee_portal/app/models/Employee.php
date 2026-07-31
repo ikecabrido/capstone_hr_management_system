@@ -30,7 +30,7 @@ class Employee
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-    public function getById($employee_no)
+    public function getById($employee_id)
     {
         die;
         $query = "SELECT e.*, u.username, u.role 
@@ -44,19 +44,19 @@ class Employee
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-    public function getAll($status = 'Active', $limit = 100, $offset = 0)
+    public function getAll($limit = 100, $offset = 0)
     {
-        $query = "SELECT e.*, u.username, u.role 
-                  FROM " . $this->table . " e
-                  LEFT JOIN users u ON e.user_id = u.id
-                  WHERE e.employment_status = :status
-                  ORDER BY e.full_name
-                  LIMIT :limit OFFSET :offset";
+        $query = "
+        SELECT e.*, u.username, u.role
+        FROM {$this->table} e
+        LEFT JOIN users u ON e.user_id = u.id
+        ORDER BY e.last_name
+        LIMIT :limit OFFSET :offset
+    ";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':status', $status);
-        $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -131,7 +131,7 @@ class Employee
         $query = "SELECT e.*, u.username, u.role
               FROM " . $this->table . " e
               LEFT JOIN users u ON e.user_id = u.id
-              WHERE e.id = :id
+              WHERE e.employee_id = :id
               LIMIT 1";
 
         $stmt = $this->conn->prepare($query);

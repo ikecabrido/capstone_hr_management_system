@@ -51,7 +51,7 @@
 
                         Employee:
                         <strong>
-                            <?= htmlspecialchars($request['full_name']); ?>
+                            <?= htmlspecialchars($request['first_name']); ?> <?= htmlspecialchars($request['last_name']); ?>
                         </strong>
 
                     </p>

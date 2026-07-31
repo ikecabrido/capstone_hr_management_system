@@ -47,11 +47,13 @@
                         <label class="font-weight-bold">
                             Employee
                         </label>
-
+                        <?php
+                        $fullname = $request['first_name'] . ' ' . $request['last_name'];
+                        ?>
                         <input
                             type="text"
                             class="form-control"
-                            value="<?= htmlspecialchars($request['full_name']); ?>"
+                            value="<?= htmlspecialchars($fullname); ?>"
                             readonly>
 
                     </div>
