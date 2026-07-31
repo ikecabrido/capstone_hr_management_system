@@ -72,29 +72,6 @@ class NotificationController
 
         Helper::redirect('index.php?url=admin-notification');
     }
-    public function view()
-    {
-        if (!isset($_GET['id'])) {
-            echo json_encode([
-                'success' => false
-            ]);
-            exit;
-        }
-
-        $id = (int) $_GET['id'];
-
-        $notification = $this->notificationModel->find($id);
-
-        $recipients = $this->recipientModel->getRecipients($id);
-
-        echo json_encode([
-            'success' => true,
-            'notification' => $notification,
-            'recipients' => $recipients
-        ]);
-
-        exit;
-    }
     public function update()
     {
         Session::start();

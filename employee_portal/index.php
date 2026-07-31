@@ -286,10 +286,6 @@ switch ($url) {
         (new NotificationController)->create();
         break;
 
-    case 'notification-view':
-        (new NotificationController)->view();
-        break;
-
     case 'notification-update':
         (new NotificationController)->update();
         break;
@@ -456,6 +452,13 @@ switch ($url) {
         (new EmployeePortalController)->viewAttendance();
         break;
 
+
+    /*
+|--------------------------------------------------------------------------
+| Default
+|--------------------------------------------------------------------------
+|
+*/
     default:
         $title = "Page Not Found";
         $content = __DIR__ . 'app/views/error-content.php';

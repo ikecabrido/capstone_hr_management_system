@@ -158,18 +158,18 @@ class Employee
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    public function find($id)
+    public function find($employeeId)
     {
         $query = "
         SELECT *
         FROM {$this->table}
-        WHERE id = :id
+        WHERE employee_id = :employee_id
         LIMIT 1
     ";
 
         $stmt = $this->conn->prepare($query);
         $stmt->execute([
-            ':id' => $id
+            ':employee_id' => $employeeId
         ]);
 
         return $stmt->fetch(PDO::FETCH_ASSOC);

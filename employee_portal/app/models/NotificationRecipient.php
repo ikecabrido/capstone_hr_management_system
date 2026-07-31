@@ -66,14 +66,15 @@ class NotificationRecipient
     public function getRecipients($notificationId)
     {
         $query = "SELECT
-                e.employee_no,
-                e.full_name,
+                e.employee_code,
+                e.first_name,
+                e.last_name,
                 e.department
               FROM ep_notification_recipients r
               INNER JOIN employees e
-                ON r.employee_id = e.id
+                ON r.employee_id = e.employee_id
               WHERE r.notification_id = :notification_id
-              ORDER BY e.full_name ASC";
+              ORDER BY e.first_name ASC";
 
         $stmt = $this->conn->prepare($query);
 

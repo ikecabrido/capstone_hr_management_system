@@ -54,7 +54,6 @@
                         <?php require __DIR__ . '/table.php' ?>
 
                     </div>
-                    <?php require __DIR__ . '/view-modal.php'; ?>
 
                 </div>
 

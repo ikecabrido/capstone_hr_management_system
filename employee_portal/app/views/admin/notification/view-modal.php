@@ -1,10 +1,12 @@
-<div class="modal fade" id="viewNotificationModal" tabindex="-1">
+<div class="modal fade"
+    id="viewNotificationModal<?= $row['notification_id'] ?>"
+    tabindex="-1">
 
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" style="max-width:800px;">
 
         <div class="modal-content">
 
-            <div class="modal-header py-2">
+            <div class="modal-header">
 
                 <h5 class="modal-title">
                     <i class="fas fa-bell text-primary me-2"></i>
@@ -21,108 +23,115 @@
 
             <div class="modal-body">
 
-                <table class="table table-sm table-borderless mb-3">
+                <h4><?= htmlspecialchars($row['title']) ?></h4>
 
-                    <tr>
-                        <th width="120" class="text-muted">Title</th>
-                        <td id="viewTitle"></td>
-                    </tr>
+                <div class="mb-4">
 
-                    <tr>
+                    <label class="fw-semibold text-muted mb-2">
+                        Message
+                    </label>
 
-                        <th class="text-muted align-top">
-                            Message
-                        </th>
+                    <div class="border rounded p-3 bg-light">
+                        <?= nl2br(htmlspecialchars($row['message'])) ?>
+                    </div>
 
-                        <td>
+                </div>
 
-                            <div
-                                id="viewMessage"
-                                class="border rounded p-2 bg-light small"
-                                style="white-space:pre-wrap; max-height:120px; overflow:auto;">
-                            </div>
+                <div class="row mb-4">
 
-                        </td>
+                    <div class="col-md-4">
 
-                    </tr>
-
-                    <tr>
-
-                        <th class="text-muted">
+                        <label class="fw-semibold text-muted d-block">
                             Type
-                        </th>
+                        </label>
 
-                        <td>
+                        <span class="badge bg-primary">
+                            <?= ucfirst($row['type']) ?>
+                        </span>
 
-                            <span
-                                id="viewType"
-                                class="badge">
-                            </span>
+                    </div>
 
-                        </td>
+                    <div class="col-md-4">
 
-                    </tr>
-
-                    <tr>
-
-                        <th class="text-muted">
+                        <label class="fw-semibold text-muted d-block">
                             Priority
-                        </th>
+                        </label>
 
-                        <td>
 
-                            <span
-                                id="viewPriority"
-                                class="badge">
-                            </span>
+                        <span class="badge bg-danger">
+                            <?= ucfirst($row['priority']) ?>
+                        </span>
 
-                        </td>
+                    </div>
 
-                    </tr>
+                    <div class="col-md-4">
 
-                    <tr>
-
-                        <th class="text-muted">
+                        <label class="fw-semibold text-muted d-block">
                             Created
-                        </th>
+                        </label>
 
-                        <td id="viewCreated"></td>
+                        <?= date('M d, Y', strtotime($row['created_at'])) ?>
 
-                    </tr>
+                    </div>
 
-                </table>
+                </div>
 
-                <label class="fw-semibold small mb-2">
+                <hr>
+
+                <h6 class="fw-bold mb-3">
+                    <i class="fas fa-users me-2 text-primary"></i>
                     Recipients
-                </label>
+                </h6>
 
                 <div
                     class="table-responsive border rounded"
-                    style="max-height:180px; overflow-y:auto;">
+                    style="max-height:220px; overflow-y:auto;">
 
-                    <table class="table table-sm table-hover mb-0">
+                    <table class="table table-hover table-sm mb-0">
 
                         <thead class="table-light">
 
                             <tr>
-
-                                <th>Employee No.</th>
+                                <th>Employee Code</th>
                                 <th>Name</th>
                                 <th>Department</th>
-
                             </tr>
 
                         </thead>
+                        <tbody>
 
-                        <tbody id="viewRecipients">
+                            <?php if (!empty($row['recipients'])): ?>
 
-                            <tr>
+                                <?php foreach ($row['recipients'] as $employee): ?>
 
-                                <td colspan="3" class="text-center text-muted">
-                                    Loading...
-                                </td>
+                                    <tr>
 
-                            </tr>
+                                        <td><?= htmlspecialchars($employee['employee_code']) ?></td>
+
+                                        <td>
+                                            <?= htmlspecialchars($employee['first_name']) ?>
+                                            <?= htmlspecialchars($employee['last_name']) ?>
+                                        </td>
+
+                                        <td><?= htmlspecialchars($employee['department']) ?></td>
+
+                                    </tr>
+
+                                <?php endforeach; ?>
+
+                            <?php else: ?>
+
+                                <tr>
+
+                                    <td colspan="3" class="text-center text-muted">
+
+                                        No recipients found.
+
+                                    </td>
+
+                                </tr>
+
+                            <?php endif; ?>
 
                         </tbody>
 
@@ -132,10 +141,11 @@
 
             </div>
 
-            <div class="modal-footer py-2">
+            <div class="modal-footer">
 
                 <button
-                    class="btn btn-secondary btn-sm"
+                    type="button"
+                    class="btn btn-secondary"
                     data-bs-dismiss="modal">
 
                     Close

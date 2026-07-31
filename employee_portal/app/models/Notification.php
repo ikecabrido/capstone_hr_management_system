@@ -47,7 +47,7 @@ class Notification
                 :priority,
                 :created_by_user_id
             )";
-
+            
         $stmt = $this->conn->prepare($query);
 
         $stmt->execute([
@@ -61,17 +61,16 @@ class Notification
         return $this->conn->lastInsertId();
     }
 
-    public function find($notificationId)
+    public function find($id)
     {
-        $query = "SELECT *
-              FROM {$this->table}
-              WHERE notification_id = :notification_id
-              LIMIT 1";
-
-        $stmt = $this->conn->prepare($query);
+        $stmt = $this->conn->prepare("
+        SELECT *
+        FROM ep_notifications
+        WHERE notification_id = :id
+    ");
 
         $stmt->execute([
-            ':notification_id' => $notificationId
+            ':id' => $id
         ]);
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -198,6 +197,28 @@ class Notification
 
         $stmt->execute([
             ':employee_id' => $employeeId
+        ]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    public function getRecipients($notificationId)
+    {
+        $sql = "
+        SELECT
+            e.employee_code,
+            e.first_name,
+            e.last_name,
+            e.department
+        FROM ep_notification_recipients r
+        INNER JOIN employees e
+            ON r.employee_id = e.employee_id
+        WHERE r.notification_id = :id
+        ORDER BY e.last_name, e.first_name
+    ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([
+            ':id' => $notificationId
         ]);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);

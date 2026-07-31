@@ -93,11 +93,10 @@
 
                             <td>
                                 <div class="font-weight-bold">
-                                    <?= htmlspecialchars($request['full_name'] ?? 'Unknown Employee') ?>
+                                    <?= htmlspecialchars($request['first_name'] . ' ' . $request['last_name']) ?>
                                 </div>
-
                                 <small class="text-muted">
-                                    <?= htmlspecialchars($request['employee_no'] ?? '') ?>
+                                    <?= htmlspecialchars($request['employee_code'] ?? '') ?>
                                 </small>
                             </td>
 

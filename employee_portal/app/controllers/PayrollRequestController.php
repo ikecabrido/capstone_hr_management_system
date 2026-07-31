@@ -100,7 +100,7 @@ class PayrollRequestController
                         throw new Exception('Employee record could not be found.');
                     }
 
-                    $employeeId = $employee['id'];
+                    $employeeId = $employee['employee_id'];
                 }
             }
 
@@ -123,7 +123,7 @@ class PayrollRequestController
             );
 
             if ($isAdmin) {
-                Helper::redirect('index.php?url=admin-payroll-request-view');
+                Helper::redirect('index.php?url=admin-payroll-request');
             } else {
                 Helper::redirect('index.php?url=employee-payroll-request');
             }
@@ -133,7 +133,7 @@ class PayrollRequestController
             Session::set('error', $e->getMessage());
 
             if ($isAdmin ?? false) {
-                Helper::redirect('index.php?url=admin-payroll-request-view');
+                Helper::redirect('index.php?url=admin-payroll-request');
             } else {
                 Helper::redirect('index.php?url=employee-payroll-request');
             }
@@ -284,7 +284,7 @@ class PayrollRequestController
             exit;
         }
 
-        $employeeId = $employee['id'];
+        $employeeId = $employee['employee_id'];
         $requests = $this->payrollRequestModel->getByEmployeeId($employeeId);
 
         $title = "Payroll Requests";

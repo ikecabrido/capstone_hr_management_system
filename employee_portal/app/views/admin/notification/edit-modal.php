@@ -173,11 +173,11 @@
                         ?>
 
                             <option
-                                value="<?= $employee['id']; ?>"
-                                <?= in_array($employee['id'], $selectedEmployees) ? 'selected' : ''; ?>>
+                                value="<?= $employee['employee_id']; ?>"
+                                <?= in_array($employee['employee_id'], $selectedEmployees) ? 'selected' : ''; ?>>
 
-                                <?= htmlspecialchars($employee['full_name']); ?>
-                                (<?= htmlspecialchars($employee['employee_no']); ?>)
+                                <?= htmlspecialchars($employee['first_name']); ?> <?= htmlspecialchars($employee['last_name']); ?>
+                                (<?= htmlspecialchars($employee['employee_code']); ?>)
 
                             </option>
 

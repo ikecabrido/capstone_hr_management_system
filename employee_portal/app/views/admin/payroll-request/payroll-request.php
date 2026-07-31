@@ -40,10 +40,11 @@
                             <option value="">Select employee</option>
 
                             <?php foreach ($employees as $employee): ?>
-                                <option value="<?= htmlspecialchars($employee['id']) ?>">
-                                    <?= htmlspecialchars($employee['employee_no']) ?>
+                                <option value="<?= htmlspecialchars($employee['employee_id']) ?>">
+                                    <?= htmlspecialchars($employee['employee_code']) ?>
                                     -
-                                    <?= htmlspecialchars($employee['full_name']) ?>
+                                    <?= htmlspecialchars($employee['first_name']) ?>
+                                    <?= htmlspecialchars($employee['last_name']) ?>
                                 </option>
                             <?php endforeach; ?>
 

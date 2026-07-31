@@ -17,11 +17,12 @@ class PayrollRequest
         $sql = "
             SELECT
                 pr.*,
-                e.employee_no,
-                e.full_name
+                e.employee_code,
+                e.first_name,
+                e.last_name
             FROM {$this->table} pr
             LEFT JOIN employees e
-                ON pr.employee_id = e.id
+                ON pr.employee_id = e.employee_id
             ORDER BY pr.id DESC
         ";
 
@@ -39,7 +40,7 @@ class PayrollRequest
                 e.full_name
             FROM {$this->table} pr
             LEFT JOIN employees e
-                ON pr.employee_id = e.id
+                ON pr.employee_id = e.employee_id
             WHERE pr.id = :id
             LIMIT 1
         ";
@@ -172,7 +173,7 @@ WHERE id = :id
                 e.full_name
             FROM {$this->table} pr
             LEFT JOIN employees e
-                ON pr.employee_id = e.id
+                ON pr.employee_id = e.employee_id
             ORDER BY pr.requested_at DESC, pr.id DESC
             LIMIT {$limit}
         ";

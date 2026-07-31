@@ -155,11 +155,12 @@
 
                                 <?php foreach ($employeeList as $employee): ?>
 
-                                    <option value="<?= $employee['id']; ?>">
+                                    <option value="<?= $employee['employee_id']; ?>">
 
-                                        <?= htmlspecialchars($employee['full_name']); ?>
+                                        <?= htmlspecialchars($employee['first_name']); ?>
+                                        <?= htmlspecialchars($employee['last_name']); ?>
 
-                                        (<?= htmlspecialchars($employee['employee_no']); ?>)
+                                        (<?= htmlspecialchars($employee['employee_code']); ?>)
 
                                     </option>
 

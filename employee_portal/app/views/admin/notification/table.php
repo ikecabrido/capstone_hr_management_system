@@ -109,10 +109,10 @@
                     <td class="flex">
                         <button
                             type="button"
-                            class="btn mr-1 btn-info btn-sm text-white viewBtn"
+                            class="btn btn-info btn-sm text-white mr-1 viewBtn"
                             data-id="<?= $row['notification_id']; ?>"
                             data-bs-toggle="modal"
-                            data-bs-target="#viewNotificationModal">
+                            data-bs-target="#viewNotificationModal<?= $row['notification_id']; ?>">
                             <i class="fas fa-eye"></i>
                         </button>
 
@@ -148,9 +148,7 @@
                     </td>
 
                 </tr>
-                <?php require __DIR__ . '/edit-modal.php'; ?>
             <?php endforeach; ?>
-
         <?php else: ?>
 
             <tr>
@@ -164,3 +162,13 @@
     </tbody>
 
 </table>
+<?php if (!empty($notification)): ?>
+
+    <?php foreach ($notification as $row): ?>
+
+        <?php require __DIR__ . '/edit-modal.php'; ?>
+        <?php require __DIR__ . '/view-modal.php'; ?>
+
+    <?php endforeach; ?>
+
+<?php endif; ?>

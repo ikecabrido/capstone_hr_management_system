@@ -73,14 +73,14 @@
                 <div class="col-md-6 mb-3">
                     <small class="text-muted d-block">Employee Name</small>
                     <strong>
-                        <?= htmlspecialchars($request['full_name'] ?? 'N/A') ?>
+                        <?= htmlspecialchars($request['first_name'] . ' ' . $request['last_name']) ?>
                     </strong>
                 </div>
 
                 <div class="col-md-6 mb-3">
-                    <small class="text-muted d-block">Employee No.</small>
+                    <small class="text-muted d-block">Employee Code.</small>
                     <strong>
-                        <?= htmlspecialchars($request['employee_no'] ?? 'N/A') ?>
+                        <?= htmlspecialchars($request['employee_code'] ?? 'N/A') ?>
                     </strong>
                 </div>
 
