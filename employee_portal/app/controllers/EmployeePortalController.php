@@ -68,7 +68,7 @@ class EmployeePortalController
         $statusInfo = $this->attendanceController->getStatus($employee_id);
 
         $message = Session::get('success') ?? Session::get('error') ?? null;
-        
+
         $messageType = Session::get('success') ? 'success' : (Session::get('error') ? 'danger' : 'info');
 
         Session::set('success', null);
@@ -136,7 +136,7 @@ class EmployeePortalController
         });
 
         $notifications = $this->notificationModel->getEmployeeNotifications($employee_id);
-        
+
         $content = __DIR__ . '/../views/employee-portal/main-content.php';
         require __DIR__ . '/../views/employee-portal/index.php';
     }
@@ -146,5 +146,22 @@ class EmployeePortalController
 
         $content = __DIR__ . '/../views/admin/main-content.php';
         require __DIR__ . '/../views/admin/index.php';
+    }
+
+    public function employeeList()
+    {
+        $employees = $this->employeeModel->getNonAdminEmployees();
+
+        $content = __DIR__ . '/../views/admin/employee-list/main-content.php';
+        require __DIR__ . '/../views/admin/index.php';
+    }
+    public function viewAttendance()
+    {
+        $attendance = $this->attendanceModel->all();
+
+        $title = "Attendance";
+
+        $content = __DIR__ . '/../views/admin/view-attendance/main-content.php';
+        require __DIR__ . "/../views/admin/index.php";
     }
 }

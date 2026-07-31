@@ -61,15 +61,37 @@
                                         <td><?= date('M d, Y', strtotime($leave['start_date'] ?? '')) ?></td>
                                         <td><?= date('M d, Y', strtotime($leave['end_date'] ?? '')) ?></td>
                                         <td>
-                                            <?php
-                                            $statusClass = match (strtolower($leave['status'] ?? '')) {
-                                                'pending' => 'badge bg-warning text-dark',
-                                                'approved' => 'badge bg-success',
-                                                'rejected' => 'badge bg-danger',
-                                                default => 'badge bg-secondary'
-                                            };
-                                            ?>
-                                            <span class="<?= $statusClass ?>"><?= ucfirst($leave['status']) ?></span>
+
+                                            <?php if (strtolower($leave['status']) === 'pending'): ?>
+
+                                                <button
+                                                    class="btn btn-sm btn-warning"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#leaveStatusModal"
+                                                    data-id="<?= $leave['id']; ?>">
+                                                    Pending
+                                                </button>
+
+                                            <?php elseif (strtolower($leave['status']) === 'approved'): ?>
+
+                                                <span class="badge bg-success">
+                                                    Approved
+                                                </span>
+
+                                            <?php elseif (strtolower($leave['status']) === 'rejected'): ?>
+
+                                                <span class="badge bg-danger">
+                                                    Rejected
+                                                </span>
+
+                                            <?php else: ?>
+
+                                                <span class="badge bg-secondary">
+                                                    <?= htmlspecialchars($leave['status']); ?>
+                                                </span>
+
+                                            <?php endif; ?>
+
                                         </td>
                                         <td><?= htmlspecialchars($leave['reject_reason']) ?></td>
                                     </tr>
@@ -85,7 +107,23 @@
             </div>
 
             <?php require __DIR__ . '/modal-leave-request.php' ?>
+            <?php require __DIR__ . '/status.php' ?>
 
         </div>
     </div>
 </div>
+<script>
+    const leaveStatusModal = document.getElementById('leaveStatusModal');
+
+    leaveStatusModal.addEventListener('show.bs.modal', function(event) {
+
+        const button = event.relatedTarget;
+
+        document.getElementById('leave_id').value = button.dataset.id;
+
+    });
+
+    function showRejectReason() {
+        document.getElementById("rejectSection").style.display = "block";
+    }
+</script>

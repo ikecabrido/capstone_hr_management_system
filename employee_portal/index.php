@@ -183,6 +183,14 @@ switch ($url) {
         (new LeaveRequestController)->indexAdmin();
         break;
 
+    case 'admin-leave-request-store':
+        (new LeaveRequestController)->adminStore();
+        break;
+
+    case 'leave-update-status':
+        (new LeaveRequestController)->updateLeaveStatus();
+        break;
+
     /*
 |--------------------------------------------------------------------------
 | Online Meeting Routes
@@ -425,7 +433,19 @@ switch ($url) {
         break;
 
     case 'admin-toggle-user':
-        (new ManageUserController)->update();
+        (new ManageUserController)->toggleAdmin();
+        break;
+    /*
+|--------------------------------------------------------------------------
+| View Employee List and View Attendance Routes
+|--------------------------------------------------------------------------
+|
+*/
+    case 'admin-employee-list':
+        (new EmployeePortalController)->employeeList();
+        break;
+    case 'admin-view-attendance':
+        (new EmployeePortalController)->viewAttendance();
         break;
 
     default:

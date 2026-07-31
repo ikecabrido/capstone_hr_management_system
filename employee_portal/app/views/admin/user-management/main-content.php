@@ -152,20 +152,6 @@
                                                     <?= $isAdmin ? 'Remove Admin' : 'Set as Admin'; ?>
                                                 </button>
                                             </form>
-
-                                            <!-- Delete -->
-                                            <button
-                                                class="btn btn-sm btn-outline-danger"
-                                                onclick="return confirm('Delete this user? This action cannot be undone.')"
-                                                title="Delete User">
-
-                                                <i class="fas fa-trash-alt"></i>
-                                                Delete
-
-                                            </button>
-
-                                        </td>
-
                                     </tr>
 
                                 <?php endforeach; ?>

@@ -6,9 +6,10 @@
 
                 <div>
 
-                    <h1 class="fw-bold text-primary mb-1 display-5">
-                        <i class="fas fa-hand-holding-heart me-2"></i>
-                        Benefits & Government Contributions
+                    <h1 class="fw-bold text-primary mb-1 display-5 d-flex flex-column align-items-center">
+                        <span> <i class="fas fa-hand-holding-heart mb-2"></i>
+                            Benefits & Government</span>
+                        <span>Contributions</span>
                     </h1>
 
                     <p class="text-muted mb-0 fs-5">

@@ -19,7 +19,7 @@ class Employee
     }
     public function getByUserId($user_id)
     {
-        $query = "SELECT e.*, u.username, u.role 
+        $query = "SELECT e.*, u.username, u.role, u.is_admin
                   FROM " . $this->table . " e
                   JOIN users u ON e.user_id = u.id
                   WHERE e.user_id = :user_id LIMIT 1";
@@ -107,9 +107,9 @@ class Employee
     public function all()
     {
         $query = "
-        SELECT *, full_name
+        SELECT *, first_name, last_name
         FROM " . $this->table . "
-        ORDER BY full_name ASC
+        ORDER BY last_name ASC
     ";
 
         $stmt = $this->conn->prepare($query);

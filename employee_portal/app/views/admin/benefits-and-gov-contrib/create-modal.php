@@ -30,8 +30,8 @@
                                 <option value="">Select Employee</option>
 
                                 <?php foreach ($employeeList as $employee): ?>
-                                    <option value="<?= $employee['id']; ?>">
-                                        <?= htmlspecialchars($employee['full_name']); ?>
+                                    <option value="<?= $employee['employee_id']; ?>">
+                                        <?= htmlspecialchars($employee['first_name'] . $employee['last_name']); ?>
                                     </option>
                                 <?php endforeach; ?>
 

@@ -15,10 +15,10 @@ class BenefitsAndGovContrib
     {
         $sql = "SELECT
                 b.*,
-                e.full_name
+                e.first_name, e.last_name
             FROM {$this->table} b
             INNER JOIN employees e
-                ON b.employee_id = e.id
+                ON b.employee_id = e.employee_id
             ORDER BY b.uploaded_at DESC";
 
         $stmt = $this->conn->prepare($sql);

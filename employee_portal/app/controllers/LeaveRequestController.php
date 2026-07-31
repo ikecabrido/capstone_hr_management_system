@@ -75,13 +75,9 @@ class LeaveRequestController
     public function store()
     {
         $user_id = $_POST['user_id'] ?? null;
-        if (!$user_id) {
-            die('User not logged in.');
-        }
 
         $employee = $this->employeeModel->findByUserId($user_id);
-        $employee_id = $employee['id'] ?? null;
-
+        $employee_id = $employee['employee_id'] ?? null;
         if (!$employee_id) {
             $_SESSION['error'] = "Employee record not found.";
             header("Location: index.php?url=employee-leave-request");
@@ -138,6 +134,90 @@ class LeaveRequestController
         }
 
         header("Location: index.php?url=employee-leave-request");
+        exit;
+    }
+    public function adminStore()
+    {
+        $user_id = $_POST['user_id'] ?? null;
+
+        $employee = $this->employeeModel->findByUserId($user_id);
+        $employee_id = $employee['employee_id'] ?? null;
+        if (!$employee_id) {
+            $_SESSION['error'] = "Employee record not found.";
+            header("Location: index.php?url=admin-leave-request");
+            exit;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header("Location: index.php?url=admin-leave-request");
+            exit;
+        }
+
+        // Fetch submitted fields
+        $leave_type_id = $_POST['leave_type_id'] ?? null;
+        $start_date    = $_POST['start_date'] ?? '';
+        $end_date      = $_POST['end_date'] ?? '';
+        $reason        = trim($_POST['reason'] ?? '');
+
+        // Validate all fields
+        if (!$leave_type_id || !$start_date || !$end_date || !$reason) {
+            $_SESSION['error'] = "All fields are required.";
+            header("Location: index.php?url=admin-leave-request");
+            exit;
+        }
+
+        // Validate leave type exists
+        $leaveTypeModel = new LeaveType();
+        $leaveType = $leaveTypeModel->getById($leave_type_id);
+        if (!$leaveType) {
+            $_SESSION['error'] = "Selected leave type is invalid.";
+            header("Location: index.php?url=admin-leave-request");
+            exit;
+        }
+
+        try {
+            $this->leaveModel->create([
+                'employee_id'       => $employee_id,
+                'leave_type_id'     => $leave_type_id,
+                'start_date'        => $start_date,
+                'end_date'          => $end_date,
+                'details'           => $reason,
+                'supporting_document' => null
+            ]);
+
+            $_SESSION['success'] = "Leave request submitted successfully!";
+        } catch (Exception $e) {
+            error_log("Leave submission failed: " . $e->getMessage());
+            $_SESSION['error'] = "Failed to submit leave request. Please try again later.";
+        }
+
+        header("Location: index.php?url=admin-leave-request");
+        exit;
+    }
+    public function updateLeaveStatus()
+    {
+        $id = $_POST['leave_id'] ?? null;
+        $status = $_POST['status'] ?? null;
+        $reject_reason = trim($_POST['reject_reason'] ?? '');
+
+        if (!$id || !in_array($status, ['Approved', 'Rejected'])) {
+            $_SESSION['error'] = "Invalid request.";
+            header("Location: index.php?url=admin-leave-request");
+            exit;
+        }
+
+        // Only save reject reason if rejected
+        if ($status === 'Approved') {
+            $reject_reason = null;
+        }
+
+        if ($this->leaveModel->updateStatus($id, $status, $reject_reason)) {
+            $_SESSION['success'] = "Leave request updated successfully.";
+        } else {
+            $_SESSION['error'] = "Failed to update leave request.";
+        }
+
+        header("Location: index.php?url=admin-leave-request");
         exit;
     }
 }

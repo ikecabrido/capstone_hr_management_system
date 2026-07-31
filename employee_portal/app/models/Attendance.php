@@ -280,4 +280,31 @@ class Attendance
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    public function all()
+    {
+        $query = "
+        SELECT
+            a.*,
+
+            e.employee_id,
+            e.first_name,
+            e.middle_name,
+            e.last_name,
+            e.department,
+            e.position
+
+        FROM {$this->table} a
+
+        LEFT JOIN employees e
+            ON a.employee_no = e.employee_id
+
+        ORDER BY a.attendance_date DESC,
+                 a.time_in DESC
+    ";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

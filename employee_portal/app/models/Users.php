@@ -185,24 +185,6 @@ class User
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    public function update($id, $username, $email)
-    {
-        $query = "
-        UPDATE {$this->table}
-        SET
-            username = :username,
-            email = :email
-        WHERE id = :id
-    ";
-
-        $stmt = $this->conn->prepare($query);
-
-        return $stmt->execute([
-            ':id' => $id,
-            ':username' => $username,
-            ':email' => $email
-        ]);
-    }
     public function toggleAdmin($id)
     {
         $query = "UPDATE users
@@ -212,7 +194,7 @@ class User
         $stmt = $this->conn->prepare($query);
 
         return $stmt->execute([
-            ':id' => (int)$id
+            ':id' => $id
         ]);
     }
 }

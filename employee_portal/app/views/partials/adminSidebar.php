@@ -31,13 +31,13 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link">
+                    <a href="index.php?url=admin-employee-list" class="nav-link">
                         <i class="fas fa-id-card-alt nav-icon"></i>
                         <p>View Employee List</p>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link">
+                    <a href="index.php?url=admin-view-attendance" class="nav-link">
                         <i class="fas fa-user-check nav-icon"></i>
                         <p>View Attendance</p>
                     </a>

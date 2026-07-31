@@ -16,7 +16,6 @@ class Leave
         $stmt = $this->conn->query($query);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    /**  * Create leave request */
     public function create($data)
     {
         $query = "INSERT INTO {$this->tableLR}
@@ -35,7 +34,6 @@ class Leave
             ':document'      => $data['supporting_document'] ?? null
         ]);
     }
-    /*** Get single leave request */
     public function getById($id)
     {
         $query = "SELECT * FROM {$this->tableLR} WHERE id = :id";
@@ -44,24 +42,27 @@ class Leave
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-    /** * Update leave status (Approve / Reject)*/
     public function updateStatus($id, $status, $reject_reason = null)
     {
-        $query = "UPDATE {$this->tableLR}
-                  SET status = :status,
-                      reject_reason = :reject_reason,
-                      updated_at = NOW()
-                  WHERE id = :id";
+        $query = "
+        UPDATE {$this->tableLR}
+        SET
+            status = :status,
+            reject_reason = :reject_reason,
+            updated_at = NOW()
+        WHERE id = :id
+    ";
 
         $stmt = $this->conn->prepare($query);
 
-        return $stmt->execute([
-            ':status'        => $status,
-            ':reject_reason' => $reject_reason,
-            ':id'            => $id
+        $stmt->execute([
+            ':id' => (int)$id,
+            ':status' => $status,
+            ':reject_reason' => $reject_reason
         ]);
+
+        return $stmt->rowCount() > 0;
     }
-    /*** Get all pending requests*/
     public function getPending()
     {
         $query = "SELECT lr.*, lt.leave_type_name
