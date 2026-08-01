@@ -152,7 +152,7 @@ class QRHelper
      */
     public function markUsed($token, $used_by)
     {
-        $query = "UPDATE attendance_tokens 
+        $query = "UPDATE ta_attendance_tokens 
                   SET used = 1, used_by = :used_by, used_at = NOW() 
                   WHERE token = :token";
         

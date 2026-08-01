@@ -46,6 +46,7 @@ try {
 
     $employee_id = $input['employee_id'] ?? null;
     $token = $input['token'] ?? null;
+    $preferredAction = $input['action'] ?? null;
 
     if (!$employee_id || !$token) {
         http_response_code(400);
@@ -118,19 +119,85 @@ try {
     $current_date = $now->format('Y-m-d');
     $current_time = $now->format('Y-m-d H:i:s');
 
-    // Determine if this is a time_in or time_out based on existing attendance record
-    $query = "SELECT attendance_id, time_in, time_out FROM ta_attendance WHERE employee_id = ? AND attendance_date = ? LIMIT 1";
+    // Determine if this is a time_in or time_out based on explicit action if provided.
+    $query = "SELECT attendance_id, time_in, time_out FROM ta_attendance 
+              WHERE employee_id = ? AND attendance_date = ? 
+              ORDER BY (time_in IS NOT NULL AND (time_out IS NULL OR time_out = '0000-00-00 00:00:00')) DESC,
+                       created_at DESC, attendance_id DESC
+              LIMIT 1";
     $stmt = $db->prepare($query);
     $stmt->execute([$employee_id, $current_date]);
     $attendance_record = $stmt->fetch();
 
-    if ($attendance_record && $attendance_record['time_in'] && !$attendance_record['time_out']) {
-        // This is a time_out
+    $requestedAction = strtoupper(trim((string) ($preferredAction ?? '')));
+    file_put_contents(__DIR__ . '/time_attendance/logs/qr-access-root.log', date('Y-m-d H:i:s') . " - Requested action: " . ($requestedAction ?: 'NONE') . "\n", FILE_APPEND);
+    file_put_contents(__DIR__ . '/time_attendance/logs/qr-access-root.log', date('Y-m-d H:i:s') . " - Attendance record: " . json_encode([
+        'found' => (bool) $attendance_record,
+        'time_in' => $attendance_record['time_in'] ?? null,
+        'time_out' => $attendance_record['time_out'] ?? null
+    ]) . "\n", FILE_APPEND);
+
+    if (!in_array($requestedAction, ['TIME_IN', 'TIME_OUT'], true)) {
+        if ($attendance_record && !empty($attendance_record['time_in']) && empty($attendance_record['time_out'])) {
+            $requestedAction = 'TIME_OUT';
+        } elseif ($attendance_record && !empty($attendance_record['time_out'])) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'You have already timed out today at ' . $attendance_record['time_out'],
+                'data' => ['action' => 'COMPLETED']
+            ]);
+            exit;
+        } else {
+            $requestedAction = 'TIME_IN';
+        }
+    }
+
+    file_put_contents(__DIR__ . '/time_attendance/logs/qr-access-root.log', date('Y-m-d H:i:s') . " - Resolved action: " . $requestedAction . "\n", FILE_APPEND);
+
+    if ($requestedAction === 'TIME_OUT') {
+        if (!$attendance_record || empty($attendance_record['time_in']) || !empty($attendance_record['time_out'])) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'No active time-in record found for today.',
+                'data' => ['action' => 'TIME_OUT']
+            ]);
+            exit;
+        }
+
         $action = 'TIME_OUT';
         $attendance_id = $attendance_record['attendance_id'];
-        
-        // Update existing attendance record with time_out
-        $query = "UPDATE ta_attendance SET time_out = ?, recorded_by = 'QR', updated_at = NOW() WHERE attendance_id = ?";
+
+        $timeInTimestamp = strtotime($attendance_record['time_in']);
+        $elapsedSeconds = time() - $timeInTimestamp;
+        $minimumTimeOutSeconds = 10800;
+        if ($elapsedSeconds < $minimumTimeOutSeconds) {
+            $remainingSeconds = $minimumTimeOutSeconds - $elapsedSeconds;
+            $hours = floor($remainingSeconds / 3600);
+            $minutes = floor(($remainingSeconds % 3600) / 60);
+            $seconds = $remainingSeconds % 60;
+            $timeParts = [];
+            if ($hours > 0) {
+                $timeParts[] = $hours . ' hour' . ($hours > 1 ? 's' : '');
+            }
+            if ($minutes > 0) {
+                $timeParts[] = $minutes . ' minute' . ($minutes > 1 ? 's' : '');
+            }
+            if ($seconds > 0 && count($timeParts) < 2) {
+                $timeParts[] = $seconds . ' second' . ($seconds > 1 ? 's' : '');
+            }
+
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'You can’t time out right now. Try again after ' . (implode(' ', $timeParts) ?: 'a moment') . '.',
+                'data' => ['action' => 'TIME_OUT']
+            ]);
+            exit;
+        }
+
+        $query = "UPDATE ta_attendance SET time_out = ?, recorded_by = 'QR', updated_at = NOW() WHERE attendance_id = ? AND (time_out IS NULL OR time_out = '0000-00-00 00:00:00')";
         $stmt = $db->prepare($query);
         $result = $stmt->execute([
             $current_time,
@@ -143,7 +210,16 @@ try {
 
         $message = 'Time out recorded successfully';
     } else {
-        // This is a time_in (create new record or update existing empty one)
+        if ($attendance_record && !empty($attendance_record['time_in'])) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'You have already timed in today.',
+                'data' => ['action' => 'TIME_IN']
+            ]);
+            exit;
+        }
+
         $action = 'TIME_IN';
 
         // Get employee's current active shift
@@ -155,16 +231,14 @@ try {
         $shift_id = $shift ? $shift['shift_id'] : null;
 
         if ($attendance_record) {
-            // Update existing record with time_in
             $attendance_id = $attendance_record['attendance_id'];
-            $query = "UPDATE ta_attendance SET time_in = ?, recorded_by = 'QR', status = 'PRESENT', updated_at = NOW() WHERE attendance_id = ?";
+            $query = "UPDATE ta_attendance SET time_in = ?, recorded_by = 'QR', status = 'PRESENT', updated_at = NOW() WHERE attendance_id = ? AND (time_in IS NULL OR time_in = '0000-00-00 00:00:00')";
             $stmt = $db->prepare($query);
             $result = $stmt->execute([
                 $current_time,
                 $attendance_id
             ]);
         } else {
-            // Create new attendance record
             $query = "INSERT INTO ta_attendance (employee_id, shift_id, attendance_date, time_in, recorded_by, status, created_at, updated_at) 
                       VALUES (?, ?, ?, ?, 'QR', 'PRESENT', NOW(), NOW())";
             $stmt = $db->prepare($query);
@@ -174,7 +248,7 @@ try {
                 $current_date,
                 $current_time
             ]);
-            
+
             $attendance_id = $db->lastInsertId();
         }
 
@@ -184,6 +258,8 @@ try {
 
         $message = 'Time in recorded successfully';
     }
+
+    file_put_contents(__DIR__ . '/time_attendance/logs/qr-access-root.log', date('Y-m-d H:i:s') . " - Performed action: " . $action . " | message: " . $message . "\n", FILE_APPEND);
 
     // Mark token as used
     $query = "UPDATE ta_attendance_tokens SET used = 1, used_by = ?, used_at = NOW() WHERE token = ?";
@@ -208,7 +284,11 @@ try {
 
 } catch (Exception $e) {
     file_put_contents(__DIR__ . '/time_attendance/logs/qr-access-root.log', date('Y-m-d H:i:s') . " - Exception: " . $e->getMessage() . "\n", FILE_APPEND);
-    http_response_code(500);
+    $statusCode = http_response_code();
+    if ($statusCode < 400) {
+        $statusCode = 500;
+    }
+    http_response_code($statusCode);
     error_log('QR Process Error: ' . $e->getMessage());
     echo json_encode([
         'success' => false,

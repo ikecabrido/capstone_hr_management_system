@@ -238,7 +238,7 @@ $unassignedEmployees = $shiftValidator->getEmployeesWithoutShift();
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="submitAssignShift()">
+                    <button type="button" class="btn btn-primary" onclick="submitAssignShift(event)">
                         <i class="fas fa-save"></i> Assign Shift
                     </button>
                 </div>
@@ -308,7 +308,7 @@ $unassignedEmployees = $shiftValidator->getEmployeesWithoutShift();
         }
 
         // Submit bulk shift assignment
-        function submitAssignShift() {
+        function submitAssignShift(event) {
             if (selectedEmployees.length === 0) {
                 alert('Please select at least one employee');
                 return;
@@ -324,9 +324,11 @@ $unassignedEmployees = $shiftValidator->getEmployeesWithoutShift();
             }
 
             // Show loading indicator
-            const button = event.target;
-            button.disabled = true;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Assigning...';
+            const button = event.currentTarget || event.target;
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Assigning...';
+            }
 
             // Assign to each selected employee
             let completed = 0;

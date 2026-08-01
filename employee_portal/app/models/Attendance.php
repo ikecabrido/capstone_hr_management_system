@@ -12,15 +12,22 @@ class Attendance
         $this->conn = $database->getConnection();
     }
 
-    public function getTodayAttendance($employee_id)
+    public function getTodayAttendance($employee_id, $attendance_date = null)
     { 
+        if ($attendance_date === null) {
+            $attendance_date = date('Y-m-d');
+        }
+
         $query = "SELECT * FROM $this->table 
                   WHERE employee_id = :employee_id 
-                  AND attendance_date = CURDATE() 
+                  AND attendance_date = :attendance_date
+                  ORDER BY (time_in IS NOT NULL AND (time_out IS NULL OR time_out = '0000-00-00 00:00:00')) DESC,
+                           created_at DESC, attendance_id DESC
                   LIMIT 1";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':employee_id', $employee_id);
+        $stmt->bindParam(':attendance_date', $attendance_date);
         $stmt->execute();
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -28,12 +35,32 @@ class Attendance
 
     public function timeIn($employee_id, $method)
     {
+        $attendance_date = date('Y-m-d');
+        $existingRecord = $this->getTodayAttendance($employee_id, $attendance_date);
+
+        if ($existingRecord && !empty($existingRecord['time_in'])) {
+            return false;
+        }
+
+        if ($existingRecord && empty($existingRecord['time_in'])) {
+            $query = "UPDATE $this->table
+                      SET time_in = NOW(), recorded_by = :method, updated_at = CURRENT_TIMESTAMP
+                      WHERE attendance_id = :attendance_id";
+
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':method', $method);
+            $stmt->bindParam(':attendance_id', $existingRecord['attendance_id']);
+
+            return $stmt->execute();
+        }
+
         $query = "INSERT INTO $this->table 
                   (employee_id, time_in, attendance_date, recorded_by)
-                  VALUES (:employee_id, NOW(), CURDATE(), :method)";
+                  VALUES (:employee_id, NOW(), :attendance_date, :method)";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':employee_id', $employee_id);
+        $stmt->bindParam(':attendance_date', $attendance_date);
         $stmt->bindParam(':method', $method);
 
         return $stmt->execute();

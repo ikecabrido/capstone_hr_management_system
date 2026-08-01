@@ -66,81 +66,19 @@ $employees = $employeeModel->getAll('ACTIVE', 1000);
 $current_page = 'absence_late_records.php';
 $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
 ?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Absence & Late Records - Time & Attendance System</title>
-    <link rel="icon" href="../Bestlink College of the Philippines.jpeg" type="image/jpeg">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../assets/style.css">
-    <link rel="stylesheet" href="../assets/adminlte-overrides.css">
-    <script src="../assets/mobile-responsive.js" defer></script>
-    <style>
-        body {
-            background: #f5f5f5;
-            margin: 0;
-            padding: 0;
-            transition: margin-left 0.3s ease;
-        }
-
+<?php
+$page_title = 'Absence & Late Records';
+$page_subtitle = 'All absence and late arrival records';
+$page_icon = 'fa-exclamation-circle';
+$page_head_extra = <<<HTML
+<link rel="icon" href="../Bestlink College of the Philippines.jpeg" type="image/jpeg">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/adminlte-overrides.css">
+<script src="../assets/mobile-responsive.js" defer></script>
+<style>
         .content-wrapper {
             max-width: 1200px;
             margin: 0 auto;
-        }
-
-        .page-header {
-            background: linear-gradient(135deg, #003d82 0%, #005ba8 100%);
-            padding: 35px;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0, 61, 130, 0.15);
-            position: relative;
-            overflow: hidden;
-            margin-bottom: 30px;
-        }
-
-        .page-header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -50%;
-            width: 200px;
-            height: 200px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 50%;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-        }
-
-        .page-title {
-            font-size: 32px;
-            font-weight: 800;
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin: 0;
-            position: relative;
-            z-index: 1;
-        }
-
-        .page-title i {
-            font-size: 36px;
-            opacity: 0.95;
-        }
-
-        .page-subtitle {
-            color: rgba(255, 255, 255, 0.85);
-            font-size: 14px;
-            margin: 8px 0 0 0;
-            position: relative;
-            z-index: 1;
         }
 
         .filter-section {
@@ -329,50 +267,7 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
             border-color: #003d82;
         }
 
-        body.dark-mode {
-            background: #1a1a1a;
-        }
-
-        body.dark-mode .filter-section,
-        body.dark-mode .records-table {
-            background: #2a2a2a;
-            color: #e0e0e0;
-        }
-
-        body.dark-mode .filter-row input,
-        body.dark-mode .filter-row select {
-            background: #3a3a3a;
-            color: #e0e0e0;
-            border-color: #444;
-        }
-
-        body.dark-mode .records-table thead {
-            background: #333;
-        }
-
-        body.dark-mode .records-table thead th {
-            color: #e0e0e0;
-        }
-
-        body.dark-mode .records-table tbody tr:hover {
-            background: #333;
-        }
-
         @media (max-width: 768px) {
-            .main-content {
-                width: 100%;
-                margin-left: 0;
-                padding: 10px;
-            }
-
-            .page-header {
-                padding: 20px;
-            }
-
-            .page-title {
-                font-size: 24px;
-            }
-
             .filter-row {
                 grid-template-columns: 1fr;
             }
@@ -386,23 +281,12 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
             }
         }
     </style>
-</head>
-<body>
-    <?php require_once "../app/components/Sidebar.php"; ?>
+HTML;
+?>
+<?php require_once __DIR__ . '/../layout/page_start.php'; ?>
+<?php require_once __DIR__ . '/../layout/sidebar.php'; ?>
+<?php require_once __DIR__ . '/../layout/content_header.php'; ?>
 
-    <div class="main-content">
-        <div class="content-wrapper">
-            <!-- Page Header -->
-            <div class="page-header">
-                <div>
-                    <div class="page-title">
-                        <i class="fas fa-exclamation-circle"></i> Absence & Late Records
-                    </div>
-                    <div class="page-subtitle">Monitor and manage employee absences, late arrivals, and shift assignments</div>
-                </div>
-            </div>
-
-            <!-- Filters -->
             <div class="filter-section">
                 <form method="GET" action="" class="filter-form">
                     <div class="filter-row">
@@ -461,7 +345,6 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
                 </form>
             </div>
 
-            <!-- Records Table -->
             <div class="records-table">
                 <?php if (!empty($records)): ?>
                     <table>
@@ -535,7 +418,6 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
                 <?php endif; ?>
             </div>
 
-            <!-- Pagination -->
             <?php if (!empty($records)): ?>
                 <div class="pagination">
                     <?php if ($page > 1): ?>
@@ -553,11 +435,6 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
-        </div>
-    </div>
 
-    <script src="../assets/jquery.min.js"></script>
-    <script src="../assets/bootstrap.min.js"></script>
-</body>
-</html>
-?>
+<?php require_once __DIR__ . '/../layout/content_footer.php'; ?>
+<?php require_once __DIR__ . '/../layout/page_end.php'; ?>

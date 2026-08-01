@@ -87,42 +87,19 @@ $stmt = $db->prepare($query);
 $stmt->execute();
 $leaveTypes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leave Request - Time & Attendance System</title>
-    <link rel="icon" href="../Bestlink College of the Philippines.jpeg" type="image/jpeg">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../assets/style.css">
-    <link rel="stylesheet" href="../assets/adminlte-overrides.css">
-    <script src="../assets/mobile-responsive.js" defer></script>
-    <style>
-        body {
-            background: #f0f2f5;
-            margin: 0;
-            padding: 0;
-            transition: margin-left 0.3s ease;
-        }
-
+<?php
+$page_title = 'Leave Request';
+$page_subtitle = 'Submit a leave request for approval by your department head and HR administration';
+$page_icon = 'fa-plus-circle';
+$page_head_extra = <<<HTML
+<link rel="icon" href="../Bestlink College of the Philippines.jpeg" type="image/jpeg">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/adminlte-overrides.css">
+<script src="../assets/mobile-responsive.js" defer></script>
+<style>
         .content-wrapper {
             max-width: 900px;
             margin: 0 auto;
-        }
-        .page-header {
-            margin-bottom: 40px;
-        }
-        .page-header h2 {
-            color: #003d82;
-            margin-bottom: 10px;
-            font-size: 32px;
-            font-weight: bold;
-        }
-        .page-header p {
-            color: #666;
-            font-size: 15px;
         }
         .form-section {
             background: white;
@@ -142,7 +119,6 @@ $leaveTypes = $stmt->fetchAll(PDO::FETCH_ASSOC);
             margin: 0;
             color: #003d82;
             font-size: 20px;
-
         }
         .form-group {
             margin-bottom: 25px;
@@ -201,10 +177,6 @@ $leaveTypes = $stmt->fetchAll(PDO::FETCH_ASSOC);
             gap: 10px;
             box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
         }
-        .btn-primary::before {
-            content: "✓";
-            font-size: 18px;
-        }
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(0, 102, 204, 0.4);
@@ -246,7 +218,7 @@ $leaveTypes = $stmt->fetchAll(PDO::FETCH_ASSOC);
             padding: 25px;
             border-radius: 12px;
             margin-top: 35px;
-            border: 2px solid #e8eef7;
+            border: 1px solid #e8eef7;
             border-left: 4px solid #0066cc;
         }
         .info-box h3 {
@@ -270,31 +242,54 @@ $leaveTypes = $stmt->fetchAll(PDO::FETCH_ASSOC);
             margin-bottom: 8px;
         }
         @media (max-width: 768px) {
-            .main-content {
-                margin-left: 0;
-                padding: 20px 15px;
-            }
             .form-row {
                 grid-template-columns: 1fr;
-            }
-            .page-header h2 {
-                font-size: 24px;
             }
             .form-section {
                 padding: 20px;
             }
         }
-    </style>
-</head>
-<body>
-    <?php require_once "../app/components/Sidebar.php"; ?>
+</style>
+HTML;
+$page_footer_extra = <<<HTML
+<script>
+        function hidePreloader() {
+            const preloader = document.querySelector('.preloader');
+            if (preloader) {
+                preloader.style.display = 'none';
+                preloader.style.visibility = 'hidden';
+            }
+        }
 
-    <div class="main-content">
-        <div class="content-wrapper">
-            <div class="page-header">
-                <h2>Leave Request</h2>
-                <p>Submit a leave request for approval by your department head and HR administration</p>
-            </div>
+        function showPreloader() {
+            const preloader = document.querySelector('.preloader');
+            if (preloader) {
+                preloader.style.display = 'flex';
+                preloader.style.visibility = 'visible';
+            }
+        }
+
+        window.addEventListener('load', hidePreloader);
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(hidePreloader, 6000);
+            const navLinks = document.querySelectorAll('a');
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    const href = this.getAttribute('href');
+                    if (href && !href.includes('logout') && !href.startsWith('javascript') && !href.startsWith('#') && !href.startsWith('mailto:') && !href.startsWith('tel:')) {
+                        showPreloader();
+                    }
+                });
+            });
+        });
+</script>
+HTML;
+?>
+<?php require_once __DIR__ . '/../layout/page_start.php'; ?>
+<?php require_once __DIR__ . '/../layout/sidebar.php'; ?>
+<?php require_once __DIR__ . '/../layout/content_header.php'; ?>
 
             <?php if (!empty($message)): ?>
                 <div class="alert alert-<?php echo $messageType; ?>">
@@ -302,56 +297,60 @@ $leaveTypes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
             <?php endif; ?>
 
-            <form method="POST" class="form-section">
-                <div class="form-section-title">
-                    <h3>Request Details</h3>
-                </div>
+            <div class="page-content-container">
+                <form method="POST" class="form-section">
+                    <div class="form-section-title">
+                        <h3>Request Details</h3>
+                    </div>
 
-                <input type="hidden" name="action" value="submit_request">
+                    <input type="hidden" name="action" value="submit_request">
 
-                <div class="form-group">
-                    <label>Leave Type *</label>
-                    <select name="leave_type_id" required>
-                        <option value="">-- Select Leave Type --</option>
-                        <?php foreach ($leaveTypes as $type): ?>
-                            <option value="<?php echo $type['leave_type_id']; ?>">
-                                <?php echo htmlspecialchars($type['leave_type_name']); ?> (<?php echo $type['days_per_year']; ?> days/year)
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-
-                <div class="form-row">
                     <div class="form-group">
-                        <label>Start Date *</label>
-                        <input type="date" name="start_date" required>
+                        <label>Leave Type *</label>
+                        <select name="leave_type_id" required>
+                            <option value="">-- Select Leave Type --</option>
+                            <?php foreach ($leaveTypes as $type): ?>
+                                <option value="<?php echo $type['leave_type_id']; ?>">
+                                    <?php echo htmlspecialchars($type['leave_type_name']); ?> (<?php echo $type['days_per_year']; ?> days/year)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Start Date *</label>
+                            <input type="date" name="start_date" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>End Date *</label>
+                            <input type="date" name="end_date" required>
+                        </div>
                     </div>
 
                     <div class="form-group">
-                        <label>End Date *</label>
-                        <input type="date" name="end_date" required>
+                        <label>Reason for Leave</label>
+                        <textarea name="reason" placeholder="Please provide a brief reason for your leave request (optional)..."></textarea>
                     </div>
+
+                    <button type="submit" class="btn btn-primary">Submit Leave Request</button>
+                </form>
+
+                <div class="info-box">
+                    <h3>Important Information</h3>
+                    <ul>
+                        <li>Leave requests are subject to approval by your department head</li>
+                        <li>HR administration will conduct final review of all leave requests</li>
+                        <li>Ensure your start and end dates do not exceed your available leave balance</li>
+                        <li>You will receive notification once your request has been processed</li>
+                        <li>For urgent requests, please contact your department head directly</li>
+                    </ul>
                 </div>
-
-                <div class="form-group">
-                    <label>Reason for Leave</label>
-                    <textarea name="reason" placeholder="Please provide a brief reason for your leave request (optional)..."></textarea>
-                </div>
-
-                <button type="submit" class="btn btn-primary">Submit Leave Request</button>
-            </form>
-
-            <div class="info-box">
-                <h3>Important Information</h3>
-                <ul>
-                    <li>Leave requests are subject to approval by your department head</li>
-                    <li>HR administration will conduct final review of all leave requests</li>
-                    <li>Ensure your start and end dates do not exceed your available leave balance</li>
-                    <li>You will receive notification once your request has been processed</li>
-                    <li>For urgent requests, please contact your department head directly</li>
-                </ul>
             </div>
-        </div>
-    </div>
-</body>
-</html>
+
+<?php require_once __DIR__ . '/../layout/content_footer.php'; ?>
+<?php require_once __DIR__ . '/../layout/page_end.php'; ?>
+
+
+

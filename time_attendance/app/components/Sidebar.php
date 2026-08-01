@@ -125,18 +125,7 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
                             <p>Approve Manual Time</p>
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a href="biometrics.php" class="nav-link <?php echo $current_page === 'biometrics.php' ? 'active' : ''; ?>">
-                            <i class="nav-icon fas fa-fingerprint animation__wobble"></i>
-                            <p>Biometric Registration</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="biometric_kiosk.php" class="nav-link <?php echo $current_page === 'biometric_kiosk.php' ? 'active' : ''; ?>">
-                            <i class="nav-icon fas fa-tv animation__wobble"></i>
-                            <p>Biometric Kiosk</p>
-                        </a>
-                    </li>
+                    <!-- Biometric features removed from sidebar per UI update -->
                 <?php endif; ?>
 
                 <!-- Calendar/Attendance -->
@@ -235,10 +224,6 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
         } else {
             // Use AdminLTE-compatible sidebar collapse state
             body.classList.toggle('sidebar-collapse');
-            body.classList.toggle('sidebar-collapsed');
-            if (sidebar) sidebar.classList.toggle('collapsed');
-            if (navbar) navbar.classList.toggle('sidebar-collapsed');
-            if (contentWrapper) contentWrapper.classList.toggle('sidebar-collapsed');
         }
     }
     

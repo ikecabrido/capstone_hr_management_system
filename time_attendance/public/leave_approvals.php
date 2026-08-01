@@ -87,24 +87,16 @@ $pendingRequests = $leaveModel->getForHRApproval();
 
 $current_page = 'leave_approvals.php';
 $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
+$page_title = 'Leave Request Approvals';
+$page_subtitle = 'Review and approve leave requests from department heads and employees';
+$page_icon = 'fa-file-signature';
+$page_head_extra = "<link rel=\"icon\" href=\"../Bestlink College of the Philippines.jpeg\" type=\"image/jpeg\">\n<link rel=\"stylesheet\" href=\"../../assets/dist/css/adminlte.min.css\">\n<link rel=\"stylesheet\" href=\"../../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css\">\n<link rel=\"stylesheet\" href=\"../assets/style.css\">\n<link rel=\"stylesheet\" href=\"../assets/dashboard.css\">\n<link rel=\"stylesheet\" href=\"../assets/adminlte-overrides.css\">\n<link rel=\"stylesheet\" href=\"../assets/hr-template.css\">\n<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback\">\n<script src=\"../assets/mobile-responsive.js\" defer></script>";
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leave Approvals - Time & Attendance System</title>
-    <link rel="icon" href="../Bestlink College of the Philippines.jpeg" type="image/jpeg">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-    <link rel="stylesheet" href="../../assets/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="../../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
-    <link rel="stylesheet" href="../assets/style.css">
-    <link rel="stylesheet" href="../assets/dashboard.css">
-    <link rel="stylesheet" href="../../payroll/custom.css">
-    <link rel="stylesheet" href="../assets/adminlte-overrides.css">
-    <script src="../assets/mobile-responsive.js" defer></script>
+<?php require_once __DIR__ . '/../layout/page_start.php'; ?>
+<?php require_once __DIR__ . '/../layout/sidebar.php'; ?>
+<?php require_once __DIR__ . '/../layout/content_header.php'; ?>
+
 <style>
         body.dark-mode .container {
             background: rgba(30, 30, 30, 0.85);
@@ -320,90 +312,91 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
         .modal-button-group button {
             margin-left: 10px;
         }
-        .page-header {
-            background: linear-gradient(135deg, #003d82 0%, #005ba8 100%);
-            padding: 35px;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0, 61, 130, 0.15);
-            position: relative;
-            overflow: hidden;
-            margin-bottom: 30px;
-        }
-
-        .page-header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -50%;
-            width: 200px;
-            height: 200px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 50%;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-        }
-
-        .page-title {
-            font-size: 32px;
-            font-weight: 800;
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin: 0;
-            position: relative;
-            z-index: 1;
-        }
-
-        .page-title i {
-            font-size: 36px;
-            opacity: 0.95;
-        }
-
-        .page-subtitle {
-            color: rgba(255, 255, 255, 0.85);
-            font-size: 14px;
-            margin: 8px 0 0 0;
-            position: relative;
-            z-index: 1;
-        }
 
         @media (max-width: 768px) {
             .main-content {
                 margin-left: 0;
             }
         }
+        /* AdminLTE Preloader Styles */
+        .preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0d47a1 0%, #0b3c91 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 99999;
+        }
+
+        .preloader.flex-column {
+            flex-direction: column;
+        }
+
+        .preloader.justify-content-center {
+            justify-content: center;
+        }
+
+        .preloader.align-items-center {
+            align-items: center;
+        }
+
+        .preloader img {
+            max-width: 100px;
+            height: auto;
+            display: block;
+        }
+
+        .animation__wobble {
+            animation: wobble 2.5s infinite ease-in-out;
+        }
+
+        @keyframes wobble {
+            0% {
+                transform: translateX(0);
+            }
+            15% {
+                transform: translateX(-5px) rotate(-5deg);
+            }
+            30% {
+                transform: translateX(3px) rotate(3deg);
+            }
+            45% {
+                transform: translateX(-3px) rotate(-3deg);
+            }
+            60% {
+                transform: translateX(2px) rotate(2deg);
+            }
+            75% {
+                transform: translateX(-1px) rotate(-1deg);
+            }
+            100% {
+                transform: translateX(0);
+            }
+        }
+
     </style>
-</head>
-<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
-    <?php require_once "../app/components/Sidebar.php"; ?>
 
-    <div class="main-content">
-        <div class="content-wrapper">
-            <div class="page-header">
-                <div>
-                    <div class="page-title">
-                        <i class="fas fa-file-signature"></i> Leave Request Approvals
-                    </div>
-                </div>
-            </div>
-
-            <?php if (!empty($message)): ?>
-                <div class="alert alert-<?php echo $messageType; ?>">
+    <div class="card shadow-sm border-0">
+        <?php if (!empty($message)): ?>
+            <div class="card-body pb-0">
+                <div class="alert alert-<?php echo $messageType; ?> mb-0">
                     <?php echo htmlspecialchars($message); ?>
                 </div>
-            <?php endif; ?>
+            </div>
+        <?php endif; ?>
 
-            <div class="container glass-panel">
-                <?php if (empty($pendingRequests)): ?>
-                    <div class="alert alert-info">
-                        No pending leave requests to review.
-                    </div>
-                <?php else: ?>
+        <div class="card-body">
+            <?php if (empty($pendingRequests)): ?>
+                <div class="alert alert-info mb-0">
+                    No pending leave requests to review.
+                </div>
+            <?php else: ?>
+                <div class="table-responsive">
                     <table class="approvals-table">
                         <thead>
                             <tr>
@@ -437,8 +430,8 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
                             <?php endforeach; ?>
                         </tbody>
                     </table>
-                <?php endif; ?>
-            </div>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -500,6 +493,8 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
         }
 
         // Load dark mode preference (default to light mode for time_attendance)
+        window.preloaderHold = true;
+
         window.addEventListener('load', function() {
             const darkModeSetting = localStorage.getItem('darkMode');
             const darkMode = darkModeSetting === 'true'; // Only true if explicitly set
@@ -512,7 +507,13 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
             if (darkMode) {
                 document.body.classList.add('dark-mode');
             }
+
+            if (window.releasePreloader) {
+                window.releasePreloader(1200);
+            }
         });
     </script>
-</body>
-</html>
+<?php require_once __DIR__ . '/../layout/content_footer.php'; ?>
+<?php require_once __DIR__ . '/../layout/page_end.php'; ?>
+
+

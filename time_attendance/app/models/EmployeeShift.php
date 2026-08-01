@@ -116,6 +116,36 @@ class EmployeeShift {
     }
 
     /**
+     * Get active flexible schedule for employee
+     *
+     * @param int $employee_id
+     * @return array|null
+     */
+    public function getActiveFlexibleSchedule($employee_id, $date = null) {
+        $date = $date ?? date('Y-m-d');
+        $dayOfWeek = date('w', strtotime($date));
+
+        $query = "SELECT *
+                  FROM ta_flexible_schedules fs
+                  WHERE fs.employee_id = ?
+                  AND (
+                      fs.schedule_date = ?
+                      OR (
+                          fs.day_of_week IS NOT NULL
+                          AND fs.day_of_week = ?
+                          AND (fs.repeat_until IS NULL OR fs.repeat_until >= ?)
+                          AND (fs.contract_end_date IS NULL OR fs.contract_end_date >= ?)
+                      )
+                  )
+                  LIMIT 1";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([$employee_id, $date, $dayOfWeek, $date, $date]);
+
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Get all employees with their current shifts
      * 
      * @param int $shift_id - Filter by specific shift (optional)
@@ -198,8 +228,11 @@ class EmployeeShift {
      * @return bool
      */
     public function hasActiveShift($employee_id) {
-        $shift = $this->getCurrentShift($employee_id);
-        return !empty($shift);
+        if ($this->getCurrentShift($employee_id)) {
+            return true;
+        }
+
+        return !empty($this->getActiveFlexibleSchedule($employee_id));
     }
 
     /**
@@ -208,19 +241,33 @@ class EmployeeShift {
      * @return array
      */
     public function getEmployeesWithoutShift() {
-        $query = "SELECT e.employee_id, e.full_name, e.department, e.position
+        $today = date('Y-m-d');
+        $dayOfWeek = date('w', strtotime($today));
+
+        $query = "SELECT DISTINCT e.employee_id, e.full_name, e.department, e.position
                   FROM employees e
+                  LEFT JOIN " . $this->table . " es ON e.employee_id = es.employee_id
+                    AND es.is_active = 1
+                    AND es.effective_from <= :today
+                    AND (es.effective_to IS NULL OR es.effective_to >= :today)
+                  LEFT JOIN ta_flexible_schedules fs ON e.employee_id = fs.employee_id
+                    AND (
+                        fs.schedule_date = :today
+                        OR (
+                            fs.day_of_week IS NOT NULL
+                            AND fs.day_of_week = :day_of_week
+                            AND (fs.repeat_until IS NULL OR fs.repeat_until >= :today)
+                            AND (fs.contract_end_date IS NULL OR fs.contract_end_date >= :today)
+                        )
+                    )
                   WHERE e.employment_status = 'Active'
-                  AND e.employee_id NOT IN (
-                      SELECT DISTINCT es.employee_id 
-                      FROM " . $this->table . " es
-                      WHERE es.is_active = 1 
-                      AND es.effective_from <= CURDATE()
-                      AND (es.effective_to IS NULL OR es.effective_to >= CURDATE())
-                  )
+                    AND es.employee_shift_id IS NULL
+                    AND fs.id IS NULL
                   ORDER BY e.full_name ASC";
 
         $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':today', $today);
+        $stmt->bindParam(':day_of_week', $dayOfWeek, PDO::PARAM_INT);
         $stmt->execute();
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);

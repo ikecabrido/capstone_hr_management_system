@@ -25,36 +25,71 @@ class AbsenceLateMgmt
      */
     public function getRecords($filters = [])
     {
-        $query = "SELECT 
-                    r.*, 
-                    e.full_name, 
-                    e.employee_id, 
-                    e.department
-                  FROM {$this->records_table} r
-                  JOIN employees e ON r.employee_id = e.employee_id
-                  WHERE 1=1";
+        $query = "SELECT * FROM (
+                    SELECT 
+                        r.record_id,
+                        r.employee_id,
+                        r.absence_date,
+                        CAST(r.type AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS type,
+                        CAST(r.excuse_status AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS excuse_status,
+                        CAST(r.reason AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS reason,
+                        r.created_at,
+                        CAST(e.full_name AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS full_name,
+                        CAST(e.department AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS department,
+                        CAST('legacy' AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS source
+                    FROM {$this->records_table} r
+                    JOIN employees e ON r.employee_id = e.employee_id
+                    WHERE 1=1
+
+                    UNION ALL
+
+                    SELECT 
+                        a.attendance_id AS record_id,
+                        a.employee_id,
+                        a.attendance_date AS absence_date,
+                        CASE 
+                            WHEN a.status = 'ABSENT' THEN 'ABSENT'
+                            WHEN a.status = 'LATE' THEN 'LATE'
+                            ELSE 'ABSENT'
+                        END AS type,
+                        CAST('PENDING' AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS excuse_status,
+                        CAST(CASE 
+                            WHEN TRIM(COALESCE(a.approval_remarks, '')) <> '' THEN a.approval_remarks
+                            WHEN a.status = 'ABSENT' THEN 'Marked absent by system'
+                            WHEN a.status = 'LATE' THEN 'Marked late by system'
+                            ELSE 'Attendance record'
+                        END AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS reason,
+                        a.created_at,
+                        CAST(e.full_name AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS full_name,
+                        CAST(e.department AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS department,
+                        CAST('attendance' AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS source
+                    FROM {$this->attendance_table} a
+                    JOIN employees e ON a.employee_id = e.employee_id
+                    WHERE a.status IN ('ABSENT', 'LATE')
+                ) AS combined
+                WHERE 1=1";
 
         // Filter by employee
         if (!empty($filters['employee_id'])) {
-            $query .= " AND r.employee_id = :employee_id";
+            $query .= " AND combined.employee_id = :employee_id";
         }
 
         // Filter by type
         if (!empty($filters['type'])) {
-            $query .= " AND r.type = :type";
+            $query .= " AND combined.type = :type";
         }
 
         // Filter by excuse status
         if (!empty($filters['excuse_status'])) {
-            $query .= " AND r.excuse_status = :excuse_status";
+            $query .= " AND combined.excuse_status = :excuse_status";
         }
 
         // Filter by date range
         if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
-            $query .= " AND r.absence_date BETWEEN :start_date AND :end_date";
+            $query .= " AND combined.absence_date BETWEEN :start_date AND :end_date";
         }
 
-        $query .= " ORDER BY r.absence_date DESC LIMIT :limit OFFSET :offset";
+        $query .= " ORDER BY combined.absence_date DESC LIMIT :limit OFFSET :offset";
 
         $stmt = $this->conn->prepare($query);
 
@@ -88,12 +123,53 @@ class AbsenceLateMgmt
     public function getRecord($record_id)
     {
         $query = "SELECT 
-                    r.*, 
-                    e.full_name, 
-                    e.department
+                    r.record_id,
+                    r.employee_id,
+                    r.absence_date,
+                    r.type,
+                    r.excuse_status,
+                    r.reason,
+                    r.created_at,
+                    e.full_name,
+                    e.department,
+                    'legacy' AS source
                   FROM {$this->records_table} r
                   JOIN employees e ON r.employee_id = e.employee_id
                   WHERE r.record_id = :record_id";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':record_id', $record_id, PDO::PARAM_INT);
+        $stmt->execute();
+        $record = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($record) {
+            return $record;
+        }
+
+        $query = "SELECT 
+                    a.attendance_id AS record_id,
+                    a.employee_id,
+                    a.attendance_date AS absence_date,
+                    CASE 
+                        WHEN a.status = 'ABSENT' THEN 'ABSENT'
+                        WHEN a.status = 'LATE' THEN 'LATE'
+                        ELSE 'ABSENT'
+                    END AS type,
+                    'PENDING' AS excuse_status,
+                    CASE 
+                        WHEN TRIM(COALESCE(a.approval_remarks, '')) <> '' THEN a.approval_remarks
+                        WHEN a.status = 'ABSENT' THEN 'Marked absent by system'
+                        WHEN a.status = 'LATE' THEN 'Marked late by system'
+                        ELSE 'Attendance record'
+                    END AS reason,
+                    a.created_at,
+                    e.full_name,
+                    e.department,
+                    'attendance' AS source
+                  FROM {$this->attendance_table} a
+                  JOIN employees e ON a.employee_id = e.employee_id
+                  WHERE a.attendance_id = :record_id
+                  AND a.status IN ('ABSENT', 'LATE')";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':record_id', $record_id, PDO::PARAM_INT);
@@ -127,19 +203,38 @@ class AbsenceLateMgmt
      */
     public function submitExcuse($record_id, $reason, $supporting_document = null, $employee_id = null)
     {
-        $query = "UPDATE {$this->records_table} 
+        $legacyQuery = "UPDATE {$this->records_table} 
                   SET reason = :reason,
                       excuse_status = 'PENDING'
                   WHERE record_id = :record_id";
 
         if (!is_null($employee_id)) {
-            $query .= " AND employee_id = :employee_id";
+            $legacyQuery .= " AND employee_id = :employee_id";
         }
 
-        $stmt = $this->conn->prepare($query);
+        $stmt = $this->conn->prepare($legacyQuery);
         $stmt->bindParam(':record_id', $record_id, PDO::PARAM_INT);
         $stmt->bindParam(':reason', $reason);
-        $stmt->bindParam(':document', $supporting_document);
+
+        if (!is_null($employee_id)) {
+            $stmt->bindParam(':employee_id', $employee_id, PDO::PARAM_INT);
+        }
+
+        if ($stmt->execute()) {
+            return true;
+        }
+
+        $attendanceQuery = "UPDATE {$this->attendance_table}
+                            SET approval_remarks = :reason
+                            WHERE attendance_id = :record_id";
+
+        if (!is_null($employee_id)) {
+            $attendanceQuery .= " AND employee_id = :employee_id";
+        }
+
+        $stmt = $this->conn->prepare($attendanceQuery);
+        $stmt->bindParam(':record_id', $record_id, PDO::PARAM_INT);
+        $stmt->bindParam(':reason', $reason);
 
         if (!is_null($employee_id)) {
             $stmt->bindParam(':employee_id', $employee_id, PDO::PARAM_INT);
@@ -153,23 +248,41 @@ class AbsenceLateMgmt
      */
     public function reviewExcuse($record_id, $status, $approval_notes, $reviewed_by)
     {
-        $query = "UPDATE {$this->records_table} 
+        $legacyQuery = "UPDATE {$this->records_table} 
                   SET excuse_status = :status,
                       approval_notes = :notes,
                       approval_date = NOW()
                   WHERE record_id = :record_id";
 
-        $stmt = $this->conn->prepare($query);
+        $stmt = $this->conn->prepare($legacyQuery);
         $stmt->bindParam(':record_id', $record_id, PDO::PARAM_INT);
         $stmt->bindParam(':status', $status);
         $stmt->bindParam(':notes', $approval_notes);
 
         if ($stmt->execute()) {
-            // Update thresholds
             $record = $this->getRecord($record_id);
-            $this->updateThresholds($record['employee_id'], $record['absence_date']);
+            if ($record) {
+                $this->updateThresholds($record['employee_id'], $record['absence_date']);
+            }
             return true;
         }
+
+        $attendanceQuery = "UPDATE {$this->attendance_table}
+                            SET approval_remarks = :notes
+                            WHERE attendance_id = :record_id";
+
+        $stmt = $this->conn->prepare($attendanceQuery);
+        $stmt->bindParam(':record_id', $record_id, PDO::PARAM_INT);
+        $stmt->bindParam(':notes', $approval_notes);
+
+        if ($stmt->execute()) {
+            $record = $this->getRecord($record_id);
+            if ($record) {
+                $this->updateThresholds($record['employee_id'], $record['absence_date']);
+            }
+            return true;
+        }
+
         return false;
     }
 
@@ -205,9 +318,24 @@ class AbsenceLateMgmt
                     SUM(CASE WHEN excuse_status = 'APPROVED' THEN 1 ELSE 0 END) as excused_count,
                     SUM(CASE WHEN excuse_status != 'APPROVED' THEN 1 ELSE 0 END) as unexcused_count,
                     SUM(CASE WHEN excuse_status = 'PENDING' THEN 1 ELSE 0 END) as pending_count
-                  FROM {$this->records_table}
-                  WHERE employee_id = :employee_id
-                  AND DATE_FORMAT(absence_date, '%Y-%m') = :month_year";
+                  FROM (
+                    SELECT record_id, employee_id, absence_date,
+                           CAST(type AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS type,
+                           CAST(excuse_status AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS excuse_status
+                    FROM {$this->records_table}
+                    WHERE employee_id = :employee_id
+                    AND DATE_FORMAT(absence_date, '%Y-%m') = :month_year
+
+                    UNION ALL
+
+                    SELECT attendance_id AS record_id, employee_id, attendance_date AS absence_date,
+                           CAST(CASE WHEN status = 'ABSENT' THEN 'ABSENT' WHEN status = 'LATE' THEN 'LATE' ELSE 'ABSENT' END AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS type,
+                           CAST('PENDING' AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS excuse_status
+                    FROM {$this->attendance_table}
+                    WHERE employee_id = :employee_id
+                    AND status IN ('ABSENT', 'LATE')
+                    AND DATE_FORMAT(attendance_date, '%Y-%m') = :month_year
+                  ) AS combined";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':employee_id', $employee_id, PDO::PARAM_INT);
@@ -282,33 +410,59 @@ class AbsenceLateMgmt
      */
     public function getReport($filters = [])
     {
-        $query = "SELECT 
-                    r.record_id,
-                    e.full_name,
-                    e.employee_id,
-                    e.department,
-                    r.type,
-                    r.absence_date,
-                    r.excuse_status,
-                    r.reason,
-                    r.created_at
-                  FROM {$this->records_table} r
-                  JOIN employees e ON r.employee_id = e.employee_id
-                  WHERE 1=1";
+        $query = "SELECT * FROM (
+                    SELECT 
+                        r.record_id,
+                        CAST(e.full_name AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS full_name,
+                        e.employee_id,
+                        CAST(e.department AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS department,
+                        CAST(r.type AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS type,
+                        r.absence_date,
+                        CAST(r.excuse_status AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS excuse_status,
+                        CAST(r.reason AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS reason,
+                        r.created_at,
+                        CAST('legacy' AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS source
+                    FROM {$this->records_table} r
+                    JOIN employees e ON r.employee_id = e.employee_id
+                    WHERE 1=1
+
+                    UNION ALL
+
+                    SELECT 
+                        a.attendance_id AS record_id,
+                        CAST(e.full_name AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS full_name,
+                        e.employee_id,
+                        CAST(e.department AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS department,
+                        CAST(CASE WHEN a.status = 'ABSENT' THEN 'ABSENT' WHEN a.status = 'LATE' THEN 'LATE' ELSE 'ABSENT' END AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS type,
+                        a.attendance_date AS absence_date,
+                        CAST('PENDING' AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS excuse_status,
+                        CAST(CASE 
+                            WHEN TRIM(COALESCE(a.approval_remarks, '')) <> '' THEN a.approval_remarks
+                            WHEN a.status = 'ABSENT' THEN 'Marked absent by system'
+                            WHEN a.status = 'LATE' THEN 'Marked late by system'
+                            ELSE 'Attendance record'
+                        END AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS reason,
+                        a.created_at,
+                        CAST('attendance' AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS source
+                    FROM {$this->attendance_table} a
+                    JOIN employees e ON a.employee_id = e.employee_id
+                    WHERE a.status IN ('ABSENT', 'LATE')
+                ) AS combined
+                WHERE 1=1";
 
         if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
-            $query .= " AND r.absence_date BETWEEN :start_date AND :end_date";
+            $query .= " AND combined.absence_date BETWEEN :start_date AND :end_date";
         }
 
         if (!empty($filters['department'])) {
-            $query .= " AND e.department = :department";
+            $query .= " AND combined.department = :department";
         }
 
         if (!empty($filters['type'])) {
-            $query .= " AND r.type = :type";
+            $query .= " AND combined.type = :type";
         }
 
-        $query .= " ORDER BY r.absence_date DESC";
+        $query .= " ORDER BY combined.absence_date DESC";
 
         $stmt = $this->conn->prepare($query);
 
@@ -339,11 +493,27 @@ class AbsenceLateMgmt
                     SUM(CASE WHEN excuse_status = 'PENDING' THEN 1 ELSE 0 END) as pending_reviews,
                     SUM(CASE WHEN excuse_status = 'APPROVED' THEN 1 ELSE 0 END) as approved_excuses,
                     SUM(CASE WHEN excuse_status = 'REJECTED' THEN 1 ELSE 0 END) as rejected_excuses
-                  FROM {$this->records_table}
+                  FROM (
+                    SELECT record_id,
+                           CAST(type AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS type,
+                           CAST(excuse_status AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS excuse_status,
+                           absence_date
+                    FROM {$this->records_table}
+                    WHERE 1=1
+
+                    UNION ALL
+
+                    SELECT attendance_id AS record_id,
+                           CAST(CASE WHEN status = 'ABSENT' THEN 'ABSENT' WHEN status = 'LATE' THEN 'LATE' ELSE 'ABSENT' END AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS type,
+                           CAST('PENDING' AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS excuse_status,
+                           attendance_date AS absence_date
+                    FROM {$this->attendance_table}
+                    WHERE status IN ('ABSENT', 'LATE')
+                  ) AS combined
                   WHERE 1=1";
 
         if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
-            $query .= " AND absence_date BETWEEN :start_date AND :end_date";
+            $query .= " AND combined.absence_date BETWEEN :start_date AND :end_date";
         }
 
         $stmt = $this->conn->prepare($query);
@@ -362,20 +532,44 @@ class AbsenceLateMgmt
      */
     public function getPendingApprovals($limit = 20)
     {
-        $query = "SELECT 
-                    r.record_id,
-                    e.full_name,
-                    e.employee_id,
-                    e.department,
-                    r.type,
-                    r.absence_date,
-                    r.reason,
-                    r.created_at
-                  FROM {$this->records_table} r
-                  JOIN employees e ON r.employee_id = e.employee_id
-                  WHERE r.excuse_status = 'PENDING'
-                  ORDER BY r.created_at ASC
-                  LIMIT :limit";
+        $query = "SELECT * FROM (
+                    SELECT 
+                        r.record_id,
+                        CAST(e.full_name AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS full_name,
+                        e.employee_id,
+                        CAST(e.department AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS department,
+                        CAST(r.type AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS type,
+                        r.absence_date,
+                        CAST(r.reason AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS reason,
+                        r.created_at,
+                        CAST('legacy' AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS source
+                    FROM {$this->records_table} r
+                    JOIN employees e ON r.employee_id = e.employee_id
+                    WHERE r.excuse_status = 'PENDING'
+
+                    UNION ALL
+
+                    SELECT 
+                        a.attendance_id AS record_id,
+                        CAST(e.full_name AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS full_name,
+                        e.employee_id,
+                        CAST(e.department AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS department,
+                        CAST(CASE WHEN a.status = 'ABSENT' THEN 'ABSENT' WHEN a.status = 'LATE' THEN 'LATE' ELSE 'ABSENT' END AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS type,
+                        a.attendance_date AS absence_date,
+                        CAST(CASE 
+                            WHEN TRIM(COALESCE(a.approval_remarks, '')) <> '' THEN a.approval_remarks
+                            WHEN a.status = 'ABSENT' THEN 'Marked absent by system'
+                            WHEN a.status = 'LATE' THEN 'Marked late by system'
+                            ELSE 'Attendance record'
+                        END AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS reason,
+                        a.created_at,
+                        CAST('attendance' AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS source
+                    FROM {$this->attendance_table} a
+                    JOIN employees e ON a.employee_id = e.employee_id
+                    WHERE a.status IN ('ABSENT', 'LATE')
+                ) AS combined
+                ORDER BY combined.created_at ASC
+                LIMIT :limit";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);

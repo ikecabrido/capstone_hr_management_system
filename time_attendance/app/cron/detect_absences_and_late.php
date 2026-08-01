@@ -10,13 +10,13 @@ date_default_timezone_set('Asia/Manila');
 
 $baseDir = dirname(__FILE__);
 require_once $baseDir . '/../../auth/database.php';
-require_once $baseDir . '/../models/AbsenceLateMgmt.php';
+require_once $baseDir . '/../models/Attendance.php';
 require_once $baseDir . '/../services/AttendanceValidationService.php';
 require_once $baseDir . '/../helpers/HolidayHelper.php';
 
 $db = Database::getInstance();
 $conn = $db->getConnection();
-$absenceLateMgmt = new AbsenceLateMgmt();
+$attendanceModel = new Attendance();
 $validationService = new \App\Services\AttendanceValidationService();
 
 $results = [
@@ -57,6 +57,7 @@ try {
                   AND e.employee_id NOT IN (
                     SELECT DISTINCT employee_id FROM ta_attendance
                     WHERE attendance_date = :date
+                    AND time_in IS NOT NULL
                   )";
         
         $stmt = $conn->prepare($query);
@@ -65,80 +66,46 @@ try {
         
         $holiday_absentees = $stmt->fetchAll(\PDO::FETCH_ASSOC);
         foreach ($holiday_absentees as $employee) {
-            // Create holiday absent record (for payroll tracking)
-            $record_id = $absenceLateMgmt->createRecord(
-                null,
-                $employee['employee_id'],
-                $date,
-                'HOLIDAY_ABSENT',
-                0
-            );
-            
-            if ($record_id) {
+            $created = $attendanceModel->markAbsent($employee['employee_id'], $date, 'Holiday absence detected by cron');
+            if ($created) {
                 $results['holiday_absences'][] = [
                     'employee_id' => $employee['employee_id'],
                     'name' => $employee['full_name'],
                     'department' => $employee['department'],
                     'holiday_name' => $holiday_info['name'],
-                    'record_id' => $record_id
+                    'record_id' => null
                 ];
             }
         }
     }
 
     // STEP 3: Detect Absences (employees with no time-in on regular working days)
+    $absences = $validationService->detectAbsences($date);
     foreach ($absences as $absence) {
-        // Create absence record
-        $record_id = $absenceLateMgmt->createRecord(
-            null,
-            $absence['employee_id'],
-            $date,
-            'ABSENCE',
-            0
-        );
-        
-        if ($record_id) {
+        $created = $attendanceModel->markAbsent($absence['employee_id'], $date, 'Absence detected by cron');
+        if ($created) {
             $results['absences'][] = [
                 'employee_id' => $absence['employee_id'],
                 'name' => $absence['full_name'],
                 'department' => $absence['department'],
                 'shift_start' => $absence['start_time'],
-                'shift_end' => $absence['end_time'],
-                'record_id' => $record_id
+                'shift_end' => $absence['end_time']
             ];
         }
     }
 
-    // STEP 2: Detect Late Arrivals
+    // STEP 4: Detect Late Arrivals
     $late_arrivals = $validationService->detectLateArrivals($date);
     foreach ($late_arrivals as $late) {
-        // Update attendance record with LATE status
-        $query = "UPDATE ta_attendance SET status = 'LATE', minutes_late = :minutes_late 
-                  WHERE attendance_id = :attendance_id";
-        $stmt = $conn->prepare($query);
-        $stmt->bindParam(':attendance_id', $late['attendance_id'], PDO::PARAM_INT);
-        $stmt->bindParam(':minutes_late', $late['minutes_late'], PDO::PARAM_INT);
-        
-        if ($stmt->execute()) {
-            // Create late record
-            $record_id = $absenceLateMgmt->createRecord(
-                $late['attendance_id'],
-                $late['employee_id'],
-                $date,
-                'LATE',
-                0
-            );
-
-            $results['late_arrivals'][] = [
-                'employee_id' => $late['employee_id'],
-                'name' => $late['name'],
-                'department' => $late['department'],
-                'time_in' => $late['time_in'],
-                'shift_start' => $late['shift_start'],
-                'minutes_late' => $late['minutes_late'],
-                'record_id' => $record_id
-            ];
-        }
+        $attendanceModel->updateStatus($late['attendance_id'], 'LATE', $late['minutes_late']);
+        $results['late_arrivals'][] = [
+            'employee_id' => $late['employee_id'],
+            'name' => $late['name'],
+            'department' => $late['department'],
+            'time_in' => $late['time_in'],
+            'shift_start' => $late['shift_start'],
+            'minutes_late' => $late['minutes_late']
+        ];
     }
 
     // STEP 3: Detect Employees Waiting for Shift Assignment

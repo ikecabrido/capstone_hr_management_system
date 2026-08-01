@@ -237,9 +237,73 @@ $qr_image = "https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=" . u
         .back-icon {
             font-size: 18px;
         }
+        /* AdminLTE Preloader Styles */
+        .preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0d47a1 0%, #0b3c91 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 99999;
+        }
+
+        .preloader.flex-column {
+            flex-direction: column;
+        }
+
+        .preloader.justify-content-center {
+            justify-content: center;
+        }
+
+        .preloader.align-items-center {
+            align-items: center;
+        }
+
+        .preloader img {
+            max-width: 100px;
+            height: auto;
+            display: block;
+        }
+
+        .animation__wobble {
+            animation: wobble 2.5s infinite ease-in-out;
+        }
+
+        @keyframes wobble {
+            0% {
+                transform: translateX(0);
+            }
+            15% {
+                transform: translateX(-5px) rotate(-5deg);
+            }
+            30% {
+                transform: translateX(3px) rotate(3deg);
+            }
+            45% {
+                transform: translateX(-3px) rotate(-3deg);
+            }
+            60% {
+                transform: translateX(2px) rotate(2deg);
+            }
+            75% {
+                transform: translateX(-1px) rotate(-1deg);
+            }
+            100% {
+                transform: translateX(0);
+            }
+        }
+
     </style>
 </head>
 <body>
+    <div class="preloader flex-column justify-content-center align-items-center">
+        <img class="animation__wobble" src="../../assets/pics/bcpLogo.png" alt="AdminLTELogo" height="60" width="60" />
+    </div>
     <div class="kiosk-container">
         <!-- Header -->
         <div class="header">
@@ -327,5 +391,42 @@ $qr_image = "https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=" . u
             }
         });
     </script>
+    <!-- Preloader Management Script -->
+    <script>
+        function hidePreloader() {
+            const preloader = document.querySelector('.preloader');
+            if (preloader) {
+                preloader.style.display = 'none';
+                preloader.style.visibility = 'hidden';
+            }
+        }
+
+        function showPreloader() {
+            const preloader = document.querySelector('.preloader');
+            if (preloader) {
+                preloader.style.display = 'flex';
+                preloader.style.visibility = 'visible';
+            }
+        }
+
+        window.addEventListener('load', hidePreloader);
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Delay hiding preloader so animation is visible
+            setTimeout(hidePreloader, 6000);
+            const navLinks = document.querySelectorAll('a');
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    const href = this.getAttribute('href');
+                    if (href && !href.includes('logout') && !href.startsWith('javascript') && !href.startsWith('#') && !href.startsWith('mailto:') && !href.startsWith('tel:')) {
+                        showPreloader();
+                    }
+                });
+            });
+        });
+    </script>
+
 </body>
 </html>
+

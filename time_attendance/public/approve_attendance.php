@@ -55,24 +55,15 @@ $pendingApprovals = $attendanceModel->getPendingApprovals(1000);
 
 $current_page = 'approve_attendance.php';
 $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
+$page_title = 'Approve Manual Time';
+$page_subtitle = 'Review and approve pending manual attendance entries';
+$page_head_extra = "<link rel=\"icon\" href=\"../Bestlink College of the Philippines.jpeg\" type=\"image/jpeg\">\n<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css\">\n<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback\">\n<link rel=\"stylesheet\" href=\"../../assets/dist/css/adminlte.min.css\">\n<link rel=\"stylesheet\" href=\"../../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css\">\n<link rel=\"stylesheet\" href=\"../assets/style.css\">\n<link rel=\"stylesheet\" href=\"../assets/dashboard.css\">\n<link rel=\"stylesheet\" href=\"../assets/adminlte-overrides.css\">\n<link rel=\"stylesheet\" href=\"../assets/hr-template.css\">\n<script src=\"../assets/mobile-responsive.js\" defer></script>";
 ?>
+<?php require_once __DIR__ . '/../layout/page_start.php'; ?>
+<?php require_once __DIR__ . '/../layout/sidebar.php'; ?>
+<?php $page_title = 'Approve Manual Time'; $page_subtitle = 'Review and approve manual time entries'; $page_icon = 'fa-check-circle'; ?>
+<?php require_once __DIR__ . '/../layout/content_header.php'; ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Approve Manual Time - Time & Attendance System</title>
-    <link rel="icon" href="../Bestlink College of the Philippines.jpeg" type="image/jpeg">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-    <link rel="stylesheet" href="../../assets/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="../../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
-    <link rel="stylesheet" href="../assets/style.css">
-    <link rel="stylesheet" href="../assets/dashboard.css">
-    <link rel="stylesheet" href="../../payroll/custom.css">
-    <link rel="stylesheet" href="../assets/adminlte-overrides.css">
-    <script src="../assets/mobile-responsive.js" defer></script>
 <style>
         body.dark-mode .container {
             background: rgba(30, 30, 30, 0.85);
@@ -244,6 +235,68 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
             margin-bottom: 15px;
             border-radius: 4px;
         }
+
+        .approval-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: -8px;
+            padding: 12px 4px 4px;
+        }
+
+        .approval-pagination-info {
+            color: #667085;
+            font-size: 13px;
+        }
+
+        .approval-page-buttons {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .approval-page-buttons button {
+            min-width: 34px;
+            min-height: 32px;
+            padding: 6px 10px;
+            border: 1px solid #d7e2ee;
+            border-radius: 6px;
+            background: #fff;
+            color: #174a7c;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .approval-page-buttons button:hover:not(:disabled),
+        .approval-page-buttons button.active {
+            border-color: #0066cc;
+            background: #0066cc;
+            color: #fff;
+        }
+
+        .approval-page-buttons button:disabled {
+            cursor: not-allowed;
+            opacity: .45;
+        }
+
+        body.dark-mode .approval-pagination-info {
+            color: #b8c2cc;
+        }
+
+        body.dark-mode .approval-page-buttons button {
+            border-color: #4a5562;
+            background: #252b32;
+            color: #d6e8fa;
+        }
+
+        body.dark-mode .approval-page-buttons button:hover:not(:disabled),
+        body.dark-mode .approval-page-buttons button.active {
+            background: #0066cc;
+            border-color: #0066cc;
+            color: #fff;
+        }
         body.dark-mode .info-box {
             background: #2a2a2a;
             border-color: #5DADE2;
@@ -253,80 +306,7 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
                 margin-left: 0;
             }
         }
-
-        .page-header {
-            background: linear-gradient(135deg, #003d82 0%, #005ba8 100%);
-            padding: 35px;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0, 61, 130, 0.15);
-            position: relative;
-            overflow: hidden;
-            margin-bottom: 30px;
-        }
-
-        .page-header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -50%;
-            width: 200px;
-            height: 200px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 50%;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-        }
-
-        .page-title {
-            font-size: 32px;
-            font-weight: 800;
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin: 0;
-            position: relative;
-            z-index: 1;
-        }
-
-        .page-title i {
-            font-size: 36px;
-            opacity: 0.95;
-        }
-
-        .page-subtitle {
-            color: rgba(255, 255, 255, 0.85);
-            font-size: 14px;
-            margin: 8px 0 0 0;
-            position: relative;
-            z-index: 1;
-        }
     </style>
-</head>
-<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
-    <div
-      class="preloader flex-column justify-content-center align-items-center">
-      <img
-        class="animation__wobble"
-        src="../../assets/pics/bcpLogo.png"
-        alt="AdminLTELogo"
-        height="60"
-        width="60" />
-    </div>
-    <?php require_once "../app/components/Sidebar.php"; ?>
-
-    <div class="main-content">
-        <div class="content-wrapper">
-            <div class="page-header">
-                <div class="page-title">
-                    <i class="fas fa-clock"></i> Approve Manual Time
-                </div>
-            </div>
-
             <?php if (!empty($message)): ?>
                 <div class="alert alert-<?php echo $messageType; ?>">
                     <?php echo htmlspecialchars($message); ?>
@@ -367,6 +347,10 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    <div class="approval-pagination" id="approvalPagination" aria-label="Manual time pagination">
+                        <span class="approval-pagination-info" id="approvalPaginationInfo"></span>
+                        <div class="approval-page-buttons" id="approvalPageButtons"></div>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>
@@ -413,6 +397,70 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
             document.getElementById(modalId).classList.remove('active');
         }
 
+        const approvalPageSize = 15;
+        let approvalCurrentPage = 1;
+
+        function renderApprovalPagination() {
+            const table = document.querySelector('.approvals-table');
+            const pagination = document.getElementById('approvalPagination');
+            const info = document.getElementById('approvalPaginationInfo');
+            const buttons = document.getElementById('approvalPageButtons');
+
+            if (!table || !pagination || !info || !buttons) {
+                return;
+            }
+
+            const rows = Array.from(table.querySelectorAll('tbody tr'));
+            const totalRecords = rows.length;
+            const totalPages = Math.max(1, Math.ceil(totalRecords / approvalPageSize));
+            approvalCurrentPage = Math.min(approvalCurrentPage, totalPages);
+
+            rows.forEach((row, index) => {
+                const firstRecord = (approvalCurrentPage - 1) * approvalPageSize;
+                row.style.display = index >= firstRecord && index < firstRecord + approvalPageSize ? '' : 'none';
+            });
+
+            const firstVisible = totalRecords === 0 ? 0 : (approvalCurrentPage - 1) * approvalPageSize + 1;
+            const lastVisible = Math.min(approvalCurrentPage * approvalPageSize, totalRecords);
+            info.textContent = `Showing ${firstVisible}–${lastVisible} of ${totalRecords} pending records`;
+            buttons.innerHTML = '';
+
+            const previous = document.createElement('button');
+            previous.type = 'button';
+            previous.innerHTML = '<i class="fas fa-chevron-left"></i><span class="sr-only"> Previous</span>';
+            previous.disabled = approvalCurrentPage === 1;
+            previous.addEventListener('click', () => {
+                approvalCurrentPage--;
+                renderApprovalPagination();
+            });
+            buttons.appendChild(previous);
+
+            for (let page = 1; page <= totalPages; page++) {
+                const pageButton = document.createElement('button');
+                pageButton.type = 'button';
+                pageButton.textContent = page;
+                pageButton.classList.toggle('active', page === approvalCurrentPage);
+                pageButton.setAttribute('aria-label', `Go to page ${page}`);
+                pageButton.addEventListener('click', () => {
+                    approvalCurrentPage = page;
+                    renderApprovalPagination();
+                });
+                buttons.appendChild(pageButton);
+            }
+
+            const next = document.createElement('button');
+            next.type = 'button';
+            next.innerHTML = '<i class="fas fa-chevron-right"></i><span class="sr-only"> Next</span>';
+            next.disabled = approvalCurrentPage === totalPages;
+            next.addEventListener('click', () => {
+                approvalCurrentPage++;
+                renderApprovalPagination();
+            });
+            buttons.appendChild(next);
+        }
+
+        renderApprovalPagination();
+
         window.onclick = function(event) {
             if (event.target.classList.contains('modal')) {
                 event.target.classList.remove('active');
@@ -434,5 +482,6 @@ $current_role = $_SESSION['role'] ?? 'HR_ADMIN';
             }
         });
     </script>
-</body>
-</html>
+
+<?php require_once __DIR__ . '/../layout/content_footer.php'; ?>
+<?php require_once __DIR__ . '/../layout/page_end.php'; ?>

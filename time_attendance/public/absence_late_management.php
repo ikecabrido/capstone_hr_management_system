@@ -25,10 +25,11 @@ if (!AuthController::hasRole('time') && !AuthController::hasRole('hr')) {
 
 $absenceLateMgmt = new AbsenceLateMgmt();
 $employeeModel = new Employee();
+$current_page = 'absence_late_management.php';
+$current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
 
 // Get initial data
 $filters = [
-    'excuse_status' => $_GET['status'] ?? 'PENDING',
     'type' => $_GET['type'] ?? null,
     'start_date' => $_GET['start_date'] ?? date('Y-m-01'),
     'end_date' => $_GET['end_date'] ?? date('Y-m-d'),
@@ -36,107 +37,117 @@ $filters = [
 ];
 
 $records = $absenceLateMgmt->getRecords($filters);
-$pendingCount = count($absenceLateMgmt->getPendingApprovals(100));
 $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['start_date'], 'end_date' => $filters['end_date']]);
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Absence & Late Management</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-    <link rel="stylesheet" href="../../assets/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="../../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
-    <link rel="stylesheet" href="../../assets/plugins/toastr/toastr.min.css">
-    <link rel="stylesheet" href="../assets/style.css">
-    <link rel="stylesheet" href="../assets/dashboard.css">
-    <link rel="stylesheet" href="../../payroll/custom.css">
-    <link rel="stylesheet" href="../assets/adminlte-overrides.css">
+<?php $page_title = 'Absence & Late Management'; ?>
+<?php $page_head_extra = "<link rel=\"stylesheet\" href=\"../assets/style.css\">\n<link rel=\"stylesheet\" href=\"../assets/dashboard.css\">\n<link rel=\"stylesheet\" href=\"../assets/adminlte-overrides.css\">"; ?>
+<?php require_once __DIR__ . '/../layout/page_start.php'; ?>
+<?php require_once __DIR__ . '/../layout/sidebar.php'; ?>
+<?php $page_title = 'Absence & Late Management'; $page_subtitle = 'Manage absence and late records'; $page_icon = 'fa-calendar-times'; ?>
+<?php require_once __DIR__ . '/../layout/content_header.php'; ?>
+
 <style>
 
         /* Stats Grid - Dashboard Style */
         .stats-grid {
             display: grid;
-            gap: 16px;
+            gap: 20px;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             margin-bottom: 24px;
         }
 
         .stat-card {
+            position: relative;
             display: flex;
-            background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+            align-items: center;
+            gap: 16px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+            border: 1px solid rgba(13, 71, 161, 0.08);
+            border-radius: 18px;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+            padding: 18px 20px;
             overflow: hidden;
-            border: 0;
-            transition: all 0.3s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
         .stat-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 8px 16px rgba(15, 23, 42, 0.12);
+            box-shadow: 0 16px 36px rgba(15, 23, 42, 0.12);
         }
 
         .stat-card::before {
             content: '';
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 70px;
-            min-width: 70px;
-            background: linear-gradient(135deg, #0d47a1, #1976d2);
-            color: white;
-            font-size: 28px;
-            flex-shrink: 0;
+            position: absolute;
+            inset: 0 auto 0 0;
+            width: 4px;
+            background: linear-gradient(180deg, #0d47a1 0%, #42a5f5 100%);
+            border-radius: 0 8px 8px 0;
         }
 
         .stat-card.pending::before {
-            background: linear-gradient(135deg, #f57f17, #fbc02d);
+            background: linear-gradient(180deg, #0097a7 0%, #00bcd4 100%);
         }
 
         .stat-card.approved::before {
-            background: linear-gradient(135deg, #2e7d32, #43a047);
+            background: linear-gradient(180deg, #2e7d32 0%, #66bb6a 100%);
         }
 
         .stat-card.rejected::before {
-            background: linear-gradient(135deg, #c62828, #e53935);
+            background: linear-gradient(180deg, #c62828 0%, #ef5350 100%);
         }
 
-        .stat-card::after {
-            display: none;
+        .stat-card .stat-icon {
+            width: 56px;
+            min-width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+            color: white;
+            font-size: 24px;
+            box-shadow: inset 0 -4px 12px rgba(0, 0, 0, 0.12);
         }
 
-        .stat-card h4 {
-            color: #999;
+        .stat-card .stat-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .stat-card .stat-content h4 {
+            color: #64748b;
             font-size: 12px;
             margin: 0;
             text-transform: uppercase;
-            font-weight: 600;
-            letter-spacing: 0.5px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
             line-height: 1.2;
         }
 
-        .stat-value {
-            font-size: 28px;
-            font-weight: 700;
-            color: #0d47a1;
-            line-height: 1;
-            margin-top: 4px;
+        .stat-card .stat-value {
+            font-size: 26px;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.1;
+            margin-top: 0;
         }
 
-        .stat-card.pending .stat-value {
-            color: #f57f17;
+        body.dark-mode .stat-card {
+            background: linear-gradient(135deg, #1e1e1e 0%, #252b32 100%) !important;
+            border-color: #3f4650 !important;
+            color: #f3f4f6 !important;
         }
 
-        .stat-card.approved .stat-value {
-            color: #2e7d32;
+        body.dark-mode .stat-card .stat-content h4 {
+            color: #cbd5e1 !important;
         }
 
-        .stat-card.rejected .stat-value {
-            color: #c62828;
+        body.dark-mode .stat-card .stat-value {
+            color: #ffffff !important;
         }
 
         /* Filter Section */
@@ -195,6 +206,13 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
             font-size: 14px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            color: #ffffff !important;
+        }
+
+        body.dark-mode .records-table thead,
+        body.dark-mode .records-table th {
+            background: linear-gradient(135deg, #173b63 0%, #245b91 100%) !important;
+            color: #ffffff !important;
         }
 
         .records-table td {
@@ -209,6 +227,33 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
         .records-table tbody tr:hover {
             background: #f8f9fa;
             box-shadow: 0 2px 8px rgba(0, 61, 130, 0.05);
+        }
+
+        body.dark-mode .records-table,
+        body.dark-mode .records-table table,
+        body.dark-mode .records-table tbody,
+        body.dark-mode .records-table tbody tr,
+        body.dark-mode .records-table tbody tr td {
+            background: #1e1e1e !important;
+            color: #f1f5f9 !important;
+            border-color: #3f4650 !important;
+        }
+
+        body.dark-mode .records-table tbody tr:hover,
+        body.dark-mode .records-table tbody tr:hover td {
+            background: #2a3440 !important;
+            color: #ffffff !important;
+            box-shadow: none;
+        }
+
+        body.dark-mode .records-table .badge-absent {
+            background: #5a2328 !important;
+            color: #ffd6d9 !important;
+        }
+
+        body.dark-mode .records-table .badge-late {
+            background: #5a431a !important;
+            color: #ffe6a6 !important;
         }
 
         /* Badges */
@@ -482,77 +527,159 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
                 padding: 8px;
             }
         }
+
+        /* AdminLTE Preloader Styles */
+        .preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0d47a1 0%, #0b3c91 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 99999;
+        }
+
+        .preloader.flex-column {
+            flex-direction: column;
+        }
+
+        .preloader.justify-content-center {
+            justify-content: center;
+        }
+
+        .preloader.align-items-center {
+            align-items: center;
+        }
+
+        .preloader img {
+            max-width: 100px;
+            height: auto;
+            display: block;
+        }
+
+        .animation__wobble {
+            animation: wobble 2.5s infinite ease-in-out;
+        }
+
+        @keyframes wobble {
+            0% {
+                transform: translateX(0);
+            }
+            15% {
+                transform: translateX(-5px) rotate(-5deg);
+            }
+            30% {
+                transform: translateX(3px) rotate(3deg);
+            }
+            45% {
+                transform: translateX(-3px) rotate(-3deg);
+            }
+            60% {
+                transform: translateX(2px) rotate(2deg);
+            }
+            75% {
+                transform: translateX(-1px) rotate(-1deg);
+            }
+            100% {
+                transform: translateX(0);
+            }
+        }
+        /* AdminLTE Preloader Styles */
+        .preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0d47a1 0%, #0b3c91 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 99999;
+        }
+
+        .preloader.flex-column {
+            flex-direction: column;
+        }
+
+        .preloader.justify-content-center {
+            justify-content: center;
+        }
+
+        .preloader.align-items-center {
+            align-items: center;
+        }
+
+        .preloader img {
+            max-width: 100px;
+            height: auto;
+            display: block;
+        }
+
+        .animation__wobble {
+            animation: wobble 2.5s infinite ease-in-out;
+        }
+
+        @keyframes wobble {
+            0% {
+                transform: translateX(0);
+            }
+            15% {
+                transform: translateX(-5px) rotate(-5deg);
+            }
+            30% {
+                transform: translateX(3px) rotate(3deg);
+            }
+            45% {
+                transform: translateX(-3px) rotate(-3deg);
+            }
+            60% {
+                transform: translateX(2px) rotate(2deg);
+            }
+            75% {
+                transform: translateX(-1px) rotate(-1deg);
+            }
+            100% {
+                transform: translateX(0);
+            }
+        }
+
     </style>
-</head>
-<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
-    <?php require_once "../app/components/Sidebar.php"; ?>
-
-    <div class="main-content">
-        <div class="content-wrapper">
             <!-- Page Header -->
-            <div class="page-header">
-                <div class="page-title">
-                    <i class="fas fa-calendar-times"></i>
-                    <span>Absence & Late Management</span>
-                </div>
-            </div>
-
             <div class="absence-late-container glass-panel">
 
                 <!-- Statistics -->
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <div style="width: 70px; min-width: 70px; background: linear-gradient(135deg, #0d47a1, #1976d2); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #0d47a1, #1976d2);">
                             <i class="fas fa-file-alt"></i>
                         </div>
-                        <div style="flex: 1; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center;">
+                        <div class="stat-content">
                             <h4>Total Records</h4>
                             <div class="stat-value"><?php echo $summaryStats['total_records'] ?? 0; ?></div>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div style="width: 70px; min-width: 70px; background: linear-gradient(135deg, #c62828, #e53935); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #c62828, #e53935);">
                             <i class="fas fa-user-slash"></i>
                         </div>
-                        <div style="flex: 1; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center;">
+                        <div class="stat-content">
                             <h4>Total Absences</h4>
                             <div class="stat-value"><?php echo $summaryStats['total_absents'] ?? 0; ?></div>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div style="width: 70px; min-width: 70px; background: linear-gradient(135deg, #f57f17, #fbc02d); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #f57f17, #fbc02d);">
                             <i class="fas fa-clock"></i>
                         </div>
-                        <div style="flex: 1; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center;">
+                        <div class="stat-content">
                             <h4>Total Late Arrivals</h4>
                             <div class="stat-value"><?php echo $summaryStats['total_lates'] ?? 0; ?></div>
-                        </div>
-                    </div>
-                    <div class="stat-card pending">
-                        <div style="width: 70px; min-width: 70px; background: linear-gradient(135deg, #0097a7, #00bcd4); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
-                            <i class="fas fa-hourglass-half"></i>
-                        </div>
-                        <div style="flex: 1; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center;">
-                            <h4>Pending Reviews</h4>
-                            <div class="stat-value"><?php echo $summaryStats['pending_reviews'] ?? 0; ?></div>
-                        </div>
-                    </div>
-                    <div class="stat-card approved">
-                        <div style="width: 70px; min-width: 70px; background: linear-gradient(135deg, #2e7d32, #43a047); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                        <div style="flex: 1; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center;">
-                            <h4>Approved Excuses</h4>
-                            <div class="stat-value"><?php echo $summaryStats['approved_excuses'] ?? 0; ?></div>
-                        </div>
-                    </div>
-                    <div class="stat-card rejected">
-                        <div style="width: 70px; min-width: 70px; background: linear-gradient(135deg, #c62828, #e53935); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
-                            <i class="fas fa-times-circle"></i>
-                        </div>
-                        <div style="flex: 1; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center;">
-                            <h4>Rejected Excuses</h4>
-                            <div class="stat-value"><?php echo $summaryStats['rejected_excuses'] ?? 0; ?></div>
                         </div>
                     </div>
                 </div>
@@ -562,13 +689,6 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
                     <input type="date" id="startDate" value="<?php echo $filters['start_date']; ?>" placeholder="Start Date">
                     <input type="date" id="endDate" value="<?php echo $filters['end_date']; ?>" placeholder="End Date">
                     
-                    <select id="statusFilter">
-                        <option value="">All Status</option>
-                        <option value="PENDING" <?php echo $filters['excuse_status'] === 'PENDING' ? 'selected' : ''; ?>>Pending</option>
-                        <option value="APPROVED" <?php echo $filters['excuse_status'] === 'APPROVED' ? 'selected' : ''; ?>>Approved</option>
-                        <option value="REJECTED" <?php echo $filters['excuse_status'] === 'REJECTED' ? 'selected' : ''; ?>>Rejected</option>
-                    </select>
-
                     <select id="typeFilter">
                         <option value="">All Types</option>
                         <option value="ABSENT" <?php echo $filters['type'] === 'ABSENT' ? 'selected' : ''; ?>>Absence</option>
@@ -594,8 +714,6 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
                                 <th>Department</th>
                                 <th>Date</th>
                                 <th>Type</th>
-                                <th>Status</th>
-                                <th>Excused</th>
                                 <th>Reason</th>
                                 <th>Submitted</th>
                                 <th>Actions</th>
@@ -613,22 +731,6 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="badge badge-<?php echo strtolower($record['excuse_status']); ?>">
-                                        <?php echo $record['excuse_status']; ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <?php if ($record['excuse_status'] === 'APPROVED'): ?>
-                                        <span class="badge badge-success">
-                                            <i class="fas fa-check"></i> Excused
-                                        </span>
-                                    <?php else: ?>
-                                        <span class="badge badge-unexcused">
-                                            <i class="fas fa-times"></i> Unexcused
-                                        </span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
                                     <?php echo htmlspecialchars(substr($record['reason'] ?? '', 0, 30)); ?>
                                 </td>
                                 <td><?php echo date('M d, Y', strtotime($record['created_at'])); ?></td>
@@ -637,14 +739,6 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
                                         <button class="btn-action btn-view" onclick="viewRecord(<?php echo $record['record_id']; ?>)">
                                             <i class="fas fa-eye"></i> View
                                         </button>
-                                        <?php if ($record['excuse_status'] === 'PENDING' && (AuthController::hasRole('time') || AuthController::hasRole('hr'))): ?>
-                                        <button class="btn-action btn-approve" onclick="approveExcuse(<?php echo $record['record_id']; ?>)">
-                                            <i class="fas fa-check"></i> Approve
-                                        </button>
-                                        <button class="btn-action btn-reject" onclick="rejectExcuse(<?php echo $record['record_id']; ?>)">
-                                            <i class="fas fa-times"></i> Reject
-                                        </button>
-                                        <?php endif; ?>
                                     </div>
                                 </td>
                             </tr>
@@ -676,49 +770,15 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
         </div>
     </div>
 
-    <!-- Review Modal -->
-    <div class="modal-overlay" id="reviewModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Review Excuse</h2>
-                <button class="close-btn" onclick="closeModal('reviewModal')">&times;</button>
-            </div>
-            <form id="reviewForm">
-                <div class="form-group">
-                    <label>Decision</label>
-                    <select id="reviewDecision" required>
-                        <option value="">Select decision...</option>
-                        <option value="APPROVED">Approve</option>
-                        <option value="REJECTED">Reject</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Review Notes</label>
-                    <textarea id="reviewNotes" placeholder="Enter your review notes..."></textarea>
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('reviewModal')">Cancel</button>
-                    <button type="submit" class="btn btn-success">Submit Review</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script src="../../assets/plugins/jquery/jquery.min.js"></script>
-    <script src="../../assets/plugins/toastr/toastr.min.js"></script>
     <script>
-        let currentRecordId = null;
-
         function applyFilters() {
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
-            const status = document.getElementById('statusFilter').value;
             const type = document.getElementById('typeFilter').value;
 
             let url = 'absence_late_management.php?';
             if (startDate) url += `start_date=${startDate}&`;
             if (endDate) url += `end_date=${endDate}&`;
-            if (status) url += `status=${status}&`;
             if (type) url += `type=${type}`;
 
             window.location.href = url;
@@ -748,20 +808,12 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
                                 <p>${new Date(record.absence_date).toLocaleDateString()}</p>
                             </div>
                             <div class="form-group">
-                                <label>Status</label>
-                                <p><span class="badge badge-${record.excuse_status.toLowerCase()}">${record.excuse_status}</span></p>
-                            </div>
-                            <div class="form-group">
                                 <label>Reason</label>
                                 <p>${htmlEscape(record.reason || 'Not provided')}</p>
                             </div>
                             <div class="form-group">
                                 <label>Notes</label>
                                 <p>${htmlEscape(record.notes || 'No notes')}</p>
-                            </div>
-                            <div class="form-group">
-                                <label>Approval Notes</label>
-                                <p>${htmlEscape(record.approval_notes || 'Not reviewed yet')}</p>
                             </div>
                         `;
                         document.getElementById('recordDetails').innerHTML = html;
@@ -771,103 +823,87 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
                 .catch(err => toastr.error('Failed to load record'));
         }
 
-        function approveExcuse(recordId) {
-            currentRecordId = recordId;
-            document.getElementById('reviewDecision').value = 'APPROVED';
-            document.getElementById('reviewNotes').value = '';
-            openModal('reviewModal');
-        }
-
-        function rejectExcuse(recordId) {
-            currentRecordId = recordId;
-            document.getElementById('reviewDecision').value = 'REJECTED';
-            document.getElementById('reviewNotes').value = '';
-            openModal('reviewModal');
-        }
-
-        // Ensure form exists before attaching listener
-        document.addEventListener('DOMContentLoaded', function() {
-            const reviewForm = document.getElementById('reviewForm');
-            if (reviewForm) {
-                reviewForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    const status = document.getElementById('reviewDecision').value;
-                    const notes = document.getElementById('reviewNotes').value;
-
-                    // Validate that record_id was set
-                    if (!currentRecordId) {
-                        toastr.error('Error: No record selected');
-                        return;
-                    }
-
-                    // Validate that status was selected
-                    if (!status) {
-                        toastr.error('Error: Please select a decision (Approve or Reject)');
-                        return;
-                    }
-
-                    fetch('../app/api/absence_late_management.php?action=review_excuse', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            record_id: currentRecordId,
-                            status: status,
-                            notes: notes
-                        })
-                    })
-                    .then(r => r.json())
-                    .then(res => {
-                        if (res.success) {
-                            toastr.success(res.message);
-                            closeModal('reviewModal');
-                            setTimeout(() => location.reload(), 1500);
-                        } else {
-                            toastr.error(res.message || 'Failed to review excuse');
-                        }
-                    })
-                    .catch(err => {
-                        console.error('Error:', err);
-                        toastr.error('Failed to submit review');
-                    });
-                });
-            }
-        });
-
         function generateReport() {
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
-            const status = document.getElementById('statusFilter').value;
             const type = document.getElementById('typeFilter').value;
 
             let url = '../app/api/absence_late_management.php?action=get_report';
             if (startDate) url += `&start_date=${startDate}`;
             if (endDate) url += `&end_date=${endDate}`;
-            if (status) url += `&status=${status}`;
             if (type) url += `&type=${type}`;
 
             fetch(url)
                 .then(r => r.json())
                 .then(res => {
                     if (res.success) {
-                        downloadReport(res.data);
+                        downloadPdfReport(res.data, startDate, endDate, type);
+                    } else {
+                        toastr.error(res.message || 'Failed to generate report');
                     }
                 })
                 .catch(err => toastr.error('Failed to generate report'));
         }
 
-        function downloadReport(data) {
-            let csv = 'Employee,Department,Type,Date,Status,Reason\n';
-            data.forEach(record => {
-                csv += `"${record.full_name}","${record.department}","${record.type}","${record.absence_date}","${record.excuse_status}","${record.reason || ''}"\n`;
-            });
+        function downloadPdfReport(data, startDate, endDate, type) {
+            const reportWindow = window.open('', '_blank', 'width=1200,height=800');
+            if (!reportWindow) {
+                toastr.error('Please allow pop-ups to generate the PDF report');
+                return;
+            }
 
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `absence-late-report-${new Date().toISOString().split('T')[0]}.csv`;
-            a.click();
-            window.URL.revokeObjectURL(url);
+            const reportRows = data.length ? data.map(record => `
+                <tr>
+                    <td>${htmlEscape(record.full_name || 'N/A')}</td>
+                    <td>${htmlEscape(record.department || 'N/A')}</td>
+                    <td><span class="type ${String(record.type).toLowerCase()}">${htmlEscape(record.type || 'N/A')}</span></td>
+                    <td>${htmlEscape(record.absence_date || 'N/A')}</td>
+                    <td>${htmlEscape(record.reason || 'Not provided')}</td>
+                </tr>`).join('') : '<tr><td colspan="5" class="empty">No records found for the selected filters.</td></tr>';
+
+            const title = 'Absence & Late Management Report';
+            const generated = new Date().toLocaleString();
+            const filters = `${startDate || 'All dates'} to ${endDate || 'All dates'}${type ? ` · Type: ${type}` : ''}`;
+            const logoUrl = new URL('../Bestlink College of the Philippines.jpeg', window.location.href).href;
+
+            reportWindow.document.write(`<!doctype html><html><head><title>${title}</title><style>
+                @page { size: A4 landscape; margin: 14mm; }
+                * { box-sizing: border-box; }
+                body { margin: 0; color: #172b4d; font-family: Arial, sans-serif; font-size: 11px; }
+                .institution-header { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 0 0 12px; border-bottom: 1px solid #dbe5f0; margin-bottom: 16px; }
+                .institution-header img { width: 66px; height: 66px; object-fit: contain; display: block; flex: 0 0 auto; }
+                .institution-details { text-align: left; }
+                .institution-name { margin: 0; color: #0b4175; font-size: 18px; font-weight: 800; letter-spacing: .2px; }
+                .institution-address { margin: 4px 0 0; color: #667085; font-size: 10px; }
+                .report-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #0b5cab; padding-bottom: 14px; margin-bottom: 18px; }
+                h1 { color: #0b4175; font-size: 23px; margin: 0 0 6px; }
+                .subtitle, .meta { color: #667085; margin: 3px 0; }
+                .summary { display: inline-block; padding: 9px 13px; border-radius: 8px; background: #eef6ff; color: #0b5cab; font-size: 12px; font-weight: bold; }
+                table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+                th { background: #0b5cab; color: white; padding: 10px 8px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .4px; }
+                td { padding: 9px 8px; border-bottom: 1px solid #dbe5f0; vertical-align: top; word-wrap: break-word; }
+                tr:nth-child(even) { background: #f6f9fc; }
+                .type, .status { display: inline-block; padding: 4px 7px; border-radius: 10px; font-size: 9px; font-weight: bold; }
+                .type.absent { background: #fde8e8; color: #b42318; } .type.late { background: #fff2cc; color: #8a5b00; }
+                .status.pending { background: #fff2cc; color: #8a5b00; } .status.approved { background: #dcfce7; color: #166534; } .status.rejected { background: #fde8e8; color: #b42318; }
+                .empty { text-align: center; padding: 30px; color: #667085; }
+                .footer { margin-top: 18px; color: #667085; font-size: 10px; text-align: right; }
+                @media print { .no-print { display: none; } }
+            </style></head><body>
+                <div class="institution-header">
+                    <img src="${logoUrl}" alt="Bestlink College of the Philippines logo">
+                    <div class="institution-details">
+                        <h2 class="institution-name">Bestlink College of the Philippines</h2>
+                        <p class="institution-address">Lot 1 Ipo Road Brgy. Minuyan Proper, City of San Jose Del Monte, Bulacan</p>
+                    </div>
+                </div>
+                <div class="report-header"><div><h1>${title}</h1><p class="subtitle">${filters}</p><p class="meta">Generated: ${generated}</p></div><div class="summary">${data.length} record${data.length === 1 ? '' : 's'}</div></div>
+                <table><thead><tr><th>Employee</th><th>Department</th><th>Type</th><th>Date</th><th>Reason</th></tr></thead><tbody>${reportRows}</tbody></table>
+                <div class="footer">Human Resource Management System · Official report</div>
+                <button class="no-print" onclick="window.print()" style="margin-top:18px;padding:9px 16px;background:#0b5cab;color:#fff;border:0;border-radius:5px;cursor:pointer;"><i class="fas fa-print"></i> Print / Save as PDF</button>
+            </body></html>`);
+            reportWindow.document.close();
+            reportWindow.focus();
         }
 
         function openModal(modalId) {
@@ -890,5 +926,41 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
             return text.replace(/[&<>"']/g, m => map[m]);
         }
     </script>
-</body>
-</html>
+    <!-- Preloader Management Script -->
+    <script>
+        function hidePreloader() {
+            const preloader = document.querySelector('.preloader');
+            if (preloader) {
+                preloader.style.display = 'none';
+                preloader.style.visibility = 'hidden';
+            }
+        }
+
+        function showPreloader() {
+            const preloader = document.querySelector('.preloader');
+            if (preloader) {
+                preloader.style.display = 'flex';
+                preloader.style.visibility = 'visible';
+            }
+        }
+
+        window.addEventListener('load', hidePreloader);
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Delay hiding preloader so animation is visible
+            setTimeout(hidePreloader, 6000);
+            const navLinks = document.querySelectorAll('a');
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    const href = this.getAttribute('href');
+                    if (href && !href.includes('logout') && !href.startsWith('javascript') && !href.startsWith('#') && !href.startsWith('mailto:') && !href.startsWith('tel:')) {
+                        showPreloader();
+                    }
+                });
+            });
+        });
+    </script>
+
+<?php require_once __DIR__ . '/../layout/content_footer.php'; ?>
+<?php require_once __DIR__ . '/../layout/page_end.php'; ?>

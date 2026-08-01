@@ -3,7 +3,7 @@
  * QR Attendance Confirmation Modal - AJAX Version
  * Shows timestamp and action for employee to confirm before recording
  * Mobile-optimized and works standalone
- * Uses AJAX to submit to time_attendance/portal/api/qr-process.php
+ * Uses AJAX to submit to /capstone_hr_management_system/qr-process-api.php
  */
 
 date_default_timezone_set('Asia/Manila');
@@ -14,7 +14,7 @@ $currentTime = $currentTime ?? date('H:i:s');
 $currentDate = $currentDate ?? date('Y-m-d');
 $action = $action ?? 'TIME_IN';
 $employee = $employee ?? [];
-$employee_id = $employee_id ?? null;
+$employee_id = $employee['employee_id'] ?? null;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -286,6 +286,7 @@ $employee_id = $employee_id ?? null;
     </style>
 </head>
 <body>
+    <div id="qr-toast-placeholder"></div>
     <div class="modal-container">
         <!-- Header -->
         <div class="modal-header">
@@ -346,6 +347,7 @@ $employee_id = $employee_id ?? null;
         <form id="qrForm" style="display: none;">
             <input type="hidden" id="token" value="<?php echo htmlspecialchars($qrToken); ?>">
             <input type="hidden" id="employee_id" value="<?php echo htmlspecialchars($employee_id); ?>">
+            <input type="hidden" id="action" value="<?php echo htmlspecialchars($action); ?>">
         </form>
 
         <!-- Buttons -->
@@ -372,6 +374,7 @@ $employee_id = $employee_id ?? null;
         function submitAttendance() {
             const token = document.getElementById('token').value;
             const employee_id = document.getElementById('employee_id').value;
+            const action = document.getElementById('action').value;
             const confirmBtn = document.getElementById('confirmBtn');
             const cancelBtn = document.getElementById('cancelBtn');
             const spinner = document.getElementById('spinner');
@@ -404,20 +407,26 @@ $employee_id = $employee_id ?? null;
                 credentials: 'same-origin',
                 body: JSON.stringify({
                     employee_id: parseInt(employee_id),
-                    token: token
+                    token: token,
+                    action: action
                 })
             })
             .then(response => {
-                console.log('QR: Response status:', response.status);
-                console.log('QR: Response ok:', response.ok);
-                if (!response.ok) {
-                    console.error('QR: HTTP Error', response.status);
-                    return response.text().then(text => {
-                        console.error('QR: Error response:', text);
-                        throw new Error('HTTP ' + response.status + ': ' + text.substring(0, 100));
-                    });
-                }
-                return response.json();
+                return response.text().then(text => {
+                    let data = null;
+                    try {
+                        data = JSON.parse(text);
+                    } catch (parseError) {
+                        data = null;
+                    }
+
+                    if (!response.ok) {
+                        const errorMessage = data?.message || ('HTTP ' + response.status);
+                        throw new Error(errorMessage);
+                    }
+
+                    return data;
+                });
             })
             .then(data => {
                 console.log('QR: Success response:', data);
@@ -434,7 +443,7 @@ $employee_id = $employee_id ?? null;
             })
             .catch(error => {
                 console.error('QR: Fetch error:', error);
-                showError('Error: ' + error.message);
+                showError(error.message || 'Error processing attendance');
                 confirmBtn.disabled = false;
                 cancelBtn.disabled = false;
                 spinner.style.display = 'none';
@@ -446,6 +455,83 @@ $employee_id = $employee_id ?? null;
             if (confirm('Cancel attendance recording?')) {
                 window.location.href = '../../../employee_portal/index.php?url=dashboard';
             }
+        }
+
+        function showToast(message, type = 'error') {
+            const existingToast = document.getElementById('qrToast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+
+            const toast = document.createElement('div');
+            toast.id = 'qrToast';
+            toast.className = 'qr-toast ' + type;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('visible');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.remove('visible');
+                setTimeout(() => toast.remove(), 300);
+            }, 6000);
+        }
+
+        function createToastStyles() {
+            const styleId = 'qr-toast-styles';
+            if (document.getElementById(styleId)) {
+                return;
+            }
+
+            const style = document.createElement('style');
+            style.id = styleId;
+            style.textContent = `
+                .qr-toast {
+                    position: fixed;
+                    bottom: 24px;
+                    left: 50%;
+                    transform: translateX(-50%) translateY(20px);
+                    min-width: 280px;
+                    max-width: 90%;
+                    padding: 14px 18px;
+                    border-radius: 10px;
+                    color: #fff;
+                    font-size: 14px;
+                    text-align: center;
+                    opacity: 0;
+                    transition: opacity 0.25s ease, transform 0.25s ease;
+                    z-index: 9999;
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+                }
+                .qr-toast.visible {
+                    opacity: 1;
+                    transform: translateX(-50%) translateY(0);
+                }
+                .qr-toast.error {
+                    background: #ef4444;
+                }
+                .qr-toast.success {
+                    background: #16a34a;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        createToastStyles();
+
+        function showError(message) {
+            showToast(message, 'error');
+            const confirmBtn = document.getElementById('confirmBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
+            const spinner = document.getElementById('spinner');
+            const buttonText = document.getElementById('buttonText');
+
+            confirmBtn.disabled = false;
+            cancelBtn.disabled = false;
+            spinner.style.display = 'none';
+            buttonText.textContent = '✓ Confirm';
         }
 
         function showSuccess(message) {
@@ -463,10 +549,6 @@ $employee_id = $employee_id ?? null;
             setTimeout(() => {
                 window.location.href = window.location.origin + '/capstone_hr_management_system/employee_portal/index.php?url=dashboard';
             }, 2000);
-        }
-
-        function showError(message) {
-            alert('Error: ' + message);
         }
 
         function escapeHtml(text) {

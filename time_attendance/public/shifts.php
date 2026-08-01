@@ -268,29 +268,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (isset($_POST['delete_flexible'])) {
         try {
-            // Safety check: ensure we have a valid id
-            if (empty($_POST['delete_flex_id'])) {
-                throw new Exception("Invalid schedule ID. Cannot delete without a valid ID.");
+            $delete_id_raw = trim((string)($_POST['delete_flex_id'] ?? ''));
+            $delete_id = filter_var($delete_id_raw, FILTER_VALIDATE_INT);
+            $lookup_employee_id = trim((string)($_POST['delete_flex_employee_id'] ?? ''));
+            $lookup_schedule_date = trim((string)($_POST['delete_flex_schedule_date'] ?? ''));
+            $lookup_start_time = trim((string)($_POST['delete_flex_start_time'] ?? ''));
+            $lookup_end_time = trim((string)($_POST['delete_flex_end_time'] ?? ''));
+
+            if ($delete_id === false || $delete_id <= 0) {
+                if ($lookup_employee_id === '' || $lookup_schedule_date === '' || $lookup_start_time === '' || $lookup_end_time === '') {
+                    throw new Exception("Invalid schedule ID. Cannot delete without a valid ID.");
+                }
+
+                $fallback_sql = "SELECT id FROM ta_flexible_schedules
+                                 WHERE employee_id = ?
+                                   AND schedule_date = ?
+                                   AND start_time = ?
+                                   AND end_time = ?
+                                 LIMIT 1";
+                $fallback_stmt = $db->prepare($fallback_sql);
+                $fallback_stmt->execute([$lookup_employee_id, $lookup_schedule_date, $lookup_start_time, $lookup_end_time]);
+                $fallback_row = $fallback_stmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$fallback_row || !isset($fallback_row['id'])) {
+                    throw new Exception("Invalid schedule ID. The selected flexible schedule could not be found.");
+                }
+
+                $delete_id = (int)$fallback_row['id'];
             }
-            
-            $delete_id = (int)$_POST['delete_flex_id']; // Cast to int for safety
-            
-            if ($delete_id <= 0) {
-                throw new Exception("Invalid schedule ID. ID must be a positive number.");
+
+            $exists_sql = "SELECT id FROM ta_flexible_schedules WHERE id = ? LIMIT 1";
+            $exists_stmt = $db->prepare($exists_sql);
+            $exists_stmt->execute([$delete_id]);
+
+            if ($exists_stmt->rowCount() === 0) {
+                throw new Exception("Invalid schedule ID. The selected flexible schedule could not be found.");
             }
-            
+
             $delete_sql = "DELETE FROM ta_flexible_schedules WHERE id = ?";
             $stmt = $db->prepare($delete_sql);
             $stmt->execute([$delete_id]);
-            
-            if ($stmt->rowCount() > 1) {
-                throw new Exception("Safety check failed: More than one record was deleted. Please contact support.");
+
+            if ($stmt->rowCount() !== 1) {
+                throw new Exception("Safety check failed: The schedule could not be deleted reliably. Please contact support.");
             }
-            
+
             $message = 'Flexible schedule deleted successfully!';
             $action = 'overview';
-            
-            // Redirect to refresh the page and show updated data
+
             header('Location: ' . $_SERVER['PHP_SELF'] . '?action=overview&deleted=1');
             exit();
         } catch (Exception $e) {
@@ -379,20 +404,20 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
 }
 
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shift Management</title>
-    <link rel="stylesheet" href="../../assets/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="../../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
-    <link rel="stylesheet" href="../assets/style.css">
-    <link rel="stylesheet" href="../assets/dashboard.css">
-    <link rel="stylesheet" href="../assets/adminlte-overrides.css">
-    <link rel="stylesheet" href="../../payroll/custom.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<?php
+$current_page = 'shifts.php';
+$current_role = $_SESSION['role'] ?? $_SESSION['user']['role'] ?? 'time';
+$page_title = 'Shift Management';
+$page_subtitle = 'Manage shifts and assignments';
+$page_head_extra = <<<HTML
+<link rel="stylesheet" href="../../assets/dist/css/adminlte.min.css">
+<link rel="stylesheet" href="../../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/dashboard.css">
+<link rel="stylesheet" href="../assets/adminlte-overrides.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="../assets/hr-template.css">
 <style>
         body {
             transition: margin-left 0.3s ease;
@@ -402,61 +427,6 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
         .main-content .shift-container {
             margin-left: 0 !important;
             margin-top: 0 !important;
-        }
-
-        .page-header {
-            margin-bottom: 35px;
-            background: linear-gradient(135deg, #003d82 0%, #005ba8 100%);
-            padding: 35px;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0, 61, 130, 0.15);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .page-header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -50%;
-            width: 200px;
-            height: 200px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 50%;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-        }
-
-        .page-title {
-            font-size: 32px;
-            font-weight: 800;
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 8px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .page-title i {
-            font-size: 36px;
-            opacity: 0.95;
-        }
-
-        .page-subtitle {
-            color: rgba(255, 255, 255, 0.85);
-            font-size: 14px;
-            position: relative;
-            z-index: 1;
-        }
-
-        body.dark-mode .page-title {
-            color: #5fa3ff;
         }
 
         .shift-tabs {
@@ -483,7 +453,7 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
             cursor: pointer;
             font-size: 15px;
             font-weight: 600;
-            color: #666;
+            color: #2c3e50 !important;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
@@ -493,6 +463,27 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
 
         .shift-tab i {
             font-size: 17px;
+            color: inherit !important;
+        }
+
+        body:not(.dark-mode) .shift-tabs {
+            background: #ffffff !important;
+            border: 1px solid #e8eef7;
+        }
+
+        body:not(.dark-mode) .shift-tab {
+            background: #f8f9fa !important;
+            color: #2c3e50 !important;
+        }
+
+        body:not(.dark-mode) .shift-tab:hover {
+            background: #e8f1ff !important;
+            color: #003d82 !important;
+        }
+
+        body:not(.dark-mode) .shift-tab.active {
+            background: linear-gradient(135deg, #003d82 0%, #005ba8 100%) !important;
+            color: #ffffff !important;
         }
 
         .shift-tab:hover {
@@ -696,10 +687,12 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
 
         body.dark-mode .shift-status {
             background: #1e5631;
+            color: #c9f7d5;
         }
 
         body.dark-mode .shift-status.inactive {
             background: #5c2a2a;
+            color: #ffd0d0;
         }
 
         .shift-time {
@@ -1067,6 +1060,31 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
             color: #b0b0b0;
         }
 
+        body.dark-mode #overview table td:first-child,
+        body.dark-mode #overview table td:nth-child(2),
+        body.dark-mode #overview table td:nth-child(3) {
+            color: #f1f5f9;
+        }
+
+        body.dark-mode #assignmentTable td:nth-child(2),
+        body.dark-mode #assignmentTable td:nth-child(3) {
+            color: #f1f5f9;
+        }
+
+        body.dark-mode #assignmentTable td:nth-child(2) span {
+            background-color: #244b70 !important;
+            color: #e6f4ff !important;
+        }
+
+        body.dark-mode #assignmentTable td:nth-child(6) span {
+            background-color: #24543a !important;
+            color: #d8ffe2 !important;
+        }
+
+        body.dark-mode #assignmentTable td:nth-child(6) span i {
+            color: #b8f5ce !important;
+        }
+
         tbody tr:hover {
             background: #f9fbfd;
         }
@@ -1148,29 +1166,17 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
         }
     </style>
     <script src="../assets/mobile-responsive.js" defer></script>
-</head>
-<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
-    <div
-      class="preloader flex-column justify-content-center align-items-center">
-      <img
-        class="animation__wobble"
-        src="../../assets/pics/bcpLogo.png"
-        alt="AdminLTELogo"
-        height="60"
-        width="60" />
-    </div>
-    <?php include(__DIR__ . '/../app/components/Sidebar.php'); ?>
-
-    <div class="main-content">
-        <div class="content-wrapper">
-            <div class="shift-container">
-                <div class="page-header">
-                    <h1 class="page-title">
-                        <i class="fas fa-clock"></i>
-                        Shift Management
-                    </h1>
-        </div>
-
+HTML;
+?>
+<?php
+require_once __DIR__ . '/../layout/page_start.php';
+require_once __DIR__ . '/../layout/sidebar.php';
+$page_title = 'Manage Shifts';
+$page_subtitle = 'Create, edit, and assign employee shifts';
+$page_icon = 'fa-clock';
+require_once __DIR__ . '/../layout/content_header.php';
+?>
+    <div class="shift-container">
         <div class="container glass-panel">
         <?php if ($message): ?>
             <div class="alert alert-success">
@@ -1266,7 +1272,16 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                                     </span>
                                 </td>
                                 <td style="display: flex; gap: 8px;">
-                                    <button type="button" class="btn btn-sm btn-primary" onclick="openEditShiftModalSafe(<?php echo $shift['shift_id']; ?>, <?php echo json_encode($shift['shift_name']); ?>, <?php echo json_encode($shift['start_time']); ?>, <?php echo json_encode($shift['end_time']); ?>, <?php echo (int)($shift['break_duration'] ?? 0); ?>, <?php echo json_encode($shift['description'] ?? ''); ?>, <?php echo $shift['is_active'] ? 'true' : 'false'; ?>, <?php echo isset($shift['exclude_saturday']) && $shift['exclude_saturday'] ? 'true' : 'false'; ?>);">
+                                    <button type="button" class="btn btn-sm btn-primary" data-shift-edit="<?php echo htmlspecialchars(json_encode([
+                                        $shift['shift_id'],
+                                        $shift['shift_name'],
+                                        $shift['start_time'],
+                                        $shift['end_time'],
+                                        (int)($shift['break_duration'] ?? 0),
+                                        $shift['description'] ?? '',
+                                        (bool)$shift['is_active'],
+                                        !empty($shift['exclude_saturday'])
+                                    ], JSON_HEX_TAG | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_HEX_APOS), ENT_QUOTES, 'UTF-8'); ?>" onclick="openEditShiftModalFromButton(this);">
                                         <i class="fas fa-edit"></i> Edit
                                     </button>
                                     <form method="POST" style="display: inline;">
@@ -1699,12 +1714,22 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
 
             <script>
             // Flexible Schedules Table Data
-            let flexibleTableData = <?php echo json_encode($flexibleData); ?>;
+            let flexibleTableData = <?php echo json_encode($flexibleData, JSON_HEX_TAG | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_HEX_APOS); ?>;
             let flexibleCurrentPage = 1;
             let flexiblePageSize = 10;
             let flexibleSortField = 'employee';
             let flexibleSortAsc = true;
             let flexibleFilterText = '';
+
+            function escapeFlexibleHtml(value) {
+                return String(value ?? '').replace(/[&<>"']/g, character => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[character]));
+            }
 
             function renderFlexibleTable() {
                 const filtered = flexibleTableData.filter(row => {
@@ -1744,7 +1769,18 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                     html = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #999;"><i class="fas fa-inbox" style="font-size: 32px; display: block; margin-bottom: 12px;"></i>No flexible schedules found.</td></tr>';
                 } else {
                     pageData.forEach(row => {
-                        const notesPreview = row.notes.length > 30 ? row.notes.substring(0, 30) + '...' : row.notes || '—';
+                        const rowNotes = String(row.notes || '');
+                        const notesPreview = rowNotes.length > 30 ? rowNotes.substring(0, 30) + '...' : rowNotes || '—';
+                        const editData = JSON.stringify([
+                            row.id,
+                            String(row.employee_id || ''),
+                            row.schedule_date || '',
+                            row.start_time || '',
+                            row.end_time || '',
+                            rowNotes,
+                            row.repeat_until || '',
+                            row.contract_end_date || ''
+                        ]);
                         html += `<tr>
                             <td><i class="fas fa-user" style="margin-right: 8px; color: #3498db;"></i>${row.employee}</td>
                             <td>${row.date}</td>
@@ -1752,13 +1788,17 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                             <td><i class="fas fa-clock" style="margin-right: 4px; color: #f39c12;"></i>${row.time}</td>
                             <td>${row.repeat}</td>
                             <td>${row.contract}</td>
-                            <td title="${row.notes}">${notesPreview}</td>
+                            <td title="${escapeFlexibleHtml(rowNotes)}">${notesPreview}</td>
                             <td style="display: flex; gap: 8px;">
-                                <button type="button" class="btn btn-sm btn-primary" onclick="openFlexibleScheduleEdit(${row.id}, '${row.employee_id}', '${row.schedule_date}', '${row.start_time}', '${row.end_time}', '${row.notes.replace(/'/g, "\\'")}', '${row.repeat_until || ''}', '${row.contract_end_date || ''}');" style="padding: 6px 12px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                <button type="button" class="btn btn-sm btn-primary" data-flexible-edit="${escapeFlexibleHtml(editData)}" onclick="openFlexibleScheduleEditFromButton(this);" style="padding: 6px 12px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
                                 <form method="POST" style="display: inline;">
                                     <input type="hidden" name="delete_flex_id" value="${row.id}">
+                                    <input type="hidden" name="delete_flex_employee_id" value="${row.employee_id}">
+                                    <input type="hidden" name="delete_flex_schedule_date" value="${row.schedule_date}">
+                                    <input type="hidden" name="delete_flex_start_time" value="${row.start_time}">
+                                    <input type="hidden" name="delete_flex_end_time" value="${row.end_time}">
                                     <button type="submit" name="delete_flexible" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?');" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
                                         <i class="fas fa-trash"></i> Delete
                                     </button>
@@ -1964,7 +2004,16 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                                         <td><?php echo $flex['contract_end_date'] ? date('M d, Y', strtotime($flex['contract_end_date'])) : '—'; ?></td>
                                         <td><?php echo $flex['notes'] ? htmlspecialchars(substr($flex['notes'], 0, 50)) . (strlen($flex['notes']) > 50 ? '...' : '') : '—'; ?></td>
                                         <td style="display: flex; gap: 8px;">
-                                            <button type="button" class="btn btn-sm btn-primary" onclick="openFlexibleScheduleEdit(<?php echo $flex['id']; ?>, '<?php echo $flex['employee_id']; ?>', '<?php echo $flex['schedule_date']; ?>', '<?php echo $flex['start_time']; ?>', '<?php echo $flex['end_time']; ?>', '<?php echo htmlspecialchars($flex['notes'], ENT_QUOTES); ?>', '<?php echo $flex['repeat_until'] ?? ''; ?>', '<?php echo $flex['contract_end_date'] ?? ''; ?>');">
+                                            <button type="button" class="btn btn-sm btn-primary" data-flexible-edit="<?php echo htmlspecialchars(json_encode([
+                                                $flex['id'],
+                                                (string)$flex['employee_id'],
+                                                $flex['schedule_date'],
+                                                $flex['start_time'],
+                                                $flex['end_time'],
+                                                $flex['notes'] ?? '',
+                                                $flex['repeat_until'] ?? '',
+                                                $flex['contract_end_date'] ?? ''
+                                            ]), ENT_QUOTES, 'UTF-8'); ?>" onclick="openFlexibleScheduleEditFromButton(this);">
                                                 <i class="fas fa-edit"></i> Edit
                                             </button>
                                             <form method="POST" style="display: inline;">
@@ -2103,7 +2152,7 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                 <h2><i class="fas fa-plus-circle"></i> Create New Shift</h2>
                 <button class="modal-close" onclick="closeModal('createShiftModal')">&times;</button>
             </div>
-            <form method="POST" class="shift-form" style="padding: 0;">
+            <form id="createShiftForm" method="POST" class="shift-form" style="padding: 0;">
                 <div class="modal-body">
                     <div class="form-group">
                         <label for="shift_name"><i class="fas fa-briefcase"></i> Shift Name *</label>
@@ -2138,10 +2187,11 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                             <p style="margin: 5px 0 0 0; color: #666; font-size: 12px;">Check this if the shift does not operate on Saturdays</p>
                         </label>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('createShiftModal')">Cancel</button>
-                    <button type="submit" name="create_shift" class="btn btn-primary"><i class="fas fa-save"></i> Create Shift</button>
+
+                    <div class="modal-action-row">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('createShiftModal')">Cancel</button>
+                        <button type="submit" form="createShiftForm" name="create_shift" class="btn btn-primary"><i class="fas fa-save"></i> Create Shift</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -2150,14 +2200,21 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
     <!-- Edit Shift Modal -->
     <div id="editShiftModal" class="modal" style="display: none;">
         <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-edit"></i> Edit Shift</h2>
+            <div class="modal-header edit-modal-header">
+                <div>
+                    <span class="edit-modal-eyebrow">SHIFT MANAGEMENT</span>
+                    <h2><i class="fas fa-edit"></i> Edit Shift</h2>
+                    <p>Update the shift details and availability.</p>
+                </div>
                 <button class="modal-close" onclick="closeModal('editShiftModal')">&times;</button>
             </div>
-            <form method="POST" class="shift-form" style="padding: 0;">
+            <form id="editShiftForm" method="POST" class="shift-form" style="padding: 0;">
                 <div class="modal-body">
                     <input type="hidden" id="edit_shift_id" name="shift_id">
-                    <div class="form-group">
+                    <div class="edit-form-section">
+                        <div class="edit-section-title"><i class="fas fa-sliders-h"></i><span>Shift details</span></div>
+                    <div class="edit-form-grid">
+                    <div class="form-group edit-form-full">
                         <label for="edit_shift_name"><i class="fas fa-briefcase"></i> Shift Name *</label>
                         <input type="text" id="edit_shift_name" name="shift_name" required placeholder="e.g., Morning Shift">
                     </div>
@@ -2173,10 +2230,14 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                         <label for="edit_break_duration"><i class="fas fa-hourglass-half"></i> Break Duration (minutes)</label>
                         <input type="number" id="edit_break_duration" name="break_duration" min="0" max="480">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group edit-form-full">
                         <label for="edit_description"><i class="fas fa-file-alt"></i> Description</label>
                         <textarea id="edit_description" name="description" placeholder="Enter shift description (optional)"></textarea>
                     </div>
+                    </div>
+                    </div>
+                    <div class="edit-form-section edit-options-section">
+                        <div class="edit-section-title"><i class="fas fa-toggle-on"></i><span>Availability</span></div>
                     <div class="form-group">
                         <label class="checkbox-group">
                             <input type="checkbox" id="edit_is_active" name="is_active">
@@ -2190,10 +2251,12 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                             <p style="margin: 5px 0 0 0; color: #666; font-size: 12px;">Check this if the shift does not operate on Saturdays</p>
                         </label>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('editShiftModal')">Cancel</button>
-                    <button type="submit" name="update_shift" class="btn btn-primary"><i class="fas fa-save"></i> Update Shift</button>
+                    </div>
+
+                    <div class="modal-action-row">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('editShiftModal')">Cancel</button>
+                        <button type="submit" form="editShiftForm" name="update_shift" class="btn btn-primary"><i class="fas fa-save"></i> Update Shift</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -2286,13 +2349,13 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
 
                     <!-- Hidden field to store selected employees -->
                     <input type="hidden" id="selected_employees" name="selected_employees" value="">
-                </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('assignmentModal')">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="assignMultipleEmployees()" style="display: flex; align-items: center; gap: 8px;">
-                        <i class="fas fa-check"></i> Assign to Selected
-                    </button>
+                    <div class="modal-action-row">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('assignmentModal')">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="assignMultipleEmployees()" style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-check"></i> Assign to Selected
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -2301,40 +2364,36 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
     <!-- Edit Flexible Schedule Modal -->
     <div id="editFlexibleModal" class="modal" style="display: none;">
         <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-edit"></i> Edit Flexible Schedule</h2>
+            <div class="modal-header edit-modal-header">
+                <div>
+                    <span class="edit-modal-eyebrow">FLEXIBLE SCHEDULE</span>
+                    <h2><i class="fas fa-edit"></i> Edit Schedule</h2>
+                    <p>Adjust the employee's date, hours, and schedule options.</p>
+                </div>
                 <button class="modal-close" onclick="closeModal('editFlexibleModal')">&times;</button>
             </div>
             <form method="POST" class="shift-form" style="padding: 0;">
                 <div class="modal-body">
                     <input type="hidden" id="edit_flex_id" name="edit_flex_id">
-                    <p style="color: #666; margin-bottom: 20px; font-size: 14px;">
-                        <i class="fas fa-info-circle"></i> Update the schedule details for this employee.
-                    </p>
-                    <div class="form-group">
-                        <label for="edit_flex_employee_id"><i class="fas fa-user"></i> Employee *</label>
-                        <select id="edit_flex_employee_id" name="edit_flex_employee_id" required onchange="console.log('Edit - Employee selected:', this.value)">
-                            <option value="">Select an employee...</option>
-                            <?php
-                            try {
-                                $emp_stmt = $db->query("SELECT employee_id, full_name FROM employees ORDER BY full_name");
-                                $emp_count = 0;
-                                $emp_list = [];
-                                while ($emp = $emp_stmt->fetch(PDO::FETCH_ASSOC)) {
-                                    echo '<option value="' . htmlspecialchars($emp['employee_id']) . '">' . htmlspecialchars($emp['full_name']) . '</option>';
-                                    $emp_count++;
-                                    $emp_list[] = $emp['employee_id'];
-                                }
-                                if ($emp_count === 0) {
-                                    echo '<option value="" disabled style="color: red;">❌ No employees found in system</option>';
-                                } else {
-                                    echo '<script>console.log("✓ Edit form - Employees loaded: ' . implode(', ', $emp_list) . '");</script>';
-                                }
-                            } catch (Exception $e) {
-                                echo '<option value="" disabled>Error loading employees: ' . htmlspecialchars($e->getMessage()) . '</option>';
-                            }
-                            ?>
-                        </select>
+                    <div class="edit-form-section">
+                        <div class="edit-section-title"><i class="fas fa-calendar-alt"></i><span>Schedule details</span></div>
+                    <div class="edit-form-grid">
+                    <div class="form-group edit-form-full">
+                        <label><i class="fas fa-user"></i> Employee *</label>
+                        <div class="employee-picker-toolbar">
+                            <input type="text" id="editFlexEmployeeSearchInput" placeholder="Search employees..." oninput="filterEditFlexEmployees(this.value)">
+                            <button type="button" class="btn btn-info" onclick="searchEditFlexEmployees()" title="Search"><i class="fas fa-search"></i></button>
+                            <select id="editFlexEmployeeFilterStatus" onchange="filterEditFlexEmployeesByStatus(this.value)">
+                                <option value="">All Employees</option>
+                                <option value="assigned">Assigned</option>
+                                <option value="unassigned">Unassigned</option>
+                            </select>
+                        </div>
+                        <div id="editFlexEmployeeListContainer" class="employee-picker-list">
+                            <div id="editFlexEmployeeCheckboxList"></div>
+                        </div>
+                        <input type="hidden" id="edit_flex_employee_id" name="edit_flex_employee_id" required>
+                        <small class="employee-picker-selected"><i class="fas fa-info-circle"></i> <strong>Selected:</strong> <span id="editFlexSelectedEmployee">None</span></small>
                     </div>
                     <div class="form-group">
                         <label for="edit_flex_date"><i class="fas fa-calendar"></i> Date *</label>
@@ -2360,11 +2419,15 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                         <label for="edit_flex_end_time"><i class="fas fa-clock"></i> End Time *</label>
                         <input type="time" id="edit_flex_end_time" name="edit_flex_end_time" required>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group edit-form-full">
                         <label for="edit_flex_notes"><i class="fas fa-sticky-note"></i> Notes (Optional)</label>
                         <textarea id="edit_flex_notes" name="edit_flex_notes" style="height: 100px; resize: vertical;"></textarea>
                     </div>
-                    <div class="form-group">
+                    </div>
+                    </div>
+                    <div class="edit-form-section edit-options-section">
+                        <div class="edit-section-title"><i class="fas fa-repeat"></i><span>Schedule options</span></div>
+                    <div class="form-group edit-option-toggle">
                         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0;">
                             <input type="checkbox" name="edit_flex_repeat_until" id="edit_flex_repeat_until">
                             <span>Set Repeat End Date</span>
@@ -2374,7 +2437,7 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                         <label for="edit_flex_repeat_end_date"><i class="fas fa-calendar-times"></i> Repeat Until (Optional)</label>
                         <input type="date" id="edit_flex_repeat_end_date" name="edit_flex_repeat_end_date">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group edit-option-toggle">
                         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0;">
                             <input type="checkbox" name="edit_flex_contract_end" id="edit_flex_contract_end">
                             <span>Set Contract End Date</span>
@@ -2385,10 +2448,12 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                         <input type="date" id="edit_flex_contract_end_date" name="edit_flex_contract_end_date">
                         <p style="font-size: 12px; color: #999; margin-top: 8px;">Use this for temporary contracts with a specific end date</p>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('editFlexibleModal')">Cancel</button>
-                    <button type="submit" name="update_flexible" class="btn btn-primary"><i class="fas fa-save"></i> Update Schedule</button>
+                    </div>
+
+                    <div class="modal-action-row">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('editFlexibleModal')">Cancel</button>
+                        <button type="submit" name="update_flexible" class="btn btn-primary"><i class="fas fa-save"></i> Update Schedule</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -2482,9 +2547,9 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                             onchange="toggleFlexRepeatUntil()"
                         >
                         <label for="flex_repeat_until" style="margin: 0; cursor: pointer; flex: 1;">
-                            <strong style="color: #1565c0;">Set Repeat End Date?</strong>
+                            <strong style="color: #1565c0;">Set Repeat Until Date?</strong>
                             <p style="margin: 5px 0 0 0; color: #666; font-size: 12px;">
-                                Check this to set when this weekly schedule repeats until
+                                Check this to set when the weekly schedule pattern stops repeating
                             </p>
                         </label>
                     </div>
@@ -2503,9 +2568,9 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                             onchange="toggleFlexContractEnd()"
                         >
                         <label for="flex_contract_end" style="margin: 0; cursor: pointer; flex: 1;">
-                            <strong style="color: #e65100;">Set Contract End Date?</strong>
+                            <strong style="color: #e65100;">Set Assignment Valid Until?</strong>
                             <p style="margin: 5px 0 0 0; color: #666; font-size: 12px;">
-                                Check this for temporary contracts with a specific end date
+                                Check this to limit when this employee's flexible schedule assignment stays valid
                             </p>
                         </label>
                     </div>
@@ -2513,10 +2578,11 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                         <label for="flex_contract_end_date"><i class="fas fa-briefcase"></i> Contract Ends On (Optional)</label>
                         <input type="date" id="flex_contract_end_date" name="flex_contract_end_date">
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('flexibleModal')">Cancel</button>
-                    <button type="submit" name="create_flexible" class="btn btn-primary"><i class="fas fa-save"></i> Create Schedule</button>
+
+                    <div class="modal-action-row">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('flexibleModal')">Cancel</button>
+                        <button type="submit" name="create_flexible" class="btn btn-primary"><i class="fas fa-save"></i> Create Schedule</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -2534,8 +2600,10 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
             height: 100%;
             background: rgba(0, 0, 0, 0.5);
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
+            padding: 20px 0;
+            overflow-y: auto;
             z-index: 1000;
         }
 
@@ -2543,11 +2611,27 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
             background: white;
             border-radius: 16px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            max-width: 600px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
+            max-width: 680px;
+            width: min(95vw, 680px);
+            max-height: calc(100vh - 16px);
+            overflow: hidden;
             animation: slideIn 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-body {
+            padding: 28px;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            flex: 1 1 auto;
+            min-height: 0;
+            max-height: calc(100vh - 220px);
+        }
+
+        body.modal-open {
+            overflow: hidden;
+            height: 100%;
         }
 
         @keyframes slideIn {
@@ -2573,6 +2657,214 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
             display: flex;
             align-items: center;
             gap: 12px;
+            color: #ffffff;
+        }
+
+        .edit-modal-header {
+            padding: 24px 28px 22px;
+            align-items: flex-start;
+        }
+
+        .edit-modal-header h2 {
+            margin-top: 4px;
+        }
+
+        .edit-modal-header p {
+            margin: 8px 0 0 36px;
+            color: rgba(255, 255, 255, 0.78);
+            font-size: 12px;
+        }
+
+        .edit-modal-eyebrow {
+            display: block;
+            margin-left: 36px;
+            color: #9ed1ff;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 1.4px;
+        }
+
+        .edit-form-section {
+            padding: 18px;
+            margin-bottom: 18px;
+            border: 1px solid #e5edf6;
+            border-radius: 12px;
+            background: #fbfdff;
+        }
+
+        .edit-options-section {
+            background: #f7fbff;
+        }
+
+        .edit-options-section .edit-option-toggle {
+            margin-bottom: 8px;
+        }
+
+        .edit-options-section .edit-option-toggle + .form-group {
+            margin-top: -2px;
+        }
+
+        .edit-options-section .edit-option-toggle label {
+            padding: 9px 12px;
+            border: 1px solid #d8e8f7;
+            border-radius: 8px;
+            background: #ffffff;
+        }
+
+        .edit-options-section .edit-option-toggle input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+            accent-color: #0066cc;
+        }
+
+        .modal .checkbox-group {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            width: fit-content;
+            margin: 0;
+            padding: 9px 12px;
+            border: 1px solid #d8e8f7;
+            border-radius: 8px;
+            background: #ffffff;
+            cursor: pointer;
+        }
+
+        .modal .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+            accent-color: #0066cc;
+        }
+
+        .modal .checkbox-group span {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin: 0;
+        }
+
+        body.dark-mode .modal .checkbox-group {
+            border-color: #3b4b5d;
+            background: #263442;
+        }
+
+        body.dark-mode .edit-options-section .edit-option-toggle label {
+            border-color: #3b4b5d;
+            background: #263442;
+        }
+
+        .edit-section-title {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            margin-bottom: 16px;
+            color: #164b80;
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: .2px;
+        }
+
+        .edit-section-title i {
+            display: grid;
+            place-items: center;
+            width: 27px;
+            height: 27px;
+            border-radius: 8px;
+            background: #e4f1ff;
+            color: #0066cc;
+        }
+
+        .edit-form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0 16px;
+        }
+
+        .edit-form-grid .form-group {
+            margin-bottom: 16px;
+        }
+
+        .edit-form-full {
+            grid-column: 1 / -1;
+        }
+
+        .employee-picker-toolbar {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto 170px;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .employee-picker-toolbar input,
+        .employee-picker-toolbar select {
+            width: 100%;
+            min-width: 0;
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 7px;
+            font: inherit;
+        }
+
+        .employee-picker-toolbar .btn-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 42px;
+            padding: 10px 14px;
+            background: #138496;
+            color: #fff;
+        }
+
+        .employee-picker-list {
+            display: none;
+            max-height: 190px;
+            overflow-y: auto;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+
+        .employee-picker-selected {
+            display: block;
+            margin-top: 8px;
+            color: #666;
+        }
+
+        body.dark-mode .employee-picker-toolbar input,
+        body.dark-mode .employee-picker-toolbar select,
+        body.dark-mode .employee-picker-list {
+            background: #2a2a2a;
+            border-color: #444;
+            color: #e8e8e8;
+        }
+
+        .edit-form-section .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .edit-form-section .checkbox-group,
+        .edit-form-section > .form-group[style*="background"] {
+            border-radius: 10px !important;
+        }
+
+        body.dark-mode .edit-form-section {
+            border-color: #3b4b5d;
+            background: #202b36;
+        }
+
+        body.dark-mode .edit-options-section {
+            background: #1d2a38;
+        }
+
+        body.dark-mode .edit-section-title {
+            color: #a9d5ff;
+        }
+
+        body.dark-mode .edit-section-title i {
+            background: #263f59;
         }
 
         .modal-close {
@@ -2593,17 +2885,17 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
             opacity: 0.8;
         }
 
-        .modal-body {
-            padding: 28px;
+        .modal-footer {
+            display: none;
         }
 
-        .modal-footer {
+        .modal-action-row {
             display: flex;
             gap: 12px;
             justify-content: flex-end;
-            padding: 20px 28px;
+            padding-top: 16px;
+            margin-top: 10px;
             border-top: 1px solid #e0e0e0;
-            background: #f8f9fa;
         }
 
         body.dark-mode .modal-content {
@@ -2616,8 +2908,7 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
             border-bottom-color: #333;
         }
 
-        body.dark-mode .modal-footer {
-            background: #252525;
+        body.dark-mode .modal-action-row {
             border-top-color: #333;
         }
 
@@ -2718,9 +3009,15 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
         }
 
         @media (max-width: 768px) {
+            .modal {
+                padding: 12px 0;
+                align-items: flex-start;
+            }
+
             .modal-content {
-                max-width: 95%;
+                max-width: 95vw;
                 max-height: 95vh;
+                width: 100%;
             }
 
             .modal-header {
@@ -2731,8 +3028,18 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
                 font-size: 16px;
             }
 
+            .edit-modal-header {
+                padding: 18px 16px;
+            }
+
+            .edit-modal-header p,
+            .edit-modal-eyebrow {
+                margin-left: 30px;
+            }
+
             .modal-body {
                 padding: 16px;
+                max-height: calc(100vh - 230px);
             }
 
             .modal-footer {
@@ -2744,6 +3051,26 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
             .modal .btn {
                 width: 100%;
             }
+
+            .edit-form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .edit-form-full {
+                grid-column: auto;
+            }
+
+            .edit-form-section {
+                padding: 14px;
+            }
+
+            .employee-picker-toolbar {
+                grid-template-columns: 1fr auto;
+            }
+
+            .employee-picker-toolbar select {
+                grid-column: 1 / -1;
+            }
         }
     </style>
 
@@ -2752,6 +3079,7 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
             const modal = document.getElementById(modalId);
             if (modal) {
                 modal.style.display = 'flex';
+                document.body.classList.add('modal-open');
             }
         }
 
@@ -2759,6 +3087,7 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
             const modal = document.getElementById(modalId);
             if (modal) {
                 modal.style.display = 'none';
+                document.body.classList.remove('modal-open');
                 // Reset any forms inside the modal
                 const forms = modal.querySelectorAll('form');
                 forms.forEach(form => form.reset());
@@ -3018,10 +3347,21 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
             }
         }
 
+        function openEditShiftModalFromButton(button) {
+            try {
+                const editData = JSON.parse(button.dataset.shiftEdit);
+                openEditShiftModalSafe(...editData);
+            } catch (error) {
+                console.error('Error reading shift data:', error);
+            }
+        }
+
         function openFlexibleScheduleEdit(flexId, employeeId, date, startTime, endTime, notes, repeatUntil, contractEndDate) {
             // Populate the edit modal with current values
             document.getElementById('edit_flex_id').value = flexId;
             document.getElementById('edit_flex_employee_id').value = employeeId;
+            const currentEmployee = flexibleEmployeesData.find(employee => employee.employee_id == employeeId);
+            document.getElementById('editFlexSelectedEmployee').textContent = currentEmployee ? currentEmployee.full_name : employeeId;
             document.getElementById('edit_flex_date').value = date;
             document.getElementById('edit_flex_start_time').value = startTime;
             document.getElementById('edit_flex_end_time').value = endTime;
@@ -3056,6 +3396,65 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
             
             // Open the edit modal
             openModal('editFlexibleModal');
+            loadFlexibleScheduleEmployees();
+        }
+
+        let editFlexFilteredEmployees = [];
+
+        function renderEditFlexEmployeeList(employees) {
+            const container = document.getElementById('editFlexEmployeeCheckboxList');
+            const selectedId = document.getElementById('edit_flex_employee_id').value;
+            container.innerHTML = '';
+
+            if (!employees.length) {
+                container.innerHTML = '<div style="padding: 18px; text-align: center; color: #999;">No employees found</div>';
+                return;
+            }
+
+            employees.forEach(employee => {
+                const isSelected = String(employee.employee_id) === String(selectedId);
+                const item = document.createElement('div');
+                item.style.cssText = `padding: 11px 12px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; cursor: pointer; background: ${isSelected ? '#e3f2fd' : 'transparent'}; border-left: 3px solid ${isSelected ? '#2196F3' : 'transparent'};`;
+                item.innerHTML = `<div style="width: 20px; height: 20px; border-radius: 50%; background: ${isSelected ? '#2196F3' : '#ddd'}; display: grid; place-items: center;">${isSelected ? '<i class="fas fa-check" style="color: white; font-size: 11px;"></i>' : ''}</div><strong>${escapeHtml(employee.full_name)}</strong><span style="margin-left: auto; background: ${employee.has_flexible_schedule ? '#4CAF50' : '#FF9800'}; color: white; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: bold;">${employee.has_flexible_schedule ? 'ASSIGNED' : 'UNASSIGNED'}</span>`;
+                item.addEventListener('click', () => selectEditFlexEmployee(employee));
+                container.appendChild(item);
+            });
+        }
+
+        function selectEditFlexEmployee(employee) {
+            document.getElementById('edit_flex_employee_id').value = employee.employee_id;
+            document.getElementById('editFlexSelectedEmployee').textContent = employee.full_name;
+            renderEditFlexEmployeeList(editFlexFilteredEmployees);
+        }
+
+        function filterEditFlexEmployees(searchTerm) {
+            const term = String(searchTerm || '').toLowerCase().trim();
+            editFlexFilteredEmployees = flexibleEmployeesData.filter(employee => employee.full_name.toLowerCase().includes(term));
+            document.getElementById('editFlexEmployeeListContainer').style.display = term ? 'block' : 'none';
+            renderEditFlexEmployeeList(editFlexFilteredEmployees);
+        }
+
+        function filterEditFlexEmployeesByStatus(status) {
+            editFlexFilteredEmployees = status === 'assigned'
+                ? flexibleEmployeesData.filter(employee => employee.has_flexible_schedule)
+                : status === 'unassigned'
+                    ? flexibleEmployeesData.filter(employee => !employee.has_flexible_schedule)
+                    : [...flexibleEmployeesData];
+            document.getElementById('editFlexEmployeeListContainer').style.display = status ? 'block' : 'none';
+            renderEditFlexEmployeeList(editFlexFilteredEmployees);
+        }
+
+        function searchEditFlexEmployees() {
+            filterEditFlexEmployees(document.getElementById('editFlexEmployeeSearchInput').value);
+        }
+
+        function openFlexibleScheduleEditFromButton(button) {
+            try {
+                const editData = JSON.parse(button.dataset.flexibleEdit);
+                openFlexibleScheduleEdit(...editData);
+            } catch (error) {
+                console.error('Error reading flexible schedule data:', error);
+            }
         }
 
         // Close modal when clicking outside
@@ -3398,5 +3797,6 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
             }
         }
     </script>
-</body>
-</html>
+
+<?php require_once __DIR__ . '/../layout/content_footer.php'; ?>
+<?php require_once __DIR__ . '/../layout/page_end.php'; ?>

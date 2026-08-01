@@ -11,6 +11,7 @@ date_default_timezone_set('Asia/Manila');
 require_once __DIR__ . '/../models/Attendance.php';
 require_once __DIR__ . '/../models/Employee.php';
 require_once __DIR__ . '/../core/QRHelper.php';
+require_once __DIR__ . '/../core/QRActionResolver.php';
 require_once __DIR__ . '/../core/Helper.php';
 require_once __DIR__ . '/../core/AuditLog.php';
 require_once __DIR__ . '/../core/Session.php';
@@ -49,7 +50,7 @@ class AttendanceController
                 exit;
             }
 
-            $existingRecord = $this->attendanceModel->getTodayAttendance($employee_id);
+            $existingRecord = $this->attendanceModel->getTodayAttendance($employee_id, $todayDate);
 
             //Holiday check
             if ($this->attendanceModel->isHoliday($todayDate)) {
@@ -92,7 +93,7 @@ class AttendanceController
             //Insert Time In
             if ($this->attendanceModel->timeIn($employee_id, $method)) {
 
-                $record = $this->attendanceModel->getTodayAttendance($employee_id);
+                $record = $this->attendanceModel->getTodayAttendance($employee_id, $todayDate);
                 $status = Helper::determineStatus($record['time_in']);
 
                 $this->auditLog->log(
@@ -129,11 +130,11 @@ class AttendanceController
             exit;
         }
     }
-    public function timeOut()
+    public function timeOut($employee_id = null)
     {
         Session::start();
 
-        $employee_id = $_POST['employee_id'] ?? null;
+        $employee_id = $employee_id ?? ($_POST['employee_id'] ?? null);
         $user_id = Session::get('user_id');
 
         if (!$employee_id) {
@@ -152,6 +153,33 @@ class AttendanceController
 
         if (!empty($record['time_out'])) {
             Session::set('error', 'Already timed out at ' . Helper::formatTime($record['time_out']));
+            header("Location: index.php?url=dashboard");
+            exit;
+        }
+
+        $timeInTimestamp = strtotime($record['time_in']);
+        $elapsedSeconds = time() - $timeInTimestamp;
+        $minimumTimeOutSeconds = 10800;
+
+        if ($elapsedSeconds < $minimumTimeOutSeconds) {
+            $remainingSeconds = $minimumTimeOutSeconds - $elapsedSeconds;
+            $hours = floor($remainingSeconds / 3600);
+            $minutes = floor(($remainingSeconds % 3600) / 60);
+            $seconds = $remainingSeconds % 60;
+            $timeParts = [];
+
+            if ($hours > 0) {
+                $timeParts[] = $hours . ' hour' . ($hours > 1 ? 's' : '');
+            }
+            if ($minutes > 0) {
+                $timeParts[] = $minutes . ' minute' . ($minutes > 1 ? 's' : '');
+            }
+            if ($seconds > 0 && count($timeParts) < 2) {
+                $timeParts[] = $seconds . ' second' . ($seconds > 1 ? 's' : '');
+            }
+
+            $timeLeftText = implode(' ', $timeParts);
+            Session::set('error', 'You can’t time out right now. Try again after ' . ($timeLeftText ?: 'a moment') . '.');
             header("Location: index.php?url=dashboard");
             exit;
         }
@@ -215,7 +243,7 @@ class AttendanceController
             // If confirmation is submitted (POST request)
             if ($confirm === 'yes') {
                 // Process the QR attendance with confirmation
-                $result = $this->processQRAttendance($employee_id, $token);
+                $result = $this->processQRAttendance($employee_id, $token, $_POST['action'] ?? null);
                 
                 if ($result['success']) {
                     Session::set('success', $result['message']);
@@ -239,15 +267,12 @@ class AttendanceController
             // Token validation happens when user confirms
             // This matches hakdog's approach and allows for better UX
 
-            // Check today's attendance to determine if TIME_IN or TIME_OUT
+            // Check today's attendance and determine a sensible default action.
             $todayRecord = $this->attendanceModel->getTodayAttendance($employee_id);
-            $action = 'TIME_IN';
-            $statusText = 'Record Time In';
-            
-            if ($todayRecord && !empty($todayRecord['time_in']) && empty($todayRecord['time_out'])) {
-                $action = 'TIME_OUT';
-                $statusText = 'Record Time Out';
-            } elseif ($todayRecord && !empty($todayRecord['time_out'])) {
+            $action = QRActionResolver::resolveAction($todayRecord, null);
+            $statusText = $action === 'TIME_OUT' ? 'Record Time Out' : 'Record Time In';
+
+            if ($action === 'COMPLETED') {
                 Session::set('error', 'Attendance already completed for today.');
                 header("Location: index.php?url=dashboard");
                 exit;
@@ -258,7 +283,6 @@ class AttendanceController
             $currentTime = date('H:i:s');
             $currentDate = date('Y-m-d');
             $employee = $employeeData; // Pass employee data to view
-            $employee_id = $employee_id; // Pass employee_id for AJAX
             
             // Load modal view directly without layout wrapper
             require __DIR__ . '/../views/employee-portal/qr-confirmation-modal.php';
@@ -271,7 +295,7 @@ class AttendanceController
         }
     }
 
-    public function processQRAttendance($employee_no, $token)
+    public function processQRAttendance($employee_no, $token, $preferredAction = null)
     {
         Session::start();
         $user_id = Session::get('user_id');
@@ -313,31 +337,68 @@ class AttendanceController
                 ];
             }
 
-            // Check if employee has timed in today
+            // Check today's attendance and resolve the intended action.
             $todayRecord = $this->attendanceModel->getTodayAttendance($employee_no);
-            $action = '';
+            $action = QRActionResolver::resolveAction($todayRecord, $preferredAction);
 
-            // Smart decision: if already timed in, do time out; otherwise do time in
-            if ($todayRecord && !empty($todayRecord['time_in']) && empty($todayRecord['time_out'])) {
-                // Employee already timed in, so do TIME OUT
-                if ($this->attendanceModel->timeOut($todayRecord['attendance_id'])) {
-                    $updatedRecord = $this->attendanceModel->getTodayAttendance($employee_no);
-                    $hoursData = Helper::calculateHours($updatedRecord['time_in'], $updatedRecord['time_out'], 8);
-                    $this->attendanceModel->updateHours($todayRecord['attendance_id'], $hoursData);
-                    
-                    $action = 'TIME_OUT';
-                    $message = 'Time Out recorded at ' . Helper::formatTime($updatedRecord['time_out']) . ' | Total Hours: ' . $hoursData['total_hours'];
+            if ($action === 'COMPLETED') {
+                return [
+                    'success' => false,
+                    'message' => 'You have already timed out today at ' . Helper::formatTime($todayRecord['time_out'])
+                ];
+            }
+
+            if ($action === 'TIME_OUT') {
+                if ($todayRecord && !empty($todayRecord['time_in']) && empty($todayRecord['time_out'])) {
+                    $timeInTimestamp = strtotime($todayRecord['time_in']);
+                    $elapsedSeconds = time() - $timeInTimestamp;
+                    $minimumTimeOutSeconds = 10800;
+
+                    if ($elapsedSeconds < $minimumTimeOutSeconds) {
+                        $remainingSeconds = $minimumTimeOutSeconds - $elapsedSeconds;
+                        $hours = floor($remainingSeconds / 3600);
+                        $minutes = floor(($remainingSeconds % 3600) / 60);
+                        $seconds = $remainingSeconds % 60;
+                        $timeParts = [];
+
+                        if ($hours > 0) {
+                            $timeParts[] = $hours . ' hour' . ($hours > 1 ? 's' : '');
+                        }
+                        if ($minutes > 0) {
+                            $timeParts[] = $minutes . ' minute' . ($minutes > 1 ? 's' : '');
+                        }
+                        if ($seconds > 0 && count($timeParts) < 2) {
+                            $timeParts[] = $seconds . ' second' . ($seconds > 1 ? 's' : '');
+                        }
+
+                        $timeLeftText = implode(' ', $timeParts);
+                        return [
+                            'success' => false,
+                            'message' => 'You can’t time out right now. Try again after ' . ($timeLeftText ?: 'a moment') . '.'
+                        ];
+                    }
+
+                    if ($this->attendanceModel->timeOut($todayRecord['attendance_id'])) {
+                        $updatedRecord = $this->attendanceModel->getTodayAttendance($employee_no);
+                        $hoursData = Helper::calculateHours($updatedRecord['time_in'], $updatedRecord['time_out'], 8);
+                        $this->attendanceModel->updateHours($todayRecord['attendance_id'], $hoursData);
+
+                        $message = 'Time Out recorded at ' . Helper::formatTime($updatedRecord['time_out']) . ' | Total Hours: ' . $hoursData['total_hours'];
+                    } else {
+                        return [
+                            'success' => false,
+                            'message' => 'Failed to record time out.'
+                        ];
+                    }
                 } else {
                     return [
                         'success' => false,
-                        'message' => 'Failed to record time out.'
+                        'message' => 'No active time-in record found for today.'
                     ];
                 }
-            } else if (!$todayRecord || empty($todayRecord['time_in'])) {
-                // Employee hasn't timed in yet, so do TIME IN
+            } else {
                 if ($this->attendanceModel->timeIn($employee_no, 'QR')) {
                     $record = $this->attendanceModel->getTodayAttendance($employee_no);
-                    $action = 'TIME_IN';
                     $message = 'Time In recorded at ' . Helper::formatTime($record['time_in']);
                 } else {
                     return [
@@ -345,12 +406,6 @@ class AttendanceController
                         'message' => 'Failed to record time in.'
                     ];
                 }
-            } else {
-                // Already timed out
-                return [
-                    'success' => false,
-                    'message' => 'You have already timed out today at ' . Helper::formatTime($todayRecord['time_out'])
-                ];
             }
 
             // Mark token as used

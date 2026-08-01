@@ -125,17 +125,19 @@ try {
         error_log('Leave requests error: ' . $e->getMessage());
     }
 
-    // Get absence/late records for this month
+    // Get attendance status records for this month
     $absenceRecords = [];
     try {
-        $stmt = $conn->prepare("SELECT * FROM ta_absence_late_records
+        $stmt = $conn->prepare("SELECT attendance_id, attendance_date, status, late_minutes, time_in, time_out
+            FROM ta_attendance
             WHERE employee_id = ?
-            AND date BETWEEN ? AND ?
-            ORDER BY date DESC");
+            AND attendance_date BETWEEN ? AND ?
+            AND status IN ('ABSENT', 'LATE', 'HOLIDAY_WORKED')
+            ORDER BY attendance_date DESC");
         $stmt->execute([$employee_id, $currentMonthStart, $currentMonthEnd]);
         $absenceRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        error_log('Absence records error: ' . $e->getMessage());
+        error_log('Attendance status records error: ' . $e->getMessage());
     }
 
     // Get current shift

@@ -1,5 +1,4 @@
 <?php
-require_once '../models/BiometricModule.php';
 require_once '../../../auth/database.php';
 
 header('Content-Type: application/json');

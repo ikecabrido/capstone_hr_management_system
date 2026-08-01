@@ -136,9 +136,7 @@ try {
 
     // Mark token as used
     if ($result) {
-        $markUsedQuery = "UPDATE attendance_tokens SET used = 1, used_by = :emp_id, used_at = NOW() WHERE token = :token";
-        $markStmt = $conn->prepare($markUsedQuery);
-        $markStmt->execute([':emp_id' => $employee['employee_id'], ':token' => $token]);
+            $markUsedQuery = "UPDATE ta_attendance_tokens SET used = 1, used_by = :emp_id, used_at = NOW() WHERE token = :token";
 
         // Store success message in session and redirect to dashboard
         $_SESSION['qr_success'] = $message . ' for ' . $employee['full_name'];
@@ -176,68 +174,28 @@ try {
     exit;
 }
 ?>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Time & Attendance - QR Scan</title>
-    <link rel="icon" href="../Bestlink College of the Philippines.jpeg" type="image/jpeg">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<?php
+$current_page = 'qr_scan.php';
+$current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'guest';
+$page_title = 'QR Scan';
+$page_head_extra = <<<HTML
+<link rel="icon" href="../Bestlink College of the Philippines.jpeg" type="image/jpeg">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #003d82 0%, #0066cc 100%); min-height: 100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+    .container { background: white; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,61,130,0.15); max-width: 500px; width: 100%; padding: 40px; }
+    .header { text-align: center; margin-bottom: 30px; }
+    .header h1 { color: #003d82; font-size: 28px; font-weight:700; margin-bottom:10px; }
+    .header p { color:#666; font-size:14px; }
+    .form-group { margin-bottom:20px; }
+    label { display:block; margin-bottom:8px; color:#003d82; font-weight:600; font-size:14px; }
+    input[type="text"],
+HTML;
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #003d82 0%, #0066cc 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0, 61, 130, 0.15);
-            max-width: 500px;
-            width: 100%;
-            padding: 40px;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            color: #003d82;
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            color: #666;
-            font-size: 14px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #003d82;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        input[type="text"],
+require_once __DIR__ . '/../layout/page_start.php';
+require_once __DIR__ . '/../layout/sidebar.php';
+require_once __DIR__ . '/../layout/content_header.php';
+?>
         input[type="number"] {
             width: 100%;
             padding: 12px;
@@ -363,9 +321,73 @@ try {
                 padding: 10px;
             }
         }
+        /* AdminLTE Preloader Styles */
+        .preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0d47a1 0%, #0b3c91 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 99999;
+        }
+
+        .preloader.flex-column {
+            flex-direction: column;
+        }
+
+        .preloader.justify-content-center {
+            justify-content: center;
+        }
+
+        .preloader.align-items-center {
+            align-items: center;
+        }
+
+        .preloader img {
+            max-width: 100px;
+            height: auto;
+            display: block;
+        }
+
+        .animation__wobble {
+            animation: wobble 2.5s infinite ease-in-out;
+        }
+
+        @keyframes wobble {
+            0% {
+                transform: translateX(0);
+            }
+            15% {
+                transform: translateX(-5px) rotate(-5deg);
+            }
+            30% {
+                transform: translateX(3px) rotate(3deg);
+            }
+            45% {
+                transform: translateX(-3px) rotate(-3deg);
+            }
+            60% {
+                transform: translateX(2px) rotate(2deg);
+            }
+            75% {
+                transform: translateX(-1px) rotate(-1deg);
+            }
+            100% {
+                transform: translateX(0);
+            }
+        }
+
     </style>
 </head>
 <body>
+    <div class="preloader flex-column justify-content-center align-items-center">
+        <img class="animation__wobble" src="../../assets/pics/bcpLogo.png" alt="AdminLTELogo" height="60" width="60" />
+    </div>
     <div class="container">
         <div class="header">
             <h1>Time & Attendance</h1>
@@ -461,267 +483,159 @@ try {
             messageDiv.style.display = 'block';
         }
     </script>
-</body>
-</html>
+    <!-- Preloader Management Script -->
+    <script>
+        function hidePreloader() {
+            const preloader = document.querySelector('.preloader');
+            if (preloader) {
+                preloader.style.display = 'none';
+                preloader.style.visibility = 'hidden';
+            }
+        }
+
+        function showPreloader() {
+            const preloader = document.querySelector('.preloader');
+            if (preloader) {
+                preloader.style.display = 'flex';
+                preloader.style.visibility = 'visible';
+            }
+        }
+
+        window.addEventListener('load', hidePreloader);
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Delay hiding preloader so animation is visible
+            setTimeout(hidePreloader, 6000);
+            const navLinks = document.querySelectorAll('a');
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    const href = this.getAttribute('href');
+                    if (href && !href.includes('logout') && !href.startsWith('javascript') && !href.startsWith('#') && !href.startsWith('mailto:') && !href.startsWith('tel:')) {
+                        showPreloader();
+                    }
+                });
+            });
+        });
+    </script>
     // Public QR scan - need employee identification
     // For now, we'll show a form to enter employee ID
     ?>
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Confirm Attendance - Time & Attendance System</title>
-        <link rel="icon" href="../Bestlink College of the Philippines.jpeg" type="image/jpeg">
-        <script src="../assets/mobile-responsive.js" defer></script>
-        <style>
-            * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-            }
+    <div class="preloader flex-column justify-content-center align-items-center">
+        <img class="animation__wobble" src="../../assets/pics/bcpLogo.png" alt="AdminLTELogo" height="60" width="60" />
+    </div>
+    <div class="container">
+        <h1>✓ QR Code Valid</h1>
+        <p class="subtitle">Your QR code has been scanned successfully</p>
 
-            body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background: linear-gradient(135deg, #003d82 0%, #0066cc 100%);
-                min-height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 20px;
-            }
-
-            .container {
-                background: white;
-                padding: 40px;
-                border-radius: 12px;
-                box-shadow: 0 8px 32px rgba(0, 61, 130, 0.2);
-                max-width: 500px;
-                width: 100%;
-            }
-
-            h1 {
-                color: #003d82;
-                margin-bottom: 10px;
-                font-size: 28px;
-                font-weight: 700;
-            }
-
-            .subtitle {
-                color: #666;
-                margin-bottom: 30px;
-                font-size: 14px;
-            }
-
-            .success-icon {
-                font-size: 60px;
-                margin-bottom: 20px;
-            }
-
-            .info {
-                background: #f0f7ff;
-                padding: 15px;
-                border-left: 4px solid #0066cc;
-                border-radius: 4px;
-                margin-bottom: 20px;
-                color: #003d82;
-                font-size: 14px;
-            }
-
-            .form-group {
-                margin-bottom: 20px;
-            }
-
-            .form-group label {
-                display: block;
-                margin-bottom: 8px;
-                font-weight: 600;
-                color: #333;
-            }
-
-            .form-group input,
-            .form-group select {
-                width: 100%;
-                padding: 12px;
-                border: 2px solid #e8eef7;
-                border-radius: 6px;
-                font-size: 14px;
-                font-family: inherit;
-            }
-
-            .form-group input:focus,
-            .form-group select:focus {
-                outline: none;
-                border-color: #0066cc;
-                box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
-            }
-
-            .buttons {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 10px;
-                margin-top: 30px;
-            }
-
-            .btn {
-                padding: 12px 20px;
-                border: none;
-                border-radius: 6px;
-                font-size: 14px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: all 0.3s ease;
-            }
-
-            .btn-submit {
-                background: linear-gradient(135deg, #003d82 0%, #0066cc 100%);
-                color: white;
-            }
-
-            .btn-submit:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0, 61, 130, 0.3);
-            }
-
-            .btn-cancel {
-                background: #f0f0f0;
-                color: #333;
-            }
-
-            .btn-cancel:hover {
-                background: #e0e0e0;
-            }
-
-            .loading {
-                display: none;
-                text-align: center;
-            }
-
-            .spinner {
-                border: 4px solid #f3f3f3;
-                border-top: 4px solid #0066cc;
-                border-radius: 50%;
-                width: 40px;
-                height: 40px;
-                animation: spin 1s linear infinite;
-                margin: 0 auto 20px;
-            }
-
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-
-            .message {
-                padding: 15px;
-                border-radius: 6px;
-                margin-bottom: 20px;
-                text-align: center;
-            }
-
-            .message.success {
-                background: #d4edda;
-                color: #155724;
-                border: 1px solid #c3e6cb;
-            }
-
-            .message.error {
-                background: #f8d7da;
-                color: #721c24;
-                border: 1px solid #f5c6cb;
-            }
-
-            @media (max-width: 480px) {
-                .container {
-                    padding: 20px;
-                }
-
-                h1 {
-                    font-size: 22px;
-                }
-
-                .buttons {
-                    grid-template-columns: 1fr;
-                }
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>✓ QR Code Valid</h1>
-            <p class="subtitle">Your QR code has been scanned successfully</p>
-
-            <div class="info">
-                This attendance will be recorded to your employee profile. A notification will be sent to your registered email.
-            </div>
-
-            <div id="message"></div>
-
-            <form id="attendanceForm" method="POST">
-                <input type="hidden" name="token" value="<?php echo htmlspecialchars($token); ?>">
-                
-                <div class="form-group">
-                    <label for="employee_id">Employee ID / Number</label>
-                    <input 
-                        type="text" 
-                        id="employee_id" 
-                        name="employee_id" 
-                        placeholder="Enter your employee ID or scan your badge" 
-                        autocomplete="off"
-                        autofocus
-                        required
-                    >
-                </div>
-
-                <div class="buttons">
-                    <button type="submit" class="btn btn-submit">Confirm Attendance</button>
-                    <button type="button" class="btn btn-cancel" onclick="window.location.href='qr_display_kiosk.php'">Cancel</button>
-                </div>
-            </form>
-
-            <div id="loading" class="loading">
-                <div class="spinner"></div>
-                <p>Recording your attendance...</p>
-            </div>
+        <div class="info">
+            This attendance will be recorded to your employee profile. A notification will be sent to your registered email.
         </div>
 
-        <script>
-            document.getElementById('attendanceForm').addEventListener('submit', async function(e) {
-                e.preventDefault();
+        <div id="message"></div>
 
-                const formData = new FormData(this);
-                const loading = document.getElementById('loading');
-                const form = document.getElementById('attendanceForm');
-                const messageDiv = document.getElementById('message');
+        <form id="attendanceForm" method="POST">
+            <input type="hidden" name="token" value="<?php echo htmlspecialchars($token); ?>">
+            
+            <div class="form-group">
+                <label for="employee_id">Employee ID / Number</label>
+                <input 
+                    type="text" 
+                    id="employee_id" 
+                    name="employee_id" 
+                    placeholder="Enter your employee ID or scan your badge" 
+                    autocomplete="off"
+                    autofocus
+                    required
+                >
+            </div>
 
-                loading.style.display = 'block';
-                form.style.display = 'none';
-                messageDiv.innerHTML = '';
+            <div class="buttons">
+                <button type="submit" class="btn btn-submit">Confirm Attendance</button>
+                <button type="button" class="btn btn-cancel" onclick="window.location.href='qr_display_kiosk.php'">Cancel</button>
+            </div>
+        </form>
 
-                try {
-                    const response = await fetch('<?php echo $_SERVER['REQUEST_URI']; ?>', {
-                        method: 'POST',
-                        body: formData
-                    });
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Recording your attendance...</p>
+        </div>
+    </div>
 
-                    const data = await response.json();
+    <script>
+        document.getElementById('attendanceForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
 
-                    if (data.success) {
-                        messageDiv.innerHTML = `<div class="message success">${data.message}</div>`;
-                        setTimeout(() => {
-                            window.location.href = 'qr_display_kiosk.php';
-                        }, 2000);
-                    } else {
-                        messageDiv.innerHTML = `<div class="message error">${data.message}</div>`;
-                        loading.style.display = 'none';
-                        form.style.display = 'block';
-                    }
-                } catch (error) {
-                    messageDiv.innerHTML = `<div class="message error">Error: ${error.message}</div>`;
+            const formData = new FormData(this);
+            const loading = document.getElementById('loading');
+            const form = document.getElementById('attendanceForm');
+            const messageDiv = document.getElementById('message');
+
+            loading.style.display = 'block';
+            form.style.display = 'none';
+            messageDiv.innerHTML = '';
+
+            try {
+                const response = await fetch('<?php echo $_SERVER['REQUEST_URI']; ?>', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    messageDiv.innerHTML = `<div class="message success">${data.message}</div>`;
+                    setTimeout(() => {
+                        window.location.href = 'qr_display_kiosk.php';
+                    }, 2000);
+                } else {
+                    messageDiv.innerHTML = `<div class="message error">${data.message}</div>`;
                     loading.style.display = 'none';
                     form.style.display = 'block';
                 }
+            } catch (error) {
+                messageDiv.innerHTML = `<div class="message error">Error: ${error.message}</div>`;
+                loading.style.display = 'none';
+                form.style.display = 'block';
+            }
+        });
+    </script>
+<!-- Preloader Management Script -->
+<script>
+    function hidePreloader() {
+        const preloader = document.querySelector('.preloader');
+        if (preloader) {
+            preloader.style.display = 'none';
+            preloader.style.visibility = 'hidden';
+        }
+    }
+
+    function showPreloader() {
+        const preloader = document.querySelector('.preloader');
+        if (preloader) {
+            preloader.style.display = 'flex';
+            preloader.style.visibility = 'visible';
+        }
+    }
+
+    window.addEventListener('load', hidePreloader);
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Delay hiding preloader so animation is visible
+        setTimeout(hidePreloader, 6000);
+        const navLinks = document.querySelectorAll('a');
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', function() {
+                const href = this.getAttribute('href');
+                if (href && !href.includes('logout') && !href.startsWith('javascript') && !href.startsWith('#') && !href.startsWith('mailto:') && !href.startsWith('tel:')) {
+                    showPreloader();
+                }
             });
-        </script>
-    </body>
-    </html>
+        });
+    });
+</script>
+
+<?php require_once __DIR__ . '/../layout/content_footer.php'; ?>
+<?php require_once __DIR__ . '/../layout/page_end.php'; ?>
+

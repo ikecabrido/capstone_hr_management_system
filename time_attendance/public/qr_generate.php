@@ -126,6 +126,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <script src="../assets/mobile-responsive.js" defer></script>
 </head>
 <body>
+    <div class="preloader flex-column justify-content-center align-items-center">
+        <img class="animation__wobble" src="../../assets/pics/bcpLogo.png" alt="AdminLTELogo" height="60" width="60" />
+    </div>
     <!-- Header Navigation -->
     <header>
         <div class="header-container">
@@ -332,3 +335,4 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
     </script>
 </html>
+

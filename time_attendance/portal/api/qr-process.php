@@ -118,6 +118,7 @@ try {
         FROM ta_attendance
         WHERE employee_id = :employee_id
         AND attendance_date = :attendance_date
+        ORDER BY (time_in IS NOT NULL AND time_out IS NULL) DESC, created_at DESC, attendance_id DESC
         LIMIT 1
     ");
     $stmt->execute([
@@ -127,6 +128,29 @@ try {
     $attendance_record = $stmt->fetch();
 
     if ($attendance_record && $attendance_record['time_in'] && !$attendance_record['time_out']) {
+        $timeInTimestamp = strtotime($attendance_record['time_in']);
+        $elapsedSeconds = strtotime($now) - $timeInTimestamp;
+        $minimumTimeOutSeconds = 10800;
+
+        if ($elapsedSeconds < $minimumTimeOutSeconds) {
+            $remainingSeconds = $minimumTimeOutSeconds - $elapsedSeconds;
+            $hours = floor($remainingSeconds / 3600);
+            $minutes = floor(($remainingSeconds % 3600) / 60);
+            $seconds = $remainingSeconds % 60;
+            $timeParts = [];
+
+            if ($hours > 0) {
+                $timeParts[] = $hours . ' hour' . ($hours > 1 ? 's' : '');
+            }
+            if ($minutes > 0) {
+                $timeParts[] = $minutes . ' minute' . ($minutes > 1 ? 's' : '');
+            }
+            if ($seconds > 0 && count($timeParts) < 2) {
+                $timeParts[] = $seconds . ' second' . ($seconds > 1 ? 's' : '');
+            }
+
+            return $this->error('You can’t time out right now. Try again after ' . ($timeParts ? implode(' ', $timeParts) : 'a moment') . '.');
+        }
         // This is a time_out
         $action = 'TIME_OUT';
         $attendance_id = $attendance_record['attendance_id'];

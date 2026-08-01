@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
                 <p style="margin: 0; color: #003d82; font-weight: 600;">
                     <i class="fas fa-check-circle mr-2"></i>Selected: <strong id="employee-name"></strong>
                 </p>
-                <button class="btn btn-sm btn-outline-secondary mt-2" id="clear-employee" style="width: 100%;"><i class="fas fa-times mr-1"></i>Clear & Show All</button>
+                <button class="btn btn-sm btn-outline-secondary mt-2" id="clear-employee" style="width: 100%;"><i class="fas fa-times mr-1"></i>Clear Selection</button>
             </div>
         </div>
 
@@ -118,6 +118,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
             <div class="tab-pane fade" id="day-view" role="tabpanel" style="width: 100%; box-sizing: border-box;">
                 <div style="width: 100%; margin-bottom: 20px; box-sizing: border-box;">
                     <div style="display: flex; gap: 10px; width: 100%; box-sizing: border-box;">
+                        <button type="button" class="btn" id="back-to-calendar" onclick="handleBackToCalendar()" style="padding: 12px 24px; background: #003d82; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; color: white;">
+                            <i class="fas fa-arrow-left"></i> Back to Calendar
+                        </button>
                         <button type="button" class="btn" id="prev-day" onclick="handlePrevDay()" style="padding: 12px 24px; background: #f8f9fa; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; font-weight: 600; color: #003d82;">
                             <i class="fas fa-chevron-left"></i> Previous Day
                         </button>

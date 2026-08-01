@@ -8,7 +8,7 @@ let selectedEmployee = null;
 let currentCalendar = null;
 let timelineData = [];
 let selectedDate = null;
-let allSchedulesMode = true; // Show all employees by default
+let allSchedulesMode = false; // Only show employee-specific data once selected
 let targetCalendarView = 'dayGridMonth'; // Track which view should be active
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -44,6 +44,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
+    window.handleBackToCalendar = function() {
+        console.log('✓ Back to calendar button clicked');
+        switchToView('month');
+    };
+
     // ============ Employee Search ============
     const searchInput = document.getElementById('employee-search');
     const searchResults = document.getElementById('search-results');
@@ -52,9 +57,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearBtn = document.getElementById('clear-employee');
     const calendarSection = document.getElementById('calendar-section');
 
-    // Load all employees' schedules on page load
-    console.log('Starting to load all schedules...');
-    loadAllSchedules();
+    // Show the calendar immediately so it is visible on page load
+    console.log('Initializing calendar view on page load');
+    initializeDefaultCalendar();
 
     // Test tab switching
     const monthTab = document.querySelector('a[href="#month-view"]');
@@ -132,6 +137,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Select employee
     function selectEmployee(employee) {
         selectedEmployee = employee;
+        if (!selectedDate) {
+            selectedDate = formatDate(new Date());
+        }
         searchInput.value = employee.name;
         searchResults.style.display = 'none';
         
@@ -147,17 +155,54 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedEmployee = null;
         searchInput.value = '';
         selectedEmployeeDiv.style.display = 'none';
-        allSchedulesMode = true;
-        
-        if (currentCalendar) {
-            currentCalendar.destroy();
-            currentCalendar = null;
-        }
-        
-        // Reload all schedules
-        loadAllSchedules();
+        allSchedulesMode = false;
+        initializeDefaultCalendar();
     });
     // ============ TAB SWITCHING SETUP (Called once on page load) ============
+    function switchToView(view) {
+        console.log('✓ Switching to', view, 'view');
+        const calendarContainer = document.getElementById('calendar-container');
+        const dayViewPane = document.getElementById('day-view');
+        const controlsGrid = document.getElementById('controls-grid');
+
+        if (view === 'month') {
+            if (calendarContainer) calendarContainer.style.display = 'block';
+            if (dayViewPane) {
+                dayViewPane.classList.remove('show', 'active');
+            }
+            if (controlsGrid) controlsGrid.style.display = 'grid';
+            if (currentCalendar) {
+                currentCalendar.changeView('dayGridMonth');
+            }
+        } else if (view === 'week') {
+            if (calendarContainer) calendarContainer.style.display = 'block';
+            if (dayViewPane) {
+                dayViewPane.classList.remove('show', 'active');
+            }
+            if (controlsGrid) controlsGrid.style.display = 'grid';
+            if (currentCalendar) {
+                currentCalendar.changeView('dayGridWeek');
+            }
+        } else if (view === 'day') {
+            if (calendarContainer) calendarContainer.style.display = 'none';
+            if (dayViewPane) {
+                dayViewPane.classList.add('show', 'active');
+            }
+            if (controlsGrid) controlsGrid.style.display = 'grid';
+
+            if (selectedEmployee && !selectedDate) {
+                selectedDate = formatDate(new Date());
+            }
+        }
+
+        document.querySelectorAll('.view-mode-btn').forEach(button => {
+            const isActive = button.classList.contains(`side-${view}-btn`);
+            button.style.background = isActive ? 'linear-gradient(135deg, #003d82 0%, #005ba8 100%)' : '#f8f9fa';
+            button.style.color = isActive ? 'white' : '#003d82';
+            button.style.border = isActive ? 'none' : '2px solid #e0e0e0';
+        });
+    }
+
     function setupTabSwitching() {
         console.log('Setting up tab switching for all buttons...');
         
@@ -167,40 +212,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const sideDayBtn = document.querySelector('button.side-day-btn');
         
         console.log('Side buttons found - Month:', sideMonthBtn ? 'YES' : 'NO', 'Week:', sideWeekBtn ? 'YES' : 'NO', 'Day:', sideDayBtn ? 'YES' : 'NO');
-        
-        // Helper function to handle view switching
-        function switchToView(view) {
-            console.log('✓ Switching to', view, 'view');
-            const calendarContainer = document.getElementById('calendar-container');
-            const dayViewPane = document.getElementById('day-view');
-            const controlsGrid = document.getElementById('controls-grid');
-            
-            if (view === 'month') {
-                if (calendarContainer) calendarContainer.style.display = 'block';
-                if (dayViewPane) {
-                    dayViewPane.classList.remove('show', 'active');
-                }
-                if (controlsGrid) controlsGrid.style.display = 'grid';
-                if (currentCalendar) {
-                    currentCalendar.changeView('dayGridMonth');
-                }
-            } else if (view === 'week') {
-                if (calendarContainer) calendarContainer.style.display = 'block';
-                if (dayViewPane) {
-                    dayViewPane.classList.remove('show', 'active');
-                }
-                if (controlsGrid) controlsGrid.style.display = 'grid';
-                if (currentCalendar) {
-                    currentCalendar.changeView('dayGridWeek');
-                }
-            } else if (view === 'day') {
-                if (calendarContainer) calendarContainer.style.display = 'none';
-                if (dayViewPane) {
-                    dayViewPane.classList.add('show', 'active');
-                }
-                if (controlsGrid) controlsGrid.style.display = 'none';
-            }
-        }
         
         // Side Month Button
         if (sideMonthBtn) {
@@ -232,7 +243,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('✓✓✓ SIDE DAY BUTTON CLICKED');
-                switchToView('day');
+
+                if (selectedEmployee) {
+                    const dateToShow = selectedDate || formatDate(new Date());
+                    showDailyView(dateToShow);
+                } else {
+                    switchToView('day');
+                }
                 return false;
             });
             console.log('Side day button listener attached');
@@ -258,60 +275,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize tab switching once on page load
     setupTabSwitching();
-    // ============ Load All Schedules ============
-    function loadAllSchedules() {
-        allSchedulesMode = true;
+    // ============ Default Calendar ============
+    function initializeDefaultCalendar() {
+        allSchedulesMode = false;
         selectedEmployeeDiv.style.display = 'none';
-        
-        // Clear calendar and use single container for both month and week views
+
         const calendarEl = document.getElementById('calendar');
         if (calendarEl) calendarEl.innerHTML = '';
-        
+
         if (currentCalendar) {
             currentCalendar.destroy();
             currentCalendar = null;
         }
 
-        const today = new Date();
-        // Fetch data for the current month through the end of next year to cover contract end dates
-        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-        const lastDay = new Date(today.getFullYear() + 1, today.getMonth() + 1, 0);
+        calendarSection.style.display = 'block';
+        selectedDate = null;
 
-        const startDate = formatDate(firstDay);
-        const endDate = formatDate(lastDay);
+        const dayTextElement = document.getElementById('current-day-text');
+        if (dayTextElement) {
+            dayTextElement.textContent = 'No employee selected';
+        }
 
-        console.log('Loading all employees schedules from', startDate, 'to', endDate);
-        
-        // Load general attendance/shift data for display
-        fetch(`../app/api/get_all_schedules.php?start_date=${startDate}&end_date=${endDate}`)
-            .then(response => {
-                console.log('All schedules API response status:', response.status);
-                if (!response.ok) {
-                    throw new Error('Failed to fetch schedules: ' + response.status);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('All schedules data received:', data);
-                if (data.success || Array.isArray(data)) {
-                    const scheduleData = data.success ? data.data : data;
-                    // Wrap in schedule property for initializeCalendar
-                    initializeCalendar(calendarEl, { schedule: scheduleData });
-                } else {
-                    console.error('API returned error:', data.error);
-                    showError(data.error || 'Failed to load schedules');
-                }
-            })
-            .catch(error => {
-                console.error('All schedules loading error:', error);
-                // Fallback - show empty calendar
-                initializeCalendar(calendarEl, { schedule: [] });
-            });
+        console.log('Rendering empty calendar state');
+        initializeCalendar(calendarEl, { schedule: [] });
     }
 
     // ============ Calendar Loading ============
     function loadCalendar() {
-        if (!selectedEmployee) return;
+        if (!selectedEmployee) {
+            initializeDefaultCalendar();
+            return;
+        }
 
         calendarSection.style.display = 'block';
 
@@ -397,6 +391,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         currentCalendar.render();
+        if (window.releasePreloader) {
+            window.releasePreloader(1200);
+        }
         console.log('✓ Calendar rendered successfully');
 
         // Add click handlers for day-of-week headers to switch to week view
@@ -503,15 +500,27 @@ document.addEventListener('DOMContentLoaded', function() {
         // Activate day view tab using the centralized function
         activateTab('#day-view');
         
-        // Update the day display
+        // Update the day display and always show the selected employee if available
         selectedDate = dateStr;
+        if (selectedEmployee) {
+            const dateObj = new Date(dateStr + 'T00:00:00');
+            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+            const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const dayTextElement = document.getElementById('current-day-text');
+            if (dayTextElement) {
+                dayTextElement.textContent = `${dayName}, ${formattedDate} • ${selectedEmployee.name}`;
+            }
+        }
+        
+        switchToView('day');
         const dateObj = new Date(dateStr + 'T00:00:00');
         const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
         const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         
         const dayTextElement = document.getElementById('current-day-text');
         if (dayTextElement) {
-            dayTextElement.textContent = `${dayName}, ${formattedDate}`;
+            const employeeLabel = selectedEmployee ? ` • ${selectedEmployee.name}` : '';
+            dayTextElement.textContent = `${dayName}, ${formattedDate}${employeeLabel}`;
             console.log('✓ Updated day text to:', dayTextElement.textContent);
         } else {
             console.error('Day text element not found');
@@ -583,7 +592,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Draw events for this day from attendance data
         console.log('Fetching attendance data for:', dateStr);
-        fetch(`../app/api/get_day_schedule.php?date=${dateStr}`)
+        const employeeParam = selectedEmployee ? `&employee_id=${selectedEmployee.id}` : '';
+        fetch(`../app/api/get_day_schedule.php?date=${dateStr}${employeeParam}`)
             .then(response => {
                 console.log('Day schedule API response status:', response.status);
                 return response.json();

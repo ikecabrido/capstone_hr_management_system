@@ -8,8 +8,6 @@
         </div>
         <div class="live-clock" id="liveClock" style="font-size: 24px; font-weight: bold; color: #003d82; background: #f0f4f8; padding: 10px 20px; border-radius: 8px;">00:00:00</div>
     </div>
-    <?php require __DIR__ . '/../partials/notif.php'; ?>
-
     <!-- Messages -->
     <?php if (!empty($message)): ?>
         <?php $type = $messageType ?? 'info'; ?>

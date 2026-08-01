@@ -20,33 +20,62 @@ class Attendance
     /**
      * Get today's attendance record for an employee
      */
-    public function getTodayAttendance($employee_id)
+    public function getTodayAttendance($employee_id, $attendance_date = null)
     {
+        if ($attendance_date === null) {
+            $attendance_date = date('Y-m-d');
+        }
+
         $query = "SELECT * FROM $this->table 
                   WHERE employee_id = :employee_id 
-                  AND attendance_date = CURDATE() 
+                  AND attendance_date = :attendance_date
+                  ORDER BY created_at DESC, attendance_id DESC
                   LIMIT 1";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':employee_id', $employee_id);
+        $stmt->bindParam(':attendance_date', $attendance_date);
         $stmt->execute();
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     /**
-     * Record Time In with status
+     * Record Time In with status and optional late minutes
      */
-    public function timeIn($employee_id, $method, $status = 'PRESENT')
+    public function timeIn($employee_id, $method, $status = 'PRESENT', $late_minutes = 0)
     {
+        $attendance_date = date('Y-m-d');
+        $existingRecord = $this->getTodayAttendance($employee_id, $attendance_date);
+
+        if ($existingRecord && !empty($existingRecord['time_in'])) {
+            return false;
+        }
+
+        if ($existingRecord && empty($existingRecord['time_in'])) {
+            $query = "UPDATE $this->table
+                      SET time_in = NOW(), recorded_by = :method, status = :status, late_minutes = :late_minutes, updated_at = CURRENT_TIMESTAMP
+                      WHERE attendance_id = :attendance_id";
+
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':method', $method);
+            $stmt->bindParam(':status', $status);
+            $stmt->bindParam(':late_minutes', $late_minutes, PDO::PARAM_INT);
+            $stmt->bindParam(':attendance_id', $existingRecord['attendance_id']);
+
+            return $stmt->execute();
+        }
+
         $query = "INSERT INTO $this->table 
-                  (employee_id, time_in, attendance_date, recorded_by, status)
-                  VALUES (:employee_id, NOW(), CURDATE(), :method, :status)";
+                  (employee_id, time_in, attendance_date, recorded_by, status, late_minutes)
+                  VALUES (:employee_id, NOW(), :attendance_date, :method, :status, :late_minutes)";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':employee_id', $employee_id);
+        $stmt->bindParam(':attendance_date', $attendance_date);
         $stmt->bindParam(':method', $method);
         $stmt->bindParam(':status', $status);
+        $stmt->bindParam(':late_minutes', $late_minutes, PDO::PARAM_INT);
 
         return $stmt->execute();
     }
@@ -56,14 +85,32 @@ class Attendance
      */
     public function timeOut($attendance_id)
     {
+        error_log("Attendance::timeOut entered with attendance_id=" . var_export($attendance_id, true));
+
+        if (empty($attendance_id) || !is_numeric($attendance_id) || intval($attendance_id) <= 0) {
+            error_log("Attendance::timeOut called with invalid attendance_id: " . var_export($attendance_id, true));
+            return false;
+        }
+
         $query = "UPDATE $this->table 
-                  SET time_out = NOW()
-                  WHERE attendance_id = :attendance_id";
+                  SET time_out = NOW(), updated_at = CURRENT_TIMESTAMP
+                  WHERE attendance_id = :attendance_id
+                  AND (time_out IS NULL OR time_out = '0000-00-00 00:00:00')";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':attendance_id', $attendance_id);
+        $stmt->bindParam(':attendance_id', $attendance_id, PDO::PARAM_INT);
 
-        return $stmt->execute();
+        try {
+            $result = $stmt->execute();
+        } catch (Exception $e) {
+            error_log("Attendance::timeOut CATCH attendance_id={$attendance_id} error=" . $e->getMessage() . " file=" . $e->getFile() . " line=" . $e->getLine());
+            throw $e;
+        }
+
+        $affectedRows = $stmt->rowCount();
+        error_log("Attendance::timeOut attendance_id={$attendance_id} result=" . ($result ? 'true' : 'false') . " affected_rows={$affectedRows}");
+
+        return ($result && $affectedRows > 0);
     }
 
     /**
@@ -197,17 +244,50 @@ class Attendance
     }
 
     /**
-     * Update attendance status
+     * Update attendance status and optionally late minutes
      */
-    public function updateStatus($attendance_id, $status)
+    public function updateStatus($attendance_id, $status, $late_minutes = null)
     {
         $query = "UPDATE $this->table 
-                  SET status = :status
-                  WHERE attendance_id = :attendance_id";
+                  SET status = :status";
+
+        if ($late_minutes !== null) {
+            $query .= ", late_minutes = :late_minutes";
+        }
+
+        $query .= " WHERE attendance_id = :attendance_id";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':attendance_id', $attendance_id);
         $stmt->bindParam(':status', $status);
+
+        if ($late_minutes !== null) {
+            $stmt->bindParam(':late_minutes', $late_minutes, PDO::PARAM_INT);
+        }
+
+        return $stmt->execute();
+    }
+
+    /**
+     * Record a system-generated absence in ta_attendance
+     */
+    public function markAbsent($employee_id, $attendance_date = null, $notes = null)
+    {
+        $attendance_date = $attendance_date ?? date('Y-m-d');
+
+        $existingRecord = $this->getTodayAttendance($employee_id, $attendance_date);
+        if ($existingRecord) {
+            return false;
+        }
+
+        $query = "INSERT INTO $this->table
+                  (employee_id, attendance_date, status, recorded_by, notes, late_minutes)
+                  VALUES (:employee_id, :attendance_date, 'ABSENT', 'SYSTEM', :notes, 0)";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':employee_id', $employee_id);
+        $stmt->bindParam(':attendance_date', $attendance_date);
+        $stmt->bindParam(':notes', $notes);
 
         return $stmt->execute();
     }

@@ -1,4 +1,7 @@
 function updateClock() {
+  const clockEl = document.getElementById("clock");
+  if (!clockEl) return;
+
   const now = new Date();
   let h = now.getHours();
   let m = now.getMinutes();
@@ -10,7 +13,7 @@ function updateClock() {
   m = m < 10 ? "0" + m : m;
   s = s < 10 ? "0" + s : s;
 
-  document.getElementById("clock").textContent = `${h}:${m}:${s} ${ampm}`;
+  clockEl.textContent = `${h}:${m}:${s} ${ampm}`;
 }
 
 setInterval(updateClock, 1000);

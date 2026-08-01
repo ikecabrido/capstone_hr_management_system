@@ -41,54 +41,93 @@ if ($role !== 'time') {
 $current_page = 'schedule_calendar.php';
 $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
 ?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Schedule Calendar - Time & Attendance System</title>
-    <link rel="icon" href="../Bestlink College of the Philippines.jpeg" type="image/jpeg">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-    <link rel="stylesheet" href="../../assets/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="../../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
-    <link rel="stylesheet" href="../assets/style.css">
-    <link rel="stylesheet" href="../assets/dashboard.css">
-    <link rel="stylesheet" href="../assets/adminlte-overrides.css">
-    <link rel="stylesheet" href="../../payroll/custom.css">
-    <!-- FullCalendar CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Calendar Schedule CSS -->
-    <link rel="stylesheet" href="../app/css/calendar_schedule.css">
+<?php
+$current_page = 'schedule_calendar.php';
+$current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
+$page_title = 'Schedule Calendar';
+$page_subtitle = 'Employee schedule calendar and timeline';
+$page_head_extra = <<<HTML
+<link rel="icon" href="../Bestlink College of the Philippines.jpeg" type="image/jpeg">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+<link rel="stylesheet" href="../../assets/dist/css/adminlte.min.css">
+<link rel="stylesheet" href="../../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../assets/dashboard.css">
+<link rel="stylesheet" href="../assets/adminlte-overrides.css">
+<!-- FullCalendar CSS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
+<!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Calendar Schedule CSS -->
+<link rel="stylesheet" href="../app/css/calendar_schedule.css">
+<link rel="stylesheet" href="../assets/hr-template.css">
 <style>
         html, body {
             overflow-x: hidden !important;
         }
 
-        .page-title {
-            font-size: 32px;
-            font-weight: 800;
-            color: #ffffff;
+        /* AdminLTE Preloader Styles */
+        .preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0d47a1 0%, #0b3c91 100%);
             display: flex;
             align-items: center;
-            gap: 15px;
-            margin-bottom: 8px;
-            position: relative;
-            z-index: 1;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 99999;
         }
-        .page-title i {
-            font-size: 36px;
-            opacity: 0.95;
+
+        .preloader.flex-column {
+            flex-direction: column;
         }
-        .page-subtitle {
-            color: rgba(255, 255, 255, 0.85);
-            font-size: 14px;
-            position: relative;
-            z-index: 1;
+
+        .preloader.justify-content-center {
+            justify-content: center;
         }
+
+        .preloader.align-items-center {
+            align-items: center;
+        }
+
+        .preloader img {
+            max-width: 100px;
+            height: auto;
+            display: block;
+        }
+
+        .animation__wobble {
+            animation: wobble 2.5s infinite ease-in-out;
+        }
+
+        @keyframes wobble {
+            0% {
+                transform: translateX(0);
+            }
+            15% {
+                transform: translateX(-5px) rotate(-5deg);
+            }
+            30% {
+                transform: translateX(3px) rotate(3deg);
+            }
+            45% {
+                transform: translateX(-3px) rotate(-3deg);
+            }
+            60% {
+                transform: translateX(2px) rotate(2deg);
+            }
+            75% {
+                transform: translateX(-1px) rotate(-1deg);
+            }
+            100% {
+                transform: translateX(0);
+            }
+        }
+
         .breadcrumb-nav {
             font-size: 0.95rem;
             color: rgba(255, 255, 255, 0.8);
@@ -103,17 +142,6 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
         }
         .breadcrumb-nav a:hover {
             text-decoration: underline;
-        }
-        .page-header {
-            background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
-            padding: 28px;
-            border-radius: 12px;
-            margin-bottom: 28px;
-            box-shadow: 0 4px 12px rgba(0, 61, 130, 0.15);
-        }
-        body.dark-mode .page-header {
-            background: linear-gradient(135deg, #0d47a1 0%, #0b3c91 100%);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
         .calendar-container {
             background: white;
@@ -229,7 +257,7 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
         .main-content {
             background-color: transparent !important;
             width: auto !important;
-            margin: 0 0 0 250px !important;
+            margin: 0 0 0 0px !important;
             min-height: calc(100vh - 60px) !important;
             padding: 28px 28px !important;
             box-sizing: border-box !important;
@@ -246,27 +274,20 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
             background: transparent !important;
         }
         /* Ensure page looks consistent with dashboard */
-        .page-header {
-            color: #ffffff;
-        }
     </style>
-</head>
-<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
-    <div class="preloader flex-column justify-content-center align-items-center">
-        <img class="animation__wobble" src="../assets/pics/bcpLogo.png" alt="AdminLTELogo" height="60" width="60" />
-    </div>
+HTML;
+?>
+<?php
+require_once __DIR__ . '/../layout/page_start.php';
+require_once __DIR__ . '/../layout/sidebar.php';
+$page_title = 'Schedule Calendar';
+$page_subtitle = 'View and manage employee schedules';
+$page_icon = 'fa-calendar';
+require_once __DIR__ . '/../layout/content_header.php';
+?>
 
-    <?php require_once "../app/components/Sidebar.php"; ?>
 
     <div class="main-content">
-        <div class="content-wrapper">
-            <div class="page-header">
-                <div class="page-title">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span>Schedule Calendar</span>
-                </div>
-            </div>
-
             <div class="calendar-container glass-panel">
                 <div class="calendar-body">
                     <!-- Calendar Component -->
@@ -278,43 +299,14 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- FullCalendar JS -->
+    <script>
+      window.preloaderHold = true;
+      // The page stays in hold until the schedule calendar finishes rendering in calendar_schedule.js
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
     
     <!-- Calendar Schedule JS -->
     <script src="../app/js/calendar_schedule.js"></script>
-    <script>
-        // Show preloader on navigation and hide it after page load
-        function hidePreloader() {
-            const preloader = document.querySelector('.preloader');
-            if (preloader) {
-                preloader.style.display = 'none';
-                preloader.style.visibility = 'hidden';
-            }
-        }
 
-        function showPreloader() {
-            const preloader = document.querySelector('.preloader');
-            if (preloader) {
-                preloader.style.display = 'flex';
-                preloader.style.visibility = 'visible';
-            }
-        }
-
-        window.addEventListener('load', hidePreloader);
-
-        document.addEventListener('DOMContentLoaded', function() {
-            hidePreloader();
-            const navLinks = document.querySelectorAll('a');
-
-            navLinks.forEach(link => {
-                link.addEventListener('click', function() {
-                    const href = this.getAttribute('href');
-                    if (href && !href.includes('logout') && !href.startsWith('javascript') && !href.startsWith('#') && !href.startsWith('mailto:') && !href.startsWith('tel:')) {
-                        showPreloader();
-                    }
-                });
-            });
-        });
-    </script>
-</body>
-</html>
+<?php require_once __DIR__ . '/../layout/content_footer.php'; ?>
+<?php require_once __DIR__ . '/../layout/page_end.php'; ?>
