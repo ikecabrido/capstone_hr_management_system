@@ -17,7 +17,7 @@ try {
 
     switch ($action) {
         case 'get_pending_resignations_count':
-            $stmt = $db->query("SELECT COUNT(*) as count FROM resignations WHERE status = 'pending'");
+            $stmt = $db->query("SELECT COUNT(*) as count FROM exit_resignations WHERE status = 'pending'");
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             $response = ['count' => (int)$result['count'], 'success' => true];
             break;

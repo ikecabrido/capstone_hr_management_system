@@ -10,8 +10,12 @@ class ResignationModel extends ExitManagementModel
     public function submitResignation(array $data): int
     {
         try {
+            if (empty($data['submitted_by'])) {
+                throw new InvalidArgumentException('An authenticated submitter is required');
+            }
+
             $stmt = $this->db->prepare("
-                INSERT INTO resignations (employee_id, resignation_type, reason, notice_date,
+                INSERT INTO exit_resignations (employee_id, resignation_type, reason, notice_date,
                                         last_working_date, comments, submitted_by, status, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
             ");
@@ -44,7 +48,7 @@ class ResignationModel extends ExitManagementModel
         $stmt = $this->db->prepare("
             SELECT r.*, e.full_name, e.employee_id as emp_id,
                    e.email, e.department
-            FROM resignations r
+            FROM exit_resignations r
             JOIN employees e ON r.employee_id = e.employee_id
             WHERE r.id = ?
         ");
@@ -55,7 +59,7 @@ class ResignationModel extends ExitManagementModel
     /**
      * Get all resignations with optional status filter
      */
-    public function getResignations(string $status = null): array
+    public function getResignations(?string $status = null): array
     {
         $sql = "
             SELECT 
@@ -72,7 +76,7 @@ class ResignationModel extends ExitManagementModel
                 e.full_name as employee_name,
                 e.email,
                 e.department
-            FROM resignations r
+            FROM exit_resignations r
             LEFT JOIN employees e ON r.employee_id = e.employee_id
         ";
 
@@ -93,7 +97,7 @@ class ResignationModel extends ExitManagementModel
     public function updateResignation(int $resignationId, array $data): bool
     {
         $stmt = $this->db->prepare("
-            UPDATE resignations
+            UPDATE exit_resignations
             SET employee_id = ?, resignation_type = ?, reason = ?, notice_date = ?,
                 last_working_date = ?, comments = ?, updated_at = NOW()
             WHERE id = ?
@@ -112,14 +116,40 @@ class ResignationModel extends ExitManagementModel
     /**
      * Update resignation status
      */
-    public function updateResignationStatus(int $resignationId, string $status, string $approvedBy = null): bool
+    public function updateResignationStatus(int $resignationId, string $status, ?string $approvedBy = null): bool
     {
-        $stmt = $this->db->prepare("
-            UPDATE resignations
-            SET status = ?, approved_by = ?, approved_at = NOW()
-            WHERE id = ?
-        ");
-        return $stmt->execute([$status, $approvedBy, $resignationId]);
+        if (!in_array($status, ['approved', 'rejected'], true)) {
+            throw new InvalidArgumentException('Invalid resignation status transition');
+        }
+
+        if ($status === 'approved' && empty($approvedBy)) {
+            throw new InvalidArgumentException('An approver is required for approval');
+        }
+
+        if ($status === 'approved') {
+            $sql = "
+                UPDATE exit_resignations
+                SET status = 'approved', approved_by = ?, approved_at = NOW(), updated_at = NOW()
+                WHERE id = ? AND status = 'pending'
+            ";
+            $parameters = [$approvedBy, $resignationId];
+        } else {
+            $sql = "
+                UPDATE exit_resignations
+                SET status = 'rejected', approved_by = NULL, approved_at = NULL, updated_at = NOW()
+                WHERE id = ? AND status = 'pending'
+            ";
+            $parameters = [$resignationId];
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($parameters);
+
+        if ($stmt->rowCount() !== 1) {
+            throw new RuntimeException('Only pending resignations can be approved or rejected');
+        }
+
+        return true;
     }
 
     /**
@@ -128,7 +158,7 @@ class ResignationModel extends ExitManagementModel
     public function getResignationsByEmployee(int $employeeId): array
     {
         $stmt = $this->db->prepare("
-            SELECT * FROM resignations
+            SELECT * FROM exit_resignations
             WHERE employee_id = ?
             ORDER BY created_at DESC
         ");
@@ -149,7 +179,7 @@ class ResignationModel extends ExitManagementModel
      */
     public function deleteResignation(int $resignationId): bool
     {
-        $stmt = $this->db->prepare("DELETE FROM resignations WHERE id = ?");
+        $stmt = $this->db->prepare("DELETE FROM exit_resignations WHERE id = ?");
         return $stmt->execute([$resignationId]);
     }
 }

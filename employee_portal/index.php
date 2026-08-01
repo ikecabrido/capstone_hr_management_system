@@ -5,6 +5,7 @@ require 'controllers/RequestTypeController.php';
 require 'controllers/EmployeePortalController.php';
 require 'controllers/RequestController.php';
 require 'controllers/LeaveRequestController.php';
+require 'controllers/ResignationController.php';
 
 $url = $_GET['url'] ?? 'dashboard';
 
@@ -68,6 +69,14 @@ switch ($url) {
 
     case 'leave-requests-delete':
         (new LeaveRequestController)->delete(); 
+        break;
+
+    case 'resignation-index':
+        (new ResignationController)->index();
+        break;
+
+    case 'resignation-create':
+        (new ResignationController)->create();
         break;
 
     default:

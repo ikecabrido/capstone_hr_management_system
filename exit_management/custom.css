@@ -59,6 +59,78 @@ body.dark-mode .main-footer {
     opacity 0.25s ease;
 }
 
+/* Resignation table enhancements */
+#resignations-table {
+  border-collapse: separate !important;
+  border-spacing: 0 0.55rem;
+  table-layout: fixed;
+  width: 100%;
+}
+
+#resignations-table thead th,
+#resignations-table tbody td {
+  padding: 0.85rem 0.85rem;
+  vertical-align: middle;
+  word-break: break-word;
+}
+
+#resignations-table thead th {
+  background-color: #eef3ff;
+  border-bottom: 2px solid #c7d3f5;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.9rem;
+}
+
+#resignations-table tbody tr {
+  background-color: #ffffff;
+  box-shadow: 0 0 0 1px rgba(13, 71, 161, 0.08);
+}
+
+#resignations-table td:first-child {
+  min-width: 145px;
+}
+
+#resignations-table td:nth-child(5),
+#resignations-table td:nth-child(8) {
+  max-width: 250px;
+}
+
+#resignations-table td:nth-child(5) {
+  min-width: 180px;
+}
+
+#resignations-table td:nth-child(10) {
+  white-space: nowrap;
+}
+
+#resignations-table .badge {
+  font-size: 0.82rem;
+  padding: 0.36rem 0.65rem;
+}
+
+@media (max-width: 1400px) {
+  #resignations-table th.d-none.d-xl-table-cell,
+  #resignations-table td:nth-child(3),
+  #resignations-table th.d-none.d-xl-table-cell,
+  #resignations-table td:nth-child(8) {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1200px) {
+  #resignations-table th.d-none.d-lg-table-cell,
+  #resignations-table td:nth-child(2) {
+    display: none !important;
+  }
+}
+
+@media (max-width: 992px) {
+  #resignations-table td {
+    padding: 0.65rem 0.65rem;
+  }
+}
+
 #themeIcon.animate {
   transform: rotate(180deg) scale(0.5);
   opacity: 0;

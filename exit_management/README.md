@@ -70,12 +70,13 @@ A comprehensive OOP PHP-based system for managing employee exit processes in an 
 ## Database Schema
 
 The system requires the following tables:
-- `resignations`
+- `exit_resignations`
 - `exit_interviews`
 - `exit_interview_feedback`
-- `knowledge_transfer_plans`
-- `knowledge_transfer_items`
-- `employee_settlements`
+- `exit_knowledge_transfer_plans`
+- `exit_knowledge_transfer_items`
+- `exit_employee_settlements`
+- `exit_payroll_clearances`
 - `exit_documents`
 - `clearance_checklist`
 - `exit_surveys`

@@ -48,6 +48,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="index.php?url=resignation-index" class="nav-link">
+                        <i class="nav-icon fas fa-person-walking-arrow-right"></i>
+                        <p>Resignation</p>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="#" class="nav-link">
                         <i class="nav-icon fas fa-table"></i>
                         <p>Module 4</p>

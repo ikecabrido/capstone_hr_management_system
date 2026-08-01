@@ -153,10 +153,10 @@ INSERT INTO `employees` (`employee_id`, `full_name`, `address`, `contact_number`
 -- --------------------------------------------------------
 
 --
--- Table structure for table `employee_settlements`
+-- Table structure for table `exit_employee_settlements`
 --
 
-CREATE TABLE `employee_settlements` (
+CREATE TABLE `exit_employee_settlements` (
   `id` int(11) NOT NULL,
   `employee_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `resignation_id` int(11) DEFAULT NULL,
@@ -182,10 +182,10 @@ CREATE TABLE `employee_settlements` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Dumping data for table `employee_settlements`
+-- Dumping data for table `exit_employee_settlements`
 --
 
-INSERT INTO `employee_settlements` (`id`, `employee_id`, `resignation_id`, `basic_salary`, `hra`, `conveyance`, `lta`, `medical_allowance`, `other_allowances`, `provident_fund`, `gratuity`, `notice_pay`, `outstanding_loans`, `other_deductions`, `net_payable`, `settlement_date`, `status`, `approved_by`, `approved_at`, `created_by`, `created_at`, `updated_at`) VALUES
+INSERT INTO `exit_employee_settlements` (`id`, `employee_id`, `resignation_id`, `basic_salary`, `hra`, `conveyance`, `lta`, `medical_allowance`, `other_allowances`, `provident_fund`, `gratuity`, `notice_pay`, `outstanding_loans`, `other_deductions`, `net_payable`, `settlement_date`, `status`, `approved_by`, `approved_at`, `created_by`, `created_at`, `updated_at`) VALUES
 (1, 'EMP002', 8, 123.00, 12.00, 12.00, 3.00, 3.00, 3.00, 5.00, 0.00, 5.00, 111.00, 55.00, -20.00, '2026-03-18', 'draft', NULL, NULL, NULL, '2026-03-17 09:04:17', '2026-03-17 09:04:17'),
 (2, 'EMP001', 5, 321.00, 1.00, 42342.00, 13.00, 43.00, 453534.00, 3454.00, 5435.00, 435.00, 435.00, 435.00, 486060.00, '2026-03-20', 'draft', NULL, NULL, 10, '2026-03-17 12:55:11', '2026-03-17 12:55:11');
 
@@ -204,6 +204,22 @@ CREATE TABLE `exit_documents` (
   `uploaded_by` int(11) DEFAULT NULL,
   `status` enum('active','archived') DEFAULT 'active',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `exit_payroll_clearances`
+--
+
+CREATE TABLE `exit_payroll_clearances` (
+  `id` int(11) NOT NULL,
+  `settlement_id` int(11) NOT NULL,
+  `employee_id` varchar(50) NOT NULL,
+  `status` enum('pending','approved','rejected') DEFAULT 'pending',
+  `approved_by` int(11) DEFAULT NULL,
+  `approved_at` timestamp NULL DEFAULT NULL,
+  `remarks` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -326,10 +342,10 @@ INSERT INTO `individual_development_plans` (`id`, `user_id`, `career_path_id`, `
 -- --------------------------------------------------------
 
 --
--- Table structure for table `knowledge_transfer_items`
+-- Table structure for table `exit_knowledge_transfer_items`
 --
 
-CREATE TABLE `knowledge_transfer_items` (
+CREATE TABLE `exit_knowledge_transfer_items` (
   `id` int(11) NOT NULL,
   `plan_id` int(11) NOT NULL,
   `item_type` enum('document','process','contact','system','other') NOT NULL,
@@ -342,10 +358,10 @@ CREATE TABLE `knowledge_transfer_items` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Dumping data for table `knowledge_transfer_items`
+-- Dumping data for table `exit_knowledge_transfer_items`
 --
 
-INSERT INTO `knowledge_transfer_items` (`id`, `plan_id`, `item_type`, `title`, `description`, `priority`, `status`, `completed_at`, `created_at`) VALUES
+INSERT INTO `exit_knowledge_transfer_items` (`id`, `plan_id`, `item_type`, `title`, `description`, `priority`, `status`, `completed_at`, `created_at`) VALUES
 (1, 1, 'process', 'asd', 'das', 'medium', 'pending', NULL, '2026-03-17 06:07:27'),
 (2, 2, 'process', 'ghjhgj', 'jhjjhj', 'medium', 'pending', NULL, '2026-03-17 08:48:34'),
 (3, 3, 'process', 'asd', 'iyggyi', 'medium', 'pending', NULL, '2026-03-17 08:55:48'),
@@ -357,10 +373,10 @@ INSERT INTO `knowledge_transfer_items` (`id`, `plan_id`, `item_type`, `title`, `
 -- --------------------------------------------------------
 
 --
--- Table structure for table `knowledge_transfer_plans`
+-- Table structure for table `exit_knowledge_transfer_plans`
 --
 
-CREATE TABLE `knowledge_transfer_plans` (
+CREATE TABLE `exit_knowledge_transfer_plans` (
   `id` int(11) NOT NULL,
   `employee_id` varchar(50) NOT NULL,
   `successor_id` varchar(50) DEFAULT NULL,
@@ -373,10 +389,10 @@ CREATE TABLE `knowledge_transfer_plans` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `knowledge_transfer_plans`
+-- Dumping data for table `exit_knowledge_transfer_plans`
 --
 
-INSERT INTO `knowledge_transfer_plans` (`id`, `employee_id`, `successor_id`, `start_date`, `end_date`, `status`, `created_by`, `created_at`, `updated_at`) VALUES
+INSERT INTO `exit_knowledge_transfer_plans` (`id`, `employee_id`, `successor_id`, `start_date`, `end_date`, `status`, `created_by`, `created_at`, `updated_at`) VALUES
 (1, 'EMP002', 'EMP001', '2026-03-16', '2026-03-17', 'active', 10, '2026-03-17 06:07:26', '2026-03-17 06:07:26'),
 (2, 'EMP002', 'EMP001', '2026-03-12', '2026-03-18', 'active', NULL, '2026-03-17 08:48:34', '2026-03-17 08:48:34'),
 (3, 'EMP003', 'EMP001', '2026-03-19', '2026-03-19', 'active', NULL, '2026-03-17 08:55:48', '2026-03-17 08:55:48'),
@@ -529,10 +545,10 @@ INSERT INTO `performance_reviews` (`id`, `employee_id`, `reviewer_id`, `review_p
 -- --------------------------------------------------------
 
 --
--- Table structure for table `resignations`
+-- Table structure for table `exit_resignations`
 --
 
-CREATE TABLE `resignations` (
+CREATE TABLE `exit_resignations` (
   `id` int(11) NOT NULL,
   `employee_id` varchar(50) NOT NULL,
   `resignation_type` enum('voluntary','involuntary') NOT NULL,
@@ -549,10 +565,10 @@ CREATE TABLE `resignations` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `resignations`
+-- Dumping data for table `exit_resignations`
 --
 
-INSERT INTO `resignations` (`id`, `employee_id`, `resignation_type`, `reason`, `notice_date`, `last_working_date`, `comments`, `submitted_by`, `status`, `approved_by`, `approved_at`, `created_at`, `updated_at`) VALUES
+INSERT INTO `exit_resignations` (`id`, `employee_id`, `resignation_type`, `reason`, `notice_date`, `last_working_date`, `comments`, `submitted_by`, `status`, `approved_by`, `approved_at`, `created_at`, `updated_at`) VALUES
 (5, 'EMP002', 'voluntary', 'dasdadsa', '2026-03-17', '2026-03-17', 'dsadas', 10, 'pending', NULL, NULL, '2026-03-17 07:05:31', '2026-03-17 07:23:35'),
 (8, 'EMP001', 'voluntary', 'rsdsrd', '2026-04-02', '2026-03-18', 'rsd', NULL, 'pending', NULL, NULL, '2026-03-17 08:39:24', '2026-03-17 08:39:24'),
 (9, 'EMP001', 'involuntary', 'kgkvhgl;bkvlnkfgbjfvb', '2026-03-26', '2026-03-27', 'fjgkdfahgkljhfgklhnjg', 10, 'pending', NULL, NULL, '2026-03-17 08:58:09', '2026-03-17 08:58:09'),
@@ -845,9 +861,9 @@ ALTER TABLE `employees`
   ADD PRIMARY KEY (`employee_id`);
 
 --
--- Indexes for table `employee_settlements`
+-- Indexes for table `exit_employee_settlements`
 --
-ALTER TABLE `employee_settlements`
+ALTER TABLE `exit_employee_settlements`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_settlement_employee` (`employee_id`),
   ADD KEY `fk_settlement_resignation` (`resignation_id`),
@@ -861,6 +877,15 @@ ALTER TABLE `exit_documents`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_document_employee` (`employee_id`),
   ADD KEY `fk_document_uploaded_by` (`uploaded_by`);
+
+--
+-- Indexes for table `exit_payroll_clearances`
+--
+ALTER TABLE `exit_payroll_clearances`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_payroll_clearance_settlement` (`settlement_id`),
+  ADD KEY `fk_payroll_clearance_employee` (`employee_id`),
+  ADD KEY `fk_payroll_clearance_approved_by` (`approved_by`);
 
 --
 -- Indexes for table `exit_interviews`
@@ -896,16 +921,16 @@ ALTER TABLE `individual_development_plans`
   ADD KEY `idx_status` (`status`);
 
 --
--- Indexes for table `knowledge_transfer_items`
+-- Indexes for table `exit_knowledge_transfer_items`
 --
-ALTER TABLE `knowledge_transfer_items`
+ALTER TABLE `exit_knowledge_transfer_items`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_item_plan` (`plan_id`);
 
 --
--- Indexes for table `knowledge_transfer_plans`
+-- Indexes for table `exit_knowledge_transfer_plans`
 --
-ALTER TABLE `knowledge_transfer_plans`
+ALTER TABLE `exit_knowledge_transfer_plans`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_transfer_employee` (`employee_id`),
   ADD KEY `fk_transfer_successor` (`successor_id`),
@@ -958,9 +983,9 @@ ALTER TABLE `performance_reviews`
   ADD KEY `idx_status` (`status`);
 
 --
--- Indexes for table `resignations`
+-- Indexes for table `exit_resignations`
 --
-ALTER TABLE `resignations`
+ALTER TABLE `exit_resignations`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_resignation_employee` (`employee_id`),
   ADD KEY `fk_resignation_submitted_by` (`submitted_by`),
@@ -1082,9 +1107,9 @@ ALTER TABLE `compliance_trainings`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
--- AUTO_INCREMENT for table `employee_settlements`
+-- AUTO_INCREMENT for table `exit_employee_settlements`
 --
-ALTER TABLE `employee_settlements`
+ALTER TABLE `exit_employee_settlements`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
@@ -1092,6 +1117,12 @@ ALTER TABLE `employee_settlements`
 --
 ALTER TABLE `exit_documents`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `exit_payroll_clearances`
+--
+ALTER TABLE `exit_payroll_clearances`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `exit_interviews`
@@ -1118,15 +1149,15 @@ ALTER TABLE `individual_development_plans`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
--- AUTO_INCREMENT for table `knowledge_transfer_items`
+-- AUTO_INCREMENT for table `exit_knowledge_transfer_items`
 --
-ALTER TABLE `knowledge_transfer_items`
+ALTER TABLE `exit_knowledge_transfer_items`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
--- AUTO_INCREMENT for table `knowledge_transfer_plans`
+-- AUTO_INCREMENT for table `exit_knowledge_transfer_plans`
 --
-ALTER TABLE `knowledge_transfer_plans`
+ALTER TABLE `exit_knowledge_transfer_plans`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
@@ -1160,9 +1191,9 @@ ALTER TABLE `performance_reviews`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
--- AUTO_INCREMENT for table `resignations`
+-- AUTO_INCREMENT for table `exit_resignations`
 --
-ALTER TABLE `resignations`
+ALTER TABLE `exit_resignations`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
@@ -1255,6 +1286,41 @@ ALTER TABLE `compliance_trainings`
 ALTER TABLE `feedback_360`
   ADD CONSTRAINT `feedback_360_ibfk_1` FOREIGN KEY (`employee_id`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `feedback_360_ibfk_2` FOREIGN KEY (`reviewer_id`) REFERENCES `users` (`id`);
+
+--
+-- Constraints for Exit Management tables
+--
+ALTER TABLE `exit_resignations`
+  ADD CONSTRAINT `fk_resignation_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_resignation_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_resignation_submitted_by` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+ALTER TABLE `exit_interviews`
+  ADD CONSTRAINT `fk_interview_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_interview_interviewer` FOREIGN KEY (`interviewer_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+ALTER TABLE `exit_knowledge_transfer_plans`
+  ADD CONSTRAINT `fk_transfer_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_transfer_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_transfer_successor` FOREIGN KEY (`successor_id`) REFERENCES `employees` (`employee_id`) ON DELETE SET NULL;
+
+ALTER TABLE `exit_knowledge_transfer_items`
+  ADD CONSTRAINT `fk_item_plan` FOREIGN KEY (`plan_id`) REFERENCES `exit_knowledge_transfer_plans` (`id`) ON DELETE CASCADE;
+
+ALTER TABLE `exit_employee_settlements`
+  ADD CONSTRAINT `fk_settlement_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_settlement_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_settlement_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_settlement_resignation` FOREIGN KEY (`resignation_id`) REFERENCES `exit_resignations` (`id`) ON DELETE SET NULL;
+
+ALTER TABLE `exit_documents`
+  ADD CONSTRAINT `fk_document_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_document_uploaded_by` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+ALTER TABLE `exit_payroll_clearances`
+  ADD CONSTRAINT `fk_payroll_clearance_settlement` FOREIGN KEY (`settlement_id`) REFERENCES `exit_employee_settlements` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_payroll_clearance_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_payroll_clearance_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `individual_development_plans`

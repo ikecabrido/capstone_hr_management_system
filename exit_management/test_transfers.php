@@ -6,7 +6,7 @@ header('Content-Type: application/json');
 $db = Database::getInstance()->getConnection();
 
 // Test 1: Count transfer plans
-$stmt = $db->query("SELECT COUNT(*) as count FROM knowledge_transfer_plans");
+$stmt = $db->query("SELECT COUNT(*) as count FROM exit_knowledge_transfer_plans");
 $count = $stmt->fetch(PDO::FETCH_ASSOC);
 
 // Test 2: Get all transfer plans with JOIN
@@ -22,7 +22,7 @@ $stmt = $db->query("
         ktp.updated_at,
         e.full_name as employee_name,
         s.full_name as successor_name
-    FROM knowledge_transfer_plans ktp
+    FROM exit_knowledge_transfer_plans ktp
     JOIN employees e ON ktp.employee_id = e.employee_id
     LEFT JOIN employees s ON ktp.successor_id = s.employee_id
     ORDER BY ktp.created_at DESC

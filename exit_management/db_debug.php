@@ -9,13 +9,13 @@ try {
     // Counts
     $counts = [];
     $counts['employees'] = (int)$db->query('SELECT COUNT(*) FROM employees')->fetchColumn();
-    $counts['resignations'] = (int)$db->query('SELECT COUNT(*) FROM resignations')->fetchColumn();
+    $counts['resignations'] = (int)$db->query('SELECT COUNT(*) FROM exit_resignations')->fetchColumn();
     $counts['exit_interviews'] = (int)$db->query('SELECT COUNT(*) FROM exit_interviews')->fetchColumn();
 
     // Sample resignations with employee join
     $stmt = $db->prepare(
         'SELECT r.id, r.employee_id, e.full_name as employee_name, r.resignation_type, r.notice_date, r.last_working_date, r.status
-         FROM resignations r
+         FROM exit_resignations r
          LEFT JOIN employees e ON r.employee_id = e.employee_id
          ORDER BY r.created_at DESC
          LIMIT 100'

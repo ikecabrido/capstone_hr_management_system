@@ -236,12 +236,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
           <div class="row mb-2">
             <div class="col-sm-6">
               <h1 class="m-0">Exit Management System</h1>
+              <small class="text-muted">Centralized review and processing of employee exit workflows.</small>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Main content -->
+      <section class="content">
+        <div class="container-fluid">
+
+          <!-- Dashboard Section -->
       <section class="content">
         <div class="container-fluid">
           <!-- Dashboard Section -->
@@ -299,32 +303,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
             <div class="card">
               <div class="card-header">
                 <h3 class="card-title">Resignation Management</h3>
-                <div class="card-tools">
-                  <button type="button" class="btn btn-primary" onclick="showResignationModal()">
-                    <i class="fas fa-plus"></i> New Resignation
-                  </button>
-                </div>
               </div>
               <div class="card-body">
-                <table id="resignations-table" class="table table-bordered table-striped table-sm">
-                  <thead>
-                    <tr>
-                      <th>Employee</th>
-                      <th>Department</th>
-                      <th>Email</th>
-                      <th>Type</th>
-                      <th>Reason</th>
-                      <th>Notice Date</th>
-                      <th>Last Working Date</th>
-                      <th>Comments</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="resignations-tbody">
-                    <!-- Data will be loaded here -->
-                  </tbody>
-                </table>
+                <div class="callout callout-info py-2 px-3 mb-4">
+                  <p class="mb-0"><strong>Note:</strong> Employee resignations are submitted through the portal. HR can review pending requests here but cannot create resignation records directly.</p>
+                </div>
+                <div class="table-responsive">
+                  <table id="resignations-table" class="table table-bordered table-striped table-hover">
+                    <thead>
+                      <tr>
+                        <th>Employee</th>
+                        <th class="d-none d-lg-table-cell">Department</th>
+                        <th class="d-none d-xl-table-cell">Email</th>
+                        <th>Type</th>
+                        <th>Reason</th>
+                        <th>Notice Date</th>
+                        <th>Last Working Date</th>
+                        <th class="d-none d-xl-table-cell">Comments</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="resignations-tbody">
+                      <!-- Data will be loaded here -->
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
@@ -341,20 +345,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                 </div>
               </div>
               <div class="card-body">
-                <table id="interviews-table" class="table table-bordered table-striped">
-                  <thead>
-                    <tr>
-                      <th>Employee</th>
-                      <th>Interviewer</th>
-                      <th>Scheduled Date</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="interviews-tbody">
-                    <!-- Data will be loaded here -->
-                  </tbody>
-                </table>
+                <div class="table-responsive">
+                  <table id="interviews-table" class="table table-bordered table-striped table-sm">
+                    <thead>
+                      <tr>
+                        <th>Employee</th>
+                        <th>Interviewer</th>
+                        <th>Scheduled Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="interviews-tbody">
+                      <!-- Data will be loaded here -->
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
@@ -371,21 +377,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                 </div>
               </div>
               <div class="card-body">
-                <table id="transfers-table" class="table table-bordered table-striped">
-                  <thead>
-                    <tr>
-                      <th>Employee</th>
-                      <th>Successor</th>
-                      <th>Start Date</th>
-                      <th>End Date</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="transfers-tbody">
-                    <!-- Data will be loaded here -->
-                  </tbody>
-                </table>
+                <div class="table-responsive">
+                  <table id="transfers-table" class="table table-bordered table-striped table-sm">
+                    <thead>
+                      <tr>
+                        <th>Employee</th>
+                        <th>Successor</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="transfers-tbody">
+                      <!-- Data will be loaded here -->
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
@@ -402,20 +410,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                 </div>
               </div>
               <div class="card-body">
-                <table id="settlements-table" class="table table-bordered table-striped">
-                  <thead>
-                    <tr>
-                      <th>Employee</th>
-                      <th>Settlement Date</th>
-                      <th>Net Payable</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="settlements-tbody">
-                    <!-- Data will be loaded here -->
-                  </tbody>
-                </table>
+                <div class="table-responsive">
+                  <table id="settlements-table" class="table table-bordered table-striped table-sm">
+                    <thead>
+                      <tr>
+                        <th>Employee</th>
+                        <th>Settlement Date</th>
+                        <th>Net Payable</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="settlements-tbody">
+                      <!-- Data will be loaded here -->
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
@@ -432,20 +442,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                 </div>
               </div>
               <div class="card-body">
-                <table id="documents-table" class="table table-bordered table-striped">
-                  <thead>
-                    <tr>
-                      <th>Employee</th>
-                      <th>Document Type</th>
-                      <th>Title</th>
-                      <th>Upload Date</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="documents-tbody">
-                    <!-- Data will be loaded here -->
-                  </tbody>
-                </table>
+                <div class="table-responsive">
+                  <table id="documents-table" class="table table-bordered table-striped table-sm">
+                    <thead>
+                      <tr>
+                        <th>Employee</th>
+                        <th>Document Type</th>
+                        <th>Title</th>
+                        <th>Upload Date</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="documents-tbody">
+                      <!-- Data will be loaded here -->
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
@@ -462,20 +474,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                 </div>
               </div>
               <div class="card-body">
-                <table id="surveys-table" class="table table-bordered table-striped">
-                  <thead>
-                    <tr>
-                      <th>Survey Title</th>
-                      <th>Start Date</th>
-                      <th>End Date</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="surveys-tbody">
-                    <!-- Data will be loaded here -->
-                  </tbody>
-                </table>
+                <div class="table-responsive">
+                  <table id="surveys-table" class="table table-bordered table-striped table-sm">
+                    <thead>
+                      <tr>
+                        <th>Survey Title</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="surveys-tbody">
+                      <!-- Data will be loaded here -->
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>

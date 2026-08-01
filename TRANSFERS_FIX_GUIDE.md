@@ -71,13 +71,13 @@ SELECT ktp.id, ktp.employee_id, ..., ktp.status, ...  // Only valid columns
 1. Page loads → custom.js calls `loadTransfersTable()`
 2. JavaScript sends AJAX request with `ajax_action: 'get_transfer_plans'`
 3. PHP controller calls `KnowledgeTransferModel::getAllTransferPlans()`
-4. Query JOINs knowledge_transfer_plans with employees table
+4. Query JOINs exit_knowledge_transfer_plans with employees table
 5. Returns transfer data with employee and successor names
 6. JavaScript populates table with results
 
 ### Foreign Key Structure:
 ```
-knowledge_transfer_plans
+exit_knowledge_transfer_plans
   ├─ employee_id → employees.employee_id (who is leaving)
   └─ successor_id → employees.employee_id (who takes over)
 
@@ -108,9 +108,9 @@ If the table still doesn't display after import:
    ```
    Should return: 3
 
-2. **Check knowledge_transfer_plans exists:**
+2. **Check exit_knowledge_transfer_plans exists:**
    ```sql
-   DESCRIBE knowledge_transfer_plans;
+   DESCRIBE exit_knowledge_transfer_plans;
    ```
    Should show 8 columns
 
@@ -121,7 +121,7 @@ If the table still doesn't display after import:
        ktp.start_date, ktp.end_date, ktp.status,
        e.full_name as employee_name,
        s.full_name as successor_name
-   FROM knowledge_transfer_plans ktp
+   FROM exit_knowledge_transfer_plans ktp
    JOIN employees e ON ktp.employee_id = e.employee_id
    LEFT JOIN employees s ON ktp.successor_id = s.employee_id;
    ```

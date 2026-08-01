@@ -10,7 +10,7 @@ class SettlementModel extends ExitManagementModel
     public function createSettlement(array $data): int
     {
         $stmt = $this->db->prepare("
-            INSERT INTO employee_settlements (employee_id, resignation_id, basic_salary,
+            INSERT INTO exit_employee_settlements (employee_id, resignation_id, basic_salary,
                                             hra, conveyance, lta, medical_allowance,
                                             other_allowances, provident_fund, gratuity,
                                             notice_pay, outstanding_loans, other_deductions,
@@ -46,7 +46,7 @@ class SettlementModel extends ExitManagementModel
     public function updateSettlement(int $settlementId, array $data): bool
     {
         $stmt = $this->db->prepare("
-            UPDATE employee_settlements
+            UPDATE exit_employee_settlements
             SET employee_id = ?, basic_salary = ?, hra = ?, conveyance = ?,
                 lta = ?, medical_allowance = ?, other_allowances = ?,
                 provident_fund = ?, gratuity = ?, notice_pay = ?,
@@ -82,9 +82,9 @@ class SettlementModel extends ExitManagementModel
         $stmt = $this->db->prepare("
             SELECT s.*, e.full_name, e.employee_id as emp_id,
                    r.resignation_type, r.last_working_date
-            FROM employee_settlements s
+            FROM exit_employee_settlements s
             JOIN employees e ON s.employee_id = e.employee_id
-            LEFT JOIN resignations r ON s.resignation_id = r.id
+            LEFT JOIN exit_resignations r ON s.resignation_id = r.id
             WHERE s.id = ?
         ");
         $stmt->execute([$settlementId]);
@@ -97,7 +97,7 @@ class SettlementModel extends ExitManagementModel
     public function getSettlementsByEmployee(string $employeeId): array
     {
         $stmt = $this->db->prepare("
-            SELECT * FROM employee_settlements
+            SELECT * FROM exit_employee_settlements
             WHERE employee_id = ?
             ORDER BY created_at DESC
         ");
@@ -138,7 +138,7 @@ class SettlementModel extends ExitManagementModel
     public function updateSettlementStatus(int $settlementId, string $status, string $approvedBy = null): bool
     {
         $stmt = $this->db->prepare("
-            UPDATE employee_settlements
+            UPDATE exit_employee_settlements
             SET status = ?, approved_by = ?, approved_at = NOW()
             WHERE id = ?
         ");
@@ -152,7 +152,7 @@ class SettlementModel extends ExitManagementModel
     {
         $stmt = $this->db->query("
             SELECT s.*, e.full_name, e.employee_id as emp_id
-            FROM employee_settlements s
+            FROM exit_employee_settlements s
             JOIN employees e ON s.employee_id = e.employee_id
             WHERE s.status IN ('draft', 'pending_approval')
             ORDER BY s.settlement_date ASC
@@ -186,7 +186,7 @@ class SettlementModel extends ExitManagementModel
                 s.created_at,
                 s.updated_at,
                 e.full_name as employee_name
-            FROM employee_settlements s
+            FROM exit_employee_settlements s
             JOIN employees e ON s.employee_id = e.employee_id
             ORDER BY s.created_at DESC
         ");

@@ -21,7 +21,7 @@ class ExitManagementController
             $db = $this->model->getConnection();
 
             // Count pending resignations
-            $stmt = $db->query("SELECT COUNT(*) as count FROM resignations WHERE status = 'pending'");
+            $stmt = $db->query("SELECT COUNT(*) as count FROM exit_resignations WHERE status = 'pending'");
             $pendingResignations = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
             // Count scheduled interviews
@@ -29,11 +29,11 @@ class ExitManagementController
             $scheduledInterviews = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
             // Count active transfers
-            $stmt = $db->query("SELECT COUNT(*) as count FROM knowledge_transfer_plans WHERE status = 'active'");
+            $stmt = $db->query("SELECT COUNT(*) as count FROM exit_knowledge_transfer_plans WHERE status = 'active'");
             $activeTransfers = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
             // Count pending settlements
-            $stmt = $db->query("SELECT COUNT(*) as count FROM employee_settlements WHERE status = 'draft'");
+            $stmt = $db->query("SELECT COUNT(*) as count FROM exit_employee_settlements WHERE status = 'draft'");
             $pendingSettlements = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
             // Count total active employees

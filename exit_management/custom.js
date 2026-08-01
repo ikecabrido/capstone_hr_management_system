@@ -617,14 +617,18 @@ function loadResignationsTable() {
         if (response && response.length > 0) {
             response.forEach(function(resignation) {
                 const statusBadge = getStatusBadge(resignation.status);
-                const actions = `
-                    <button class="btn btn-sm btn-info" onclick="showResignationModal(${resignation.id})">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteResignation(${resignation.id})">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                `;
+                let actions = '';
+
+                if (resignation.status === 'pending') {
+                    actions += `
+                        <button class="btn btn-sm btn-success" onclick="processResignation(${resignation.id}, 'approve')">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button class="btn btn-sm btn-warning" onclick="processResignation(${resignation.id}, 'reject')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                }
 
                 tbody.append(`
                     <tr>
@@ -645,6 +649,28 @@ function loadResignationsTable() {
             tbody.append('<tr><td colspan="10" class="text-center">No resignations found</td></tr>');
         }
     });
+}
+
+function processResignation(id, action) {
+    const verb = action === 'approve' ? 'approve' : 'reject';
+    if (!confirm(`Are you sure you want to ${verb} this pending resignation?`)) {
+        return;
+    }
+
+    $.post('exit_management.php', {
+        ajax_action: 'process_resignation',
+        controller: 'resignation',
+        resignation_id: id,
+        action: action
+    }, function(response) {
+        if (response.success) {
+            showToast('success', response.message);
+            loadResignationsTable();
+            loadDashboardData();
+        } else {
+            showToast('error', response.message || 'Unable to process resignation');
+        }
+    }, 'json');
 }
 
 function loadInterviewsTable() {

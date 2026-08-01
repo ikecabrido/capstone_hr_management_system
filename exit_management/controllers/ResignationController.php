@@ -26,8 +26,11 @@ class ResignationController extends ExitManagementController
                 }
             }
 
-            // Add submitted_by from session
-            $data['submitted_by'] = $_SESSION['user']['id'] ?? 0;
+            // The authenticated session is the only source of the submitter identity.
+            $data['submitted_by'] = $_SESSION['user']['id'] ?? null;
+            if (empty($data['submitted_by'])) {
+                return ['success' => false, 'message' => 'You must be logged in to submit a resignation'];
+            }
 
             $resignationId = $this->resignationModel->submitResignation($data);
 
@@ -58,11 +61,27 @@ class ResignationController extends ExitManagementController
     /**
      * Approve or reject resignation
      */
-    public function processResignation(int $resignationId, string $action, int $approvedBy): array
+    public function processResignation(int $resignationId, string $action, ?int $approvedBy = null): array
     {
         try {
+            if (!in_array($action, ['approve', 'reject'], true)) {
+                return ['success' => false, 'message' => 'Invalid resignation action'];
+            }
+
+            $sessionApprover = $_SESSION['user']['id'] ?? null;
+            $role = strtolower((string)($_SESSION['user']['role'] ?? ''));
+            $hrRoles = ['admin', 'hr', 'hr_admin', 'hr_manager', 'system_admin'];
+
+            if (empty($sessionApprover) || !in_array($role, $hrRoles, true)) {
+                return ['success' => false, 'message' => 'An authenticated HR user is required'];
+            }
+
             $status = ($action === 'approve') ? 'approved' : 'rejected';
-            $success = $this->resignationModel->updateResignationStatus($resignationId, $status, $approvedBy);
+            $success = $this->resignationModel->updateResignationStatus(
+                $resignationId,
+                $status,
+                (string)$sessionApprover
+            );
 
             if ($success) {
                 return [
@@ -122,7 +141,10 @@ class ResignationController extends ExitManagementController
         switch ($action) {
             case 'submit_resignation':
             case 'update_resignation':
-                return $this->submitResignation($data);
+                return [
+                    'success' => false,
+                    'message' => 'Resignation requests must be submitted through the Employee Portal'
+                ];
 
             case 'get_resignation':
                 return $this->getResignation($data['resignation_id'] ?? 0);
@@ -131,7 +153,7 @@ class ResignationController extends ExitManagementController
                 return $this->processResignation(
                     $data['resignation_id'] ?? 0,
                     $data['action'] ?? '',
-                    $data['approved_by'] ?? 0
+                    isset($data['approved_by']) ? (int)$data['approved_by'] : null
                 );
 
             case 'get_pending_resignations':
