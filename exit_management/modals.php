@@ -1,8 +1,8 @@
 <!-- Exit Management Modals -->
 
 <!-- Resignation Modal -->
-<div class="modal fade" id="resignationModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg" role="document">
+<div class="modal fade exit-modal" id="resignationModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header bg-primary">
                 <h5 class="modal-title" id="resignationModalTitle">Submit Resignation</h5>
@@ -15,7 +15,7 @@
                     <input type="hidden" id="resignationId" name="resignation_id">
 
                     <div class="row">
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <div class="form-group">
                                 <label for="employeeSelect">Employee *</label>
                                 <select class="form-control" id="employeeSelect" name="employee_id" required>
@@ -24,20 +24,12 @@
                                 <div id="eligibilityMessage" class="mt-2" style="display: none;"></div>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <div class="form-group">
                                 <label for="resignationType">Resignation Type *</label>
                                 <select class="form-control" id="resignationType" name="resignation_type" required>
                                     <option value="voluntary">Voluntary</option>
                                     <option value="involuntary">Involuntary</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label for="preclearanceDeskPerson">Pre-clearance Desk Person *</label>
-                                <select class="form-control" id="preclearanceDeskPerson" name="preclearance_desk_person" required>
-                                    <option value="">Select Desk Person</option>
                                 </select>
                             </div>
                         </div>
@@ -95,8 +87,8 @@
 </div>
 
 <!-- Exit Interview Modal -->
-<div class="modal fade" id="interviewModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg" role="document">
+<div class="modal fade exit-modal" id="interviewModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header bg-success">
                 <h5 class="modal-title" id="interviewModalTitle">Schedule Exit Interview</h5>
@@ -136,8 +128,55 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="interviewTime">Interview Time</label>
-                                <input type="time" class="form-control" id="interviewTime" name="scheduled_time">
+                                <label>Interview Time</label>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <select class="form-control" id="interviewHour">
+                                            <option value="">Hour</option>
+                                            <option value="00">00</option>
+                                            <option value="01">01</option>
+                                            <option value="02">02</option>
+                                            <option value="03">03</option>
+                                            <option value="04">04</option>
+                                            <option value="05">05</option>
+                                            <option value="06">06</option>
+                                            <option value="07">07</option>
+                                            <option value="08">08</option>
+                                            <option value="09">09</option>
+                                            <option value="10">10</option>
+                                            <option value="11">11</option>
+                                            <option value="12">12</option>
+                                            <option value="13">13</option>
+                                            <option value="14">14</option>
+                                            <option value="15">15</option>
+                                            <option value="16">16</option>
+                                            <option value="17">17</option>
+                                            <option value="18">18</option>
+                                            <option value="19">19</option>
+                                            <option value="20">20</option>
+                                            <option value="21">21</option>
+                                            <option value="22">22</option>
+                                            <option value="23">23</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <select class="form-control" id="interviewMinute">
+                                            <option value="">Minute</option>
+                                            <option value="00">00</option>
+                                            <option value="05">05</option>
+                                            <option value="10">10</option>
+                                            <option value="15">15</option>
+                                            <option value="20">20</option>
+                                            <option value="25">25</option>
+                                            <option value="30">30</option>
+                                            <option value="35">35</option>
+                                            <option value="40">40</option>
+                                            <option value="45">45</option>
+                                            <option value="50">50</option>
+                                            <option value="55">55</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -183,8 +222,8 @@
 </div>
 
 <!-- Knowledge Transfer Modal -->
-<div class="modal fade" id="transferModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-xl" role="document">
+<div class="modal fade exit-modal" id="transferModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
         <div class="modal-content">
             <div class="modal-header bg-warning">
                 <h5 class="modal-title" id="transferModalTitle">Create Knowledge Transfer Plan</h5>
@@ -287,8 +326,8 @@
 </div>
 
 <!-- Settlement Modal -->
-<div class="modal fade" id="settlementModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-xl" role="document">
+<div class="modal fade exit-modal" id="settlementModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header bg-danger">
                 <h5 class="modal-title" id="settlementModalTitle">Calculate Final Settlement</h5>
@@ -458,8 +497,8 @@
 </div>
 
 <!-- Document Upload Modal -->
-<div class="modal fade" id="documentModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg" role="document">
+<div class="modal fade exit-modal" id="documentModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header bg-info">
                 <h5 class="modal-title" id="documentModalTitle">Upload Document</h5>
@@ -520,8 +559,8 @@
 </div>
 
 <!-- Survey Modal -->
-<div class="modal fade" id="surveyModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-xl" role="document">
+<div class="modal fade exit-modal" id="surveyModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title" id="surveyModalTitle">
@@ -690,8 +729,8 @@
 </div>
 
 <!-- Answer Survey Modal -->
-<div class="modal fade" id="answerSurveyModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-xl" role="document">
+<div class="modal fade exit-modal" id="answerSurveyModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header bg-primary">
                 <h5 class="modal-title" id="answerSurveyTitle">Answer Survey</h5>
@@ -738,8 +777,8 @@
 </div>
 
 <!-- Confirmation Modal -->
-<div class="modal fade" id="confirmationModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
+<div class="modal fade exit-modal" id="confirmationModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
         <div class="modal-content">
             <div class="modal-header bg-warning">
                 <h5 class="modal-title">Confirm Action</h5>
@@ -754,6 +793,405 @@
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-warning" id="confirmActionBtn">Confirm</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Archive Resignation Modal -->
+<div class="modal fade exit-modal" id="archiveResignationModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">Archive Resignation</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="archiveResignationForm">
+                <div class="modal-body">
+                    <input type="hidden" id="archiveResignationId" name="resignation_id">
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Note:</strong> Archiving will move this resignation record to the archive database.
+                        The record will be completely removed from active resignations and stored in the exit_archive table.
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="archiveEmployeeId">Employee ID</label>
+                                <input type="text" class="form-control" id="archiveEmployeeId" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="archiveEmployeeName">Employee Name</label>
+                                <input type="text" class="form-control" id="archiveEmployeeName" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="archiveReason">Archive Reason *</label>
+                        <textarea class="form-control" id="archiveReason" name="archive_reason" rows="3" placeholder="Please provide a reason for archiving this resignation..." required></textarea>
+                        <small class="form-text text-muted">This reason will be stored with the archived record for future reference.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="archiveNotes">Additional Notes (Optional)</label>
+                        <textarea class="form-control" id="archiveNotes" name="archive_notes" rows="2" placeholder="Any additional notes about this archive action..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-archive"></i> Archive Resignation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Archive Settlement Modal -->
+<div class="modal fade exit-modal" id="archiveSettlementModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">Archive Settlement</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="archiveSettlementForm">
+                <div class="modal-body">
+                    <input type="hidden" id="archiveSettlementId" name="settlement_id">
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Note:</strong> Archiving will move this settlement record to the archive database.
+                        The record will be completely removed from active settlements and stored in the exit_archive table.
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="archiveSettlementEmployeeId">Employee ID</label>
+                                <input type="text" class="form-control" id="archiveSettlementEmployeeId" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="archiveSettlementEmployeeName">Employee Name</label>
+                                <input type="text" class="form-control" id="archiveSettlementEmployeeName" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="archiveSettlementReason">Archive Reason *</label>
+                        <textarea class="form-control" id="archiveSettlementReason" name="archive_reason" rows="3" placeholder="Please provide a reason for archiving this settlement..." required></textarea>
+                        <small class="form-text text-muted">This reason will be stored with the archived record for future reference.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="archiveSettlementNotes">Additional Notes (Optional)</label>
+                        <textarea class="form-control" id="archiveSettlementNotes" name="archive_notes" rows="2" placeholder="Any additional notes about this archive action..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-archive"></i> Archive Settlement
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Archive Interview Modal -->
+<div class="modal fade exit-modal" id="archiveInterviewModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">Archive Interview</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="archiveInterviewForm">
+                <div class="modal-body">
+                    <input type="hidden" id="archiveInterviewId" name="interview_id">
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Note:</strong> Archiving will move this interview record to the archive database.
+                        The record will be completely removed from active interviews and stored in the exit_archive table.
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="archiveInterviewEmployeeId">Employee ID</label>
+                                <input type="text" class="form-control" id="archiveInterviewEmployeeId" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="archiveInterviewEmployeeName">Employee Name</label>
+                                <input type="text" class="form-control" id="archiveInterviewEmployeeName" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="archiveInterviewReason">Archive Reason *</label>
+                        <textarea class="form-control" id="archiveInterviewReason" name="archive_reason" rows="3" placeholder="Please provide a reason for archiving this interview..." required></textarea>
+                        <small class="form-text text-muted">This reason will be stored with the archived record for future reference.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="archiveInterviewNotes">Additional Notes (Optional)</label>
+                        <textarea class="form-control" id="archiveInterviewNotes" name="archive_notes" rows="2" placeholder="Any additional notes about this archive action..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-archive"></i> Archive Interview
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Archive Document Modal -->
+<div class="modal fade exit-modal" id="archiveDocumentModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">Archive Document</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="archiveDocumentForm">
+                <div class="modal-body">
+                    <input type="hidden" id="archiveDocumentId" name="document_id">
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Note:</strong> Archiving will move this document record to the archive database.
+                        The record will be completely removed from active documents and stored in the exit_archive table.
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="archiveDocumentEmployeeId">Employee ID</label>
+                                <input type="text" class="form-control" id="archiveDocumentEmployeeId" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="archiveDocumentEmployeeName">Employee Name</label>
+                                <input type="text" class="form-control" id="archiveDocumentEmployeeName" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="archiveDocumentReason">Archive Reason *</label>
+                        <textarea class="form-control" id="archiveDocumentReason" name="archive_reason" rows="3" placeholder="Please provide a reason for archiving this document..." required></textarea>
+                        <small class="form-text text-muted">This reason will be stored with the archived record for future reference.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="archiveDocumentNotes">Additional Notes (Optional)</label>
+                        <textarea class="form-control" id="archiveDocumentNotes" name="archive_notes" rows="2" placeholder="Any additional notes about this archive action..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-archive"></i> Archive Document
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Archive Survey Modal -->
+<div class="modal fade exit-modal" id="archiveSurveyModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">Archive Survey</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="archiveSurveyForm">
+                <div class="modal-body">
+                    <input type="hidden" id="archiveSurveyId" name="survey_id">
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Note:</strong> Archiving will move this survey record to the archive database.
+                        The record will be completely removed from active surveys and stored in the exit_archive table.
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="archiveSurveyEmployeeId">Employee ID</label>
+                                <input type="text" class="form-control" id="archiveSurveyEmployeeId" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="archiveSurveyEmployeeName">Employee Name</label>
+                                <input type="text" class="form-control" id="archiveSurveyEmployeeName" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="archiveSurveyReason">Archive Reason *</label>
+                        <textarea class="form-control" id="archiveSurveyReason" name="archive_reason" rows="3" placeholder="Please provide a reason for archiving this survey..." required></textarea>
+                        <small class="form-text text-muted">This reason will be stored with the archived record for future reference.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="archiveSurveyNotes">Additional Notes (Optional)</label>
+                        <textarea class="form-control" id="archiveSurveyNotes" name="archive_notes" rows="2" placeholder="Any additional notes about this archive action..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-archive"></i> Archive Survey
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Archive Transfer Plan Modal -->
+<div class="modal fade exit-modal" id="archiveTransferPlanModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">Archive Transfer Plan</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="archiveTransferPlanForm">
+                <div class="modal-body">
+                    <input type="hidden" id="archiveTransferPlanId" name="plan_id">
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Note:</strong> Archiving will move this transfer plan record to the archive database.
+                        The record will be completely removed from active transfer plans and stored in the exit_archive table.
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="archiveTransferPlanEmployeeId">Employee ID</label>
+                                <input type="text" class="form-control" id="archiveTransferPlanEmployeeId" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="archiveTransferPlanEmployeeName">Employee Name</label>
+                                <input type="text" class="form-control" id="archiveTransferPlanEmployeeName" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="archiveTransferPlanReason">Archive Reason *</label>
+                        <textarea class="form-control" id="archiveTransferPlanReason" name="archive_reason" rows="3" placeholder="Please provide a reason for archiving this transfer plan..." required></textarea>
+                        <small class="form-text text-muted">This reason will be stored with the archived record for future reference.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="archiveTransferPlanNotes">Additional Notes (Optional)</label>
+                        <textarea class="form-control" id="archiveTransferPlanNotes" name="archive_notes" rows="2" placeholder="Any additional notes about this archive action..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-archive"></i> Archive Transfer Plan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Archive Transfer Item Modal -->
+<div class="modal fade exit-modal" id="archiveTransferItemModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">Archive Transfer Item</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="archiveTransferItemForm">
+                <div class="modal-body">
+                    <input type="hidden" id="archiveTransferItemId" name="item_id">
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Note:</strong> Archiving will move this transfer item record to the archive database.
+                        The record will be completely removed from active transfer items and stored in the exit_archive table.
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="archiveTransferItemEmployeeId">Employee ID</label>
+                                <input type="text" class="form-control" id="archiveTransferItemEmployeeId" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="archiveTransferItemEmployeeName">Employee Name</label>
+                                <input type="text" class="form-control" id="archiveTransferItemEmployeeName" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="archiveTransferItemReason">Archive Reason *</label>
+                        <textarea class="form-control" id="archiveTransferItemReason" name="archive_reason" rows="3" placeholder="Please provide a reason for archiving this transfer item..." required></textarea>
+                        <small class="form-text text-muted">This reason will be stored with the archived record for future reference.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="archiveTransferItemNotes">Additional Notes (Optional)</label>
+                        <textarea class="form-control" id="archiveTransferItemNotes" name="archive_notes" rows="2" placeholder="Any additional notes about this archive action..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-archive"></i> Archive Transfer Item
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

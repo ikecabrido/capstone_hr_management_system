@@ -32,11 +32,27 @@ class Enrollment {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function getEnrollmentsByCourse($courseId) {
+        $stmt = $this->db->prepare("SELECT e.*, u.full_name as employee_name, c.title as course_title, c.instructor, tp.title as program_title FROM ld_enrollments e JOIN users u ON e.employee_user_id = u.id JOIN ld_courses c ON e.ld_courses_id = c.ld_courses_id JOIN ld_training_programs tp ON c.ld_training_programs_id = tp.ld_training_programs_id WHERE c.ld_courses_id = ? ORDER BY e.enrolled_at DESC");
+        $stmt->execute([$courseId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function enrollEmployee($data) {
+        // Check if employee is already enrolled in this course
+        $checkStmt = $this->db->prepare("SELECT COUNT(*) as count FROM ld_enrollments WHERE employee_user_id = ? AND ld_courses_id = ? AND status != 'dropped'");
+        $checkStmt->execute([$data['employee_user_id'], $data['ld_courses_id']]);
+        $result = $checkStmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($result['count'] > 0) {
+            // Employee is already enrolled
+            return false;
+        }
+
         $stmt = $this->db->prepare("INSERT INTO ld_enrollments (employee_user_id, ld_courses_id, status, enrolled_at) VALUES (?, ?, ?, NOW())");
         return $stmt->execute([
-            $data['employee_id'],
-            $data['course_id'],
+            $data['employee_user_id'],
+            $data['ld_courses_id'],
             $data['status'] ?? 'enrolled'
         ]);
     }

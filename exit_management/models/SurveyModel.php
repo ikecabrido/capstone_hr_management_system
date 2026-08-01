@@ -220,40 +220,66 @@ class SurveyModel extends ExitManagementModel
     }
 
     /**
-     * Get all surveys with optional status filter
+     * Get all surveys with optional status filter and pagination
      */
-    public function getAllSurveys(string $status = null): array
+    public function getAllSurveys(string $status = null, int $page = 1, int $limit = 10, string $search = ''): array
     {
+        $offset = ($page - 1) * $limit;
+
+        $sql = "
+            SELECT
+                id,
+                title,
+                description,
+                status,
+                created_at,
+                updated_at
+            FROM exit_surveys
+        ";
+
+        $countSql = "
+            SELECT COUNT(*) as total
+            FROM exit_surveys
+        ";
+
+        $params = [];
+        $whereClause = "";
+
         if ($status && $status !== 'all') {
-            $stmt = $this->db->prepare("
-                SELECT 
-                    id,
-                    title,
-                    description,
-                    status,
-                    created_at,
-                    updated_at
-                FROM exit_surveys
-                WHERE status = ?
-                ORDER BY created_at DESC
-            ");
-            $stmt->execute([$status]);
-        } else {
-            $stmt = $this->db->prepare("
-                SELECT 
-                    id,
-                    title,
-                    description,
-                    status,
-                    created_at,
-                    updated_at
-                FROM exit_surveys
-                ORDER BY created_at DESC
-            ");
-            $stmt->execute();
+            $whereClause = " WHERE status = :status";
+            $params['status'] = $status;
         }
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Add search condition if provided
+        if (!empty($search)) {
+            $searchCondition = $whereClause ? " AND" : " WHERE";
+            $searchCondition .= " (title LIKE :search0 OR description LIKE :search1)";
+            $whereClause .= $searchCondition;
+            $searchParam = "%$search%";
+            $params['search0'] = $searchParam;
+            $params['search1'] = $searchParam;
+        }
+
+        // Get total count
+        $countStmt = $this->db->prepare($countSql . $whereClause);
+        $countStmt->execute($params);
+        $total = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+        // Get paginated data
+        $stmt = $this->db->prepare($sql . $whereClause . " ORDER BY created_at DESC LIMIT :limit OFFSET :offset");
+        foreach ($params as $key => $value) {
+            $stmt->bindValue(':' . $key, $value);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return [
+            'data' => $stmt->fetchAll(PDO::FETCH_ASSOC),
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit
+        ];
     }
 
     /**
@@ -295,5 +321,118 @@ class SurveyModel extends ExitManagementModel
         }
 
         return $report;
+    }
+
+    /**
+     * Archive survey
+     */
+    public function archiveSurvey(int $surveyId, string $archiveReason = 'Manual archive'): bool
+    {
+        // Get the full survey data
+        $stmt = $this->db->prepare("SELECT * FROM exit_surveys WHERE id = ?");
+        $stmt->execute([$surveyId]);
+        $survey = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$survey) {
+            return false;
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            // Insert into exit_archive
+            $archiveStmt = $this->db->prepare("
+                INSERT INTO exit_archive (
+                    archive_type, original_id, employee_id, title, description, content,
+                    status, original_created_by, archived_by, archive_reason, archive_data
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+
+            $title = "Survey - " . ($survey['title'] ?? 'Unknown Survey');
+            $description = "Archived survey record";
+            $content = json_encode($survey);
+            $archivedBy = $_SESSION['user']['id'] ?? 1;
+
+            $archiveStmt->execute([
+                'survey',
+                $surveyId,
+                null, // surveys don't have specific employee_id
+                $title,
+                $description,
+                $content,
+                $survey['status'],
+                $survey['created_by'],
+                $archivedBy,
+                $archiveReason,
+                $content
+            ]);
+
+            // Delete from exit_surveys
+            $deleteStmt = $this->db->prepare("DELETE FROM exit_surveys WHERE id = ?");
+            $deleteStmt->execute([$surveyId]);
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Survey archive error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Unarchive survey
+     */
+    public function unarchiveSurvey(int $surveyId): bool
+    {
+        // Get archived data
+        $stmt = $this->db->prepare("SELECT * FROM exit_archive WHERE archive_type = 'survey' AND original_id = ?");
+        $stmt->execute([$surveyId]);
+        $archive = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$archive) {
+            return false;
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            // Decode the archived data
+            $surveyData = json_decode($archive['archive_data'], true);
+            if (!$surveyData) {
+                return false;
+            }
+
+            // Insert back into exit_surveys
+            $insertStmt = $this->db->prepare("
+                INSERT INTO exit_surveys (
+                    id, title, description, status, created_by, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            ");
+
+            $insertStmt->execute([
+                $surveyData['id'],
+                $surveyData['title'],
+                $surveyData['description'],
+                $surveyData['status'] ?? 'draft',
+                $surveyData['created_by'],
+                $surveyData['created_at'],
+                date('Y-m-d H:i:s')
+            ]);
+
+            // Update archive record to mark as restored
+            $updateStmt = $this->db->prepare("
+                UPDATE exit_archive
+                SET restored = 1, restored_by = ?, restored_at = NOW()
+                WHERE id = ?
+            ");
+            $restoredBy = $_SESSION['user']['id'] ?? 1;
+            $updateStmt->execute([$restoredBy, $archive['id']]);
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Survey unarchive error: " . $e->getMessage());
+            return false;
+        }
     }
 }

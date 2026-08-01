@@ -147,13 +147,116 @@ class ExitInterviewController extends ExitManagementController
                 return $this->getScheduledInterviews();
 
             case 'get_interviews':
-                return $this->getInterviews($data['status'] ?? null);
+                $status = $data['status'] ?? null;
+                $page = (int)($data['page'] ?? 1);
+                $limit = (int)($data['limit'] ?? 10);
+                $search = $data['search'] ?? '';
+                return $this->interviewModel->getAllInterviews($status, $page, $limit, $search);
 
             case 'complete_interview':
                 return $this->completeInterview($data['interview_id'] ?? 0);
 
+            case 'archive_interview':
+                return $this->archiveInterview($data['interview_id'] ?? 0);
+
+            case 'unarchive_interview':
+                return $this->unarchiveInterview($data['interview_id'] ?? 0);
+
+            case 'get_interview_details':
+                return $this->getInterviewDetails($data['interview_id'] ?? 0);
+
             default:
                 return parent::handleAjaxRequest($action, $data);
+        }
+    }
+
+    /**
+     * Archive interview
+     */
+    public function archiveInterview(int $interviewId): array
+    {
+        try {
+            $archiveReason = $_POST['archive_reason'] ?? 'Manual archive';
+            $success = $this->interviewModel->archiveInterview($interviewId, $archiveReason);
+
+            if ($success) {
+                return [
+                    'success' => true,
+                    'message' => 'Interview archived successfully'
+                ];
+            } else {
+                return ['success' => false, 'message' => 'Failed to archive interview'];
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Unarchive interview
+     */
+    public function unarchiveInterview(int $interviewId): array
+    {
+        try {
+            $success = $this->interviewModel->unarchiveInterview($interviewId);
+
+            if ($success) {
+                return [
+                    'success' => true,
+                    'message' => 'Interview unarchived successfully'
+                ];
+            } else {
+                return ['success' => false, 'message' => 'Failed to unarchive interview'];
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get interview details for archiving
+     */
+    private function getInterviewDetails(int $interviewId): array
+    {
+        try {
+            if (empty($interviewId)) {
+                return [
+                    'success' => false,
+                    'message' => 'Interview ID is required'
+                ];
+            }
+
+            $interview = $this->interviewModel->getInterview($interviewId);
+
+            if (!$interview) {
+                return [
+                    'success' => false,
+                    'message' => 'Interview not found'
+                ];
+            }
+
+            // Get employee name
+            $employee = $this->interviewModel->getEmployeeById($interview['employee_id']);
+            // Get interviewer name
+            $interviewer = $this->interviewModel->getUserById($interview['interviewer_id']);
+
+            return [
+                'success' => true,
+                'data' => [
+                    'id' => $interview['id'],
+                    'employee_id' => $interview['employee_id'],
+                    'employee_name' => $employee ? $employee['first_name'] . ' ' . $employee['last_name'] : 'Unknown',
+                    'interviewer_name' => $interviewer ? $interviewer['first_name'] . ' ' . $interviewer['last_name'] : 'Unknown',
+                    'scheduled_date' => $interview['scheduled_date'],
+                    'status' => $interview['status']
+                ]
+            ];
+        } catch (Exception $e) {
+            error_log("Error getting interview details: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'An error occurred while retrieving interview details'
+            ];
         }
     }
 }

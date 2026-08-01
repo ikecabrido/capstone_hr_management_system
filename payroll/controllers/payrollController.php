@@ -59,10 +59,10 @@ class PayrollController
     }
 
     // Finalize payroll
-    public function finalize(int $periodId)
+    public function finalize(int $periodId, ?int $userId = null)
     {
 
-        $runId = $this->payrollModel->createPayrollRun($periodId);
+        $runId = $this->payrollModel->createPayrollRun($periodId, $userId);
         $employees = $this->payrollModel->getEmployeesForPayroll($periodId);
 
         foreach ($employees as $emp) {

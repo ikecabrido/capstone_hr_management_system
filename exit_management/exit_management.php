@@ -102,6 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
   <!-- Theme style -->
   <link rel="stylesheet" href="../assets/dist/css/adminlte.min.css" />
   <link rel="stylesheet" href="custom.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
   <link rel="stylesheet" href="../layout/toast.css" />
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
@@ -265,8 +266,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
         <div class="container-fluid">
           <!-- Dashboard Section -->
           <div id="dashboard-section" class="section">
-            <div class="row">
-              <div class="col-lg-3 col-6">
+            <div class="row dashboard-box-row">
+              <div class="dashboard-box-col">
                 <div class="small-box bg-info">
                   <div class="inner">
                     <h3 id="pending-resignations">0</h3>
@@ -277,7 +278,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                   </div>
                 </div>
               </div>
-              <div class="col-lg-3 col-6">
+              <div class="dashboard-box-col">
                 <div class="small-box bg-success">
                   <div class="inner">
                     <h3 id="scheduled-interviews">0</h3>
@@ -288,7 +289,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                   </div>
                 </div>
               </div>
-              <div class="col-lg-3 col-6">
+              <div class="dashboard-box-col">
                 <div class="small-box bg-warning">
                   <div class="inner">
                     <h3 id="active-transfers">0</h3>
@@ -299,7 +300,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                   </div>
                 </div>
               </div>
-              <div class="col-lg-3 col-6">
+              <div class="dashboard-box-col">
                 <div class="small-box bg-danger">
                   <div class="inner">
                     <h3 id="pending-settlements">0</h3>
@@ -307,6 +308,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                   </div>
                   <div class="icon">
                     <i class="fas fa-calculator"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="dashboard-box-col">
+                <div class="small-box bg-primary">
+                  <div class="inner">
+                    <h3 id="approved-preclearances">0</h3>
+                    <p>Payroll Approved</p>
+                  </div>
+                  <div class="icon">
+                    <i class="fas fa-receipt"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="payroll-approval-notification-row" class="row mt-3" style="display: none;">
+              <div class="col-12">
+                <div class="card card-outline card-primary">
+                  <div class="card-header">
+                    <h3 class="card-title">Recent Payroll Pre-Clearance Approvals</h3>
+                  </div>
+                  <div class="card-body p-3">
+                    <div class="table-responsive">
+                      <table class="table table-sm table-bordered table-hover">
+                        <thead>
+                          <tr>
+                            <th>#</th>
+                            <th>Employee</th>
+                            <th>Settlement Date</th>
+                            <th>Net Payable</th>
+                            <th>Approved At</th>
+                          </tr>
+                        </thead>
+                        <tbody id="payroll-approval-notification-body"></tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -371,31 +409,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                     </div>
                   </div>
                   <div class="card-body">
-                    <table class="table table-bordered table-striped table-sm">
-                      <thead>
-                        <tr>
-                          <th>Employee</th>
-                          <th>Department</th>
-                          <th>Type</th>
-                          <th>Reason</th>
-                          <th>Notice Date</th>
-                          <th>Last Working Date</th>
-                          <th>Status</th>
-                          <th>Days Left</th>
-                        </tr>
-                      </thead>
-                      <tbody id="recent-resignations-tbody">
-                        <tr><td colspan="8" class="text-center text-muted">Loading...</td></tr>
-                      </tbody>
-                    </table>
+                    <div class="table-responsive">
+                      <table id="recent-resignations-table" class="table table-bordered table-striped table-sm">
+                        <colgroup>
+                          <col style="width: 14%;">
+                          <col style="width: 11%;">
+                          <col style="width: 10%;">
+                          <col style="width: 15%;">
+                          <col style="width: 13%;">
+                          <col style="width: 13%;">
+                          <col style="width: 13%;">
+                          <col style="width: 11%;">
+                        </colgroup>
+                        <thead>
+                          <tr>
+                            <th>Employee</th>
+                            <th>Department</th>
+                            <th>Type</th>
+                            <th>Reason</th>
+                            <th>Notice Date</th>
+                            <th>Last Working Date</th>
+                            <th>Status</th>
+                            <th>Days Left</th>
+                          </tr>
+                        </thead>
+                        <tbody id="recent-resignations-tbody">
+                          <tr><td colspan="8" class="text-center text-muted">Loading...</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
             <!-- Key Metrics -->
-            <div class="row mt-4">
-              <div class="col-lg-3 col-6">
+            <div class="row mt-4 dashboard-box-row">
+              <div class="dashboard-box-col">
                 <div class="small-box bg-primary">
                   <div class="inner">
                     <h3 id="total-exited">0</h3>
@@ -406,7 +456,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                   </div>
                 </div>
               </div>
-              <div class="col-lg-3 col-6">
+              <div class="dashboard-box-col">
                 <div class="small-box bg-info">
                   <div class="inner">
                     <h3 id="avg-notice">0</h3>
@@ -417,7 +467,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                   </div>
                 </div>
               </div>
-              <div class="col-lg-3 col-6">
+              <div class="dashboard-box-col">
                 <div class="small-box bg-success">
                   <div class="inner">
                     <h3 id="top-reason">--</h3>
@@ -428,7 +478,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                   </div>
                 </div>
               </div>
-              <div class="col-lg-3 col-6">
+              <div class="dashboard-box-col">
                 <div class="small-box bg-warning">
                   <div class="inner">
                     <h3 id="avg-interviews">0%</h3>
@@ -445,13 +495,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
           <!-- Resignations Section -->
           <div id="resignations-section" class="section" style="display: none;">
             <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">Resignation Management</h3>
-                <div class="card-tools d-flex align-items-center">
-                  <button type="button" class="btn btn-primary mr-2 btn-action-fixed" onclick="showResignationModal()">
-                    <i class="fas fa-plus"></i> New Resignation
-                  </button>
-                  <select id="resignation-status-filter" class="form-control form-control-sm mr-2" onchange="onResignationStatusFilterChange()">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2" style="flex: 1;">
+                  <!-- Search Bar -->
+                  <div class="input-group input-group-sm" style="flex: 19;">
+                    <input type="text" id="resignation-search" class="form-control" placeholder="Search resignations..." onkeyup="onResignationSearchChange()">
+                    <div class="input-group-append">
+                      <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    </div>
+                  </div>
+                  <!-- Filter -->
+                  <select id="resignation-status-filter" class="form-control form-control-sm" onchange="onResignationStatusFilterChange()" style="flex: 1; white-space: nowrap;">
                     <option value="active">Active</option>
                     <option value="pending">Pending</option>
                     <option value="approved">Approved</option>
@@ -460,43 +514,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                     <option value="archived">Archived</option>
                     <option value="all">All</option>
                   </select>
-                  <button id="toggle-archived-resignations" type="button" class="btn btn-secondary" onclick="toggleArchivedResignations()">
-                    <i class="fas fa-archive"></i> Show Archived
+                </div>
+                <div class="card-tools d-flex align-items-center">
+                  <button type="button" class="btn btn-warning btn-sm mr-2" onclick="toggleArchivedResignations()">
+                    <i class="fas fa-archive"></i> Archive
+                  </button>
+                  <button type="button" class="btn btn-primary btn-sm" onclick="showResignationModal()">
+                    <i class="fas fa-plus"></i> Add
                   </button>
                 </div>
               </div>
               <div class="card-body">
-                <table id="resignations-table" class="table table-bordered table-striped table-sm">
-                  <thead>
-                    <tr>
-                      <th>Employee</th>
-                      <th>Department</th>
-                      <th>Email</th>
-                      <th>Pre-clearance Desk</th>
-                      <th>Type</th>
-                      <th>Reason</th>
-                      <th>Notice Date</th>
-                      <th>Last Working Date</th>
-                      <th>Comments</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="resignations-tbody">
-                    <!-- Data will be loaded here -->
-                  </tbody>
-                </table>
-
-                <div id="archived-resignations-container" class="mt-4" style="display: none;">
-                  <h5>Archived Resignations</h5>
-                  <table id="archived-resignations-table" class="table table-bordered table-striped table-sm">
+                <div class="table-responsive">
+                  <table id="resignations-table" class="table table-bordered table-striped table-sm">
+                    <colgroup>
+                      <col style="width: 13%;">
+                      <col style="width: 8%;">
+                      <col style="width: 15%;">
+                      <col style="width: 12%;">
+                      <col style="width: 10%;">
+                      <col style="width: 9%;">
+                      <col style="width: 9%;">
+                      <col style="width: 9%;">
+                      <col style="width: 8%;">
+                      <col style="width: 11%;">
+                      <col style="width: 6%;">
+                    </colgroup>
                     <thead>
                       <tr>
                         <th>Employee</th>
                         <th>Department</th>
                         <th>Email</th>
-                        <th>Pre-clearance Desk</th>
-                        <th>Type</th>
+                        <th>Position</th>
+                        <th>Resignation Type</th>
                         <th>Reason</th>
                         <th>Notice Date</th>
                         <th>Last Working Date</th>
@@ -505,12 +555,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                         <th>Actions</th>
                       </tr>
                     </thead>
-                    <tbody id="archived-resignations-tbody">
+                    <tbody id="resignations-tbody">
                       <!-- Data will be loaded here -->
                     </tbody>
                   </table>
+                </div>
+
+                <div id="archived-resignations-container" class="mt-4" style="display: none;">
+                  <h5>Archived Resignations</h5>
+                  <div class="table-responsive">
+                    <table id="archived-resignations-table" class="table table-bordered table-striped table-sm">
+                      <colgroup>
+                        <col style="width: 13%;">
+                        <col style="width: 8%;">
+                        <col style="width: 15%;">
+                        <col style="width: 12%;">
+                        <col style="width: 10%;">
+                        <col style="width: 9%;">
+                        <col style="width: 9%;">
+                        <col style="width: 9%;">
+                        <col style="width: 8%;">
+                        <col style="width: 11%;">
+                        <col style="width: 6%;">
+                      </colgroup>
+                      <thead>
+                        <tr>
+                          <th>Employee</th>
+                          <th>Department</th>
+                          <th>Email</th>
+                          <th>Position</th>
+                          <th>Resignation Type</th>
+                          <th>Reason</th>
+                          <th>Notice Date</th>
+                          <th>Last Working Date</th>
+                          <th>Comments</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody id="archived-resignations-tbody">
+                        <!-- Data will be loaded here -->
+                      </tbody>
+                    </table>
+                  </div>
                   <div id="archived-resignations-pagination" class="mt-2 d-flex justify-content-end"></div>
                 </div>
+
+                <!-- Pagination for main resignations table -->
+                <div id="resignations-pagination" class="mt-3 d-flex justify-content-between align-items-center"></div>
               </div>
             </div>
           </div>
@@ -518,18 +610,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
           <!-- Interviews Section -->
           <div id="interviews-section" class="section" style="display: none;">
             <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">Exit Interviews</h3>
-                <div class="card-tools d-flex align-items-center">
-                  <button type="button" class="btn btn-success mr-2 btn-action-fixed" onclick="showInterviewModal()">
-                    <i class="fas fa-plus"></i> Schedule Interview
-                  </button>
-                  <select id="interview-status-filter" class="form-control form-control-sm" onchange="onInterviewStatusFilterChange()">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2" style="flex: 1;">
+                  <!-- Search Bar -->
+                  <div class="input-group input-group-sm" style="flex: 19;">
+                    <input type="text" id="interview-search" class="form-control" placeholder="Search interviews..." onkeyup="onInterviewSearchChange()">
+                    <div class="input-group-append">
+                      <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    </div>
+                  </div>
+                  <!-- Filter -->
+                  <select id="interview-status-filter" class="form-control form-control-sm" onchange="onInterviewStatusFilterChange()" style="flex: 1; white-space: nowrap;">
                     <option value="all">All</option>
                     <option value="scheduled">Scheduled</option>
                     <option value="completed">Completed</option>
                     <option value="pending">Pending</option>
                   </select>
+                </div>
+                <div class="card-tools d-flex align-items-center">
+                  <button type="button" class="btn btn-warning btn-sm mr-2" onclick="archiveInterviews()">
+                    <i class="fas fa-archive"></i> Archive
+                  </button>
+                  <button type="button" class="btn btn-success btn-sm" onclick="showInterviewModal()">
+                    <i class="fas fa-plus"></i> Add
+                  </button>
                 </div>
               </div>
               <div class="card-body">
@@ -554,18 +658,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
           <!-- Transfers Section -->
           <div id="transfers-section" class="section" style="display: none;">
             <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">Knowledge Transfer</h3>
-                <div class="card-tools d-flex align-items-center">
-                  <button type="button" class="btn btn-warning mr-2 btn-action-fixed" onclick="showTransferModal()">
-                    <i class="fas fa-plus"></i> Create Transfer Plan
-                  </button>
-                  <select id="transfer-status-filter" class="form-control form-control-sm" onchange="onTransferStatusFilterChange()">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2" style="flex: 1;">
+                  <!-- Search Bar -->
+                  <div class="input-group input-group-sm" style="flex: 19;">
+                    <input type="text" id="transfer-search" class="form-control" placeholder="Search transfers..." onkeyup="onTransferSearchChange()">
+                    <div class="input-group-append">
+                      <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    </div>
+                  </div>
+                  <!-- Filter -->
+                  <select id="transfer-status-filter" class="form-control form-control-sm" onchange="onTransferStatusFilterChange()" style="flex: 1; white-space: nowrap;">
                     <option value="all">All</option>
                     <option value="active">Active</option>
                     <option value="completed">Completed</option>
                     <option value="pending">Pending</option>
                   </select>
+                </div>
+                <div class="card-tools d-flex align-items-center">
+                  <button type="button" class="btn btn-warning btn-sm mr-2" onclick="archiveTransfers()">
+                    <i class="fas fa-archive"></i> Archive
+                  </button>
+                  <button type="button" class="btn btn-warning btn-sm" onclick="showTransferModal()">
+                    <i class="fas fa-plus"></i> Add
+                  </button>
                 </div>
               </div>
               <div class="card-body">
@@ -584,6 +700,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                     <!-- Data will be loaded here -->
                   </tbody>
                 </table>
+                <div id="transfers-pagination" class="d-flex justify-content-center mt-3"></div>
               </div>
             </div>
           </div>
@@ -591,19 +708,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
           <!-- Settlements Section -->
           <div id="settlements-section" class="section" style="display: none;">
             <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">Final Settlements</h3>
-                <div class="card-tools d-flex align-items-center">
-                  <button type="button" class="btn btn-danger mr-2 btn-action-fixed" onclick="showSettlementModal()">
-                    <i class="fas fa-plus"></i> Calculate Settlement
-                  </button>
-                  <select id="settlement-status-filter" class="form-control form-control-sm" onchange="onSettlementStatusFilterChange()">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2" style="flex: 1;">
+                  <!-- Search Bar -->
+                  <div class="input-group input-group-sm" style="flex: 19;">
+                    <input type="text" id="settlement-search" class="form-control" placeholder="Search settlements..." onkeyup="onSettlementSearchChange()">
+                    <div class="input-group-append">
+                      <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    </div>
+                  </div>
+                  <!-- Filter -->
+                  <select id="settlement-status-filter" class="form-control form-control-sm" onchange="onSettlementStatusFilterChange()" style="flex: 1; white-space: nowrap;">
                     <option value="all">All</option>
                     <option value="draft">Draft</option>
                     <option value="pending_approval">Pending Approval</option>
                     <option value="approved">Approved</option>
                     <option value="rejected">Rejected</option>
                   </select>
+                </div>
+                <div class="card-tools d-flex align-items-center">
+                  <button type="button" class="btn btn-warning btn-sm mr-2" onclick="archiveSettlements()">
+                    <i class="fas fa-archive"></i> Archive
+                  </button>
+                  <button type="button" class="btn btn-danger btn-sm" onclick="showSettlementModal()">
+                    <i class="fas fa-plus"></i> Add
+                  </button>
                 </div>
               </div>
               <div class="card-body">
@@ -621,6 +750,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                     <!-- Data will be loaded here -->
                   </tbody>
                 </table>
+                <div id="settlements-pagination" class="d-flex justify-content-center mt-3"></div>
               </div>
             </div>
           </div>
@@ -628,17 +758,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
           <!-- Documents Section -->
           <div id="documents-section" class="section" style="display: none;">
             <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">Documentation Management</h3>
-                <div class="card-tools d-flex align-items-center">
-                  <button type="button" class="btn btn-info mr-2 btn-action-fixed" onclick="showDocumentModal()">
-                    <i class="fas fa-plus"></i> Upload Document
-                  </button>
-                  <select id="document-status-filter" class="form-control form-control-sm" onchange="onDocumentStatusFilterChange()">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2" style="flex: 1;">
+                  <!-- Search Bar -->
+                  <div class="input-group input-group-sm" style="flex: 19;">
+                    <input type="text" id="document-search" class="form-control" placeholder="Search documents..." onkeyup="onDocumentSearchChange()">
+                    <div class="input-group-append">
+                      <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    </div>
+                  </div>
+                  <!-- Filter -->
+                  <select id="document-status-filter" class="form-control form-control-sm" onchange="onDocumentStatusFilterChange()" style="flex: 1; white-space: nowrap;">
                     <option value="all">All</option>
                     <option value="active">Active</option>
                     <option value="deleted">Deleted</option>
                   </select>
+                </div>
+                <div class="card-tools d-flex align-items-center">
+                  <button type="button" class="btn btn-warning btn-sm mr-2" onclick="archiveDocuments()">
+                    <i class="fas fa-archive"></i> Archive
+                  </button>
+                  <button type="button" class="btn btn-info btn-sm" onclick="showDocumentModal()">
+                    <i class="fas fa-plus"></i> Add
+                  </button>
                 </div>
               </div>
               <div class="card-body">
@@ -656,6 +798,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                     <!-- Data will be loaded here -->
                   </tbody>
                 </table>
+                <div id="documents-pagination" class="d-flex justify-content-center mt-3"></div>
               </div>
             </div>
           </div>
@@ -663,17 +806,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
           <!-- Surveys Section -->
           <div id="surveys-section" class="section" style="display: none;">
             <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">Post-Exit Surveys</h3>
-                <div class="card-tools d-flex align-items-center">
-                  <button type="button" class="btn btn-primary mr-2 btn-action-fixed" onclick="showSurveyModal()">
-                    <i class="fas fa-plus"></i> Create Survey
-                  </button>
-                  <select id="survey-status-filter" class="form-control form-control-sm" onchange="onSurveyStatusFilterChange()">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2" style="flex: 1;">
+                  <!-- Search Bar -->
+                  <div class="input-group input-group-sm" style="flex: 19;">
+                    <input type="text" id="survey-search" class="form-control" placeholder="Search surveys..." onkeyup="onSurveySearchChange()">
+                    <div class="input-group-append">
+                      <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    </div>
+                  </div>
+                  <!-- Filter -->
+                  <select id="survey-status-filter" class="form-control form-control-sm" onchange="onSurveyStatusFilterChange()" style="flex: 1; white-space: nowrap;">
                     <option value="all">All</option>
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                   </select>
+                </div>
+                <div class="card-tools d-flex align-items-center">
+                  <button type="button" class="btn btn-warning btn-sm mr-2" onclick="archiveSurveys()">
+                    <i class="fas fa-archive"></i> Archive
+                  </button>
+                  <button type="button" class="btn btn-primary btn-sm" onclick="showSurveyModal()">
+                    <i class="fas fa-plus"></i> Add
+                  </button>
                 </div>
               </div>
               <div class="card-body">
@@ -691,6 +846,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                     <!-- Data will be loaded here -->
                   </tbody>
                 </table>
+                <div id="surveys-pagination" class="d-flex justify-content-center mt-3"></div>
               </div>
             </div>
           </div>
@@ -718,6 +874,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
   <script src="../assets/dist/js/time.js"></script>
   <script src="../assets/dist/js/global_modal.js"></script>
   <script src="../assets/dist/js/profile.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="custom.js"></script>
 
   <script>

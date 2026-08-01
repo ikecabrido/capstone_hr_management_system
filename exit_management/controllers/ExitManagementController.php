@@ -107,7 +107,7 @@ class ExitManagementController
                       FROM exit_resignations r
                       LEFT JOIN employees e ON r.employee_id = e.employee_id
                       LEFT JOIN users p ON r.preclearance_desk_person = p.id
-                      ORDER BY r.id DESC
+                      ORDER BY r.created_at DESC -- Default sorting: newest first
                       LIMIT ?";
 
             $stmt = $db->prepare($query);
@@ -124,7 +124,7 @@ class ExitManagementController
                                  DATEDIFF(r.last_working_date, CURDATE()) AS days_left
                           FROM exit_resignations r
                           LEFT JOIN employees e ON r.employee_id = e.employee_id
-                          ORDER BY r.id DESC
+                          ORDER BY r.created_at DESC -- Default sorting: newest first
                           LIMIT ?";
 
                 $stmt = $db->prepare($query);
@@ -252,6 +252,45 @@ class ExitManagementController
     }
 
     /**
+     * Get approved payroll clearance notifications
+     */
+    public function getPayrollClearanceNotifications(): array
+    {
+        try {
+            $db = $this->model->getConnection();
+
+            $countStmt = $db->query("SELECT COUNT(*) AS count FROM payroll_clearances WHERE status = 'approved' AND approved_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)");
+            $notificationCount = (int)$countStmt->fetch(PDO::FETCH_ASSOC)['count'];
+
+            $detailsStmt = $db->prepare(
+                "SELECT pc.id,
+                        pc.settlement_id,
+                        pc.approved_at,
+                        pc.comments,
+                        e.full_name,
+                        s.settlement_date,
+                        s.net_payable
+                 FROM payroll_clearances pc
+                 LEFT JOIN exit_employee_settlements s ON pc.settlement_id = s.id
+                 LEFT JOIN employees e ON s.employee_id = e.employee_id
+                 WHERE pc.status = 'approved'
+                   AND pc.approved_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                 ORDER BY pc.approved_at DESC
+                 LIMIT 5"
+            );
+            $detailsStmt->execute();
+            $notifications = $detailsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            return [
+                'count' => $notificationCount,
+                'notifications' => $notifications
+            ];
+        } catch (Exception $e) {
+            return ['count' => 0, 'notifications' => []];
+        }
+    }
+
+    /**
      * Get resignation type distribution
      */
     public function getResignationTypeDistribution(): array
@@ -352,6 +391,9 @@ class ExitManagementController
 
                 case 'get_eligible_interviewers':
                     return $this->model->getEligibleInterviewers();
+
+                case 'get_payroll_clearance_notifications':
+                    return $this->getPayrollClearanceNotifications();
 
                 case 'get_recent_resignations':
                     return $this->getRecentResignations($data['limit'] ?? 10);

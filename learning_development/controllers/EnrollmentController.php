@@ -25,11 +25,15 @@ class EnrollmentController {
         return $this->model->getEnrollmentsByProgram($programId);
     }
 
+    public function getEnrollmentsByCourse($courseId) {
+        return $this->model->getEnrollmentsByCourse($courseId);
+    }
+
     public function enroll($data) {
         if ($this->model->enrollEmployee($data)) {
             return ['success' => true, 'message' => 'Employee enrolled successfully'];
         }
-        return ['success' => false, 'message' => 'Failed to enroll employee'];
+        return ['success' => false, 'message' => 'Employee is already enrolled in this course'];
     }
 
     public function updateProgress($id, $progress) {

@@ -43,11 +43,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Regular form submission
     if ($result['success']) {
         $_SESSION['success_message'] = "Course created successfully!";
-        header("Location: browse_courses.php");
+        header("Location: browse.php?section=courses");
         exit;
     } else {
         $_SESSION['error_message'] = $result['message'] ?? "Failed to create course. Please try again.";
-        header("Location: create_course.php");
+        header("Location: browse.php?section=courses");
         exit;
     }
 } else {

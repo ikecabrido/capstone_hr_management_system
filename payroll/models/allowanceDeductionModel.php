@@ -28,6 +28,10 @@ class AllowanceDeductionModel
         $sql = "
             SELECT 
                 ea.*,
+                CASE
+                    WHEN LOWER(ea.description) LIKE '%leave%' THEN 'benefit'
+                    ELSE ea.type
+                END AS display_type,
                 e.full_name AS employee_name,
                 pp.period_name,
                 pp.status AS period_status
@@ -60,8 +64,8 @@ class AllowanceDeductionModel
     {
         $sql = "
             SELECT 
-                SUM(CASE WHEN type='allowance' THEN amount ELSE 0 END) AS total_allowance,
-                SUM(CASE WHEN type='deduction' THEN amount ELSE 0 END) AS total_deduction
+                SUM(CASE WHEN LOWER(description) LIKE '%leave%' OR type IN ('allowance','benefit') THEN amount ELSE 0 END) AS total_allowance,
+                SUM(CASE WHEN LOWER(description) NOT LIKE '%leave%' AND type='deduction' THEN amount ELSE 0 END) AS total_deduction
             FROM pr_employee_adjustments
             WHERE 1=1
         ";

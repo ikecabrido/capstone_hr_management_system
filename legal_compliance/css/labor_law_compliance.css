@@ -1,0 +1,540 @@
+/**
+ * Labor Law Compliance Module Styles
+ * HR Legal & Compliance System
+ * Bestlink College of the Philippines
+ */
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
+.labor-law-compliance {
+    font-family: 'Source Sans Pro', sans-serif;
+}
+
+/* ============================================
+   COMPLIANCE CARD STYLES
+   ============================================ */
+
+.compliance-card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.39);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.compliance-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+
+.compliance-card .card-title {
+    font-weight: 600;
+    color: #1a1a1a;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* ============================================
+   SUMMARY CARD STYLES (matching dashboard)
+   ============================================ */
+
+.summary-card {
+    background: #ffffff;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+    margin-bottom: 20px;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.39);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    height: 100%;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+}
+
+.summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+}
+
+.summary-card .d-flex {
+    height: 100%;
+    align-items: center;
+}
+
+.summary-card .icon {
+    font-size: 2rem;
+    opacity: 0.8;
+    flex-shrink: 0;
+    margin-left: 10px;
+}
+
+.summary-card .number {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.summary-card .label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #050505;
+    margin-bottom: 0.25rem;
+}
+
+/* Ensure uniform height for summary cards in a row */
+.row .summary-card {
+    height: calc(100% - 20px);
+}
+
+/* Equal height cards in row */
+.row.equal-height .col-lg-2,
+.row.equal-height .col-md-4,
+.row.equal-height .col-sm-6 {
+    display: flex;
+}
+
+.row.equal-height .summary-card {
+    width: 100%;
+}
+
+/* Dark mode support for summary cards */
+body.dark-mode .summary-card {
+    background: #3a3a3a;
+}
+
+body.dark-mode .summary-card .label {
+    color: #adb5bd;
+}
+
+/* ============================================
+   STATUS BADGES
+   ============================================ */
+
+.status-badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-compliant {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-pending {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.status-overdue {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.status-not-applicable {
+    background-color: #e2e3e5;
+    color: #383d41;
+    border: 1px solid #d6d8db;
+}
+
+/* ============================================
+   CATEGORY ICONS
+   ============================================ */
+
+.category-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.gov-contributions {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.employee-benefits {
+    background-color: #e8f5e9;
+    color: #388e3c;
+}
+
+.legal-documentation {
+    background-color: #fff3e0;
+    color: #f57c00;
+}
+
+.mandatory-reports {
+    background-color: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.workplace-safety {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
+.tax-compliance {
+    background-color: #e0f7fa;
+    color: #00838f;
+}
+
+/* ============================================
+   PROGRESS BARS
+   ============================================ */
+
+.progress-compliance {
+    height: 8px;
+    border-radius: 4px;
+    background-color: #e9ecef;
+    overflow: hidden;
+}
+
+.progress-compliance .progress-bar {
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+/* ============================================
+   DEADLINE INDICATORS
+   ============================================ */
+
+.deadline-urgent {
+    border-left: 4px solid #dc3545;
+    background-color: #fff5f5;
+}
+
+.deadline-warning {
+    border-left: 4px solid #ffc107;
+    background-color: #fffbf0;
+}
+
+/* ============================================
+   TABLE STYLES
+   ============================================ */
+
+.table-fixed-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.table-fixed-header thead {
+    background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+    color: white;
+}
+
+.table-fixed-header thead th {
+    font-weight: 600;
+    white-space: nowrap;
+    border: none;
+}
+
+/* ============================================
+   FORM STYLES
+   ============================================ */
+
+.labor-law-form .form-group label {
+    font-weight: 600;
+    color: #1a1a1a;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+
+.labor-law-form .form-control {
+    border-radius: 5px;
+    border: 1px solid #ced4da;
+    padding: 8px 12px;
+}
+
+.labor-law-form .form-control:focus {
+    border-color: #1976d2;
+    box-shadow: 0 0 0 0.2rem rgba(25, 118, 210, 0.25);
+}
+
+/* ============================================
+   MODAL STYLES
+   ============================================ */
+
+.modal-header.bg-primary {
+    background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+}
+
+.modal-header.bg-danger {
+    background: linear-gradient(135deg, #c62828 0%, #d32f2f 100%);
+}
+
+.modal-header.bg-info {
+    background: linear-gradient(135deg, #0277bd 0%, #0288d1 100%);
+}
+
+/* ============================================
+   ALERT STYLES
+   ============================================ */
+
+.alert {
+    border-radius: 5px;
+    border: none;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* ============================================
+   SMALL BOX (Stats Cards)
+   ============================================ */
+
+.small-box {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.39);
+}
+
+.small-box .inner h3 {
+    font-weight: 700;
+}
+
+.small-box .icon {
+    font-size: 3rem;
+    opacity: 0.3;
+}
+
+/* ============================================
+   INFO BOX
+   ============================================ */
+
+.info-box {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.39);
+    padding: 15px;
+    background: white;
+}
+
+.info-box .info-box-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+}
+
+/* ============================================
+   RESPONSIVE STYLES
+   ============================================ */
+
+@media (max-width: 768px) {
+    .category-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 0.85rem;
+    }
+    
+    .status-badge {
+        font-size: 0.65rem;
+        padding: 3px 8px;
+    }
+    
+    .compliance-card {
+        margin-bottom: 15px;
+    }
+}
+
+@media (max-width: 576px) {
+    .btn-group .btn {
+        padding: 4px 8px;
+        font-size: 0.75rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.85rem;
+    }
+}
+
+/* ============================================
+   DARK MODE SUPPORT
+   ============================================ */
+
+body.dark-mode .compliance-card {
+    background-color: #3a3a3a;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+body.dark-mode .compliance-card .card-title {
+    color: #e0e0e0;
+}
+
+body.dark-mode .compliance-card .card-body {
+    color: #e0e0e0;
+}
+
+body.dark-mode .info-box {
+    background-color: #3a3a3a;
+}
+
+body.dark-mode .form-control {
+    background-color: #454545;
+    border-color: #5a5a5a;
+    color: #e0e0e0;
+}
+
+body.dark-mode .form-control:focus {
+    background-color: #4a4a4a;
+    border-color: #1976d2;
+}
+
+body.dark-mode .modal-content {
+    background-color: #3a3a3a;
+}
+
+body.dark-mode .modal-header {
+    color: white;
+}
+
+body.dark-mode .modal-body {
+    color: #e0e0e0;
+}
+
+body.dark-mode .labor-law-form .form-group label {
+    color: #e0e0e0;
+}
+
+body.dark-mode .progress-compliance {
+    background-color: #454545;
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+
+@media print {
+    .btn,
+    .modal,
+    .no-print {
+        display: none !important;
+    }
+    
+    .card {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24), 0 0 1px rgba(25, 118, 210, 0.1);
+        border-radius: 0.5rem;
+        border: 1px solid rgba(0, 0, 0, 0.125);
+        transition: box-shadow 0.3s ease;
+    }
+    
+    .card:hover {
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 2px rgba(25, 118, 210, 0.2);
+    }
+    
+    .table {
+        font-size: 0.8rem;
+    }
+}
+
+/* ============================================
+   AUTO DISMISS ALERTS
+   ============================================ */
+
+.alert.auto-dismiss {
+    animation: slideIn 0.3s ease-out;
+}
+
+.alert.auto-dismiss.fade-out {
+    animation: fadeOut 0.5s ease-out forwards;
+}
+
+@keyframes slideIn {
+    FROM lc_{
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeOut {
+    FROM lc_{
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+}
+
+/* ============================================
+   FILE UPLOAD STYLING
+   ============================================ */
+
+/* Custom file input styling */
+.form-control-file,
+.form-control-file:hover,
+.form-control-file:focus {
+    display: block;
+    width: 100%;
+    height: calc(2.75rem + 2px);
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #495057;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    box-shadow: inset 0 0 0 transparent;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+/* File input focus state */
+.form-control-file:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    outline: 0;
+}
+
+/* Alternative: Style file input as Bootstrap form-control */
+input[type="file"].form-control {
+    display: block;
+    width: 100%;
+    height: calc(2.75rem + 2px);
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #495057;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    box-shadow: inset 0 0 0 transparent;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+input[type="file"].form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    outline: 0;
+}

@@ -1,0 +1,213 @@
+<!-- Sample Leave Requests Table - Compatible with leave_management.php styling -->
+
+<!-- Table Structure (copy this into the tbody of #leaveTable) -->
+<table class="table table-hover text-nowrap" id="leaveTable">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Employee</th>
+            <th>Leave Type</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Days</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- Sample Row 1: Maternity Leave - Approved -->
+        <tr>
+            <td>1</td>
+            <td>
+                <strong>Niki Zepanya</strong>
+            </td>
+            <td>
+                <i class="fas fa-baby mr-1"></i>
+                Maternity Leave
+            </td>
+            <td>Apr 01, 2026</td>
+            <td>Jul 15, 2026</td>
+            <td><span class="badge badge-primary">105.00</span></td>
+            <td>
+                <span class="badge badge-success">
+                    Approved
+                </span>
+            </td>
+            <td>
+                <button type="button" class="btn btn-sm btn-info btn-action-review" 
+                        onclick="viewLeaveDetails(1, 'Maternity Leave')">
+                    <i class="fas fa-eye"></i> Review
+                </button>
+            </td>
+        </tr>
+
+        <!-- Sample Row 2: Paternity Leave - Approved -->
+        <tr>
+            <td>2</td>
+            <td>
+                <strong>Ana Cruz</strong>
+            </td>
+            <td>
+                <i class="fas fa-baby-carriage mr-1"></i>
+                Paternity Leave
+            </td>
+            <td>Mar 20, 2026</td>
+            <td>Mar 26, 2026</td>
+            <td><span class="badge badge-primary">7.00</span></td>
+            <td>
+                <span class="badge badge-success">
+                    Approved
+                </span>
+            </td>
+            <td>
+                <button type="button" class="btn btn-sm btn-info btn-action-review" 
+                        onclick="viewLeaveDetails(2, 'Paternity Leave')">
+                    <i class="fas fa-eye"></i> Review
+                </button>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- Alternative: Cards View (info-box style) -->
+<div class="row mb-3">
+    <!-- Maternity Leave Card -->
+    <div class="col-md-6">
+        <div class="card card-outline card-success">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-baby mr-2"></i>
+                    Maternity Leave
+                </h3>
+                <div class="card-tools">
+                    <span class="badge badge-success">Approved</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <p><strong><i class="fas fa-user mr-1"></i>Employee:</strong></p>
+                        <p><strong><i class="fas fa-calendar mr-1"></i>Start Date:</strong></p>
+                        <p><strong><i class="fas fa-clock mr-1"></i>Duration:</strong></p>
+                    </div>
+                    <div class="col-6">
+                        <p>Niki Zepanya</p>
+                        <p>April 01, 2026</p>
+                        <p>105.00 days</p>
+                    </div>
+                </div>
+                <hr>
+                <p><strong><i class="fas fa-calendar mr-1"></i>End Date:</strong> July 15, 2026</p>
+                <button type="button" class="btn btn-info btn-sm btn-block" 
+                        onclick="viewLeaveDetails(1, 'Maternity Leave')">
+                    <i class="fas fa-eye"></i> View Details
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Paternity Leave Card -->
+    <div class="col-md-6">
+        <div class="card card-outline card-success">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-baby-carriage mr-2"></i>
+                    Paternity Leave
+                </h3>
+                <div class="card-tools">
+                    <span class="badge badge-success">Approved</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <p><strong><i class="fas fa-user mr-1"></i>Employee:</strong></p>
+                        <p><strong><i class="fas fa-calendar mr-1"></i>Start Date:</strong></p>
+                        <p><strong><i class="fas fa-clock mr-1"></i>Duration:</strong></p>
+                    </div>
+                    <div class="col-6">
+                        <p>Ana Cruz</p>
+                        <p>March 20, 2026</p>
+                        <p>7.00 days</p>
+                    </div>
+                </div>
+                <hr>
+                <p><strong><i class="fas fa-calendar mr-1"></i>End Date:</strong> March 26, 2026</p>
+                <button type="button" class="btn btn-info btn-sm btn-block" 
+                        onclick="viewLeaveDetails(2, 'Paternity Leave')">
+                    <i class="fas fa-eye"></i> View Details
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Documents Table (for displaying submitted documents) -->
+<div class="card card-warning card-outline mt-3">
+    <div class="card-header">
+        <h5 class="card-title">
+            <i class="fas fa-file-alt mr-2"></i>Submitted Documents
+        </h5>
+    </div>
+    <div class="card-body table-responsive p-0">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th>Document Type</th>
+                    <th>File Name</th>
+                    <th>Upload Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Sample Document Row -->
+                <tr>
+                    <td>
+                        <i class="fas fa-file-pdf mr-1 text-danger"></i>
+                        Medical Certificate
+                    </td>
+                    <td>medical_certificate_niki.pdf</td>
+                    <td>Mar 15, 2026</td>
+                    <td>
+                        <a href="#" class="btn btn-xs btn-info mr-1" target="_blank">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                        <a href="#" class="btn btn-xs btn-success">
+                            <i class="fas fa-download"></i>
+                        </a>
+                    </td>
+                </tr>
+                <!-- Additional Document Row -->
+                <tr>
+                    <td>
+                        <i class="fas fa-file-pdf mr-1 text-danger"></i>
+                        SSS Maternity Form
+                    </td>
+                    <td>sss_maternity_form_niki.pdf</td>
+                    <td>Mar 15, 2026</td>
+                    <td>
+                        <a href="#" class="btn btn-xs btn-info mr-1" target="_blank">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                        <a href="#" class="btn btn-xs btn-success">
+                            <i class="fas fa-download"></i>
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Status Badge Reference Classes: -->
+<!-- Pending: badge-warning -->
+<!-- Approved: badge-success -->
+<!-- Rejected: badge-danger -->
+
+<!-- Leave Type Icons Reference: -->
+<!-- Maternity Leave: fa-baby -->
+<!-- Paternity Leave: fa-baby-carriage -->
+<!-- Sick Leave: fa-user-nurse -->
+<!-- Vacation Leave: fa-umbrella-beach -->
+<!-- Bereavement Leave: fa-dove -->
+<!-- Emergency Leave: fa-exclamation-triangle -->

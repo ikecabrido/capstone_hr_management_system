@@ -183,13 +183,123 @@ class SettlementController extends ExitManagementController
                 return $this->getPendingSettlements();
 
             case 'get_settlements':
-                return $this->getSettlements($data['status'] ?? null);
+                return $this->settlementModel->getAllSettlements(
+                    $data['status'] ?? null,
+                    $data['page'] ?? 1,
+                    $data['limit'] ?? 10,
+                    $data['search'] ?? ''
+                );
+
+            case 'get_settlements':
+                return $this->settlementModel->getAllSettlements(
+                    $data['status'] ?? null,
+                    $data['page'] ?? 1,
+                    $data['limit'] ?? 10,
+                    $data['search'] ?? ''
+                );
 
             case 'print_settlement':
                 return $this->printSettlement($data['settlement_id'] ?? 0);
 
+            case 'archive_settlement':
+                return $this->archiveSettlement($data['settlement_id'] ?? 0);
+
+            case 'unarchive_settlement':
+                return $this->unarchiveSettlement($data['settlement_id'] ?? 0);
+
+            case 'get_settlement_details':
+                return $this->getSettlementDetails($data['settlement_id'] ?? 0);
+
             default:
                 return parent::handleAjaxRequest($action, $data);
+        }
+    }
+
+    /**
+     * Archive settlement
+     */
+    public function archiveSettlement(int $settlementId): array
+    {
+        try {
+            $archiveReason = $_POST['archive_reason'] ?? 'Manual archive';
+            $success = $this->settlementModel->archiveSettlement($settlementId, $archiveReason);
+
+            if ($success) {
+                return [
+                    'success' => true,
+                    'message' => 'Settlement archived successfully'
+                ];
+            } else {
+                return ['success' => false, 'message' => 'Failed to archive settlement'];
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Unarchive settlement
+     */
+    public function unarchiveSettlement(int $settlementId): array
+    {
+        try {
+            $success = $this->settlementModel->unarchiveSettlement($settlementId);
+
+            if ($success) {
+                return [
+                    'success' => true,
+                    'message' => 'Settlement unarchived successfully'
+                ];
+            } else {
+                return ['success' => false, 'message' => 'Failed to unarchive settlement'];
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get settlement details for archiving
+     */
+    private function getSettlementDetails(int $settlementId): array
+    {
+        try {
+            if (empty($settlementId)) {
+                return [
+                    'success' => false,
+                    'message' => 'Settlement ID is required'
+                ];
+            }
+
+            $settlement = $this->settlementModel->getSettlement($settlementId);
+
+            if (!$settlement) {
+                return [
+                    'success' => false,
+                    'message' => 'Settlement not found'
+                ];
+            }
+
+            // Get employee name
+            $employee = $this->settlementModel->getEmployeeById($settlement['employee_id']);
+
+            return [
+                'success' => true,
+                'data' => [
+                    'id' => $settlement['id'],
+                    'employee_id' => $settlement['employee_id'],
+                    'employee_name' => $employee ? $employee['first_name'] . ' ' . $employee['last_name'] : 'Unknown',
+                    'settlement_date' => $settlement['settlement_date'],
+                    'net_payable' => $settlement['net_payable'],
+                    'status' => $settlement['status']
+                ]
+            ];
+        } catch (Exception $e) {
+            error_log("Error getting settlement details: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'An error occurred while retrieving settlement details'
+            ];
         }
     }
 }

@@ -1,0 +1,306 @@
+/**
+ * Medical Emergencies Module CSS
+ * Styles for the medical emergencies tracking module
+ */
+
+/* Statistics Cards */
+.small-box {
+    transition: transform 0.3s ease;
+}
+
+.small-box:hover {
+    transform: translateY(-5px);
+}
+
+.small-box h3 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.small-box p {
+    font-size: 1rem;
+    margin: 0;
+}
+
+/* Card Styles */
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* Table Styles */
+#emergencyCasesTable {
+    font-size: 0.9rem;
+}
+
+#emergencyCasesTable th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+#emergencyCasesTable td {
+    vertical-align: middle;
+}
+
+/* Badge Styles */
+.badge {
+    font-size: 0.75rem;
+    padding: 0.4em 0.6em;
+    font-weight: 500;
+}
+
+.badge-success {
+    background-color: #28a745;
+}
+
+.badge-warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.badge-danger {
+    background-color: #dc3545;
+}
+
+.badge-info {
+    background-color: #17a2b8;
+}
+
+.badge-primary {
+    background-color: #007bff;
+}
+
+.badge-secondary {
+    background-color: #6c757d;
+}
+
+/* Action Buttons */
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+/* Alert Styles */
+.alert-info {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .small-box h3 {
+        font-size: 1.8rem;
+    }
+    
+    .small-box p {
+        font-size: 0.9rem;
+    }
+    
+    #emergencyCasesTable {
+        font-size: 0.8rem;
+    }
+    
+    .badge {
+        font-size: 0.7rem;
+        padding: 0.3em 0.5em;
+    }
+    
+    .btn-sm {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* Table Row Hover */
+#emergencyCasesTable tbody tr:hover {
+    background-color: #f1f3f5;
+}
+
+/* Card Tools */
+.card-tools {
+    display: flex;
+    gap: 5px;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+    background-color: transparent;
+    padding: 0;
+    margin: 0;
+}
+
+.breadcrumb-item a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.breadcrumb-item a:hover {
+    text-decoration: underline;
+}
+
+.breadcrumb-item.active {
+    color: #6c757d;
+}
+
+/* Content Header */
+.content-header h1 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #333;
+}
+
+/* Section Content */
+.content {
+    padding: 15px;
+}
+
+/* Card Body */
+.card-body {
+    padding: 20px;
+}
+
+/* Table Responsive */
+.table-responsive {
+    overflow-x: auto;
+}
+
+/* DataTables Customization */
+.dataTables_wrapper {
+    padding-top: 10px;
+}
+
+.dataTables_wrapper .dataTables_paginate {
+    padding-top: 15px;
+}
+
+.dataTables_wrapper .dataTables_info {
+    padding-top: 15px;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.empty-state p {
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+/* Case Details */
+.case-details small {
+    display: block;
+    color: #6c757d;
+    margin-top: 2px;
+}
+
+/* Status Indicator */
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+}
+
+.status-indicator::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.status-indicator.active::before {
+    background-color: #ffc107;
+}
+
+.status-indicator.resolved::before {
+    background-color: #28a745;
+}
+
+.status-indicator.critical::before {
+    background-color: #dc3545;
+}
+
+/* Severity Indicator */
+.severity-critical {
+    border-left: 4px solid #dc3545;
+}
+
+.severity-high {
+    border-left: 4px solid #ffc107;
+}
+
+.severity-medium {
+    border-left: 4px solid #17a2b8;
+}
+
+.severity-low {
+    border-left: 4px solid #28a745;
+}
+
+/* Icon Styles */
+.icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.3;
+    font-size: 70px;
+}
+
+/* Small Box with Icon */
+.small-box {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Card Border */
+.card {
+    box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2);
+    border-radius: 0.25rem;
+}
+
+/* Table Border */
+.table-bordered {
+    border: 1px solid #dee2e6;
+}
+
+.table-bordered th,
+.table-bordered td {
+    border: 1px solid #dee2e6;
+}
+
+/* DataTables Button Styles */
+.dt-button {
+    background-color: #007bff !important;
+    color: white !important;
+    border: none !important;
+    padding: 5px 15px !important;
+    border-radius: 3px !important;
+}
+
+.dt-button:hover {
+    background-color: #0056b3 !important;
+}

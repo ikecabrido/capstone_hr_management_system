@@ -1,25 +1,11 @@
 <?php
-session_start();
-require_once "../../auth/auth_check.php";
-require_once "../controllers/TrainingProgramController.php";
-
-$controller = new TrainingProgramController();
-// Get all programs and filter out inactive/archived ones
-$allPrograms = $controller->index();
-$programs = array_filter($allPrograms, function($program) {
-    return $program['status'] !== 'inactive';
-});
-$theme = $_SESSION['user']['theme'] ?? 'light';
-
-function getStatusClass($status) {
-    $statusClasses = [
-        'active' => 'status-active',
-        'inactive' => 'status-inactive',
-        'archived' => 'status-archived',
-        'pending' => 'status-pending'
-    ];
-    return $statusClasses[$status] ?? 'status-default';
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
 }
+require_once "../../auth/auth_check.php";
+header('Location: browse.php?section=programs');
+exit;
+
 ?>
 
 <!doctype html>
@@ -145,45 +131,32 @@ function getStatusClass($status) {
             <li class="nav-item">
               <a href="browse_training_programs.php" class="nav-link active">
                 <i class="nav-icon fas fa-book"></i>
-                <p>Browse Programs</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="browse_courses.php" class="nav-link">
-                <i class="nav-icon fas fa-graduation-cap"></i>
-                <p>Browse Courses</p>
+                <p>Browse</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="certification_management.php" class="nav-link">
                 <i class="nav-icon fas fa-certificate"></i>
-                <p>Certifications</p>
+                <p>Certification</p>
               </a>
             </li>
             <?php if ($_SESSION['user']['role'] === 'learning'): ?>
-            <li class="nav-header">ADMIN FEATURES</li>
             <li class="nav-item">
-              <a href="track_enrollments.php" class="nav-link">
-                <i class="nav-icon fas fa-chart-line"></i>
-                <p>Enrollments</p>
+              <a href="manage_learning.php" class="nav-link">
+                <i class="nav-icon fas fa-tasks"></i>
+                <p>Learning Management</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="create_training_program.php" class="nav-link">
-                <i class="nav-icon fas fa-plus"></i>
-                <p>Create Programs</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="create_course.php" class="nav-link">
-                <i class="nav-icon fas fa-plus-circle"></i>
-                <p>Create Course</p>
+              <a href="training_requests.php" class="nav-link">
+                <i class="nav-icon fas fa-clipboard-list"></i>
+                <p>Training Requests</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="archive.php" class="nav-link">
                 <i class="nav-icon fas fa-archive"></i>
-                <p>Archives</p>
+                <p>Archive</p>
               </a>
             </li>
             <?php endif; ?>

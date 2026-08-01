@@ -9,6 +9,40 @@ class ExitManagementModel
     public function __construct()
     {
         $this->db = Database::getInstance()->getConnection();
+        $this->ensureTableAutoIncrement('exit_employee_settlements');
+    }
+
+    /**
+     * Ensure a table primary key uses AUTO_INCREMENT and repair any id=0 rows.
+     */
+    protected function ensureTableAutoIncrement(string $tableName, string $primaryKey = 'id'): void
+    {
+        try {
+            $stmt = $this->db->prepare("SHOW COLUMNS FROM {$tableName} LIKE ?");
+            $stmt->execute([$primaryKey]);
+            $column = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$column) {
+                return;
+            }
+
+            if (stripos($column['Extra'] ?? '', 'auto_increment') === false) {
+                $rows = $this->db->query("SELECT {$primaryKey} FROM {$tableName} WHERE {$primaryKey} = 0")->fetchAll(PDO::FETCH_ASSOC);
+                if (!empty($rows)) {
+                    $maxId = (int)$this->db->query("SELECT MAX({$primaryKey}) AS max_id FROM {$tableName}")->fetchColumn();
+                    $nextId = max(1, $maxId + 1);
+
+                    foreach ($rows as $row) {
+                        $this->db->exec("UPDATE {$tableName} SET {$primaryKey} = {$nextId} WHERE {$primaryKey} = 0 LIMIT 1");
+                        $nextId++;
+                    }
+                }
+
+                $this->db->exec("ALTER TABLE {$tableName} MODIFY {$primaryKey} int(11) NOT NULL AUTO_INCREMENT");
+            }
+        } catch (Exception $e) {
+            // Ignore repair failures in the model init; table may not be fully available yet.
+        }
     }
 
     /**
@@ -37,7 +71,7 @@ class ExitManagementModel
                 e.employment_status AS employee_status
             FROM employees e
             LEFT JOIN users u ON e.user_id = u.id
-            ORDER BY e.full_name
+            ORDER BY e.created_at DESC
         ");
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);

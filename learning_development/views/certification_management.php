@@ -244,161 +244,6 @@ function getStatusClass($status) {
       <!-- Success/Error Messages (Toast Notifications) -->
       <div id="toastContainer" style="position: fixed; top: 20px; right: 20px; z-index: 9999; pointer-events: none;"></div>
 
-      <!-- Script to populate toast -->
-      <script>
-        $(document).ready(function() {
-          <?php if (isset($_SESSION['success_message'])): ?>
-            var toastHtml = `
-              <div class="toast" style="pointer-events: auto; margin-bottom: 10px; min-width: 300px;">
-                <div class="toast-header bg-success text-white">
-                  <i class="icon fas fa-check mr-2"></i>
-                  <strong class="mr-auto">Success!</strong>
-                  <button type="button" class="close text-white" data-dismiss="toast" aria-hidden="true">&times;</button>
-                </div>
-                <div class="toast-body">
-                  <?php echo $_SESSION['success_message']; unset($_SESSION['success_message']); ?>
-                </div>
-              </div>
-            `;
-            $('#toastContainer').append(toastHtml);
-            
-            // Auto-dismiss after 5 seconds
-            setTimeout(function() {
-              $('#toastContainer .toast').fadeOut(500, function() {
-                $(this).remove();
-              });
-            }, 5000);
-          <?php endif; ?>
-
-          <?php if (isset($_SESSION['error_message'])): ?>
-            var toastHtml = `
-              <div class="toast" style="pointer-events: auto; margin-bottom: 10px; min-width: 300px;">
-                <div class="toast-header bg-danger text-white">
-                  <i class="icon fas fa-ban mr-2"></i>
-                  <strong class="mr-auto">Error!</strong>
-                  <button type="button" class="close text-white" data-dismiss="toast" aria-hidden="true">&times;</button>
-                </div>
-                <div class="toast-body">
-                  <?php echo $_SESSION['error_message']; unset($_SESSION['error_message']); ?>
-                </div>
-              </div>
-            `;
-            $('#toastContainer').append(toastHtml);
-            
-            // Auto-dismiss after 5 seconds
-            setTimeout(function() {
-              $('#toastContainer .toast').fadeOut(500, function() {
-                $(this).remove();
-              });
-            }, 5000);
-          <?php endif; ?>
-        });
-      </script>
-
-      <script>
-        function archiveCertification(certificationId) {
-          if (confirm('Are you sure you want to archive this certification?')) {
-            fetch('archive_certification.php', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-              },
-              body: 'certification_id=' + certificationId
-            })
-            .then(response => {
-              if (!response.ok) {
-                throw new Error('HTTP ' + response.status + ': ' + response.statusText);
-              }
-              return response.text().then(text => {
-                try {
-                  return JSON.parse(text);
-                } catch (e) {
-                  throw new Error('Invalid JSON response: ' + text.substring(0, 200));
-                }
-              });
-            })
-            .then(data => {
-              if (data.success) {
-                alert('Certification archived successfully!');
-                location.reload();
-              } else {
-                alert('Error archiving certification: ' + data.message);
-              }
-            })
-            .catch(error => {
-              console.error('Archive error:', error);
-              alert('Error archiving certification: ' + error.message);
-            });
-          }
-        }
-
-        function revokeCertification(certificationId) {
-          if (confirm('Are you sure you want to revoke this certification?')) {
-            fetch('revoke_certification.php', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-              },
-              body: 'certification_id=' + certificationId
-            })
-            .then(response => response.json())
-            .then(data => {
-              if (data.success) {
-                alert(data.message);
-                location.reload();
-              } else {
-                alert('Error revoking certification: ' + data.message);
-              }
-            })
-            .catch(error => {
-              console.error('Revoke error:', error);
-              alert('Error revoking certification: ' + error.message);
-            });
-          }
-        }
-
-        // Data map for modal view/edit; populated via PHP JSON encode
-        const certificationData = <?php echo json_encode(array_column($certifications, null, 'ld_certification_id')); ?>;
-
-        function viewCertification(certificationId) {
-          const cert = certificationData[certificationId];
-          if (!cert) {
-            alert('Certification details not available.');
-            return;
-          }
-
-          $('#certificateModalLabel').text(cert.certification_name || 'Certificate Details');
-          $('#viewCertName').text(cert.certification_name || 'N/A');
-          $('#viewCertEmployee').text(cert.employee_name || 'N/A');
-          $('#viewCertCourse').text(cert.course_title || 'N/A');
-          $('#viewCertIssuedBy').text(cert.issued_by_name || 'N/A');
-          $('#viewCertIssuedDate').text(cert.issued_date ? new Date(cert.issued_date).toLocaleDateString() : 'N/A');
-          $('#viewCertExpiryDate').text(cert.expiry_date ? new Date(cert.expiry_date).toLocaleDateString() : 'Never');
-          $('#viewCertStatus').text(cert.status || 'N/A');
-
-          $('#viewCertificationModal').modal('show');
-        }
-
-        function editCertification(certificationId) {
-          const cert = certificationData[certificationId];
-          if (!cert) {
-            alert('Certification data not available.');
-            return;
-          }
-
-          $('#editCertificationId').val(cert.ld_certification_id);
-          $('#editEmployeeId').val(cert.employee_id);
-          $('#editCourseId').val(cert.course_id);
-          $('#editCertificationName').val(cert.certification_name);
-          $('#editIssuedDate').val(cert.issued_date);
-          $('#editExpiryDate').val(cert.expiry_date);
-          $('#editIssuedBy').val(cert.issued_by);
-          $('#editStatus').val(cert.status || 'active');
-
-          $('#editCertificationModal').modal('show');
-        }
-      </script>
-
       <!-- Main content -->
       <section class="content">
         <div class="container-fluid">
@@ -744,6 +589,155 @@ function getStatusClass($status) {
   <script src="../../assets/dist/js/time.js"></script>
   <script src="../../assets/dist/js/global_modal.js"></script>
   <script src="../../assets/dist/js/profile.js"></script>
+
+  <script>
+    $(document).ready(function() {
+      <?php if (isset($_SESSION['success_message'])): ?>
+        var toastHtml = `
+          <div class="toast" style="pointer-events: auto; margin-bottom: 10px; min-width: 300px;">
+            <div class="toast-header bg-success text-white">
+              <i class="icon fas fa-check mr-2"></i>
+              <strong class="mr-auto">Success!</strong>
+              <button type="button" class="close text-white" data-dismiss="toast" aria-hidden="true">&times;</button>
+            </div>
+            <div class="toast-body">
+              <?php echo $_SESSION['success_message']; unset($_SESSION['success_message']); ?>
+            </div>
+          </div>
+        `;
+        $('#toastContainer').append(toastHtml);
+
+        setTimeout(function() {
+          $('#toastContainer .toast').fadeOut(500, function() {
+            $(this).remove();
+          });
+        }, 5000);
+      <?php endif; ?>
+
+      <?php if (isset($_SESSION['error_message'])): ?>
+        var toastHtml = `
+          <div class="toast" style="pointer-events: auto; margin-bottom: 10px; min-width: 300px;">
+            <div class="toast-header bg-danger text-white">
+              <i class="icon fas fa-ban mr-2"></i>
+              <strong class="mr-auto">Error!</strong>
+              <button type="button" class="close text-white" data-dismiss="toast" aria-hidden="true">&times;</button>
+            </div>
+            <div class="toast-body">
+              <?php echo $_SESSION['error_message']; unset($_SESSION['error_message']); ?>
+            </div>
+          </div>
+        `;
+        $('#toastContainer').append(toastHtml);
+
+        setTimeout(function() {
+          $('#toastContainer .toast').fadeOut(500, function() {
+            $(this).remove();
+          });
+        }, 5000);
+      <?php endif; ?>
+    });
+
+    function archiveCertification(certificationId) {
+      if (confirm('Are you sure you want to archive this certification?')) {
+        fetch('archive_certification.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: 'certification_id=' + certificationId
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+          }
+          return response.text().then(text => {
+            try {
+              return JSON.parse(text);
+            } catch (e) {
+              throw new Error('Invalid JSON response: ' + text.substring(0, 200));
+            }
+          });
+        })
+        .then(data => {
+          if (data.success) {
+            alert('Certification archived successfully!');
+            location.reload();
+          } else {
+            alert('Error archiving certification: ' + data.message);
+          }
+        })
+        .catch(error => {
+          console.error('Archive error:', error);
+          alert('Error archiving certification: ' + error.message);
+        });
+      }
+    }
+
+    function revokeCertification(certificationId) {
+      if (confirm('Are you sure you want to revoke this certification?')) {
+        fetch('revoke_certification.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: 'certification_id=' + certificationId
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            alert(data.message);
+            location.reload();
+          } else {
+            alert('Error revoking certification: ' + data.message);
+          }
+        })
+        .catch(error => {
+          console.error('Revoke error:', error);
+          alert('Error revoking certification: ' + error.message);
+        });
+      }
+    }
+
+    const certificationData = <?php echo json_encode(array_column($certifications, null, 'ld_certification_id')); ?>;
+
+    function viewCertification(certificationId) {
+      const cert = certificationData[certificationId];
+      if (!cert) {
+        alert('Certification details not available.');
+        return;
+      }
+
+      $('#certificateModalLabel').text(cert.certification_name || 'Certificate Details');
+      $('#viewCertName').text(cert.certification_name || 'N/A');
+      $('#viewCertEmployee').text(cert.employee_name || 'N/A');
+      $('#viewCertCourse').text(cert.course_title || 'N/A');
+      $('#viewCertIssuedBy').text(cert.issued_by_name || 'N/A');
+      $('#viewCertIssuedDate').text(cert.issued_date ? new Date(cert.issued_date).toLocaleDateString() : 'N/A');
+      $('#viewCertExpiryDate').text(cert.expiry_date ? new Date(cert.expiry_date).toLocaleDateString() : 'Never');
+      $('#viewCertStatus').text(cert.status || 'N/A');
+
+      $('#viewCertificationModal').modal('show');
+    }
+
+    function editCertification(certificationId) {
+      const cert = certificationData[certificationId];
+      if (!cert) {
+        alert('Certification data not available.');
+        return;
+      }
+
+      $('#editCertificationId').val(cert.ld_certification_id);
+      $('#editEmployeeId').val(cert.employee_id);
+      $('#editCourseId').val(cert.course_id);
+      $('#editCertificationName').val(cert.certification_name);
+      $('#editIssuedDate').val(cert.issued_date);
+      $('#editExpiryDate').val(cert.expiry_date);
+      $('#editIssuedBy').val(cert.issued_by);
+      $('#editStatus').val(cert.status || 'active');
+
+      $('#editCertificationModal').modal('show');
+    }
+  </script>
 
 </body>
 

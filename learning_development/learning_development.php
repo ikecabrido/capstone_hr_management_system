@@ -125,8 +125,6 @@ if (isset($_GET['modal']) && $_GET['modal'] === 'program' && $_SESSION['user']['
             data-widget="treeview"
             role="menu"
             data-accordion="false">
-            <!-- Add icons to the links using the .nav-icon class
-               with font-awesome or any other icon font library -->
             <li class="nav-item">
               <a href="#" class="nav-link active">
                 <i class="nav-icon fas fa-tachometer-alt"></i>
@@ -134,47 +132,28 @@ if (isset($_GET['modal']) && $_GET['modal'] === 'program' && $_SESSION['user']['
               </a>
             </li>
             <li class="nav-item">
-              <a href="views/browse_training_programs.php" class="nav-link">
+              <a href="views/browse.php" class="nav-link">
                 <i class="nav-icon fas fa-book"></i>
-                <p>Browse Programs</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="views/browse_courses.php" class="nav-link">
-                <i class="nav-icon fas fa-graduation-cap"></i>
-                <p>Browse Courses</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="views/certification_management.php" class="nav-link">
-                <i class="nav-icon fas fa-certificate"></i>
-                <p>Certifications</p>
+                <p>Browse</p>
               </a>
             </li>
             <?php if ($_SESSION['user']['role'] === 'learning'): ?>
-            <li class="nav-header">ADMIN FEATURES</li>
             <li class="nav-item">
-              <a href="views/track_enrollments.php" class="nav-link">
-                <i class="nav-icon fas fa-chart-line"></i>
-                <p>Enrollments</p>
+              <a href="views/learning_management.php" class="nav-link">
+                <i class="nav-icon fas fa-tasks"></i>
+                <p>Learning Management</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="views/create_training_program.php" class="nav-link">
-                <i class="nav-icon fas fa-plus"></i>
-                <p>Create Programs</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="views/create_course.php" class="nav-link">
-                <i class="nav-icon fas fa-plus-circle"></i>
-                <p>Create Course</p>
+              <a href="views/training_requests.php" class="nav-link">
+                <i class="nav-icon fas fa-clipboard-list"></i>
+                <p>Training Requests</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="views/archive.php" class="nav-link">
                 <i class="nav-icon fas fa-archive"></i>
-                <p>Archives</p>
+                <p>Archive</p>
               </a>
             </li>
             <?php endif; ?>
@@ -248,13 +227,13 @@ if (isset($_GET['modal']) && $_GET['modal'] === 'program' && $_SESSION['user']['
                 return isset($enroll['status']) && $enroll['status'] === 'completed';
             });
             $ongoingEnrollments = array_filter($enrollments, function($enroll) {
-                return isset($enroll['status']) && in_array($enroll['status'], ['active','ongoing'], true);
+                return isset($enroll['status']) && in_array($enroll['status'], ['enrolled','in-progress'], true);
             });
 
             $certificationController = new CertificationController();
             $certifications = $_SESSION['user']['role'] === 'learning' ? $certificationController->index() : $certificationController->getByEmployee($_SESSION['user']['id']);
             $activeCertifications = array_filter($certifications, function($cert) {
-                return isset($cert['status']) && in_array($cert['status'], ['active', 'issued']);
+                return isset($cert['status']) && $cert['status'] === 'active';
             });
             $revokedCertifications = array_filter($certifications, function($cert) {
                 return isset($cert['status']) && $cert['status'] === 'revoked';

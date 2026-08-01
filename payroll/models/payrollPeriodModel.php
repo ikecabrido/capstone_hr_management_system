@@ -31,17 +31,28 @@ class PayrollPeriodModel
 
     public function create(array $data): bool
     {
-        $stmt = $this->db->prepare("
-            INSERT INTO pr_periods (period_name, start_date, end_date, pay_date, status)
-            VALUES (:name, :start, :end, :paydate, 'open')
-        ");
+        try {
+            $stmt = $this->db->prepare("
+                INSERT INTO pr_periods (period_name, start_date, end_date, pay_date, status)
+                VALUES (:name, :start, :end, :paydate, 'open')
+            ");
 
-        return $stmt->execute([
-            ':name' => $data['period_name'],
-            ':start' => $data['start_date'],
-            ':end' => $data['end_date'],
-            ':paydate' => $data['pay_date']
-        ]);
+            $result = $stmt->execute([
+                ':name' => $data['period_name'] ?? '',
+                ':start' => $data['start_date'] ?? '',
+                ':end' => $data['end_date'] ?? '',
+                ':paydate' => $data['pay_date'] ?? ''
+            ]);
+
+            if (!$result) {
+                $errorInfo = $stmt->errorInfo();
+                throw new Exception('Database error: ' . $errorInfo[2]);
+            }
+
+            return $result;
+        } catch (PDOException $e) {
+            throw new Exception('Database error: ' . $e->getMessage());
+        }
     }
 
     public function update(int $id, array $data): bool

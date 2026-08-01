@@ -1,21 +1,79 @@
 <?php
 
 require_once 'ExitManagementModel.php';
+require_once 'SettlementModel.php';
 
 class ResignationModel extends ExitManagementModel
 {
     public function __construct()
     {
         parent::__construct();
-        $this->ensureArchivedFromStatusColumn();
+        $this->ensureExitResignationsAutoIncrement();
+        $this->ensurePayrollClearancesTable();
     }
 
-    private function ensureArchivedFromStatusColumn(): void
+    private function ensureExitResignationsAutoIncrement(): void
     {
-        $stmt = $this->db->prepare("SHOW COLUMNS FROM exit_resignations LIKE 'archived_from_status'");
+        $stmt = $this->db->prepare("SHOW COLUMNS FROM exit_resignations LIKE 'id'");
         $stmt->execute();
+        $column = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($column && stripos($column['Extra'] ?? '', 'auto_increment') === false) {
+            $zeroRows = $this->db->query("SELECT id FROM exit_resignations WHERE id = 0")->fetchAll(PDO::FETCH_ASSOC);
+            if ($zeroRows) {
+                $maxId = (int)$this->db->query("SELECT MAX(id) as max_id FROM exit_resignations")->fetchColumn();
+                $nextId = $maxId + 1;
+                foreach ($zeroRows as $row) {
+                    $this->db->exec("UPDATE exit_resignations SET id = $nextId WHERE id = 0 LIMIT 1");
+                    $nextId++;
+                }
+            }
+            $this->db->exec("ALTER TABLE exit_resignations MODIFY id int(11) NOT NULL AUTO_INCREMENT");
+        }
+    }
+
+    private function ensurePayrollClearancesTable(): void
+    {
+        $stmt = $this->db->query("SHOW TABLES LIKE 'payroll_clearances'");
         if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
-            $this->db->exec("ALTER TABLE exit_resignations ADD COLUMN archived_from_status ENUM('pending','approved','rejected','withdrawn') DEFAULT NULL");
+            $this->db->exec("CREATE TABLE IF NOT EXISTS payroll_clearances (
+                id int(11) NOT NULL AUTO_INCREMENT,
+                settlement_id int(11) NOT NULL,
+                requested_by int(11) DEFAULT NULL,
+                requested_at datetime NOT NULL DEFAULT current_timestamp(),
+                status enum('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+                approved_by int(11) DEFAULT NULL,
+                approved_at datetime DEFAULT NULL,
+                comments text DEFAULT NULL,
+                last_updated datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+                PRIMARY KEY (id),
+                KEY idx_settlement_id (settlement_id),
+                KEY idx_status (status)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Payroll clearance requests linked to exit settlements'");
+
+            try {
+                $this->db->exec("ALTER TABLE payroll_clearances ADD CONSTRAINT fk_clearance_settlement FOREIGN KEY (settlement_id) REFERENCES exit_employee_settlements (id) ON DELETE CASCADE");
+            } catch (Exception $e) {
+                // Foreign key may already exist or exit_employee_settlements may not be available yet
+            }
+        } else {
+            $columnStmt = $this->db->prepare("SHOW COLUMNS FROM payroll_clearances LIKE 'id'");
+            $columnStmt->execute();
+            $column = $columnStmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($column && stripos($column['Extra'] ?? '', 'auto_increment') === false) {
+                $zeroRows = $this->db->query("SELECT id FROM payroll_clearances WHERE id = 0")->fetchAll(PDO::FETCH_ASSOC);
+                if ($zeroRows) {
+                    $maxId = (int)$this->db->query("SELECT MAX(id) as max_id FROM payroll_clearances")->fetchColumn();
+                    $nextId = $maxId + 1;
+                    foreach ($zeroRows as $row) {
+                        $this->db->exec("UPDATE payroll_clearances SET id = $nextId WHERE id = 0 LIMIT 1");
+                        $nextId++;
+                    }
+                }
+
+                $this->db->exec("ALTER TABLE payroll_clearances MODIFY id int(11) NOT NULL AUTO_INCREMENT");
+            }
         }
     }
 
@@ -25,22 +83,13 @@ class ResignationModel extends ExitManagementModel
     public function submitResignation(array $data): int
     {
         try {
-            // Validate preclearance desk person as valid user
-            if (empty($data['preclearance_desk_person']) || !is_numeric($data['preclearance_desk_person'])) {
-                throw new Exception('Invalid pre-clearance desk person');
-            }
-
-            $stmt = $this->db->prepare("SELECT id FROM users WHERE id = ?");
-            $stmt->execute([$data['preclearance_desk_person']]);
-            if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
-                throw new Exception('Selected pre-clearance desk person does not exist');
-            }
-
-            $stmt = $this->db->prepare("
+            $stmt = $this->db->prepare(" 
                 INSERT INTO exit_resignations (employee_id, resignation_type, reason, notice_date,
-                                        last_working_date, comments, submitted_by, preclearance_desk_person, status, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
+                                        last_working_date, comments, submitted_by, status, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
             ");
+
+            $this->db->beginTransaction();
 
             $result = $stmt->execute([
                 $data['employee_id'],
@@ -49,18 +98,62 @@ class ResignationModel extends ExitManagementModel
                 $data['notice_date'],
                 $data['last_working_date'],
                 $data['comments'] ?? null,
-                $data['submitted_by'] ?? 0,
-                $data['preclearance_desk_person']
+                $data['submitted_by'] ?? null
             ]);
 
             if (!$result) {
                 throw new Exception('Failed to insert resignation');
             }
 
-            return (int)$this->db->lastInsertId();
+            $resignationId = (int)$this->db->lastInsertId();
+
+            // Create a draft settlement for payroll clearance linkage
+            $salaryComponents = $this->getEmployeeSalaryComponents($data['employee_id']);
+            $settlementData = [
+                'employee_id' => $data['employee_id'],
+                'resignation_id' => $resignationId,
+                'basic_salary' => $salaryComponents['basic_salary'] ?? 0,
+                'hra' => $salaryComponents['hra'] ?? 0,
+                'conveyance' => $salaryComponents['conveyance'] ?? 0,
+                'lta' => $salaryComponents['lta'] ?? 0,
+                'medical_allowance' => $salaryComponents['medical_allowance'] ?? 0,
+                'other_allowances' => $salaryComponents['other_allowances'] ?? 0,
+                'provident_fund' => $salaryComponents['provident_fund'] ?? 0,
+                'gratuity' => $salaryComponents['gratuity'] ?? 0,
+                'notice_pay' => $salaryComponents['notice_pay'] ?? 0,
+                'outstanding_loans' => $salaryComponents['outstanding_loans'] ?? 0,
+                'other_deductions' => $salaryComponents['other_deductions'] ?? 0,
+                'settlement_date' => $data['last_working_date'] ?? date('Y-m-d'),
+                'created_by' => $data['submitted_by'] ?? null,
+            ];
+
+            $settlementModel = new SettlementModel();
+            $settlementData['net_payable'] = $settlementModel->calculateTotalSettlement($settlementData);
+            $settlementId = $settlementModel->createSettlement($settlementData);
+
+            $this->db->commit();
+            return $resignationId;
         } catch (Exception $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             throw new Exception('Database error: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Create payroll clearance request linked to a settlement
+     */
+    public function createPayrollClearanceRequest(int $settlementId, ?int $requestedBy = null, ?string $comments = null): int
+    {
+        $stmt = $this->db->prepare(
+            "INSERT INTO payroll_clearances (settlement_id, requested_by, requested_at, status, comments, last_updated)
+             VALUES (?, ?, NOW(), 'pending', ?, NOW())"
+        );
+
+        $stmt->execute([$settlementId, $requestedBy, $comments]);
+
+        return (int)$this->db->lastInsertId();
     }
 
     /**
@@ -84,45 +177,143 @@ class ResignationModel extends ExitManagementModel
     /**
      * Get all resignations (active by default, archived optional)
      */
-    public function getResignations(string $status = null): array
+    /**
+     * Get resignations with pagination support
+     */
+    public function getResignations(string $status = null, int $page = 1, int $limit = 10, string $search = ''): array
     {
-        $sql = "
-            SELECT 
-                r.id,
-                r.employee_id,
-                r.resignation_type,
-                r.reason,
-                r.notice_date,
-                r.last_working_date,
-                r.comments,
-                r.status,
-                r.archived_from_status,
-                r.created_at,
-                r.updated_at,
-                e.full_name as employee_name,
-                e.email,
-                e.department,
-                p.full_name AS preclearance_desk_person_name
-            FROM exit_resignations r
-            LEFT JOIN employees e ON r.employee_id = e.employee_id
-            LEFT JOIN users p ON r.preclearance_desk_person = p.id
-        ";
+        $offset = ($page - 1) * $limit;
 
         if ($status === 'archived') {
-            $sql .= " WHERE r.status = 'archived'";
-            $stmt = $this->db->query($sql);
-        } elseif ($status === 'all') {
-            $stmt = $this->db->query($sql);
-        } elseif ($status) {
-            $sql .= " WHERE r.status = ?";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([$status]);
+            // Query from exit_archive for archived records
+            $sql = "
+                SELECT
+                    a.id as archive_id,
+                    JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.id')) as id,
+                    JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.employee_id')) as employee_id,
+                    JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.resignation_type')) as resignation_type,
+                    JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.reason')) as reason,
+                    JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.notice_date')) as notice_date,
+                    JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.last_working_date')) as last_working_date,
+                    JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.comments')) as comments,
+                    'archived' as status,
+                    NULL as archived_from_status,
+                    JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.created_at')) as created_at,
+                    a.archived_at as updated_at,
+                    e.full_name as employee_name,
+                    e.email,
+                    e.department,
+                    e.position,
+                    p.full_name AS preclearance_desk_person_name,
+                    a.archived_at,
+                    a.archive_reason
+                FROM exit_archive a
+                LEFT JOIN employees e ON JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.employee_id')) = e.employee_id
+                LEFT JOIN users p ON JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.preclearance_desk_person')) = p.id
+                WHERE a.archive_type = 'resignation' AND a.restored = 0
+            ";
+
+            $countSql = "
+                SELECT COUNT(*) as total
+                FROM exit_archive a
+                WHERE a.archive_type = 'resignation' AND a.restored = 0
+            ";
+
+            $params = [];
+            $whereClause = "";
+
+            // Add search condition if provided
+            if (!empty($search)) {
+                $searchCondition = " AND (e.full_name LIKE :search0 OR e.email LIKE :search1 OR JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.reason')) LIKE :search2 OR JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.resignation_type')) LIKE :search3)";
+                $sql .= $searchCondition;
+                $countSql .= $searchCondition;
+                $searchParam = "%$search%";
+                $params['search0'] = $searchParam;
+                $params['search1'] = $searchParam;
+                $params['search2'] = $searchParam;
+                $params['search3'] = $searchParam;
+            }
+
+            $sql .= ' ORDER BY a.archived_at DESC LIMIT :limit OFFSET :offset';
         } else {
-            $sql .= " WHERE r.status != 'archived'";
-            $stmt = $this->db->query($sql);
+            // Query from exit_resignations for active records
+            $sql = "
+                SELECT
+                    r.id,
+                    r.employee_id,
+                    r.resignation_type,
+                    r.reason,
+                    r.notice_date,
+                    r.last_working_date,
+                    r.comments,
+                    r.status,
+                    r.archived_from_status,
+                    r.created_at,
+                    r.updated_at,
+                    e.full_name as employee_name,
+                    e.email,
+                    e.department,
+                    e.position,
+                    p.full_name AS preclearance_desk_person_name
+                FROM exit_resignations r
+                LEFT JOIN employees e ON r.employee_id = e.employee_id
+                LEFT JOIN users p ON r.preclearance_desk_person = p.id
+            ";
+
+            $countSql = "
+                SELECT COUNT(*) as total
+                FROM exit_resignations r
+                LEFT JOIN employees e ON r.employee_id = e.employee_id
+            ";
+
+            $params = [];
+            $whereClause = "";
+
+            if ($status === 'all') {
+                $whereClause = "";
+            } elseif ($status) {
+                $whereClause = " WHERE r.status = :status";
+                $params['status'] = $status;
+            } else {
+                $whereClause = " WHERE r.status != 'archived'";
+            }
+
+            // Add search condition if provided
+            if (!empty($search)) {
+                $searchCondition = " AND (e.full_name LIKE :search0 OR e.email LIKE :search1 OR r.reason LIKE :search2 OR r.resignation_type LIKE :search3)";
+                $whereClause .= $searchCondition;
+                $searchParam = "%$search%";
+                $params['search0'] = $searchParam;
+                $params['search1'] = $searchParam;
+                $params['search2'] = $searchParam;
+                $params['search3'] = $searchParam;
+            }
+
+            $sql .= $whereClause . ' ORDER BY r.created_at DESC LIMIT :limit OFFSET :offset';
+            $countSql .= $whereClause;
         }
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Get total count
+        $countStmt = $this->db->prepare($countSql);
+        $countStmt->execute($params);
+        $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+        // Get paginated results
+        $stmt = $this->db->prepare($sql);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue(':' . $key, $value);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return [
+            'data' => $stmt->fetchAll(PDO::FETCH_ASSOC),
+            'total' => $totalCount,
+            'page' => $page,
+            'limit' => $limit,
+            'total_pages' => ceil($totalCount / $limit)
+        ];
     }
 
     /**
@@ -130,21 +321,10 @@ class ResignationModel extends ExitManagementModel
      */
     public function updateResignation(int $resignationId, array $data): bool
     {
-        // Validate preclearance desk person as valid user
-        if (empty($data['preclearance_desk_person']) || !is_numeric($data['preclearance_desk_person'])) {
-            throw new Exception('Invalid pre-clearance desk person');
-        }
-
-        $stmt = $this->db->prepare("SELECT id FROM users WHERE id = ?");
-        $stmt->execute([$data['preclearance_desk_person']]);
-        if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
-            throw new Exception('Selected pre-clearance desk person does not exist');
-        }
-
-        $stmt = $this->db->prepare("
+        $stmt = $this->db->prepare(" 
             UPDATE exit_resignations
             SET employee_id = ?, resignation_type = ?, reason = ?, notice_date = ?,
-                last_working_date = ?, comments = ?, preclearance_desk_person = ?, updated_at = NOW()
+                last_working_date = ?, comments = ?, updated_at = NOW()
             WHERE id = ?
         ");
         return $stmt->execute([
@@ -154,7 +334,6 @@ class ResignationModel extends ExitManagementModel
             $data['notice_date'],
             $data['last_working_date'],
             $data['comments'] ?? null,
-            $data['preclearance_desk_person'],
             $resignationId
         ]);
     }
@@ -164,12 +343,21 @@ class ResignationModel extends ExitManagementModel
      */
     public function updateResignationStatus(int $resignationId, string $status, string $approvedBy = null): bool
     {
-        $stmt = $this->db->prepare("
-            UPDATE exit_resignations
-            SET status = ?, approved_by = ?, approved_at = NOW()
-            WHERE id = ?
-        ");
-        return $stmt->execute([$status, $approvedBy, $resignationId]);
+        if ($approvedBy) {
+            $stmt = $this->db->prepare("
+                UPDATE exit_resignations
+                SET status = ?, approved_by = ?, approved_at = NOW()
+                WHERE id = ?
+            ");
+            return $stmt->execute([$status, $approvedBy, $resignationId]);
+        } else {
+            $stmt = $this->db->prepare("
+                UPDATE exit_resignations
+                SET status = ?
+                WHERE id = ?
+            ");
+            return $stmt->execute([$status, $resignationId]);
+        }
     }
 
     /**
@@ -276,19 +464,66 @@ class ResignationModel extends ExitManagementModel
     /**
      * Archive resignation
      */
-    public function archiveResignation(int $resignationId): bool
+    public function archiveResignation(int $resignationId, string $archiveReason = 'Manual archive'): bool
     {
-        $stmt = $this->db->prepare("SELECT status FROM exit_resignations WHERE id = ?");
+        // Get the full resignation data
+        $stmt = $this->db->prepare("SELECT * FROM exit_resignations WHERE id = ?");
         $stmt->execute([$resignationId]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$row) {
+        $resignation = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$resignation) {
             return false;
         }
 
-        $previousStatus = $row['status'] ?? 'pending';
+        try {
+            $this->db->beginTransaction();
 
-        $stmt = $this->db->prepare("UPDATE exit_resignations SET status = 'archived', archived_from_status = ?, updated_at = NOW() WHERE id = ?");
-        return $stmt->execute([$previousStatus, $resignationId]);
+            // Insert into exit_archive
+            $archiveStmt = $this->db->prepare("
+                INSERT INTO exit_archive (
+                    archive_type, original_id, employee_id, title, description, content,
+                    status, original_created_by, archived_by, archive_reason, archive_data
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+
+            $title = "Resignation - Employee " . ($resignation['employee_id'] ?? 'Unknown');
+            $description = "Archived resignation record";
+            $content = json_encode($resignation); // Store full data as JSON
+            $archivedBy = $_SESSION['user']['id'] ?? 1; // Default to 1 if not set
+
+            $result = $archiveStmt->execute([
+                'resignation',
+                $resignationId,
+                $resignation['employee_id'],
+                $title,
+                $description,
+                $content,
+                $resignation['status'],
+                $resignation['submitted_by'] ?? null,
+                $archivedBy,
+                $archiveReason,
+                $content
+            ]);
+
+            if (!$result) {
+                throw new Exception("Failed to insert into exit_archive");
+            }
+
+            // Delete from exit_resignations
+            $deleteStmt = $this->db->prepare("DELETE FROM exit_resignations WHERE id = ?");
+            $deleteResult = $deleteStmt->execute([$resignationId]);
+
+            if (!$deleteResult) {
+                throw new Exception("Failed to delete from exit_resignations");
+            }
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Archive error: " . $e->getMessage());
+            error_log("Archive data keys: " . implode(', ', array_keys($resignation)));
+            return false;
+        }
     }
 
     /**
@@ -296,16 +531,86 @@ class ResignationModel extends ExitManagementModel
      */
     public function unarchiveResignation(int $resignationId): bool
     {
-        $stmt = $this->db->prepare("SELECT archived_from_status FROM exit_resignations WHERE id = ?");
+        // Get archived data
+        $stmt = $this->db->prepare("SELECT * FROM exit_archive WHERE archive_type = 'resignation' AND original_id = ?");
         $stmt->execute([$resignationId]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$row) {
+        $archive = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$archive) {
             return false;
         }
 
-        $restoreStatus = $row['archived_from_status'] ?: 'pending';
+        try {
+            $this->db->beginTransaction();
 
-        $stmt = $this->db->prepare("UPDATE exit_resignations SET status = ?, archived_from_status = NULL, updated_at = NOW() WHERE id = ?");
-        return $stmt->execute([$restoreStatus, $resignationId]);
+            // Decode the archived data
+            $resignationData = json_decode($archive['archive_data'], true);
+            if (!$resignationData) {
+                return false;
+            }
+
+            // Insert back into exit_resignations
+            $insertStmt = $this->db->prepare("
+                INSERT INTO exit_resignations (
+                    id, employee_id, resignation_type, reason, notice_date, last_working_date,
+                    comments, submitted_by, preclearance_desk_person, status, approved_by,
+                    approved_at, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+
+            $insertStmt->execute([
+                $resignationData['id'],
+                $resignationData['employee_id'],
+                $resignationData['resignation_type'],
+                $resignationData['reason'],
+                $resignationData['notice_date'],
+                $resignationData['last_working_date'],
+                $resignationData['comments'],
+                $resignationData['submitted_by'],
+                $resignationData['preclearance_desk_person'],
+                $resignationData['status'] ?? 'pending',
+                $resignationData['approved_by'],
+                $resignationData['approved_at'],
+                $resignationData['created_at'],
+                date('Y-m-d H:i:s') // updated_at now
+            ]);
+
+            // Update archive record to mark as restored
+            $updateStmt = $this->db->prepare("
+                UPDATE exit_archive
+                SET restored = 1, restored_by = ?, restored_at = NOW()
+                WHERE id = ?
+            ");
+            $restoredBy = $_SESSION['user']['id'] ?? 1;
+            $updateStmt->execute([$restoredBy, $archive['id']]);
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Unarchive error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get last attendance date for an employee from ta_attendance table
+     * This fetches the most recent attendance_date from time_attendance module
+     */
+    public function getEmployeeLastAttendanceDate(string $employeeId): ?string
+    {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT MAX(attendance_date) as last_attendance_date
+                FROM ta_attendance
+                WHERE employee_id = ? AND attendance_date IS NOT NULL
+            ");
+            $stmt->execute([$employeeId]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return $result['last_attendance_date'] ?? null;
+        } catch (Exception $e) {
+            error_log('Error getting last attendance date: ' . $e->getMessage());
+            return null;
+        }
     }
 }

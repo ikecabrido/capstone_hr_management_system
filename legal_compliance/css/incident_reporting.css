@@ -1,0 +1,1047 @@
+
+
+.content-wrapper {
+    background-color: #f4f6f9;
+    min-height: calc(100vh - 57px);
+}
+
+.content-header {
+    padding: 15px 0.5rem;
+}
+
+.content-header h1 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #343a40;
+    margin: 0;
+}
+
+.content-header h1 i {
+    color: #ffc107;
+    margin-right: 10px;
+}
+
+.breadcrumb {
+    background-color: transparent;
+    margin-bottom: 0;
+}
+
+/* ============================================
+   Statistics Cards
+   ============================================ */
+
+.small-box {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden;
+}
+
+.small-box:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.small-box .inner {
+    padding: 15px;
+}
+
+.small-box .inner h3 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 5px 0;
+}
+
+.small-box .inner p {
+    font-size: 0.9rem;
+    margin: 0;
+    opacity: 0.9;
+}
+
+.small-box .icon {
+    font-size: 60px;
+    position: absolute;
+    right: 15px;
+    top: 15px;
+    opacity: 0.2;
+    transition: transform 0.2s ease;
+}
+
+.small-box:hover .icon {
+    transform: scale(1.05);
+}
+
+.small-box > .small-box-footer {
+    padding: 8px 15px;
+    background: rgba(0, 0, 0, 0.1);
+    text-decoration: none;
+    display: block;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: background 0.2s ease;
+}
+
+.small-box > .small-box-footer:hover {
+    background: rgba(0, 0, 0, 0.15);
+}
+
+/* ============================================
+   Action Buttons
+   ============================================ */
+
+.btn-group-actions {
+    margin-bottom: 15px;
+}
+
+.btn-group-actions .btn {
+    margin-right: 8px;
+    margin-bottom: 8px;
+    border-radius: 5px;
+    font-weight: 500;
+    padding: 8px 16px;
+    transition: all 0.2s ease;
+}
+
+.btn-group-actions .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.12);
+}
+
+.btn-group-actions .btn i {
+    margin-right: 6px;
+}
+
+/* ============================================
+   Card Styling
+   ============================================ */
+
+.card {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: none;
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid #e9ecef;
+    padding: 12px 15px;
+    border-radius: 8px 8px 0 0;
+}
+
+.card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #343a40;
+    margin: 0;
+}
+
+.card-title i {
+    color: #007bff;
+    margin-right: 8px;
+}
+
+.card-tools {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.card-tools .input-group {
+    margin-bottom: 0;
+}
+
+.card-tools .form-control-sm {
+    border-radius: 4px;
+    border: 1px solid #ced4da;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-tools .form-control-sm:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.15rem rgba(0, 123, 255, 0.15);
+}
+
+.card-body {
+    padding: 0;
+}
+
+.card-footer {
+    background-color: #fff;
+    border-top: 1px solid #e9ecef;
+    padding: 12px 15px;
+    border-radius: 0 0 8px 8px;
+}
+
+/* ============================================
+   Table Styling
+   ============================================ */
+
+.table {
+    margin-bottom: 0;
+    width: 100%;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    color: #495057;
+    padding: 12px 10px;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    text-align: left;
+}
+
+.table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.table tbody tr:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+.table tbody td {
+    padding: 10px;
+    vertical-align: middle;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 0.9rem;
+}
+
+/* Clickable incident ID link */
+.table td:first-child a,
+table.dataTable td:first-child a {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.15s ease;
+}
+
+.table td:first-child a:hover,
+table.dataTable td:first-child a:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+/* Clickable incident ID in disciplinary table (2nd column) */
+.table td:nth-child(2) a,
+table.dataTable td:nth-child(2) a {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.15s ease;
+}
+
+.table td:nth-child(2) a:hover,
+table.dataTable td:nth-child(2) a:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+/* Table text alignment */
+.table tbody td:nth-child(1),
+.table tbody td:nth-child(2),
+.table tbody td:nth-child(3),
+.table tbody td:nth-child(4),
+.table tbody td:nth-child(5),
+.table tbody td:nth-child(6),
+.table tbody td:nth-child(7),
+.table tbody td:nth-child(8) {
+    text-align: left;
+}
+
+/* Center align for Actions column */
+.table tbody td:last-child {
+    text-align: center;
+}
+
+.table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.table-responsive::-webkit-scrollbar {
+    height: 6px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* ============================================
+   Status Badges
+   ============================================ */
+
+.badge {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.badge-submitted {
+    background-color: #17a2b8;
+    color: #fff;
+}
+
+.badge-under_review {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.badge-investigation {
+    background-color: #007bff;
+    color: #fff;
+}
+
+.badge-escalated {
+    background-color: #fd7e14;
+    color: #fff;
+}
+
+.badge-resolved {
+    background-color: #28a745;
+    color: #fff;
+}
+
+.badge-closed {
+    background-color: #6c757d;
+    color: #fff;
+}
+
+/* ============================================
+   Severity Badges
+   ============================================ */
+
+.badge-low {
+    background-color: #28a745;
+    color: #fff;
+}
+
+.badge-medium {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.badge-high {
+    background-color: #fd7e14;
+    color: #fff;
+}
+
+.badge-critical {
+    background-color: #dc3545;
+    color: #fff;
+    animation: pulse-critical 2s infinite;
+}
+
+@keyframes pulse-critical {
+    0% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(220, 53, 69, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+    }
+}
+
+/* ============================================
+   Action Buttons in Tables
+   ============================================ */
+
+.btn-action {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    margin: 2px;
+    transition: all 0.15s ease;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Fix button alignment in table cells */
+.table .btn-action {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Ensure buttons in Actions column are displayed inline */
+table.dataTable td:last-child .btn-group,
+table.dataTable td:last-child .btn-group-above,
+.table td:last-child {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    gap: 4px;
+}
+
+
+table.dataTable td:last-child {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.btn-action:hover {
+    transform: scale(1.05);
+}
+
+.btn-action:active {
+    transform: scale(0.95);
+}
+
+.btn-view {
+    background-color: #17a2b8;
+    color: #fff;
+}
+
+.btn-view:hover {
+    background-color: #138496;
+    color: #fff;
+}
+
+.btn-edit {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.btn-edit:hover {
+    background-color: #e0a800;
+    color: #212529;
+}
+
+.btn-delete {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+.btn-delete:hover {
+    background-color: #c82333;
+    color: #fff;
+}
+
+.btn-disciplinary {
+    background-color: #6f42c1;
+    color: #fff;
+}
+
+.btn-disciplinary:hover {
+    background-color: #5a32a3;
+    color: #fff;
+}
+
+/* ============================================
+   Modals
+   ============================================ */
+
+.modal-content {
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+    border-radius: 8px 8px 0 0;
+    padding: 15px 20px;
+    border-bottom: none;
+}
+
+.modal-header.bg-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+}
+
+.modal-header.bg-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%);
+}
+
+.modal-header.bg-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+}
+
+.modal-header.bg-success {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+}
+
+.modal-header.bg-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+}
+
+.modal-header.bg-secondary {
+    background: linear-gradient(135deg, #6c757d 0%, #545b62 100%);
+}
+
+.modal-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    border-top: 1px solid #e9ecef;
+    padding: 15px 20px;
+    border-radius: 0 0 8px 8px;
+}
+
+/* ============================================
+   Forms
+   ============================================ */
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 6px;
+    display: block;
+    font-size: 0.9rem;
+}
+
+.form-control {
+    border-radius: 4px;
+    border: 1px solid #ced4da;
+    padding: 8px 12px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.15rem rgba(0, 123, 255, 0.15);
+}
+
+.form-control-file {
+    padding: 8px 0;
+}
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+}
+
+select.form-control {
+    cursor: pointer;
+}
+
+/* ============================================
+   Pagination
+   ============================================ */
+
+.pagination {
+    margin: 0;
+}
+
+.pagination .page-link {
+    border-radius: 4px;
+    margin: 0 2px;
+    border: 1px solid #dee2e6;
+    color: #495057;
+    font-weight: 500;
+    font-size: 0.85rem;
+    padding: 6px 12px;
+    transition: all 0.2s ease;
+}
+
+.pagination .page-link:hover {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: #fff;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.pagination .page-item.disabled .page-link {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    color: #6c757d;
+}
+
+/* ============================================
+   Empty State
+   ============================================ */
+
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.empty-state h4 {
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 1.1rem;
+}
+
+.empty-state p {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+/* ============================================
+   Loading Spinner
+   ============================================ */
+
+.loading-spinner {
+    text-align: center;
+    padding: 30px;
+}
+
+.loading-spinner i {
+    font-size: 2.5rem;
+    color: #007bff;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ============================================
+   Timeline (for status history)
+   ============================================ */
+
+.timeline {
+    position: relative;
+    padding: 10px 0;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 20px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.time-label {
+    position: relative;
+    margin-bottom: 15px;
+}
+
+.time-label span {
+    display: inline-block;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 4px;
+    background-color: #17a2b8;
+    color: #fff;
+}
+
+.timeline-item {
+    position: relative;
+    margin-left: 50px;
+    margin-bottom: 15px;
+    padding: 10px 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -35px;
+    top: 15px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #007bff;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #007bff;
+}
+
+.timeline-header {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 0 0 5px 0;
+    color: #343a40;
+}
+
+.timeline-body {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin: 5px 0;
+}
+
+.timeline-footer {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+/* ============================================
+   Comments
+   ============================================ */
+
+.comment-card {
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 10px;
+    border: 1px solid #e9ecef;
+}
+
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.comment-author {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #343a40;
+}
+
+.comment-date {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.comment-body {
+    font-size: 0.9rem;
+    color: #495057;
+    margin: 0;
+}
+
+.comment-badge {
+    margin-top: 8px;
+}
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+
+@media (max-width: 992px) {
+    .small-box .inner h3 {
+        font-size: 1.6rem;
+    }
+    
+    .small-box .icon {
+        font-size: 50px;
+    }
+    
+    .card-tools {
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+    
+    .card-tools .input-group {
+        width: 100% !important;
+        margin-bottom: 5px;
+        margin-left: 0 !important;
+    }
+    
+    .table thead th {
+        font-size: 0.8rem;
+        padding: 10px 8px;
+    }
+    
+    .table tbody td {
+        padding: 8px;
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .content-header h1 {
+        font-size: 1.4rem;
+    }
+    
+    .btn-group-actions .btn {
+        width: 100%;
+        margin-right: 0;
+    }
+    
+    .table-responsive {
+        font-size: 0.85rem;
+    }
+    
+    .btn-action {
+        padding: 3px 6px;
+        font-size: 0.75rem;
+    }
+    
+    .modal-dialog {
+        margin: 10px;
+    }
+    
+    .modal-body {
+        padding: 15px;
+    }
+    
+    .form-group {
+        margin-bottom: 12px;
+    }
+}
+
+@media (max-width: 576px) {
+    .small-box {
+        margin-bottom: 10px;
+    }
+    
+    .small-box .inner {
+        padding: 12px;
+    }
+    
+    .small-box .inner h3 {
+        font-size: 1.4rem;
+    }
+    
+    .small-box .inner p {
+        font-size: 0.85rem;
+    }
+    
+    .card-header {
+        padding: 10px 12px;
+    }
+    
+    .card-title {
+        font-size: 0.95rem;
+    }
+    
+    .pagination .page-link {
+        padding: 5px 10px;
+        font-size: 0.8rem;
+    }
+}
+
+/* ============================================
+   Dark Mode Support
+   ============================================ */
+
+.dark-mode .content-wrapper {
+    background-color: #343a40;
+}
+
+.dark-mode .content-header h1 {
+    color: #fff;
+}
+
+.dark-mode .card {
+    background-color: #454d55;
+    border-color: #5a6268;
+}
+
+.dark-mode .card-header {
+    background-color: #5a6268;
+    border-color: #5a6268;
+}
+
+.dark-mode .card-title {
+    color: #fff;
+}
+
+.dark-mode .card-footer {
+    background-color: #5a6268;
+    border-color: #5a6268;
+}
+
+.dark-mode .table thead th {
+    background-color: #5a6268;
+    color: #fff;
+    border-color: #6c757d;
+}
+
+.dark-mode .table tbody td {
+    color: #fff;
+    border-color: #6c757d;
+}
+
+.dark-mode .table tbody tr:nth-of-type(odd) {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.dark-mode .table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.dark-mode .form-control {
+    background-color: #5a6268;
+    border-color: #6c757d;
+    color: #fff;
+}
+
+.dark-mode .form-control:focus {
+    background-color: #5a6268;
+    border-color: #007bff;
+}
+
+.dark-mode .modal-content {
+    background-color: #454d55;
+}
+
+.dark-mode .modal-header {
+    border-color: #5a6268;
+}
+
+.dark-mode .modal-footer {
+    background-color: #5a6268;
+    border-color: #5a6268;
+}
+
+.dark-mode .modal-title {
+    color: #fff;
+}
+
+.dark-mode label {
+    color: #fff;
+}
+
+.dark-mode .small-box .inner p {
+    color: #fff;
+}
+
+.dark-mode .pagination .page-link {
+    background-color: #5a6268;
+    color: #fff;
+    border-color: #6c757d;
+}
+
+.dark-mode .pagination .page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.dark-mode .empty-state {
+    color: #adb5bd;
+}
+
+.dark-mode .timeline-item {
+    background: #5a6268;
+    border-color: #6c757d;
+}
+
+.dark-mode .timeline-header {
+    color: #fff;
+}
+
+.dark-mode .timeline-body,
+.dark-mode .timeline-footer {
+    color: #adb5bd;
+}
+
+.dark-mode .comment-card {
+    background: #5a6268;
+    border-color: #6c757d;
+}
+
+.dark-mode .comment-author {
+    color: #fff;
+}
+
+.dark-mode .comment-body {
+    color: #adb5bd;
+}
+
+/* ============================================
+   Animations
+   ============================================ */
+
+@keyframes fadeIn {
+    FROM lc_{
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card {
+    animation: fadeIn 0.25s ease-out;
+}
+
+.small-box {
+    animation: fadeIn 0.25s ease-out;
+}
+
+/* Stagger animation for statistics cards */
+.row .col-lg-3:nth-child(1) .small-box { animation-delay: 0.05s; }
+.row .col-lg-3:nth-child(2) .small-box { animation-delay: 0.1s; }
+.row .col-lg-3:nth-child(3) .small-box { animation-delay: 0.15s; }
+.row .col-lg-3:nth-child(4) .small-box { animation-delay: 0.2s; }
+.row .col-lg-3:nth-child(5) .small-box { animation-delay: 0.25s; }
+.row .col-lg-3:nth-child(6) .small-box { animation-delay: 0.3s; }
+
+/* ============================================
+   Utility Classes
+   ============================================ */
+
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.font-weight-bold {
+    font-weight: 700 !important;
+}
+
+.text-muted {
+    color: #6c757d !important;
+}
+
+.mb-0 {
+    margin-bottom: 0 !important;
+}
+
+.mt-2 {
+    margin-top: 0.5rem !important;
+}
+
+.mt-3 {
+    margin-top: 1rem !important;
+}
+
+.mr-2 {
+    margin-right: 0.5rem !important;
+}
+
+.ml-2 {
+    margin-left: 0.5rem !important;
+}

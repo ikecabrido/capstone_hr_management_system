@@ -208,12 +208,14 @@ class KnowledgeTransferModel extends ExitManagementModel
     }
 
     /**
-     * Get all transfer plans with optional status filter
+     * Get all transfer plans with optional status filter and pagination
      */
-    public function getAllTransferPlans(string $status = null): array
+    public function getAllTransferPlans(string $status = null, int $page = 1, int $limit = 10, string $search = ''): array
     {
+        $offset = ($page - 1) * $limit;
+
         $sql = "
-            SELECT 
+            SELECT
                 ktp.id,
                 ktp.employee_id,
                 ktp.successor_id,
@@ -229,15 +231,51 @@ class KnowledgeTransferModel extends ExitManagementModel
             LEFT JOIN employees s ON ktp.successor_id = s.employee_id
         ";
 
+        $countSql = "
+            SELECT COUNT(*) as total
+            FROM exit_knowledge_transfer_plans ktp
+            JOIN employees e ON ktp.employee_id = e.employee_id
+            LEFT JOIN employees s ON ktp.successor_id = s.employee_id
+        ";
+
+        $params = [];
+        $whereClause = "";
+
         if ($status && $status !== 'all') {
-            $sql .= " WHERE ktp.status = ?";
-            $stmt = $this->db->prepare($sql . " ORDER BY ktp.created_at DESC");
-            $stmt->execute([$status]);
-        } else {
-            $stmt = $this->db->query($sql . " ORDER BY ktp.created_at DESC");
+            $whereClause = " WHERE ktp.status = :status";
+            $params['status'] = $status;
         }
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Add search condition if provided
+        if (!empty($search)) {
+            $searchCondition = $whereClause ? " AND" : " WHERE";
+            $searchCondition .= " (e.full_name LIKE :search0 OR s.full_name LIKE :search1)";
+            $whereClause .= $searchCondition;
+            $searchParam = "%$search%";
+            $params['search0'] = $searchParam;
+            $params['search1'] = $searchParam;
+        }
+
+        // Get total count
+        $countStmt = $this->db->prepare($countSql . $whereClause);
+        $countStmt->execute($params);
+        $total = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+        // Get paginated data
+        $stmt = $this->db->prepare($sql . $whereClause . " ORDER BY ktp.created_at DESC LIMIT :limit OFFSET :offset");
+        foreach ($params as $key => $value) {
+            $stmt->bindValue(':' . $key, $value);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return [
+            'data' => $stmt->fetchAll(PDO::FETCH_ASSOC),
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit
+        ];
     }
 
     /**
@@ -261,6 +299,237 @@ class KnowledgeTransferModel extends ExitManagementModel
             return $stmt->execute([$planId]);
         } catch (Exception $e) {
             throw new Exception('Database error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Archive transfer plan
+     */
+    public function archiveTransferPlan(int $planId, string $archiveReason = 'Manual archive'): bool
+    {
+        // Get the full transfer plan data
+        $stmt = $this->db->prepare("SELECT * FROM exit_knowledge_transfer_plans WHERE id = ?");
+        $stmt->execute([$planId]);
+        $plan = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$plan) {
+            return false;
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            // Insert into exit_archive
+            $archiveStmt = $this->db->prepare("
+                INSERT INTO exit_archive (
+                    archive_type, original_id, employee_id, title, description, content,
+                    status, original_created_by, archived_by, archive_reason, archive_data
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+
+            $title = "Transfer Plan - " . ($plan['title'] ?? 'Unknown Plan');
+            $description = "Archived knowledge transfer plan";
+            $content = json_encode($plan);
+            $archivedBy = $_SESSION['user']['id'] ?? 1;
+
+            $archiveStmt->execute([
+                'transfer_plan',
+                $planId,
+                $plan['employee_id'],
+                $title,
+                $description,
+                $content,
+                $plan['status'],
+                $plan['created_by'],
+                $archivedBy,
+                $archiveReason,
+                $content
+            ]);
+
+            // Delete from exit_knowledge_transfer_plans
+            $deleteStmt = $this->db->prepare("DELETE FROM exit_knowledge_transfer_plans WHERE id = ?");
+            $deleteStmt->execute([$planId]);
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Transfer plan archive error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Archive transfer item
+     */
+    public function archiveTransferItem(int $itemId, string $archiveReason = 'Manual archive'): bool
+    {
+        // Get the full transfer item data
+        $stmt = $this->db->prepare("SELECT * FROM exit_knowledge_transfer_items WHERE id = ?");
+        $stmt->execute([$itemId]);
+        $item = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$item) {
+            return false;
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            // Insert into exit_archive
+            $archiveStmt = $this->db->prepare("
+                INSERT INTO exit_archive (
+                    archive_type, original_id, employee_id, title, description, content,
+                    status, original_created_by, archived_by, archive_reason, archive_data
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+
+            $title = "Transfer Item - " . ($item['title'] ?? 'Unknown Item');
+            $description = "Archived knowledge transfer item";
+            $content = json_encode($item);
+            $archivedBy = $_SESSION['user']['id'] ?? 1;
+
+            $archiveStmt->execute([
+                'transfer_item',
+                $itemId,
+                $item['employee_id'],
+                $title,
+                $description,
+                $content,
+                $item['status'],
+                $item['created_by'],
+                $archivedBy,
+                $archiveReason,
+                $content
+            ]);
+
+            // Delete from exit_knowledge_transfer_items
+            $deleteStmt = $this->db->prepare("DELETE FROM exit_knowledge_transfer_items WHERE id = ?");
+            $deleteStmt->execute([$itemId]);
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Transfer item archive error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Unarchive transfer plan
+     */
+    public function unarchiveTransferPlan(int $planId): bool
+    {
+        // Get archived data
+        $stmt = $this->db->prepare("SELECT * FROM exit_archive WHERE archive_type = 'transfer_plan' AND original_id = ?");
+        $stmt->execute([$planId]);
+        $archive = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$archive) {
+            return false;
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            // Decode the archived data
+            $planData = json_decode($archive['archive_data'], true);
+            if (!$planData) {
+                return false;
+            }
+
+            // Insert back into exit_knowledge_transfer_plans
+            $insertStmt = $this->db->prepare("
+                INSERT INTO exit_knowledge_transfer_plans (
+                    id, employee_id, title, description, status, created_by, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+
+            $insertStmt->execute([
+                $planData['id'],
+                $planData['employee_id'],
+                $planData['title'],
+                $planData['description'],
+                $planData['status'] ?? 'active',
+                $planData['created_by'],
+                $planData['created_at'],
+                date('Y-m-d H:i:s')
+            ]);
+
+            // Update archive record to mark as restored
+            $updateStmt = $this->db->prepare("
+                UPDATE exit_archive
+                SET restored = 1, restored_by = ?, restored_at = NOW()
+                WHERE id = ?
+            ");
+            $restoredBy = $_SESSION['user']['id'] ?? 1;
+            $updateStmt->execute([$restoredBy, $archive['id']]);
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Transfer plan unarchive error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Unarchive transfer item
+     */
+    public function unarchiveTransferItem(int $itemId): bool
+    {
+        // Get archived data
+        $stmt = $this->db->prepare("SELECT * FROM exit_archive WHERE archive_type = 'transfer_item' AND original_id = ?");
+        $stmt->execute([$itemId]);
+        $archive = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$archive) {
+            return false;
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            // Decode the archived data
+            $itemData = json_decode($archive['archive_data'], true);
+            if (!$itemData) {
+                return false;
+            }
+
+            // Insert back into exit_knowledge_transfer_items
+            $insertStmt = $this->db->prepare("
+                INSERT INTO exit_knowledge_transfer_items (
+                    id, plan_id, employee_id, title, description, priority, due_date, status, created_by, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+
+            $insertStmt->execute([
+                $itemData['id'],
+                $itemData['plan_id'],
+                $itemData['employee_id'],
+                $itemData['title'],
+                $itemData['description'],
+                $itemData['priority'],
+                $itemData['due_date'],
+                $itemData['status'] ?? 'pending',
+                $itemData['created_by'],
+                $itemData['created_at'],
+                date('Y-m-d H:i:s')
+            ]);
+
+            // Update archive record to mark as restored
+            $updateStmt = $this->db->prepare("
+                UPDATE exit_archive
+                SET restored = 1, restored_by = ?, restored_at = NOW()
+                WHERE id = ?
+            ");
+            $restoredBy = $_SESSION['user']['id'] ?? 1;
+            $updateStmt->execute([$restoredBy, $archive['id']]);
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Transfer item unarchive error: " . $e->getMessage());
+            return false;
         }
     }
 }

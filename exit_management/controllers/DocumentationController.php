@@ -320,7 +320,12 @@ class DocumentationController extends ExitManagementController
                 return $this->getDocumentTypes();
 
             case 'get_documents':
-                return $this->getDocuments($data['status'] ?? null);
+                return $this->documentationModel->getAllDocuments(
+                    $data['status'] ?? null,
+                    $data['page'] ?? 1,
+                    $data['limit'] ?? 10,
+                    $data['search'] ?? ''
+                );
 
             case 'view_document':
                 return $this->viewDocument($data['document_id'] ?? 0);
@@ -328,8 +333,105 @@ class DocumentationController extends ExitManagementController
             case 'download_document':
                 return $this->downloadDocument($data['document_id'] ?? 0);
 
+            case 'archive_document':
+                return $this->archiveDocument($data['document_id'] ?? 0);
+
+            case 'unarchive_document':
+                return $this->unarchiveDocument($data['document_id'] ?? 0);
+
+            case 'get_document_details':
+                return $this->getDocumentDetails($data['document_id'] ?? 0);
+
             default:
                 return parent::handleAjaxRequest($action, $data);
+        }
+    }
+
+    /**
+     * Archive document
+     */
+    public function archiveDocument(int $documentId): array
+    {
+        try {
+            $archiveReason = $_POST['archive_reason'] ?? 'Manual archive';
+            $success = $this->documentationModel->archiveDocument($documentId, $archiveReason);
+
+            if ($success) {
+                return [
+                    'success' => true,
+                    'message' => 'Document archived successfully'
+                ];
+            } else {
+                return ['success' => false, 'message' => 'Failed to archive document'];
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Unarchive document
+     */
+    public function unarchiveDocument(int $documentId): array
+    {
+        try {
+            $success = $this->documentationModel->unarchiveDocument($documentId);
+
+            if ($success) {
+                return [
+                    'success' => true,
+                    'message' => 'Document unarchived successfully'
+                ];
+            } else {
+                return ['success' => false, 'message' => 'Failed to unarchive document'];
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get document details for archiving
+     */
+    private function getDocumentDetails(int $documentId): array
+    {
+        try {
+            if (empty($documentId)) {
+                return [
+                    'success' => false,
+                    'message' => 'Document ID is required'
+                ];
+            }
+
+            $document = $this->documentationModel->getDocument($documentId);
+
+            if (!$document) {
+                return [
+                    'success' => false,
+                    'message' => 'Document not found'
+                ];
+            }
+
+            // Get employee name
+            $employee = $this->documentationModel->getEmployeeById($document['employee_id']);
+
+            return [
+                'success' => true,
+                'data' => [
+                    'id' => $document['id'],
+                    'employee_id' => $document['employee_id'],
+                    'employee_name' => $employee ? $employee['first_name'] . ' ' . $employee['last_name'] : 'Unknown',
+                    'document_type' => $document['document_type'],
+                    'title' => $document['title'],
+                    'created_at' => $document['created_at']
+                ]
+            ];
+        } catch (Exception $e) {
+            error_log("Error getting document details: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'An error occurred while retrieving document details'
+            ];
         }
     }
 }

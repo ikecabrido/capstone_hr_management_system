@@ -84,12 +84,14 @@ class ExitInterviewModel extends ExitManagementModel
     }
 
     /**
-     * Get all interviews with optional status filter
+     * Get all interviews with optional status filter and pagination support
      */
-    public function getAllInterviews(string $status = null): array
+    public function getAllInterviews(string $status = null, int $page = 1, int $limit = 10, string $search = ''): array
     {
+        $offset = ($page - 1) * $limit;
+
         $sql = "
-            SELECT 
+            SELECT
                 ei.id,
                 ei.employee_id,
                 ei.interviewer_id,
@@ -107,15 +109,56 @@ class ExitInterviewModel extends ExitManagementModel
             LEFT JOIN users u ON ei.interviewer_id = u.id
         ";
 
+        $countSql = "
+            SELECT COUNT(*) as total
+            FROM exit_interviews ei
+            JOIN employees e ON ei.employee_id = e.employee_id
+            LEFT JOIN users u ON ei.interviewer_id = u.id
+        ";
+
+        $params = [];
+        $whereClause = "";
+
         if ($status && $status !== 'all') {
-            $sql .= " WHERE ei.status = ?";
-            $stmt = $this->db->prepare($sql . " ORDER BY ei.scheduled_date DESC");
-            $stmt->execute([$status]);
-        } else {
-            $stmt = $this->db->query($sql . " ORDER BY ei.scheduled_date DESC");
+            $whereClause = " WHERE ei.status = :status";
+            $params['status'] = $status;
         }
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Add search condition if provided
+        if (!empty($search)) {
+            $searchCondition = $whereClause ? " AND" : " WHERE";
+            $searchCondition .= " (e.full_name LIKE :search0 OR u.full_name LIKE :search1 OR ei.location LIKE :search2)";
+            $whereClause .= $searchCondition;
+            $searchParam = "%$search%";
+            $params['search0'] = $searchParam;
+            $params['search1'] = $searchParam;
+            $params['search2'] = $searchParam;
+        }
+
+        $sql .= $whereClause . ' ORDER BY ei.scheduled_date DESC LIMIT :limit OFFSET :offset';
+        $countSql .= $whereClause;
+
+        // Get total count
+        $countStmt = $this->db->prepare($countSql);
+        $countStmt->execute($params);
+        $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+        // Get paginated results
+        $stmt = $this->db->prepare($sql);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue(':' . $key, $value);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return [
+            'data' => $stmt->fetchAll(PDO::FETCH_ASSOC),
+            'total' => $totalCount,
+            'page' => $page,
+            'limit' => $limit,
+            'total_pages' => ceil($totalCount / $limit)
+        ];
     }
 
     /**
@@ -206,5 +249,122 @@ class ExitInterviewModel extends ExitManagementModel
             WHERE id = ?
         ");
         return $stmt->execute([$status, $interviewId]);
+    }
+
+    /**
+     * Archive interview
+     */
+    public function archiveInterview(int $interviewId, string $archiveReason = 'Manual archive'): bool
+    {
+        // Get the full interview data
+        $stmt = $this->db->prepare("SELECT * FROM exit_interviews WHERE id = ?");
+        $stmt->execute([$interviewId]);
+        $interview = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$interview) {
+            return false;
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            // Insert into exit_archive
+            $archiveStmt = $this->db->prepare("
+                INSERT INTO exit_archive (
+                    archive_type, original_id, employee_id, title, description, content,
+                    status, original_created_by, archived_by, archive_reason, archive_data
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+
+            $title = "Exit Interview - Employee " . ($interview['employee_id'] ?? 'Unknown');
+            $description = "Archived exit interview record";
+            $content = json_encode($interview);
+            $archivedBy = $_SESSION['user']['id'] ?? 1;
+
+            $archiveStmt->execute([
+                'interview',
+                $interviewId,
+                $interview['employee_id'],
+                $title,
+                $description,
+                $content,
+                $interview['status'],
+                $interview['created_by'],
+                $archivedBy,
+                $archiveReason,
+                $content
+            ]);
+
+            // Delete from exit_interviews
+            $deleteStmt = $this->db->prepare("DELETE FROM exit_interviews WHERE id = ?");
+            $deleteStmt->execute([$interviewId]);
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Interview archive error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Unarchive interview
+     */
+    public function unarchiveInterview(int $interviewId): bool
+    {
+        // Get archived data
+        $stmt = $this->db->prepare("SELECT * FROM exit_archive WHERE archive_type = 'interview' AND original_id = ?");
+        $stmt->execute([$interviewId]);
+        $archive = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$archive) {
+            return false;
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            // Decode the archived data
+            $interviewData = json_decode($archive['archive_data'], true);
+            if (!$interviewData) {
+                return false;
+            }
+
+            // Insert back into exit_interviews
+            $insertStmt = $this->db->prepare("
+                INSERT INTO exit_interviews (
+                    id, employee_id, interviewer_id, scheduled_date, status,
+                    notes, feedback_summary, created_by, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+
+            $insertStmt->execute([
+                $interviewData['id'],
+                $interviewData['employee_id'],
+                $interviewData['interviewer_id'],
+                $interviewData['scheduled_date'],
+                $interviewData['status'] ?? 'scheduled',
+                $interviewData['notes'],
+                $interviewData['feedback_summary'],
+                $interviewData['created_by'],
+                $interviewData['created_at'],
+                date('Y-m-d H:i:s')
+            ]);
+
+            // Update archive record to mark as restored
+            $updateStmt = $this->db->prepare("
+                UPDATE exit_archive
+                SET restored = 1, restored_by = ?, restored_at = NOW()
+                WHERE id = ?
+            ");
+            $restoredBy = $_SESSION['user']['id'] ?? 1;
+            $updateStmt->execute([$restoredBy, $archive['id']]);
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Interview unarchive error: " . $e->getMessage());
+            return false;
+        }
     }
 }

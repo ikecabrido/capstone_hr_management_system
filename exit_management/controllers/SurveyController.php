@@ -180,13 +180,114 @@ class SurveyController extends ExitManagementController
                 return $this->getSurveyResponseDetails($data['response_id'] ?? 0);
 
             case 'get_surveys':
-                return $this->getSurveys($data['status'] ?? null);
+                return $this->surveyModel->getAllSurveys(
+                    $data['status'] ?? null,
+                    $data['page'] ?? 1,
+                    $data['limit'] ?? 10,
+                    $data['search'] ?? ''
+                );
 
             case 'duplicate_survey':
                 return $this->duplicateSurvey($data['survey_id'] ?? 0);
 
+            case 'archive_survey':
+                return $this->archiveSurvey($data['survey_id'] ?? 0);
+
+            case 'unarchive_survey':
+                return $this->unarchiveSurvey($data['survey_id'] ?? 0);
+
+            case 'get_survey_details':
+                return $this->getSurveyDetails($data['survey_id'] ?? 0);
+
             default:
                 return parent::handleAjaxRequest($action, $data);
+        }
+    }
+
+    /**
+     * Archive survey
+     */
+    public function archiveSurvey(int $surveyId): array
+    {
+        try {
+            $archiveReason = $_POST['archive_reason'] ?? 'Manual archive';
+            $success = $this->surveyModel->archiveSurvey($surveyId, $archiveReason);
+
+            if ($success) {
+                return [
+                    'success' => true,
+                    'message' => 'Survey archived successfully'
+                ];
+            } else {
+                return ['success' => false, 'message' => 'Failed to archive survey'];
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Unarchive survey
+     */
+    public function unarchiveSurvey(int $surveyId): array
+    {
+        try {
+            $success = $this->surveyModel->unarchiveSurvey($surveyId);
+
+            if ($success) {
+                return [
+                    'success' => true,
+                    'message' => 'Survey unarchived successfully'
+                ];
+            } else {
+                return ['success' => false, 'message' => 'Failed to unarchive survey'];
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get survey details for archiving
+     */
+    private function getSurveyDetails(int $surveyId): array
+    {
+        try {
+            if (empty($surveyId)) {
+                return [
+                    'success' => false,
+                    'message' => 'Survey ID is required'
+                ];
+            }
+
+            $survey = $this->surveyModel->getSurvey($surveyId);
+
+            if (!$survey) {
+                return [
+                    'success' => false,
+                    'message' => 'Survey not found'
+                ];
+            }
+
+            // For surveys, we don't have a specific employee, so we'll use a generic approach
+            return [
+                'success' => true,
+                'data' => [
+                    'id' => $survey['id'],
+                    'employee_id' => 0, // Surveys are not employee-specific
+                    'employee_name' => 'All Employees',
+                    'title' => $survey['title'],
+                    'start_date' => $survey['start_date'],
+                    'end_date' => $survey['end_date'],
+                    'status' => $survey['status']
+                ]
+            ];
+        } catch (Exception $e) {
+            error_log("Error getting survey details: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'An error occurred while retrieving survey details'
+            ];
         }
     }
 }

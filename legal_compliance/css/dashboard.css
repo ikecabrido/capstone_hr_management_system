@@ -1,0 +1,733 @@
+/* Legal & Compliance Dashboard Custom Styles */
+
+/* ============================================
+   CSS VARIABLES
+   ============================================ */
+:root {
+    --small-text-color: #1a1a1a;
+    --small-text-color-light: #222222;
+}
+
+/* Dark mode small text color */
+body.dark-mode {
+    --small-text-color: #e0e0e0;
+}
+
+/* Override Bootstrap's text-muted for better visibility */
+.text-muted {
+    color: var(--small-text-color) !important;
+}
+
+/* Override Bootstrap's muted class in tables */
+.table .text-muted,
+.table-sm .text-muted {
+    color: var(--small-text-color) !important;
+}
+
+/* Ensure small text maintains good contrast on various backgrounds */
+.bg-light .text-small,
+.bg-light small,
+.bg-light .caption {
+    color: var(--small-text-color-light) !important;
+}
+
+.bg-white .text-small,
+.bg-white small,
+.bg-white .caption {
+    color: var(--small-text-color) !important;
+}
+
+/* ============================================
+   SMALL TEXT STYLING
+   ============================================ */
+
+/* Base small text color */
+.text-small,
+.small-text,
+small,
+.caption,
+.text-caption {
+    color: var(--small-text-color) !important;
+}
+
+/* Small font sizes with dark color */
+.text-small,
+.small-text {
+    font-size: 0.875rem;
+    color: var(--small-text-color);
+}
+
+small {
+    font-size: 0.75rem;
+    color: var(--small-text-color);
+}
+
+.caption,
+.text-caption {
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--small-text-color);
+    opacity: 0.9;
+}
+
+/* Elements with font-size under 14px */
+*[style*="13px"],
+*[style*="12px"],
+*[style*="11px"],
+*[style*="10px"],
+.font-size-sm,
+.font-size-small {
+    color: var(--small-text-color) !important;
+}
+
+/* Small labels and meta text */
+.small-label,
+.meta-text,
+.text-muted,
+.text-muted small {
+    color: var(--small-text-color) !important;
+    opacity: 0.85;
+}
+
+/* Small text in tables */
+.table .small-text,
+.table small,
+.table-sm td,
+.table-sm th {
+    font-size: 0.8125rem;
+    color: var(--small-text-color);
+}
+
+/* Small text in cards */
+.card .small-text,
+.card small {
+    color: var(--small-text-color);
+}
+
+/* Small text in alerts and notifications */
+.alert .small-text,
+.alert small {
+    color: var(--small-text-color);
+}
+
+/* Small text in forms */
+.form-text,
+.help-block {
+    font-size: 0.8125rem;
+    color: var(--small-text-color);
+}
+
+/* Dashboard Container */
+.dashboard-container {
+    padding: 20px;
+}
+
+/* Summary Cards */
+.summary-card {
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.562);
+    transition: transform 0.2s;
+}
+
+.summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.summary-card .icon {
+    font-size: 2.5rem;
+    opacity: 0.8;
+}
+
+.summary-card .number {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.summary-card .label {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+/* Card Header Custom */
+.card-header-custom {
+    background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 10px 10px 0 0;
+}
+
+/* Chart Container */
+.chart-container {
+    position: relative;
+    height: 250px;
+}
+
+/* Compliance Status */
+.compliance-status {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    background: #f8f9fa;
+}
+
+.compliance-status.compliant {
+    border-left: 4px solid #28a745;
+}
+
+.compliance-status.pending {
+    border-left: 4px solid #ffc107;
+}
+
+.compliance-status.overdue {
+    border-left: 4px solid #dc3545;
+}
+
+/* Activity Item */
+.activity-item {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+/* Quick Action Button */
+.quick-action-btn {
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+    background: #f8f9fa;
+    transition: all 0.3s;
+    cursor: pointer;
+    border: none;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.quick-action-btn:hover {
+    background: #0d47a1;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.quick-action-btn i {
+    font-size: 1.5rem;
+    margin-bottom: 5px;
+}
+
+/* Alert Item */
+.alert-item {
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+}
+
+.alert-item.danger {
+    background: #f8d7da;
+    border-left: 4px solid #dc3545;
+}
+
+/* Risk Badge */
+.risk-badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.risk-badge.high {
+    background: #dc3545;
+    color: white;
+}
+
+.risk-badge.medium {
+    background: #ffc107;
+    color: #000;
+}
+
+.risk-badge.low {
+    background: #28a745;
+    color: white;
+}
+
+.risk-badge.critical {
+    background: #6a1b9a;
+    color: white;
+}
+
+/* Dark mode support */
+body.dark-mode .summary-card {
+    background: #3a3a3a;
+}
+
+body.dark-mode .quick-action-btn {
+    background: #454545;
+}
+
+body.dark-mode .quick-action-btn:hover {
+    background: #0d47a1;
+}
+
+body.dark-mode .compliance-status {
+    background: #454545;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .summary-card {
+        margin-bottom: 15px;
+    }
+    
+    .chart-container {
+        height: 200px;
+    }
+    
+    /* Mobile Scrolling Adjustments */
+    .data-grid-scroll-vertical,
+    .data-grid-scroll-both,
+    .table-fixed-header tbody {
+        max-height: 250px;
+    }
+    
+    .data-grid-scroll-vertical::-webkit-scrollbar,
+    .data-grid-scroll-both::-webkit-scrollbar,
+    .table-fixed-header tbody::-webkit-scrollbar {
+        width: 4px;
+    }
+}
+
+/* Tablet Responsiveness */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .data-grid-scroll-vertical,
+    .data-grid-scroll-both,
+    .table-fixed-header tbody {
+        max-height: 300px;
+    }
+}
+
+/* Large Desktop */
+@media (min-width: 1400px) {
+    .data-grid-scroll-vertical,
+    .data-grid-scroll-both,
+    .table-fixed-header tbody {
+        max-height: 500px;
+    }
+}
+
+/* Very Small Devices */
+@media (max-width: 576px) {
+    .card-body-scroll {
+        max-height: 200px;
+    }
+    
+    .table-responsive-scroll {
+        font-size: 0.85rem;
+    }
+    
+    .table-responsive-scroll .table th,
+    .table-responsive-scroll .table td {
+        padding: 8px 4px;
+    }
+}
+
+/* Landscape Orientation on Mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+    .data-grid-scroll-vertical,
+    .data-grid-scroll-both,
+    .table-fixed-header tbody {
+        max-height: 180px;
+    }
+}
+
+/* Table Styles */
+.dashboard-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.dashboard-table th,
+.dashboard-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.dashboard-table th {
+    font-weight: 600;
+    color: #6c757d;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+.dashboard-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* ============================================
+   DATA GRID SCROLLING STYLES
+   ============================================ */
+
+/* Scrollable Data Grid Container */
+.data-grid-container {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Vertical Scrolling */
+.data-grid-scroll-vertical {
+    max-height: 400px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Horizontal Scrolling */
+.data-grid-scroll-horizontal {
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+/* Combined Horizontal & Vertical */
+.data-grid-scroll-both {
+    max-height: 400px;
+    overflow: auto;
+}
+
+/* Fixed Header Table with Vertical Scroll */
+.table-fixed-header {
+    position: relative;
+}
+
+.table-fixed-header thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #f8f9fa;
+}
+
+.table-fixed-header thead th {
+    background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+    color: white;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.table-fixed-header tbody {
+    display: block;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.table-fixed-header thead,
+.table-fixed-header tbody tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+
+/* Table Body Row Styling */
+.table-fixed-header tbody tr:hover {
+    background-color: #f1f3f5;
+}
+
+.table-fixed-header tbody tr:nth-child(even) {
+    background-color: #fafbfc;
+}
+
+/* Custom Scrollbar - WebKit (Chrome, Safari, Edge) */
+.data-grid-scroll-vertical::-webkit-scrollbar,
+.data-grid-scroll-both::-webkit-scrollbar,
+.table-fixed-header tbody::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.data-grid-scroll-vertical::-webkit-scrollbar-track,
+.data-grid-scroll-both::-webkit-scrollbar-track,
+.table-fixed-header tbody::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.data-grid-scroll-vertical::-webkit-scrollbar-thumb,
+.data-grid-scroll-both::-webkit-scrollbar-thumb,
+.table-fixed-header tbody::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #1976d2 0%, #0d47a1 100%);
+    border-radius: 4px;
+    border: 2px solid #f1f1f1;
+}
+
+.data-grid-scroll-vertical::-webkit-scrollbar-thumb:hover,
+.data-grid-scroll-both::-webkit-scrollbar-thumb:hover,
+.table-fixed-header tbody::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #1565c0 0%, #0a3d7d 100%);
+}
+
+/* Custom Scrollbar - Firefox */
+.data-grid-scroll-vertical,
+.data-grid-scroll-both,
+.table-fixed-header tbody {
+    scrollbar-width: thin;
+    scrollbar-color: #1976d2 #f1f1f1;
+}
+
+/* Horizontal Scrollbar Styling */
+.data-grid-scroll-horizontal::-webkit-scrollbar,
+.data-grid-scroll-both::-webkit-scrollbar {
+    height: 8px;
+}
+
+.data-grid-scroll-horizontal::-webkit-scrollbar-track,
+.data-grid-scroll-both::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.data-grid-scroll-horizontal::-webkit-scrollbar-thumb,
+.data-grid-scroll-both::-webkit-scrollbar-thumb {
+    background: linear-gradient(90deg, #1976d2 0%, #0d47a1 100%);
+    border-radius: 4px;
+}
+
+/* Card Body with Scroll */
+.card-body-scroll {
+    padding: 0;
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+/* Card Body Scrollbar - Blue Theme */
+.card-body-scroll::-webkit-scrollbar {
+    width: 8px;
+}
+
+.card-body-scroll::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.card-body-scroll::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #1976d2 0%, #0d47a1 100%);
+    border-radius: 4px;
+    border: 2px solid #f1f1f1;
+}
+
+.card-body-scroll::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #1565c0 0%, #0a3d7d 100%);
+}
+
+/* Firefox */
+.card-body-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #1976d2 #f1f1f1;
+}
+
+/* Dark Mode */
+body.dark-mode .card-body-scroll::-webkit-scrollbar-track {
+    background: #3a3a3a;
+}
+
+body.dark-mode .card-body-scroll::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #42a5f5 0%, #1976d2 100%);
+    border-color: #3a3a3a;
+}
+
+body.dark-mode .card-body-scroll {
+    scrollbar-color: #42a5f5 #3a3a3a;
+}
+
+/* Enhanced Table Responsive */
+.table-responsive-scroll {
+    position: relative;
+    overflow: hidden;
+}
+
+.table-responsive-scroll .table {
+    margin-bottom: 0;
+}
+
+.table-responsive-scroll .table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background-color: #f8f9fa;
+    box-shadow: 0 1px 0 #dee2e6;
+}
+
+/* Dark Mode Scrollbar */
+body.dark-mode .data-grid-scroll-vertical::-webkit-scrollbar-track,
+body.dark-mode .data-grid-scroll-both::-webkit-scrollbar-track,
+body.dark-mode .table-fixed-header tbody::-webkit-scrollbar-track {
+    background: #3a3a3a;
+}
+
+body.dark-mode .data-grid-scroll-vertical::-webkit-scrollbar-thumb,
+body.dark-mode .data-grid-scroll-both::-webkit-scrollbar-thumb,
+body.dark-mode .table-fixed-header tbody::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #42a5f5 0%, #1976d2 100%);
+    border-color: #3a3a3a;
+}
+
+body.dark-mode .data-grid-scroll-vertical,
+body.dark-mode .data-grid-scroll-both,
+body.dark-mode .table-fixed-header tbody {
+    scrollbar-color: #42a5f5 #3a3a3a;
+}
+
+body.dark-mode .table-fixed-header thead th {
+    background: linear-gradient(135deg, #0d47a1 0%, #1565c0 100%);
+}
+
+body.dark-mode .table-fixed-header tbody tr:nth-child(even) {
+    background-color: #3a3a3a;
+}
+
+body.dark-mode .table-fixed-header tbody tr:hover {
+    background-color: #454545;
+}
+
+/* ============================================
+   SCROLL SHADOW INDICATORS
+   ============================================ */
+
+/* Top shadow - indicates more content above */
+.scroll-shadow-container::before,
+.data-grid-scroll-vertical::before,
+.table-fixed-header tbody::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 10px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.1), transparent);
+    z-index: 5;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.scroll-shadow-container.scrolled::before,
+.data-grid-scroll-vertical.scrolled::before,
+.table-fixed-header tbody.scrolled::before {
+    opacity: 1;
+}
+
+/* Bottom shadow - indicates more content below */
+.scroll-shadow-container::after,
+.data-grid-scroll-vertical::after,
+.table-fixed-header tbody::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 10px;
+    background: linear-gradient(to top, rgba(0,0,0,0.1), transparent);
+    z-index: 5;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.scroll-shadow-container.has-more-below::after,
+.data-grid-scroll-vertical.has-more-below::after,
+.table-fixed-header tbody.has-more-below::after {
+    opacity: 1;
+}
+
+/* Position relative for container */
+.scroll-shadow-container,
+.data-grid-scroll-vertical,
+.table-fixed-header tbody {
+    position: relative;
+}
+
+/* Loading overlay for data grids */
+.data-grid-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+}
+
+body.dark-mode .data-grid-loading {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+/* Empty state for data grids */
+.data-grid-empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: #6c757d;
+}
+
+.data-grid-empty i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+/* Status Badge */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.status-badge i {
+    margin-right: 5px;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+/* Loading State */
+.loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+}
+
+.loading-spinner::after {
+    content: '';
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #0d47a1;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

@@ -19,7 +19,7 @@ class ResignationController extends ExitManagementController
     {
         try {
             // Validate required fields
-            $required = ['employee_id', 'resignation_type', 'reason', 'notice_date', 'last_working_date', 'preclearance_desk_person'];
+            $required = ['employee_id', 'resignation_type', 'reason', 'notice_date', 'last_working_date'];
             foreach ($required as $field) {
                 if (empty($data[$field])) {
                     return ['success' => false, 'message' => "Field '$field' is required"];
@@ -39,7 +39,7 @@ class ResignationController extends ExitManagementController
 
             return [
                 'success' => true,
-                'message' => 'Resignation submitted successfully',
+                'message' => 'Resignation submitted successfully.',
                 'resignation_id' => $resignationId
             ];
         } catch (Exception $e) {
@@ -59,6 +59,28 @@ class ResignationController extends ExitManagementController
         }
 
         return $resignation;
+    }
+
+    /**
+     * Get employee's last attendance date from ta_attendance
+     */
+    public function getEmployeeLastAttendanceDate(string $employeeId): array
+    {
+        try {
+            $lastAttendanceDate = $this->resignationModel->getEmployeeLastAttendanceDate($employeeId);
+            
+            return [
+                'success' => true,
+                'last_attendance_date' => $lastAttendanceDate,
+                'employee_id' => $employeeId
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'last_attendance_date' => null
+            ];
+        }
     }
 
     /**
@@ -134,7 +156,8 @@ class ResignationController extends ExitManagementController
     public function archiveResignation(int $resignationId): array
     {
         try {
-            $success = $this->resignationModel->archiveResignation($resignationId);
+            $archiveReason = $_POST['archive_reason'] ?? 'Manual archive';
+            $success = $this->resignationModel->archiveResignation($resignationId, $archiveReason);
 
             if ($success) {
                 return [
@@ -143,6 +166,32 @@ class ResignationController extends ExitManagementController
                 ];
             } else {
                 return ['success' => false, 'message' => 'Failed to archive resignation'];
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get resignation details for modal
+     */
+    public function getResignationDetails(int $resignationId): array
+    {
+        try {
+            $resignation = $this->resignationModel->getResignationById($resignationId);
+            if ($resignation) {
+                return [
+                    'success' => true,
+                    'data' => [
+                        'id' => $resignation['id'],
+                        'employee_id' => $resignation['employee_id'],
+                        'employee_name' => $resignation['employee_name'],
+                        'resignation_type' => $resignation['resignation_type'],
+                        'reason' => $resignation['reason']
+                    ]
+                ];
+            } else {
+                return ['success' => false, 'message' => 'Resignation not found'];
             }
         } catch (Exception $e) {
             return ['success' => false, 'message' => $e->getMessage()];
@@ -195,16 +244,23 @@ class ResignationController extends ExitManagementController
 
             case 'get_resignations':
                 $status = $data['status'] ?? null;
+                $page = (int)($data['page'] ?? 1);
+                $limit = (int)($data['limit'] ?? 10);
+                $search = $data['search'] ?? '';
+
                 if ($status === 'archived') {
                     return $this->getArchivedResignations();
                 }
                 if ($status === 'all') {
-                    return $this->resignationModel->getResignations('all');
+                    return $this->resignationModel->getResignations('all', $page, $limit, $search);
                 }
-                return $this->getResignations($status);
+                return $this->resignationModel->getResignations($status, $page, $limit, $search);
 
             case 'get_archived_resignations':
                 return $this->getArchivedResignations();
+
+            case 'get_resignation_details':
+                return $this->getResignationDetails($data['resignation_id'] ?? 0);
 
             case 'archive_resignation':
                 return $this->archiveResignation($data['resignation_id'] ?? 0);
@@ -214,6 +270,9 @@ class ResignationController extends ExitManagementController
 
             case 'check_eligibility':
                 return $this->checkEmployeeEligibility($data['employee_id'] ?? '');
+
+            case 'get_employee_last_attendance_date':
+                return $this->getEmployeeLastAttendanceDate($data['employee_id'] ?? '');
 
             default:
                 return parent::handleAjaxRequest($action, $data);

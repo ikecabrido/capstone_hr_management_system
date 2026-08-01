@@ -126,6 +126,22 @@ CREATE TABLE `exit_employee_settlements` (
   KEY `fk_settlement_created_by` (`created_by`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Table structure for table `payroll_clearances`
+CREATE TABLE IF NOT EXISTS `payroll_clearances` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `settlement_id` int(11) NOT NULL,
+  `requested_by` int(11) DEFAULT NULL,
+  `requested_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `status` enum('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  `approved_by` int(11) DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `comments` text DEFAULT NULL,
+  `last_updated` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_settlement_id` (`settlement_id`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Payroll clearance requests linked to exit settlements';
+
 -- Table structure for table `exit_documents`
 CREATE TABLE `exit_documents` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -202,6 +218,7 @@ ALTER TABLE `exit_interviews` ADD CONSTRAINT `fk_interview_employee` FOREIGN KEY
 ALTER TABLE `exit_knowledge_transfer_plans` ADD CONSTRAINT `fk_transfer_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_transfer_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE, ADD CONSTRAINT `fk_transfer_successor` FOREIGN KEY (`successor_id`) REFERENCES `employees` (`employee_id`) ON DELETE SET NULL;
 ALTER TABLE `exit_knowledge_transfer_items` ADD CONSTRAINT `fk_item_plan` FOREIGN KEY (`plan_id`) REFERENCES `exit_knowledge_transfer_plans` (`id`) ON DELETE CASCADE;
 ALTER TABLE `exit_employee_settlements` ADD CONSTRAINT `fk_settlement_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_settlement_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_settlement_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE, ADD CONSTRAINT `fk_settlement_resignation` FOREIGN KEY (`resignation_id`) REFERENCES `exit_resignations` (`id`) ON DELETE SET NULL;
+ALTER TABLE `payroll_clearances` ADD CONSTRAINT `fk_clearance_settlement` FOREIGN KEY (`settlement_id`) REFERENCES `exit_employee_settlements` (`id`) ON DELETE CASCADE;
 ALTER TABLE `exit_documents` ADD CONSTRAINT `fk_document_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE, ADD CONSTRAINT `fk_document_uploaded_by` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 ALTER TABLE `exit_surveys` ADD CONSTRAINT `fk_survey_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 ALTER TABLE `exit_survey_questions` ADD CONSTRAINT `fk_question_survey` FOREIGN KEY (`survey_id`) REFERENCES `exit_surveys` (`id`) ON DELETE CASCADE;

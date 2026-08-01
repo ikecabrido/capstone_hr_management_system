@@ -4,7 +4,232 @@ $(document).ready(function() {
     initializeModals();
     loadEmployees();
     loadDashboardData();
+    initExitModalPickers();
+    setInterval(loadPayrollApprovalNotifications, 60000); // refresh payroll approval notifications every minute
 });
+
+function initExitModalPickers() {
+    if (typeof flatpickr !== 'function') {
+        return;
+    }
+
+    flatpickr('.exit-modal input[type="date"]', {
+        altInput: true,
+        altFormat: 'F j, Y',
+        dateFormat: 'Y-m-d',
+        allowInput: true,
+        clickOpens: true,
+        monthSelectorType: 'dropdown',
+        yearSelectorType: 'dropdown',
+        locale: 'default',
+        position: 'auto center',
+        wrap: false,
+        onReady: function(selectedDates, dateStr, instance) {
+            addFlatpickrFooter(instance);
+            enableFlatpickrYearDropdown(instance);
+        },
+        onOpen: function(selectedDates, dateStr, instance) {
+            addFlatpickrFooter(instance);
+            enableFlatpickrYearDropdown(instance);
+        }
+    });
+
+    flatpickr('.exit-modal input[type="time"]', {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: 'H:i',
+        time_24hr: false,
+        allowInput: true,
+        clickOpens: true,
+        position: 'auto center'
+    });
+}
+
+function enableFlatpickrYearDropdown(instance) {
+    if (!instance || !instance.calendarContainer) {
+        return;
+    }
+
+    const yearWrapper = instance.calendarContainer.querySelector('.flatpickr-current-month .numInputWrapper');
+    const yearInput = yearWrapper ? yearWrapper.querySelector('input') : null;
+    if (!yearWrapper || !yearInput || yearWrapper.dataset.yearDropdownAttached) {
+        return;
+    }
+
+    yearWrapper.dataset.yearDropdownAttached = 'true';
+    yearWrapper.style.cursor = 'pointer';
+    yearInput.style.cursor = 'pointer';
+
+    yearWrapper.addEventListener('click', function(event) {
+        event.stopPropagation();
+        yearInput.focus();
+        yearInput.click();
+    });
+}
+
+function addFlatpickrFooter(instance) {
+    if (!instance || !instance.calendarContainer) {
+        return;
+    }
+
+    if (instance.calendarContainer.querySelector('.flatpickr-footer')) {
+        return;
+    }
+
+    const footer = document.createElement('div');
+    footer.className = 'flatpickr-footer';
+
+    const todayBtn = document.createElement('button');
+    todayBtn.type = 'button';
+    todayBtn.className = 'flatpickr-footer-btn flatpickr-today-btn';
+    todayBtn.textContent = 'Today';
+    todayBtn.addEventListener('click', function() {
+        instance.setDate(new Date(), true);
+        instance.close();
+    });
+
+    const clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'flatpickr-footer-btn flatpickr-clear-btn';
+    clearBtn.textContent = 'Clear';
+    clearBtn.addEventListener('click', function() {
+        instance.clear();
+        instance.close();
+    });
+
+    footer.appendChild(todayBtn);
+    footer.appendChild(clearBtn);
+    instance.calendarContainer.appendChild(footer);
+}
+
+// Render pagination controls
+function renderPagination(containerId, total, currentPage, limit, onPageChange) {
+    const container = $(`#${containerId}`);
+    container.empty();
+
+    if (!total || total <= limit) {
+        return;
+    }
+
+    const totalPages = Math.ceil(total / limit);
+    const startRecord = (currentPage - 1) * limit + 1;
+    const endRecord = Math.min(currentPage * limit, total);
+
+    let paginationHtml = `
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="text-muted">
+                Showing ${startRecord} to ${endRecord} of ${total} entries
+            </div>
+            <nav aria-label="Table pagination">
+                <ul class="pagination pagination-sm mb-0">
+    `;
+
+    // Previous button
+    if (currentPage > 1) {
+        paginationHtml += `
+            <li class="page-item">
+                <a class="page-link" href="#" onclick="event.preventDefault(); ${onPageChange(currentPage - 1)}">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            </li>
+        `;
+    } else {
+        paginationHtml += `
+            <li class="page-item disabled">
+                <a class="page-link" href="#" tabindex="-1">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            </li>
+        `;
+    }
+
+    // Page numbers
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+
+    if (startPage > 1) {
+        paginationHtml += `
+            <li class="page-item">
+                <a class="page-link" href="#" onclick="event.preventDefault(); ${onPageChange(1)}">1</a>
+            </li>
+        `;
+        if (startPage > 2) {
+            paginationHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        if (i === currentPage) {
+            paginationHtml += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
+        } else {
+            paginationHtml += `
+                <li class="page-item">
+                    <a class="page-link" href="#" onclick="event.preventDefault(); ${onPageChange(i)}">${i}</a>
+                </li>
+            `;
+        }
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            paginationHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+        paginationHtml += `
+            <li class="page-item">
+                <a class="page-link" href="#" onclick="event.preventDefault(); ${onPageChange(totalPages)}">${totalPages}</a>
+            </li>
+        `;
+    }
+
+    // Next button
+    if (currentPage < totalPages) {
+        paginationHtml += `
+            <li class="page-item">
+                <a class="page-link" href="#" onclick="event.preventDefault(); ${onPageChange(currentPage + 1)}">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+        `;
+    } else {
+        paginationHtml += `
+            <li class="page-item disabled">
+                <a class="page-link" href="#" tabindex="-1">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+        `;
+    }
+
+    paginationHtml += `
+                </ul>
+            </nav>
+        </div>
+    `;
+
+    container.html(paginationHtml);
+}
+
+// Legacy function for resignations table
+function renderResignationsPagination(containerId, response, status, currentPage) {
+    if (!response || !response.total) {
+        $(`#${containerId}`).empty();
+        return;
+    }
+
+    const onPageChange = (page) => `loadResignationsTable('${status}', ${page})`;
+    renderPagination(containerId, response.total, response.page || currentPage, response.limit || 10, onPageChange);
+}
+
+// Legacy function for interviews table
+function renderInterviewsPagination(containerId, response, status, currentPage) {
+    if (!response || !response.total) {
+        $(`#${containerId}`).empty();
+        return;
+    }
+
+    const onPageChange = (page) => `loadInterviewsTable('${status}', ${page})`;
+    renderPagination(containerId, response.total, response.page || currentPage, response.limit || 10, onPageChange);
+}
 
 // Initialize modal event handlers
 function initializeModals() {
@@ -86,9 +311,30 @@ function initializeModals() {
         const employeeId = $(this).val();
         if (employeeId) {
             checkEmployeeEligibility(employeeId);
+            loadEmployeeLastAttendanceDate(employeeId);
         } else {
             $('#eligibilityMessage').hide();
+            $('#lastWorkingDate').val('');
         }
+    });
+}
+
+// Load employee's last attendance date and auto-fill last working date
+function loadEmployeeLastAttendanceDate(employeeId) {
+    $.post('exit_management.php', {
+        ajax_action: 'get_employee_last_attendance_date',
+        controller: 'resignation',
+        employee_id: employeeId
+    }, function(response) {
+        if (response.success && response.last_attendance_date) {
+            $('#lastWorkingDate').val(response.last_attendance_date);
+        } else {
+            // If no attendance date found, clear the field
+            $('#lastWorkingDate').val('');
+        }
+    }, 'json').fail(function(err) {
+        console.error('Error loading last attendance date:', err);
+        $('#lastWorkingDate').val('');
     });
 }
 
@@ -121,46 +367,49 @@ function checkEmployeeEligibility(employeeId) {
 }
 
 // Load employees for dropdowns
-function loadEmployees() {
+function loadEmployees(callback) {
+    console.log('[LOAD EMPLOYEES] Starting employee load...');
     $.post('exit_management.php', {
         ajax_action: 'get_eligible_employees'
     }, function(response) {
-        console.log('Employee response:', response);
+        console.log('[LOAD EMPLOYEES] Response received:', response);
+        console.log('[LOAD EMPLOYEES] Response type:', typeof response);
+        console.log('[LOAD EMPLOYEES] Is array:', Array.isArray(response));
+        
         if (response && Array.isArray(response) && response.length > 0) {
+            console.log('[LOAD EMPLOYEES] Employee count:', response.length);
             const employeeOptions = '<option value="">Select Employee</option>' +
-                response.map(emp => `<option value="${emp.id}">${emp.full_name} (${emp.username})</option>`).join('');
+                response.map(emp => {
+                    console.log('[LOAD EMPLOYEES] Processing employee:', emp);
+                    return `<option value="${emp.id}">${emp.full_name} (${emp.username})</option>`;
+                }).join('');
 
+            console.log('[LOAD EMPLOYEES] Generated options HTML:', employeeOptions.substring(0, 200));
             $('#employeeSelect, #interviewEmployeeSelect, #documentEmployeeSelect').html(employeeOptions);
+            console.log('[LOAD EMPLOYEES] Dropdown populated successfully');
         } else {
-            console.warn('No employees returned or not an array:', response);
+            console.warn('[LOAD EMPLOYEES] No employees returned or not an array:', response);
+            // Set empty state message
+            $('#employeeSelect').html('<option value="">No employees available</option>');
+        }
+
+        if (typeof callback === 'function') {
+            callback();
         }
     }, 'json').fail(function(err) {
-        console.error('Error loading employees:', err);
-    });
-
-    loadPreclearanceDeskPersons();
-}
-
-function loadPreclearanceDeskPersons() {
-    $.post('exit_management.php', {
-        ajax_action: 'get_eligible_interviewers'
-    }, function(response) {
-        if (response && Array.isArray(response) && response.length > 0) {
-            const deskOptions = '<option value="">Select Desk Person</option>' +
-                response.map(user => `<option value="${user.id}">${user.full_name} (${user.username})</option>`).join('');
-
-            $('#preclearanceDeskPerson').html(deskOptions);
-        } else {
-            $('#preclearanceDeskPerson').html('<option value="">No desk persons found</option>');
+        console.error('[LOAD EMPLOYEES] AJAX request failed:', err);
+        console.error('[LOAD EMPLOYEES] Status:', err.status);
+        console.error('[LOAD EMPLOYEES] Status Text:', err.statusText);
+        console.error('[LOAD EMPLOYEES] Response Text:', err.responseText);
+        $('#employeeSelect').html('<option value="">Error loading employees</option>');
+        if (typeof callback === 'function') {
+            callback();
         }
-    }, 'json').fail(function(err) {
-        console.error('Error loading preclearance desk persons:', err);
-        $('#preclearanceDeskPerson').html('<option value="">Error loading users</option>');
     });
 }
 
 // Load employees with resignations for exit interview modal
-function loadEmployeesWithResignations() {
+function loadEmployeesWithResignations(callback) {
     $.post('exit_management.php', {
         ajax_action: 'get_employees_with_resignations'
     }, function(response) {
@@ -172,14 +421,16 @@ function loadEmployeesWithResignations() {
         } else {
             $('#interviewEmployeeSelect').html('<option value="">No employees with resignations found</option>');
         }
+        if (typeof callback === 'function') callback();
     }).fail(function(err) {
         console.error('Error loading resigning employees:', err);
         $('#interviewEmployeeSelect').html('<option value="">Error loading employees</option>');
+        if (typeof callback === 'function') callback();
     });
 }
 
 // Load interviewers for interview modal
-function loadInterviewers() {
+function loadInterviewers(callback) {
     $.post('exit_management.php', {
         ajax_action: 'get_eligible_interviewers'
     }, function(response) {
@@ -191,9 +442,11 @@ function loadInterviewers() {
         } else {
             $('#interviewerSelect').html('<option value="">No interviewers available</option>');
         }
-    }).fail(function(err) {
+        if (typeof callback === 'function') callback();
+    }, 'json').fail(function(err) {
         console.error('Error loading interviewers:', err);
         $('#interviewerSelect').html('<option value="">Error loading interviewers</option>');
+        if (typeof callback === 'function') callback();
     });
 }
 
@@ -210,14 +463,16 @@ function loadEmployeesWithResignationsForTransfers() {
         } else {
             $('#transferEmployeeSelect').html('<option value="">No employees with resignations found</option>');
         }
+        if (typeof callback === 'function') callback();
     }).fail(function(err) {
         console.error('Error loading resigning employees for transfers:', err);
         $('#transferEmployeeSelect').html('<option value="">Error loading employees</option>');
+        if (typeof callback === 'function') callback();
     });
 }
 
 // Load successors for transfer modal
-function loadSuccessors() {
+function loadSuccessors(callback) {
     $.post('exit_management.php', {
         ajax_action: 'get_eligible_employees'
     }, function(response) {
@@ -226,12 +481,19 @@ function loadSuccessors() {
                 response.map(emp => `<option value="${emp.id}">${emp.full_name} (${emp.username})</option>`).join('');
 
             $('#successorSelect').html(successorOptions);
+        } else {
+            $('#successorSelect').html('<option value="">No employees available</option>');
         }
+        if (typeof callback === 'function') callback();
+    }, 'json').fail(function(err) {
+        console.error('Error loading employees for successors:', err);
+        $('#successorSelect').html('<option value="">Error loading employees</option>');
+        if (typeof callback === 'function') callback();
     });
 }
 
 // Load employees with resignations for settlement modal
-function loadEmployeesWithResignationsForSettlements() {
+function loadEmployeesWithResignationsForSettlements(callback) {
     $.post('exit_management.php', {
         ajax_action: 'get_employees_with_resignations'
     }, function(response) {
@@ -243,14 +505,16 @@ function loadEmployeesWithResignationsForSettlements() {
         } else {
             $('#settlementEmployeeSelect').html('<option value="">No employees with resignations found</option>');
         }
+        if (typeof callback === 'function') callback();
     }).fail(function(err) {
         console.error('Error loading resigning employees for settlements:', err);
         $('#settlementEmployeeSelect').html('<option value="">Error loading employees</option>');
+        if (typeof callback === 'function') callback();
     });
 }
 
 // Load resignations for settlement modal
-function loadResignations() {
+function loadResignations(callback) {
     $.post('exit_management.php', {
         ajax_action: 'get_resignations',
         controller: 'resignation'
@@ -261,16 +525,18 @@ function loadResignations() {
 
             $('#settlementResignationSelect').html(resignationOptions);
         }
-    });
+        if (typeof callback === 'function') callback();
+    }, 'json');
 }
 
 // Modal display functions
 function showResignationModal(resignationId = null) {
-    loadEmployees(); // Ensure employees are loaded
     if (resignationId) {
         // Edit mode
         $('#resignationModalTitle').text('Edit Resignation');
-        loadResignationData(resignationId);
+        loadEmployees(function() {
+            loadResignationData(resignationId);
+        });
     } else {
         // Create mode
         $('#resignationModalTitle').text('Submit Resignation');
@@ -278,63 +544,84 @@ function showResignationModal(resignationId = null) {
         $('#resignationId').val('');
         $('#approvalSection').hide();
         $('#eligibilityMessage').hide();
+        loadEmployees();
     }
     $('#resignationModal').modal('show');
 }
 
 function showInterviewModal(interviewId = null) {
-    loadEmployeesWithResignations();
-    loadInterviewers();
     if (interviewId) {
         $('#interviewModalTitle').text('Edit Exit Interview');
-        loadInterviewData(interviewId);
+        $('#interviewForm')[0].reset();
+        $('#interviewId').val('');
+        loadEmployeesWithResignations(function() {
+            loadInterviewers(function() {
+                loadInterviewData(interviewId);
+                $('#interviewModal').modal('show');
+            });
+        });
     } else {
         $('#interviewModalTitle').text('Schedule Exit Interview');
         $('#interviewForm')[0].reset();
         $('#interviewId').val('');
         $('#feedbackSection').hide();
+        loadEmployeesWithResignations();
+        loadInterviewers();
+        $('#interviewModal').modal('show');
     }
-    $('#interviewModal').modal('show');
 }
 
 function showTransferModal(planId = null) {
-    loadEmployeesWithResignationsForTransfers();
-    loadSuccessors();
     if (planId) {
         $('#transferModalTitle').text('Edit Transfer Plan');
-        loadTransferData(planId);
+        $('#transferForm')[0].reset();
+        $('#transferPlanId').val('');
+        loadEmployeesWithResignationsForTransfers(function() {
+            loadSuccessors(function() {
+                loadTransferData(planId);
+                $('#transferModal').modal('show');
+            });
+        });
     } else {
         $('#transferModalTitle').text('Create Knowledge Transfer Plan');
         $('#transferForm')[0].reset();
         $('#transferPlanId').val('');
         $('#transferItemsContainer').html(getTransferItemTemplate(0));
+        loadEmployeesWithResignationsForTransfers();
+        loadSuccessors();
+        $('#transferModal').modal('show');
     }
-    $('#transferModal').modal('show');
 }
 
 function showSettlementModal(settlementId = null) {
-    loadEmployeesWithResignationsForSettlements();
-    loadResignations();
-    if (settlementId) {
-        $('#settlementModalTitle').text('Edit Settlement');
-        loadSettlementData(settlementId);
-    } else {
-        $('#settlementModalTitle').text('Calculate Final Settlement');
-        $('#settlementForm')[0].reset();
-        $('#settlementId').val('');
-    }
-    $('#settlementModal').modal('show');
-
     // Add event listener for employee selection to auto-populate salary components
-    $('#settlementEmployeeSelect').on('change', function() {
+    $('#settlementEmployeeSelect').off('change').on('change', function() {
         const employeeId = $(this).val();
         if (employeeId) {
             loadEmployeeSalaryComponents(employeeId);
         } else {
-            // Clear salary fields if no employee selected
             clearSalaryFields();
         }
     });
+
+    if (settlementId) {
+        $('#settlementModalTitle').text('Edit Settlement');
+        $('#settlementForm')[0].reset();
+        $('#settlementId').val('');
+        loadEmployeesWithResignationsForSettlements(function() {
+            loadResignations(function() {
+                loadSettlementData(settlementId);
+                $('#settlementModal').modal('show');
+            });
+        });
+    } else {
+        $('#settlementModalTitle').text('Calculate Final Settlement');
+        $('#settlementForm')[0].reset();
+        $('#settlementId').val('');
+        loadEmployeesWithResignationsForSettlements();
+        loadResignations();
+        $('#settlementModal').modal('show');
+    }
 }
 
 function showDocumentModal(documentId = null) {
@@ -401,6 +688,14 @@ function submitResignationForm() {
 function submitInterviewForm() {
     const formData = new FormData($('#interviewForm')[0]);
     const interviewId = $('#interviewId').val();
+    
+    // Combine hour and minute into scheduled_time
+    const hour = $('#interviewHour').val();
+    const minute = $('#interviewMinute').val();
+    if (hour && minute) {
+        const scheduledTime = `${hour}:${minute}`;
+        formData.set('scheduled_time', scheduledTime);
+    }
     
     formData.append('ajax_action', interviewId ? 'update_interview' : 'submit_interview');
     formData.append('controller', 'interview');
@@ -787,47 +1082,205 @@ function loadResignationData(id) {
         resignation_id: id
     }, function(response) {
         if (response) {
-            // Populate form fields (handle preclearance desk person ID mapping)
             Object.keys(response).forEach(key => {
-                if (key === 'preclearance_desk_person') {
-                    $('#preclearanceDeskPerson').val(response[key]);
+                if (key === 'employee_id') {
+                    $('#employeeSelect').val(response[key]);
                 } else {
-                    $(`#${key}`).val(response[key]);
+                    const $field = $(`#${key}`);
+                    if ($field.length) {
+                        $field.val(response[key]);
+                    } else {
+                        const $namedField = $(`[name="${key}"]`);
+                        if ($namedField.length) {
+                            $namedField.val(response[key]);
+                        }
+                    }
                 }
             });
         }
-    });
+    }, 'json');
 }
 
 function loadInterviewData(id) {
     // Load interview data for editing
+    console.log('Loading interview data for ID:', id);
     $.post('exit_management.php', {
         ajax_action: 'get_interview',
         controller: 'interview',
         interview_id: id
     }, function(response) {
-        if (response) {
+        console.log('Interview response:', response);
+        if (response && !response.error) {
+            $('#interviewId').val(response.id || id);
             Object.keys(response).forEach(key => {
-                $(`#${key}`).val(response[key]);
+                if (key === 'employee_id') {
+                    $('#interviewEmployeeSelect').val(response[key]);
+                } else if (key === 'interviewer_id') {
+                    $('#interviewerSelect').val(response[key]);
+                } else if (key === 'scheduled_date') {
+                    $('#interviewDate').val(response[key]);
+                } else if (key === 'scheduled_time') {
+                    // Split time into hour and minute for dropdowns
+                    if (response[key]) {
+                        const timeParts = response[key].split(':');
+                        $('#interviewHour').val(timeParts[0] || '');
+                        $('#interviewMinute').val(timeParts[1] || '');
+                    }
+                } else {
+                    const $field = $(`#${key}`);
+                    if ($field.length) {
+                        $field.val(response[key]);
+                    } else {
+                        const $namedField = $(`[name="${key}"]`);
+                        if ($namedField.length) {
+                            $namedField.val(response[key]);
+                        }
+                    }
+                }
             });
+        } else {
+            console.error('Error loading interview:', response);
         }
+    }, 'json').fail(function(err) {
+        console.error('AJAX error loading interview:', err);
     });
 }
 
 function loadTransferData(id) {
     // Load transfer plan data for editing
+    console.log('Loading transfer plan data for ID:', id);
+    $.post('exit_management.php', {
+        ajax_action: 'get_transfer_plan',
+        controller: 'transfer',
+        plan_id: id
+    }, function(response) {
+        console.log('Transfer response:', response);
+        if (response && !response.error) {
+            $('#transferPlanId').val(response.id || id);
+            Object.keys(response).forEach(key => {
+                if (key === 'employee_id') {
+                    $('#transferEmployeeSelect').val(response[key]);
+                } else if (key === 'successor_id') {
+                    $('#successorSelect').val(response[key]);
+                } else if (key === 'start_date') {
+                    $('#transferStartDate').val(response[key]);
+                } else if (key === 'end_date') {
+                    $('#transferEndDate').val(response[key]);
+                } else {
+                    const $field = $(`#${key}`);
+                    if ($field.length) {
+                        $field.val(response[key]);
+                    } else {
+                        const $namedField = $(`[name="${key}"]`);
+                        if ($namedField.length) {
+                            $namedField.val(response[key]);
+                        }
+                    }
+                }
+            });
+        } else {
+            console.error('Error loading transfer:', response);
+        }
+    }, 'json').fail(function(err) {
+        console.error('AJAX error loading transfer:', err);
+    });
 }
 
 function loadSettlementData(id) {
     // Load settlement data for editing
+    console.log('Loading settlement data for ID:', id);
+    $.post('exit_management.php', {
+        ajax_action: 'get_settlement',
+        controller: 'settlement',
+        settlement_id: id
+    }, function(response) {
+        console.log('Settlement response:', response);
+        if (response && !response.error) {
+            $('#settlementId').val(response.id || id);
+            Object.keys(response).forEach(key => {
+                if (key === 'employee_id') {
+                    $('#settlementEmployeeSelect').val(response[key]);
+                    // Trigger salary load
+                    loadEmployeeSalaryComponents(response[key]);
+                } else {
+                    const $field = $(`#${key}`);
+                    if ($field.length) {
+                        $field.val(response[key]);
+                    } else {
+                        const $namedField = $(`[name="${key}"]`);
+                        if ($namedField.length) {
+                            $namedField.val(response[key]);
+                        }
+                    }
+                }
+            });
+        } else {
+            console.error('Error loading settlement:', response);
+        }
+    }, 'json').fail(function(err) {
+        console.error('AJAX error loading settlement:', err);
+    });
 }
 
 function loadDocumentData(id) {
     // Load document data for editing
+    $.post('exit_management.php', {
+        ajax_action: 'get_document',
+        controller: 'document',
+        document_id: id
+    }, function(response) {
+        if (response) {
+            Object.keys(response).forEach(key => {
+                const $field = $(`#${key}`);
+                if ($field.length) {
+                    $field.val(response[key]);
+                } else {
+                    const $namedField = $(`[name="${key}"]`);
+                    if ($namedField.length) {
+                        $namedField.val(response[key]);
+                    }
+                }
+            });
+        }
+    }, 'json');
 }
 
 function loadSurveyData(id) {
     // Load survey data for editing
+    $.post('exit_management.php', {
+        ajax_action: 'get_survey',
+        controller: 'survey',
+        survey_id: id
+    }, function(response) {
+        if (response) {
+            Object.keys(response).forEach(key => {
+                const $field = $(`#${key}`);
+                if ($field.length) {
+                    $field.val(response[key]);
+                } else {
+                    const $namedField = $(`[name="${key}"]`);
+                    if ($namedField.length) {
+                        $namedField.val(response[key]);
+                    }
+                }
+            });
+        }
+    }, 'json');
+}
+
+function createTableLoaderRow(colspan, message = 'Loading...') {
+    return `
+        <tr class="table-loading-row">
+            <td colspan="${colspan}" class="text-center py-4">
+                <div class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></div>
+                ${message}
+            </td>
+        </tr>
+    `;
+}
+
+function showTableLoading(tbody, colspan, message = 'Loading...') {
+    tbody.html(createTableLoaderRow(colspan, message));
 }
 
 // Table loading functions
@@ -835,7 +1288,8 @@ let archivedResignationsData = [];
 let archivedResignationPage = 1;
 const archivedResignationPageSize = 10;
 
-function loadResignationsTable(status = 'active') {
+function loadResignationsTable(status = 'active', page = 1, searchTerm = '') {
+    console.log('[loadResignationsTable] status:', status, 'page:', page, 'search:', searchTerm);
     let apiStatus = status;
     if (status === 'active' || status === null) {
         apiStatus = null;
@@ -846,8 +1300,12 @@ function loadResignationsTable(status = 'active') {
     const payload = {
         ajax_action: 'get_resignations',
         controller: 'resignation',
-        status: apiStatus
+        status: apiStatus,
+        page: page,
+        limit: 10,
+        search: searchTerm
     };
+    console.log('[loadResignationsTable] apiStatus:', apiStatus, 'payload:', JSON.stringify(payload));
 
     if (status === 'archived') {
         // keep archived in separate table via dedicated function
@@ -858,16 +1316,20 @@ function loadResignationsTable(status = 'active') {
         $('#toggle-archived-resignations').text('Show Archived');
     }
 
+    const tbody = $('#resignations-tbody');
+    showTableLoading(tbody, 11);
+
     $.post('exit_management.php', payload, function(response) {
-        console.log('Resignations Response:', response);
+        console.log('[loadResignationsTable] Response:', response);
         const tbody = $('#resignations-tbody');
         tbody.empty();
 
-        if (response && response.length > 0) {
-            response.forEach(function(resignation) {
+        if (response && response.data && response.data.length > 0) {
+            console.log('[loadResignationsTable] Display', response.data.length, 'records');
+            response.data.forEach(function(resignation) {
                 const statusBadge = getStatusBadge(resignation.status);
-                const fs = resignation.archived_from_status ? ` (from ${resignation.archived_from_status})` : '';
-                const tooltip = resignation.archived_from_status ? `Archived from status: ${resignation.archived_from_status}` : '';
+                const fs = resignation.archive_reason ? ` (${resignation.archive_reason})` : (resignation.archived_from_status ? ` (from ${resignation.archived_from_status})` : '');
+                const tooltip = resignation.archive_reason ? `Archive reason: ${resignation.archive_reason}` : (resignation.archived_from_status ? `Archived from status: ${resignation.archived_from_status}` : '');
 
                 const actions = `
                     <button class="btn btn-sm btn-info" onclick="showResignationModal(${resignation.id})">
@@ -889,31 +1351,53 @@ function loadResignationsTable(status = 'active') {
                         <td>${resignation.employee_name || '<em class="text-danger">Missing Employee</em>'}</td>
                         <td>${resignation.department || '-'}</td>
                         <td>${resignation.email || '-'}</td>
-                        <td>${resignation.preclearance_desk_person_name || '-'}</td>
-                        <td>${resignation.resignation_type}</td>
+                        <td>${resignation.position || '-'}</td>
+                        <td>${resignation.resignation_type || '-'}</td>
                         <td>${resignation.reason || '-'}</td>
-                        <td>${resignation.notice_date}</td>
-                        <td>${resignation.last_working_date}</td>
+                        <td>${resignation.notice_date || '-'}</td>
+                        <td>${resignation.last_working_date || '-'}</td>
                         <td>${resignation.comments ? resignation.comments.substring(0, 50) + '...' : '-'}</td>
                         <td>${statusBadge}</td>
                         <td>${actions}</td>
                     </tr>
                 `);
             });
+
+            // Add pagination controls
+            renderResignationsPagination('resignations-pagination', response, status, page);
         } else {
-            tbody.append('<tr><td colspan="10" class="text-center">No resignations found</td></tr>');
+            console.log('[loadResignationsTable] No records found');
+            tbody.append('<tr><td colspan="11" class="text-center">No resignations found</td></tr>');
+            $('#resignations-pagination').empty();
         }
+    }).fail(function(xhr, jqStatus, error) {
+        console.error('[loadResignationsTable] AJAX error. jqStatus:', jqStatus, 'error:', error, 'response:', xhr.responseText);
+        $('#resignations-tbody').html('<tr><td colspan="11" class="text-center text-danger">Error loading resignations. Check console for details.</td></tr>');
+        $('#resignations-pagination').empty();
     });
 }
 
 function loadArchivedResignationsTable(page = 1) {
+    const tbody = $('#archived-resignations-tbody');
+    showTableLoading(tbody, 11);
+
     $.post('exit_management.php', {
         ajax_action: 'get_archived_resignations',
         controller: 'resignation'
     }, function(response) {
-        archivedResignationsData = Array.isArray(response) ? response : [];
+        // Handle both paginated response and direct array response
+        if (response && response.data && Array.isArray(response.data)) {
+            archivedResignationsData = response.data;
+        } else if (Array.isArray(response)) {
+            archivedResignationsData = response;
+        } else {
+            archivedResignationsData = [];
+        }
         archivedResignationPage = page;
         renderArchivedResignationsPage();
+    }).fail(function(xhr, status, error) {
+        console.error('Error loading archived resignations:', status, error, xhr.responseText);
+        $('#archived-resignations-tbody').html('<tr><td colspan="11" class="text-center text-danger">Error loading archived resignations</td></tr>');
     });
 }
 
@@ -947,11 +1431,11 @@ function renderArchivedResignationsPage() {
                 <td>${resignation.employee_name || '<em class="text-danger">Missing Employee</em>'}</td>
                 <td>${resignation.department || '-'}</td>
                 <td>${resignation.email || '-'}</td>
-                <td>${resignation.preclearance_desk_person_name || '-'}</td>
-                <td>${resignation.resignation_type}</td>
+                <td>${resignation.position || '-'}</td>
+                <td>${resignation.resignation_type || '-'}</td>
                 <td>${resignation.reason || '-'}</td>
-                <td>${resignation.notice_date}</td>
-                <td>${resignation.last_working_date}</td>
+                <td>${resignation.notice_date || '-'}</td>
+                <td>${resignation.last_working_date || '-'}</td>
                 <td>${resignation.comments ? resignation.comments.substring(0, 50) + '...' : '-'}</td>
                 <td>${statusBadge}</td>
                 <td>${actions}</td>
@@ -1000,17 +1484,22 @@ function toggleArchivedResignations(open = false) {
     }
 }
 
-function loadInterviewsTable(status = 'all') {
+function loadInterviewsTable(status = 'all', page = 1, searchTerm = '') {
+    const tbody = $('#interviews-tbody');
+    showTableLoading(tbody, 5);
+
     $.post('exit_management.php', {
         ajax_action: 'get_interviews',
         controller: 'interview',
-        status: status
+        status: status,
+        page: page,
+        limit: 10,
+        search: searchTerm
     }, function(response) {
-        const tbody = $('#interviews-tbody');
         tbody.empty();
 
-        if (response && response.length > 0) {
-            response.forEach(function(interview) {
+        if (response && response.data && response.data.length > 0) {
+            response.data.forEach(function(interview) {
                 const statusBadge = getStatusBadge(interview.status);
                 const actions = `
                     <button class="btn btn-sm btn-info" onclick="showInterviewModal(${interview.id})">
@@ -1018,6 +1507,9 @@ function loadInterviewsTable(status = 'all') {
                     </button>
                     <button class="btn btn-sm btn-success" onclick="completeInterview(${interview.id})">
                         <i class="fas fa-check"></i>
+                    </button>
+                    <button class="btn btn-sm btn-warning" onclick="archiveInterview(${interview.id})" title="Archive Interview">
+                        <i class="fas fa-archive"></i>
                     </button>
                 `;
 
@@ -1031,24 +1523,37 @@ function loadInterviewsTable(status = 'all') {
                     </tr>
                 `);
             });
+
+            // Add pagination controls
+            renderInterviewsPagination('interviews-pagination', response, status, page);
         } else {
             tbody.append('<tr><td colspan="5" class="text-center">No interviews found</td></tr>');
+            $('#interviews-pagination').empty();
         }
+    }).fail(function(xhr, status, error) {
+        console.error('Error loading interviews:', status, error, xhr.responseText);
+        tbody.html('<tr><td colspan="5" class="text-center text-danger">Error loading interviews</td></tr>');
+        $('#interviews-pagination').empty();
     });
 }
 
-function loadTransfersTable(status = 'all') {
+function loadTransfersTable(status = 'all', page = 1, limit = 10, searchTerm = '') {
+    const tbody = $('#transfers-tbody');
+    showTableLoading(tbody, 6);
+
     $.post('exit_management.php', {
         ajax_action: 'get_transfer_plans',
         controller: 'transfer',
-        status: status
+        status: status,
+        page: page,
+        limit: limit,
+        search: searchTerm
     }, function(response) {
         console.log('Transfer plans response:', response);
-        const tbody = $('#transfers-tbody');
         tbody.empty();
 
-        if (response && Array.isArray(response) && response.length > 0) {
-            response.forEach(function(plan) {
+        if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
+            response.data.forEach(function(plan) {
                 const statusBadge = getStatusBadge(plan.status);
                 const actions = `
                     <button class="btn btn-sm btn-info" onclick="showTransferModal(${plan.id})">
@@ -1059,6 +1564,9 @@ function loadTransfersTable(status = 'all') {
                     </button>
                     <button class="btn btn-sm btn-danger" onclick="deleteTransferPlan(${plan.id})">
                         <i class="fas fa-trash"></i>
+                    </button>
+                    <button class="btn btn-sm btn-secondary" onclick="archiveTransferPlan(${plan.id})" title="Archive Transfer Plan">
+                        <i class="fas fa-archive"></i>
                     </button>
                 `;
 
@@ -1076,22 +1584,31 @@ function loadTransfersTable(status = 'all') {
         } else {
             tbody.append('<tr><td colspan="6" class="text-center">No transfer plans found</td></tr>');
         }
+
+        // Render pagination
+        renderPagination('transfers-pagination', response.total, page, limit, (newPage) => `loadTransfersTable('${status}', ${newPage}, ${limit})`);
     }, 'json').fail(function(err) {
         console.error('Error loading transfers:', err);
+        tbody.html('<tr><td colspan="6" class="text-center text-danger">Error loading transfer plans</td></tr>');
     });
 }
 
-function loadSettlementsTable(status = 'all') {
+function loadSettlementsTable(status = 'all', page = 1, limit = 10, searchTerm = '') {
+    const tbody = $('#settlements-tbody');
+    showTableLoading(tbody, 5);
+
     $.post('exit_management.php', {
         ajax_action: 'get_settlements',
         controller: 'settlement',
-        status: status
+        status: status,
+        page: page,
+        limit: limit,
+        search: searchTerm
     }, function(response) {
-        const tbody = $('#settlements-tbody');
         tbody.empty();
 
-        if (response && response.length > 0) {
-            response.forEach(function(settlement) {
+        if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
+            response.data.forEach(function(settlement) {
                 const statusBadge = getStatusBadge(settlement.status);
                 const actions = `
                     <button class="btn btn-sm btn-info" onclick="showSettlementModal(${settlement.id})">
@@ -1099,6 +1616,9 @@ function loadSettlementsTable(status = 'all') {
                     </button>
                     <button class="btn btn-sm btn-success" onclick="printSettlement(${settlement.id})">
                         <i class="fas fa-print"></i>
+                    </button>
+                    <button class="btn btn-sm btn-warning" onclick="archiveSettlement(${settlement.id})" title="Archive Settlement">
+                        <i class="fas fa-archive"></i>
                     </button>
                 `;
 
@@ -1115,28 +1635,40 @@ function loadSettlementsTable(status = 'all') {
         } else {
             tbody.append('<tr><td colspan="5" class="text-center">No settlements found</td></tr>');
         }
+
+        // Render pagination
+        renderPagination('settlements-pagination', response.total, page, limit, (newPage) => `loadSettlementsTable('${status}', ${newPage}, ${limit})`);
+    }).fail(function(xhr, status, error) {
+        console.error('Error loading settlements:', status, error, xhr.responseText);
+        tbody.html('<tr><td colspan="5" class="text-center text-danger">Error loading settlements</td></tr>');
     });
 }
 
-function loadDocumentsTable(status = 'all') {
+function loadDocumentsTable(status = 'all', page = 1, limit = 10, searchTerm = '') {
     console.log('=== LOADING DOCUMENTS TABLE ===');
+    const tbody = $('#documents-tbody');
+    showTableLoading(tbody, 5);
+
     $.post('exit_management.php', {
         ajax_action: 'get_documents',
         controller: 'documentation',
-        status: status
+        status: status,
+        page: page,
+        limit: limit,
+        search: searchTerm
     }, function(response) {
         console.log('=== DOCUMENTS TABLE RESPONSE ===');
         console.log('Full response:', response);
         console.log('Response type:', typeof response);
         console.log('Is array:', Array.isArray(response));
         console.log('Response length:', response ? response.length : 'null/undefined');
-        
+
         const tbody = $('#documents-tbody');
         tbody.empty();
 
-        if (response && Array.isArray(response) && response.length > 0) {
-            console.log('Found ' + response.length + ' documents');
-            response.forEach(function(doc, index) {
+        if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
+            console.log('Found ' + response.data.length + ' documents');
+            response.data.forEach(function(doc, index) {
                 console.log('Document ' + index + ':', doc);
                 const actions = `
                     <button class="btn btn-sm btn-info" onclick="viewDocument(${doc.id})">
@@ -1147,6 +1679,9 @@ function loadDocumentsTable(status = 'all') {
                     </button>
                     <button class="btn btn-sm btn-danger" onclick="deleteDocument(${doc.id})">
                         <i class="fas fa-trash"></i>
+                    </button>
+                    <button class="btn btn-sm btn-warning" onclick="archiveDocument(${doc.id})" title="Archive Document">
+                        <i class="fas fa-archive"></i>
                     </button>
                 `;
 
@@ -1164,6 +1699,9 @@ function loadDocumentsTable(status = 'all') {
             console.log('No documents found or invalid response');
             tbody.append('<tr><td colspan="5" class="text-center">No documents found</td></tr>');
         }
+
+        // Render pagination
+        renderPagination('documents-pagination', response.total, page, limit, (newPage) => `loadDocumentsTable('${status}', ${newPage}, ${limit})`);
     }, 'json').fail(function(xhr, status, error) {
         console.error('Error loading documents:', status, error, xhr.responseText);
         const tbody = $('#documents-tbody');
@@ -1172,17 +1710,22 @@ function loadDocumentsTable(status = 'all') {
     });
 }
 
-function loadSurveysTable(status = 'all') {
+function loadSurveysTable(status = 'all', page = 1, limit = 10, searchTerm = '') {
+    const tbody = $('#surveys-tbody');
+    showTableLoading(tbody, 5);
+
     $.post('exit_management.php', {
         ajax_action: 'get_surveys',
         controller: 'survey',
-        status: status
+        status: status,
+        page: page,
+        limit: limit,
+        search: searchTerm
     }, function(response) {
-        const tbody = $('#surveys-tbody');
         tbody.empty();
 
-        if (response && response.length > 0) {
-            response.forEach(function(survey) {
+        if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
+            response.data.forEach(function(survey) {
                 const statusBadge = getStatusBadge(survey.status);
                 const actions = `
                     <button class="btn btn-sm btn-success" onclick="answerSurvey(${survey.id})">
@@ -1196,6 +1739,9 @@ function loadSurveysTable(status = 'all') {
                     </button>
                     <button class="btn btn-sm btn-primary" onclick="duplicateSurvey(${survey.id})">
                         <i class="fas fa-copy"></i>
+                    </button>
+                    <button class="btn btn-sm btn-secondary" onclick="archiveSurvey(${survey.id})" title="Archive Survey">
+                        <i class="fas fa-archive"></i>
                     </button>
                 `;
 
@@ -1212,6 +1758,12 @@ function loadSurveysTable(status = 'all') {
         } else {
             tbody.append('<tr><td colspan="5" class="text-center">No surveys found</td></tr>');
         }
+
+        // Render pagination
+        renderPagination('surveys-pagination', response.total, page, limit, (newPage) => `loadSurveysTable('${status}', ${newPage}, ${limit})`);
+    }).fail(function(xhr, status, error) {
+        console.error('Error loading surveys:', status, error, xhr.responseText);
+        tbody.html('<tr><td colspan="5" class="text-center text-danger">Error loading surveys</td></tr>');
     });
 }
 
@@ -1243,6 +1795,8 @@ function showToast(type, message) {
     }
 }
 
+let lastPayrollApprovalCount = 0;
+
 // Load dashboard data
 function loadDashboardData() {
     $.post('exit_management.php', {
@@ -1256,6 +1810,8 @@ function loadDashboardData() {
         }
     });
 
+    loadPayrollApprovalNotifications();
+
     // Load charts and recent resignations
     loadResignationTrendChart();
     loadResignationReasonsChart();
@@ -1265,49 +1821,113 @@ function loadDashboardData() {
     loadDashboardMetrics();
 }
 
+function loadPayrollApprovalNotifications() {
+    $.post('exit_management.php', {
+        ajax_action: 'get_payroll_clearance_notifications'
+    }, function(response) {
+        const count = response.count || 0;
+        $('#approved-preclearances').text(count);
+
+        const notifications = response.notifications || [];
+        const tbody = $('#payroll-approval-notification-body');
+        tbody.empty();
+
+        if (count > 0) {
+            $('#payroll-approval-notification-row').show();
+            notifications.forEach(function(notification, index) {
+                const approvedAt = notification.approved_at ? new Date(notification.approved_at).toLocaleString() : 'N/A';
+                tbody.append(`
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${notification.full_name || 'Unknown'}</td>
+                        <td>${notification.settlement_date || 'N/A'}</td>
+                        <td>₱${parseFloat(notification.net_payable || 0).toFixed(2)}</td>
+                        <td>${approvedAt}</td>
+                    </tr>
+                `);
+            });
+
+            if (count > lastPayrollApprovalCount) {
+                const newApprovals = count - lastPayrollApprovalCount;
+                if (newApprovals > 0 && lastPayrollApprovalCount !== 0) {
+                    showToast('info', `${newApprovals} new payroll pre-clearance approval${newApprovals > 1 ? 's' : ''} received.`);
+                }
+            }
+        } else {
+            $('#payroll-approval-notification-row').hide();
+        }
+
+        lastPayrollApprovalCount = count;
+    }).fail(function(xhr, status, error) {
+        console.error('Error loading payroll clearance notifications:', status, error, xhr.responseText);
+    });
+}
+
 // Load section data based on section name
 function onResignationStatusFilterChange() {
     const selectedStatus = $('#resignation-status-filter').val();
+    console.log('[Filter] Resignation status changed to:', selectedStatus);
+
+    // Clear search when switching filters
+    $('#resignation-search').val('');
 
     if (selectedStatus === 'archived') {
+        console.log('[Filter] Loading archived resignations');
         $('#archived-resignations-container').show();
         $('#toggle-archived-resignations').text('Hide Archived');
-        loadArchivedResignationsTable();
+        loadArchivedResignationsTable(1);
     } else if (selectedStatus === 'all') {
+        console.log('[Filter] Loading all resignations');
         $('#archived-resignations-container').show();
         $('#toggle-archived-resignations').text('Hide Archived');
-        loadResignationsTable('all');
-        loadArchivedResignationsTable();
+        loadResignationsTable('all', 1);
+        loadArchivedResignationsTable(1);
     } else {
+        console.log('[Filter] Loading status:', selectedStatus);
         $('#archived-resignations-container').hide();
         $('#toggle-archived-resignations').text('Show Archived');
-        loadResignationsTable(selectedStatus);
+        loadResignationsTable(selectedStatus, 1);
     }
 }
 
 function onInterviewStatusFilterChange() {
     const selectedStatus = $('#interview-status-filter').val();
-    loadInterviewsTable(selectedStatus === 'active' ? 'all' : selectedStatus);
+    console.log('[Filter] Interview status:', selectedStatus);
+    // Clear search when switching filters
+    $('#interview-search').val('');
+    loadInterviewsTable(selectedStatus === 'active' ? 'all' : selectedStatus, 1);
 }
 
 function onTransferStatusFilterChange() {
     const selectedStatus = $('#transfer-status-filter').val();
-    loadTransfersTable(selectedStatus === 'active' ? 'all' : selectedStatus);
+    console.log('[Filter] Transfer status:', selectedStatus);
+    // Clear search when switching filters
+    $('#transfer-search').val('');
+    loadTransfersTable(selectedStatus === 'active' ? 'all' : selectedStatus, 1);
 }
 
 function onSettlementStatusFilterChange() {
     const selectedStatus = $('#settlement-status-filter').val();
-    loadSettlementsTable(selectedStatus === 'active' ? 'all' : selectedStatus);
+    console.log('[Filter] Settlement status:', selectedStatus);
+    // Clear search when switching filters
+    $('#settlement-search').val('');
+    loadSettlementsTable(selectedStatus === 'active' ? 'all' : selectedStatus, 1);
 }
 
 function onDocumentStatusFilterChange() {
     const selectedStatus = $('#document-status-filter').val();
-    loadDocumentsTable(selectedStatus === 'active' ? 'all' : selectedStatus);
+    console.log('[Filter] Document status:', selectedStatus);
+    // Clear search when switching filters
+    $('#document-search').val('');
+    loadDocumentsTable(selectedStatus === 'active' ? 'all' : selectedStatus, 1);
 }
 
 function onSurveyStatusFilterChange() {
     const selectedStatus = $('#survey-status-filter').val();
-    loadSurveysTable(selectedStatus === 'active' ? 'all' : selectedStatus);
+    console.log('[Filter] Survey status:', selectedStatus);
+    // Clear search when switching filters
+    $('#survey-search').val('');
+    loadSurveysTable(selectedStatus === 'active' ? 'all' : selectedStatus, 1);
 }
 
 function loadSectionData(sectionName) {
@@ -1337,22 +1957,26 @@ function loadSectionData(sectionName) {
 
 // Action functions
 function archiveResignation(id) {
-    if (confirm('Are you sure you want to archive this resignation (remove it from active list)?')) {
-        $.post('exit_management.php', {
-            ajax_action: 'archive_resignation',
-            controller: 'resignation',
-            resignation_id: id
-        }, function(response) {
-            if (response.success) {
-                showToast('success', response.message);
-                loadResignationsTable();
-                loadArchivedResignationsTable();
-                loadDashboardData();
-            } else {
-                showToast('error', response.message);
-            }
-        });
-    }
+    // Get resignation data first
+    $.post('exit_management.php', {
+        ajax_action: 'get_resignation_details',
+        controller: 'resignation',
+        resignation_id: id
+    }, function(response) {
+        if (response.success) {
+            // Populate modal with resignation data
+            $('#archiveResignationId').val(id);
+            $('#archiveEmployeeId').val(response.data.employee_id);
+            $('#archiveEmployeeName').val(response.data.employee_name);
+            $('#archiveReason').val('');
+            $('#archiveNotes').val('');
+
+            // Show modal
+            $('#archiveResignationModal').modal('show');
+        } else {
+            showToast('error', 'Failed to load resignation details');
+        }
+    }, 'json');
 }
 
 function unarchiveResignation(id) {
@@ -1370,9 +1994,206 @@ function unarchiveResignation(id) {
             } else {
                 showToast('error', response.message);
             }
-        });
+        }, 'json');
     }
 }
+
+// Archive resignation form handler
+$(document).ready(function() {
+    $('#archiveResignationForm').on('submit', function(e) {
+        e.preventDefault();
+
+        const resignationId = $('#archiveResignationId').val();
+        const archiveReason = $('#archiveReason').val();
+
+        $.post('exit_management.php', {
+            ajax_action: 'archive_resignation',
+            controller: 'resignation',
+            resignation_id: resignationId,
+            archive_reason: archiveReason
+        }, function(response) {
+            if (response.success) {
+                showToast('success', response.message);
+                $('#archiveResignationModal').modal('hide');
+                loadResignationsTable();
+                loadArchivedResignationsTable();
+                loadDashboardData();
+            } else {
+                showToast('error', response.message);
+            }
+        }, 'json').fail(function() {
+            showToast('error', 'Failed to archive resignation');
+        });
+    });
+});
+
+// Archive settlement form handler
+$(document).ready(function() {
+    $('#archiveSettlementForm').on('submit', function(e) {
+        e.preventDefault();
+
+        const settlementId = $('#archiveSettlementId').val();
+        const archiveReason = $('#archiveSettlementReason').val();
+
+        $.post('exit_management.php', {
+            ajax_action: 'archive_settlement',
+            controller: 'settlement',
+            settlement_id: settlementId,
+            archive_reason: archiveReason
+        }, function(response) {
+            if (response.success) {
+                showToast('success', response.message);
+                $('#archiveSettlementModal').modal('hide');
+                loadSettlementsTable();
+                loadDashboardData();
+            } else {
+                showToast('error', response.message);
+            }
+        }, 'json').fail(function() {
+            showToast('error', 'Failed to archive settlement');
+        });
+    });
+});
+
+// Archive interview form handler
+$(document).ready(function() {
+    $('#archiveInterviewForm').on('submit', function(e) {
+        e.preventDefault();
+
+        const interviewId = $('#archiveInterviewId').val();
+        const archiveReason = $('#archiveInterviewReason').val();
+
+        $.post('exit_management.php', {
+            ajax_action: 'archive_interview',
+            controller: 'interview',
+            interview_id: interviewId,
+            archive_reason: archiveReason
+        }, function(response) {
+            if (response.success) {
+                showToast('success', response.message);
+                $('#archiveInterviewModal').modal('hide');
+                loadInterviewsTable();
+                loadDashboardData();
+            } else {
+                showToast('error', response.message);
+            }
+        }, 'json').fail(function() {
+            showToast('error', 'Failed to archive interview');
+        });
+    });
+});
+
+// Archive document form handler
+$(document).ready(function() {
+    $('#archiveDocumentForm').on('submit', function(e) {
+        e.preventDefault();
+
+        const documentId = $('#archiveDocumentId').val();
+        const archiveReason = $('#archiveDocumentReason').val();
+
+        $.post('exit_management.php', {
+            ajax_action: 'archive_document',
+            controller: 'documentation',
+            document_id: documentId,
+            archive_reason: archiveReason
+        }, function(response) {
+            if (response.success) {
+                showToast('success', response.message);
+                $('#archiveDocumentModal').modal('hide');
+                loadDocumentsTable();
+                loadDashboardData();
+            } else {
+                showToast('error', response.message);
+            }
+        }, 'json').fail(function() {
+            showToast('error', 'Failed to archive document');
+        });
+    });
+});
+
+// Archive survey form handler
+$(document).ready(function() {
+    $('#archiveSurveyForm').on('submit', function(e) {
+        e.preventDefault();
+
+        const surveyId = $('#archiveSurveyId').val();
+        const archiveReason = $('#archiveSurveyReason').val();
+
+        $.post('exit_management.php', {
+            ajax_action: 'archive_survey',
+            controller: 'survey',
+            survey_id: surveyId,
+            archive_reason: archiveReason
+        }, function(response) {
+            if (response.success) {
+                showToast('success', response.message);
+                $('#archiveSurveyModal').modal('hide');
+                loadSurveysTable();
+                loadDashboardData();
+            } else {
+                showToast('error', response.message);
+            }
+        }, 'json').fail(function() {
+            showToast('error', 'Failed to archive survey');
+        });
+    });
+});
+
+// Archive transfer plan form handler
+$(document).ready(function() {
+    $('#archiveTransferPlanForm').on('submit', function(e) {
+        e.preventDefault();
+
+        const planId = $('#archiveTransferPlanId').val();
+        const archiveReason = $('#archiveTransferPlanReason').val();
+
+        $.post('exit_management.php', {
+            ajax_action: 'archive_transfer_plan',
+            controller: 'transfer',
+            plan_id: planId,
+            archive_reason: archiveReason
+        }, function(response) {
+            if (response.success) {
+                showToast('success', response.message);
+                $('#archiveTransferPlanModal').modal('hide');
+                loadTransfersTable();
+                loadDashboardData();
+            } else {
+                showToast('error', response.message);
+            }
+        }, 'json').fail(function() {
+            showToast('error', 'Failed to archive transfer plan');
+        });
+    });
+});
+
+// Archive transfer item form handler
+$(document).ready(function() {
+    $('#archiveTransferItemForm').on('submit', function(e) {
+        e.preventDefault();
+
+        const itemId = $('#archiveTransferItemId').val();
+        const archiveReason = $('#archiveTransferItemReason').val();
+
+        $.post('exit_management.php', {
+            ajax_action: 'archive_transfer_item',
+            controller: 'transfer',
+            item_id: itemId,
+            archive_reason: archiveReason
+        }, function(response) {
+            if (response.success) {
+                showToast('success', response.message);
+                $('#archiveTransferItemModal').modal('hide');
+                loadTransfersTable();
+                loadDashboardData();
+            } else {
+                showToast('error', response.message);
+            }
+        }, 'json').fail(function() {
+            showToast('error', 'Failed to archive transfer item');
+        });
+    });
+});
 
 function completeInterview(id) {
     if (confirm('Mark this interview as completed?')) {
@@ -1417,10 +2238,15 @@ function viewTransferItems(id) {
         plan_id: id
     }, function(response) {
         if (response && response.length > 0) {
-            let itemsHtml = '<div class="table-responsive"><table class="table table-striped"><thead><tr><th>Type</th><th>Title</th><th>Priority</th><th>Due Date</th><th>Status</th></tr></thead><tbody>';
+            let itemsHtml = '<div class="table-responsive"><table class="table table-striped"><thead><tr><th>Type</th><th>Title</th><th>Priority</th><th>Due Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
             response.forEach(item => {
                 const statusBadge = getStatusBadge(item.status);
-                itemsHtml += `<tr><td>${item.type}</td><td>${item.title}</td><td>${item.priority}</td><td>${item.due_date || 'N/A'}</td><td>${statusBadge}</td></tr>`;
+                const actions = `
+                    <button class="btn btn-sm btn-warning" onclick="archiveTransferItem(${item.id})" title="Archive Item">
+                        <i class="fas fa-archive"></i>
+                    </button>
+                `;
+                itemsHtml += `<tr><td>${item.type}</td><td>${item.title}</td><td>${item.priority}</td><td>${item.due_date || 'N/A'}</td><td>${statusBadge}</td><td>${actions}</td></tr>`;
             });
             itemsHtml += '</tbody></table></div>';
             
@@ -2184,6 +3010,9 @@ function renderResignationTypeChart(labels, data) {
 
 // Load recent resignations table
 function loadRecentResignations() {
+    const recentTbody = $('#recent-resignations-tbody');
+    showTableLoading(recentTbody, 8);
+
     $.post('exit_management.php', {
         ajax_action: 'get_recent_resignations',
         limit: 10
@@ -2319,4 +3148,314 @@ function loadDashboardMetrics() {
     }, 'json').fail(function(jqXHR, textStatus, errorThrown) {
         console.error('loadDashboardMetrics AJAX error:', textStatus, errorThrown, jqXHR.responseText);
     });
+}
+
+// Section data loading function
+function loadSectionData(sectionName) {
+    switch (sectionName) {
+        case 'resignations':
+            loadResignationsTable();
+            break;
+        case 'interviews':
+            loadInterviewsTable();
+            break;
+        case 'transfers':
+            loadTransfersTable();
+            break;
+        case 'settlements':
+            loadSettlementsTable();
+            break;
+        case 'documents':
+            loadDocumentsTable();
+            break;
+        case 'surveys':
+            loadSurveysTable();
+            break;
+        default:
+            console.log('Unknown section:', sectionName);
+    }
+}
+
+// Search and Filter Functions
+function onResignationSearchChange() {
+    const searchTerm = $('#resignation-search').val().toLowerCase();
+    const status = $('#resignation-status-filter').val();
+    loadResignationsTable(status, 1, searchTerm);
+}
+
+function onInterviewSearchChange() {
+    const searchTerm = $('#interview-search').val().toLowerCase();
+    const status = $('#interview-status-filter').val();
+    loadInterviewsTable(status, 1, searchTerm);
+}
+
+function onTransferSearchChange() {
+    const searchTerm = $('#transfer-search').val().toLowerCase();
+    const status = $('#transfer-status-filter').val();
+    loadTransfersTable(status, 1, searchTerm);
+}
+
+function onSettlementSearchChange() {
+    const searchTerm = $('#settlement-search').val().toLowerCase();
+    const status = $('#settlement-status-filter').val();
+    loadSettlementsTable(status, 1, searchTerm);
+}
+
+function onDocumentSearchChange() {
+    const searchTerm = $('#document-search').val().toLowerCase();
+    const status = $('#document-status-filter').val();
+    loadDocumentsTable(status, 1, searchTerm);
+}
+
+function onSurveySearchChange() {
+    const searchTerm = $('#survey-search').val().toLowerCase();
+    const status = $('#survey-status-filter').val();
+    loadSurveysTable(status, 1, searchTerm);
+}
+
+// Archive Functions
+function archiveSettlement(id) {
+    // Get settlement data first
+    $.post('exit_management.php', {
+        ajax_action: 'get_settlement_details',
+        controller: 'settlement',
+        settlement_id: id
+    }, function(response) {
+        if (response.success) {
+            // Populate modal with settlement data
+            $('#archiveSettlementId').val(id);
+            $('#archiveSettlementEmployeeId').val(response.data.employee_id);
+            $('#archiveSettlementEmployeeName').val(response.data.employee_name);
+            $('#archiveSettlementReason').val('');
+            $('#archiveSettlementNotes').val('');
+
+            // Show modal
+            $('#archiveSettlementModal').modal('show');
+        } else {
+            showToast('error', 'Failed to load settlement details');
+        }
+    }, 'json');
+}
+
+function unarchiveSettlement(id) {
+    if (confirm('Are you sure you want to unarchive this settlement?')) {
+        $.post('exit_management.php', {
+            ajax_action: 'unarchive_settlement',
+            controller: 'settlement',
+            settlement_id: id
+        }, function(response) {
+            if (response.success) {
+                showToast('success', response.message);
+                loadSettlementsTable();
+                loadDashboardData();
+            } else {
+                showToast('error', response.message);
+            }
+        }, 'json');
+    }
+}
+
+function archiveInterview(id) {
+    // Get interview data first
+    $.post('exit_management.php', {
+        ajax_action: 'get_interview_details',
+        controller: 'interview',
+        interview_id: id
+    }, function(response) {
+        if (response.success) {
+            // Populate modal with interview data
+            $('#archiveInterviewId').val(id);
+            $('#archiveInterviewEmployeeId').val(response.data.employee_id);
+            $('#archiveInterviewEmployeeName').val(response.data.employee_name);
+            $('#archiveInterviewReason').val('');
+            $('#archiveInterviewNotes').val('');
+
+            // Show modal
+            $('#archiveInterviewModal').modal('show');
+        } else {
+            showToast('error', 'Failed to load interview details');
+        }
+    }, 'json');
+}
+
+function unarchiveInterview(id) {
+    if (confirm('Are you sure you want to unarchive this interview?')) {
+        $.post('exit_management.php', {
+            ajax_action: 'unarchive_interview',
+            controller: 'interview',
+            interview_id: id
+        }, function(response) {
+            if (response.success) {
+                showToast('success', response.message);
+                loadInterviewsTable();
+                loadDashboardData();
+            } else {
+                showToast('error', response.message);
+            }
+        }, 'json');
+    }
+}
+
+function archiveDocument(id) {
+    // Get document data first
+    $.post('exit_management.php', {
+        ajax_action: 'get_document_details',
+        controller: 'documentation',
+        document_id: id
+    }, function(response) {
+        if (response.success) {
+            // Populate modal with document data
+            $('#archiveDocumentId').val(id);
+            $('#archiveDocumentEmployeeId').val(response.data.employee_id);
+            $('#archiveDocumentEmployeeName').val(response.data.employee_name);
+            $('#archiveDocumentReason').val('');
+            $('#archiveDocumentNotes').val('');
+
+            // Show modal
+            $('#archiveDocumentModal').modal('show');
+        } else {
+            showToast('error', 'Failed to load document details');
+        }
+    }, 'json');
+}
+
+function unarchiveDocument(id) {
+    if (confirm('Are you sure you want to unarchive this document?')) {
+        $.post('exit_management.php', {
+            ajax_action: 'unarchive_document',
+            controller: 'documentation',
+            document_id: id
+        }, function(response) {
+            if (response.success) {
+                showToast('success', response.message);
+                loadDocumentsTable();
+                loadDashboardData();
+            } else {
+                showToast('error', response.message);
+            }
+        }, 'json');
+    }
+}
+
+function archiveSurvey(id) {
+    // Get survey data first
+    $.post('exit_management.php', {
+        ajax_action: 'get_survey_details',
+        controller: 'survey',
+        survey_id: id
+    }, function(response) {
+        if (response.success) {
+            // Populate modal with survey data
+            $('#archiveSurveyId').val(id);
+            $('#archiveSurveyEmployeeId').val(response.data.employee_id);
+            $('#archiveSurveyEmployeeName').val(response.data.employee_name);
+            $('#archiveSurveyReason').val('');
+            $('#archiveSurveyNotes').val('');
+
+            // Show modal
+            $('#archiveSurveyModal').modal('show');
+        } else {
+            showToast('error', 'Failed to load survey details');
+        }
+    }, 'json');
+}
+
+function unarchiveSurvey(id) {
+    if (confirm('Are you sure you want to unarchive this survey?')) {
+        $.post('exit_management.php', {
+            ajax_action: 'unarchive_survey',
+            controller: 'survey',
+            survey_id: id
+        }, function(response) {
+            if (response.success) {
+                showToast('success', response.message);
+                loadSurveysTable();
+                loadDashboardData();
+            } else {
+                showToast('error', response.message);
+            }
+        }, 'json');
+    }
+}
+
+function archiveTransferPlan(id) {
+    // Get transfer plan data first
+    $.post('exit_management.php', {
+        ajax_action: 'get_transfer_plan',
+        controller: 'transfer',
+        plan_id: id
+    }, function(response) {
+        if (response.success) {
+            // Populate modal with transfer plan data
+            $('#archiveTransferPlanId').val(id);
+            $('#archiveTransferPlanEmployeeId').val(response.data.employee_id);
+            $('#archiveTransferPlanEmployeeName').val(response.data.employee_name);
+            $('#archiveTransferPlanReason').val('');
+            $('#archiveTransferPlanNotes').val('');
+
+            // Show modal
+            $('#archiveTransferPlanModal').modal('show');
+        } else {
+            showToast('error', 'Failed to load transfer plan details');
+        }
+    }, 'json');
+}
+
+function unarchiveTransferPlan(id) {
+    if (confirm('Are you sure you want to unarchive this transfer plan?')) {
+        $.post('exit_management.php', {
+            ajax_action: 'unarchive_transfer_plan',
+            controller: 'transfer',
+            plan_id: id
+        }, function(response) {
+            if (response.success) {
+                showToast('success', response.message);
+                loadTransfersTable();
+                loadDashboardData();
+            } else {
+                showToast('error', response.message);
+            }
+        }, 'json');
+    }
+}
+
+function archiveTransferItem(id) {
+    // Get transfer item data first
+    $.post('exit_management.php', {
+        ajax_action: 'get_transfer_item_details',
+        controller: 'transfer',
+        item_id: id
+    }, function(response) {
+        if (response.success) {
+            // Populate modal with transfer item data
+            $('#archiveTransferItemId').val(id);
+            $('#archiveTransferItemEmployeeId').val(response.data.employee_id);
+            $('#archiveTransferItemEmployeeName').val(response.data.employee_name);
+            $('#archiveTransferItemReason').val('');
+            $('#archiveTransferItemNotes').val('');
+
+            // Show modal
+            $('#archiveTransferItemModal').modal('show');
+        } else {
+            showToast('error', 'Failed to load transfer item details');
+        }
+    }, 'json');
+}
+
+function unarchiveTransferItem(id) {
+    if (confirm('Are you sure you want to unarchive this transfer item?')) {
+        $.post('exit_management.php', {
+            ajax_action: 'unarchive_transfer_item',
+            controller: 'transfer',
+            item_id: id
+        }, function(response) {
+            if (response.success) {
+                showToast('success', response.message);
+                loadTransfersTable();
+                loadDashboardData();
+            } else {
+                showToast('error', response.message);
+            }
+        }, 'json');
+    }
 }

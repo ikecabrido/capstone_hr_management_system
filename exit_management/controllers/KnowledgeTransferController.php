@@ -204,13 +204,200 @@ class KnowledgeTransferController extends ExitManagementController
                 return $this->getActiveTransferPlans();
 
             case 'get_transfer_plans':
-                return $this->getTransferPlans($data['status'] ?? null);
+                return $this->transferModel->getAllTransferPlans(
+                    $data['status'] ?? null,
+                    $data['page'] ?? 1,
+                    $data['limit'] ?? 10,
+                    $data['search'] ?? ''
+                );
 
             case 'get_transfer_items':
                 return $this->getTransferItems($data['plan_id'] ?? 0);
 
+            case 'archive_transfer_plan':
+                return $this->archiveTransferPlan(
+                    $data['plan_id'] ?? 0,
+                    $data['reason'] ?? ''
+                );
+
+            case 'unarchive_transfer_plan':
+                return $this->unarchiveTransferPlan($data['plan_id'] ?? 0);
+
+            case 'archive_transfer_item':
+                return $this->archiveTransferItem(
+                    $data['item_id'] ?? 0,
+                    $data['reason'] ?? ''
+                );
+
+            case 'unarchive_transfer_item':
+                return $this->unarchiveTransferItem($data['item_id'] ?? 0);
+
+            case 'get_transfer_item_details':
+                return $this->getTransferItemDetails($data['item_id'] ?? 0);
+
             default:
                 return parent::handleAjaxRequest($action, $data);
+        }
+    }
+
+    /**
+     * Archive a transfer plan
+     */
+    private function archiveTransferPlan(int $planId, string $reason): array
+    {
+        try {
+            if (empty($planId) || empty($reason)) {
+                return [
+                    'success' => false,
+                    'message' => 'Plan ID and archive reason are required'
+                ];
+            }
+
+            $result = $this->transferModel->archiveTransferPlan($planId, $reason);
+
+            return [
+                'success' => $result,
+                'message' => $result ? 'Transfer plan archived successfully' : 'Failed to archive transfer plan'
+            ];
+        } catch (Exception $e) {
+            error_log("Error archiving transfer plan: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'An error occurred while archiving the transfer plan'
+            ];
+        }
+    }
+
+    /**
+     * Unarchive a transfer plan
+     */
+    private function unarchiveTransferPlan(int $planId): array
+    {
+        try {
+            if (empty($planId)) {
+                return [
+                    'success' => false,
+                    'message' => 'Plan ID is required'
+                ];
+            }
+
+            $result = $this->transferModel->unarchiveTransferPlan($planId);
+
+            return [
+                'success' => $result,
+                'message' => $result ? 'Transfer plan unarchived successfully' : 'Failed to unarchive transfer plan'
+            ];
+        } catch (Exception $e) {
+            error_log("Error unarchiving transfer plan: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'An error occurred while unarchiving the transfer plan'
+            ];
+        }
+    }
+
+    /**
+     * Archive a transfer item
+     */
+    private function archiveTransferItem(int $itemId, string $reason): array
+    {
+        try {
+            if (empty($itemId) || empty($reason)) {
+                return [
+                    'success' => false,
+                    'message' => 'Item ID and archive reason are required'
+                ];
+            }
+
+            $result = $this->transferModel->archiveTransferItem($itemId, $reason);
+
+            return [
+                'success' => $result,
+                'message' => $result ? 'Transfer item archived successfully' : 'Failed to archive transfer item'
+            ];
+        } catch (Exception $e) {
+            error_log("Error archiving transfer item: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'An error occurred while archiving the transfer item'
+            ];
+        }
+    }
+
+    /**
+     * Unarchive a transfer item
+     */
+    private function unarchiveTransferItem(int $itemId): array
+    {
+        try {
+            if (empty($itemId)) {
+                return [
+                    'success' => false,
+                    'message' => 'Item ID is required'
+                ];
+            }
+
+            $result = $this->transferModel->unarchiveTransferItem($itemId);
+
+            return [
+                'success' => $result,
+                'message' => $result ? 'Transfer item unarchived successfully' : 'Failed to unarchive transfer item'
+            ];
+        } catch (Exception $e) {
+            error_log("Error unarchiving transfer item: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'An error occurred while unarchiving the transfer item'
+            ];
+        }
+    }
+
+    /**
+     * Get transfer item details for archiving
+     */
+    private function getTransferItemDetails(int $itemId): array
+    {
+        try {
+            if (empty($itemId)) {
+                return [
+                    'success' => false,
+                    'message' => 'Item ID is required'
+                ];
+            }
+
+            $item = $this->transferModel->getTransferItem($itemId);
+
+            if (!$item) {
+                return [
+                    'success' => false,
+                    'message' => 'Transfer item not found'
+                ];
+            }
+
+            // Get plan to find employee
+            $plan = $this->transferModel->getTransferPlan($item['plan_id']);
+            $employee = null;
+            if ($plan) {
+                $employee = $this->transferModel->getEmployeeById($plan['employee_id']);
+            }
+
+            return [
+                'success' => true,
+                'data' => [
+                    'id' => $item['id'],
+                    'employee_id' => $plan ? $plan['employee_id'] : 0,
+                    'employee_name' => $employee ? $employee['first_name'] . ' ' . $employee['last_name'] : 'Unknown',
+                    'type' => $item['type'],
+                    'title' => $item['title'],
+                    'status' => $item['status']
+                ]
+            ];
+        } catch (Exception $e) {
+            error_log("Error getting transfer item details: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'An error occurred while retrieving transfer item details'
+            ];
         }
     }
 }

@@ -29,45 +29,67 @@ $action = $_POST['action'] ?? null;
 switch ($action) {
     /* CREATE */
     case 'create':
-        if ($controller->create($_POST)) {
-            echo json_encode([
-                'status' => 'success',
-                'message' => 'Period created'
-            ]);
-        } else {
+        try {
+            if ($controller->create($_POST)) {
+                echo json_encode([
+                    'status' => 'success',
+                    'message' => 'Period created'
+                ]);
+            } else {
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Failed to create period'
+                ]);
+            }
+        } catch (Exception $e) {
             echo json_encode([
                 'status' => 'error',
-                'message' => 'Failed to create period'
+                'message' => 'Failed to create period: ' . $e->getMessage()
             ]);
+            error_log('Period creation error: ' . $e->getMessage());
         }
         break;
 
     /* UPDATE STATUS */
     case 'update_status':
-        if ($controller->updateStatus($_POST['id'], $_POST['status'])) {
-            echo json_encode([
-                'status' => 'success',
-                'message' => 'Status updated'
-            ]);
-        } else {
+        try {
+            if ($controller->updateStatus($_POST['id'], $_POST['status'])) {
+                echo json_encode([
+                    'status' => 'success',
+                    'message' => 'Status updated'
+                ]);
+            } else {
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Failed to update status'
+                ]);
+            }
+        } catch (Exception $e) {
             echo json_encode([
                 'status' => 'error',
-                'message' => 'Failed to update status'
+                'message' => 'Failed to update status: ' . $e->getMessage()
             ]);
         }
         break;
 
     /* DELETE */
     case 'delete':
-        if ($controller->delete($_POST['id'])) {
-            echo json_encode([
-                'status' => 'success',
-                'message' => 'Period deleted'
-            ]);
-        } else {
+        try {
+            if ($controller->delete($_POST['id'])) {
+                echo json_encode([
+                    'status' => 'success',
+                    'message' => 'Period deleted'
+                ]);
+            } else {
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Cannot delete: Period in use'
+                ]);
+            }
+        } catch (Exception $e) {
             echo json_encode([
                 'status' => 'error',
-                'message' => 'Cannot delete: Period in use'
+                'message' => 'Failed to delete: ' . $e->getMessage()
             ]);
         }
         break;

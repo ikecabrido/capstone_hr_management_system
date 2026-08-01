@@ -1,0 +1,229 @@
+/* BLUE SIDEBAR */
+.main-sidebar {
+  background-color: #0d47a1 !important;
+}
+
+/* Sidebar brand */
+.brand-link {
+  background-color: #0b3c91 !important;
+  color: #fff !important;
+  border-bottom: 1px solid #1565c0;
+}
+
+/* Sidebar wrapper */
+.sidebar {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #1565c0 #0d47a1;
+}
+
+/* Custom scrollbar for webkit */
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar::-webkit-scrollbar-track {
+  background: #0d47a1;
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background-color: #1565c0;
+  border-radius: 3px;
+}
+
+/* Sidebar navigation menu items */
+.nav-sidebar .nav-item {
+  margin: 2px 0;
+}
+
+/* Sidebar links */
+.nav-sidebar .nav-link {
+  color: #ffffff !important;
+  padding: 12px 20px;
+  border-radius: 4px;
+  margin: 2px 8px;
+  transition: all 0.2s ease;
+  font-weight: 400;
+  font-size: 1rem;
+}
+
+/* Active & hover with enhanced visual feedback */
+.nav-sidebar .nav-link.active,
+.nav-sidebar .nav-link:hover {
+  background-color: #1565c0 !important;
+  color: #fff !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border-left: 3px solid #42a5f5;
+}
+
+/* Focus state for keyboard navigation */
+.nav-sidebar .nav-link:focus {
+  background-color: #1976d2 !important;
+  color: #fff !important;
+  outline: 2px solid #64b5f6;
+  outline-offset: -2px;
+}
+
+/* Menu items with icons */
+.nav-sidebar .nav-link > .nav-icon {
+  margin-right: 10px;
+  font-size: 1rem;
+  width: 20px;
+  text-align: center;
+}
+
+/* Treeview menu (submenus) */
+.nav-treeview .nav-link {
+  padding: 10px 20px 10px 45px;
+  font-size: 0.9rem;
+  border-left: 3px solid transparent;
+}
+
+.nav-treeview .nav-link:hover {
+  background-color: #1976d2 !important;
+  border-left-color: #42a5f5;
+}
+
+.nav-treeview .nav-link.active {
+  background-color: #1565c0 !important;
+  border-left-color: #64b5f6;
+}
+
+/* Sidebar separator lines */
+.nav-header {
+  color: #90caf9;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  padding: 15px 20px 5px;
+}
+
+/* Badge styling in sidebar */
+.nav-sidebar .badge {
+  margin-left: auto;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+}
+
+/* User panel in sidebar */
+.user-panel {
+  border-bottom: 1px solid #1565c0;
+  padding: 15px;
+}
+
+.user-panel .info {
+  color: #ffffff;
+}
+/* MAIN CONTENT WHITE */
+.content-wrapper {
+  background-color: #ffffff !important;
+}
+.main-header.navbar {
+  background-color: #1976d2 !important;
+}
+/* DARK MODE CUSTOMIZATION */
+body.dark-mode .main-sidebar {
+  background-color: #0b1f3a !important;
+}
+
+body.dark-mode .brand-link {
+  background-color: #0a1832 !important;
+  border-bottom-color: #1e3a5f;
+}
+
+body.dark-mode .nav-sidebar .nav-link {
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode .nav-sidebar .nav-link:hover {
+  background-color: #1e3a5f !important;
+}
+
+body.dark-mode .nav-sidebar .nav-link.active {
+  background-color: #1565c0 !important;
+}
+
+body.dark-mode .sidebar {
+  scrollbar-color: #1e3a5f #0b1f3a;
+}
+
+body.dark-mode .sidebar::-webkit-scrollbar-track {
+  background: #0b1f3a;
+}
+
+body.dark-mode .sidebar::-webkit-scrollbar-thumb {
+  background-color: #1e3a5f;
+}
+
+body.dark-mode .nav-treeview .nav-link:hover {
+  background-color: #0d47a1 !important;
+  border-left-color: #42a5f5;
+}
+
+body.dark-mode .nav-header {
+  color: #78909c;
+}
+
+body.dark-mode .user-panel {
+  border-bottom-color: #1e3a5f;
+}
+
+body.dark-mode .content-wrapper {
+  background-color: #313030 !important;
+}
+
+body.dark-mode .main-header.navbar {
+  background-color: #0d47a1 !important;
+}
+body:not(.dark-mode) .content-wrapper {
+  background-color: #f4f6f9 !important;
+}
+.wrapper .preloader {
+  background-color: #0b3c91 !important;
+}
+.main-footer {
+  background-color: #1976d2;
+  color: #d6d3d3;
+}
+body.dark-mode .main-footer {
+  background-color: #0d47a1 !important;
+}
+
+/* RESPONSIVE SIDEBAR ADJUSTMENTS */
+@media (max-width: 991.98px) {
+  .nav-sidebar .nav-link {
+    padding: 10px 15px;
+    margin: 2px 5px;
+    font-size: 0.95rem;
+  }
+  
+  .nav-treeview .nav-link {
+    padding: 8px 15px 8px 35px;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .nav-sidebar .nav-link {
+    padding: 8px 12px;
+    font-size: 0.95rem;
+  }
+  
+  .nav-sidebar .nav-link > .nav-icon {
+    font-size: 1rem;
+  }
+  
+  .brand-link {
+    padding: 10px 15px;
+  }
+}
+/* Animate the Font Awesome icon */
+#themeIcon {
+  display: inline-block;
+  transition:
+    transform 0.35s ease,
+    opacity 0.25s ease;
+}
+
+#themeIcon.animate {
+  transform: rotate(180deg) scale(0.5);
+  opacity: 0;
+}

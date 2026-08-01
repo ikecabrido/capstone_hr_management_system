@@ -44,11 +44,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Regular form submission
     if ($result['success']) {
         $_SESSION['success_message'] = "Training program created successfully!";
-        header("Location: browse_training_programs.php");
+        header("Location: browse.php?section=programs");
         exit;
     } else {
         $_SESSION['error_message'] = $result['message'] ?? "Failed to create training program. Please try again.";
-        header("Location: create_training_program.php");
+        header("Location: browse.php?section=programs");
         exit;
     }
 } else {

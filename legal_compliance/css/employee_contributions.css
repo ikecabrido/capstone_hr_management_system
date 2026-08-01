@@ -1,0 +1,359 @@
+/**
+ * Employee Contributions Checklist CSS
+ * Styles for the employee contributions tracking module
+ */
+
+/* Statistics Cards */
+.small-box {
+    transition: transform 0.3s ease;
+}
+
+.small-box:hover {
+    transform: translateY(-5px);
+}
+
+.small-box h3 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.small-box p {
+    font-size: 1rem;
+    margin: 0;
+}
+
+/* Filter Card */
+.card-primary.card-outline {
+    border-top: 3px solid #007bff;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* Table Styles */
+#contributionsTable {
+    font-size: 0.9rem;
+}
+
+#contributionsTable th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+#contributionsTable td {
+    vertical-align: middle;
+}
+
+/* Badge Styles */
+.badge {
+    font-size: 0.75rem;
+    padding: 0.4em 0.6em;
+    font-weight: 500;
+}
+
+.badge-success {
+    background-color: #28a745;
+}
+
+.badge-warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.badge-danger {
+    background-color: #dc3545;
+}
+
+/* Action Buttons */
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+.view-details,
+.edit-contribution {
+    margin-right: 3px;
+}
+
+/* Modal Styles */
+.modal-header.bg-primary {
+    background-color: #007bff !important;
+    color: white;
+}
+
+.modal-header.bg-info {
+    background-color: #17a2b8 !important;
+    color: white;
+}
+
+.modal-header .close {
+    color: white;
+    opacity: 0.8;
+}
+
+.modal-header .close:hover {
+    opacity: 1;
+}
+
+.modal-body h6 {
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: #333;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 8px;
+}
+
+.modal-body p {
+    margin-bottom: 8px;
+}
+
+/* Form Groups in Modal */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    font-weight: 500;
+    margin-bottom: 5px;
+    color: #495057;
+}
+
+.form-control {
+    border-radius: 4px;
+    border: 1px solid #ced4da;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Checkbox Styles */
+#selectAll {
+    cursor: pointer;
+}
+
+.employee-checkbox {
+    cursor: pointer;
+}
+
+/* Alert Styles */
+.alert-info {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .small-box h3 {
+        font-size: 1.8rem;
+    }
+    
+    .small-box p {
+        font-size: 0.9rem;
+    }
+    
+    #contributionsTable {
+        font-size: 0.8rem;
+    }
+    
+    .badge {
+        font-size: 0.7rem;
+        padding: 0.3em 0.5em;
+    }
+    
+    .btn-sm {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* Loading Spinner */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Tooltip Styles */
+.tooltip-inner {
+    max-width: 300px;
+    padding: 8px 12px;
+    background-color: #333;
+    border-radius: 4px;
+}
+
+/* Table Row Hover */
+#contributionsTable tbody tr:hover {
+    background-color: #f1f3f5;
+}
+
+/* Selected Row */
+#contributionsTable tbody tr.selected {
+    background-color: #e3f2fd;
+}
+
+/* Card Tools */
+.card-tools {
+    display: flex;
+    gap: 5px;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+    background-color: transparent;
+    padding: 0;
+    margin: 0;
+}
+
+.breadcrumb-item a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.breadcrumb-item a:hover {
+    text-decoration: underline;
+}
+
+.breadcrumb-item.active {
+    color: #6c757d;
+}
+
+/* Content Header */
+.content-header h1 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #333;
+}
+
+/* Section Content */
+.content {
+    padding: 15px;
+}
+
+/* Card Body */
+.card-body {
+    padding: 20px;
+}
+
+/* Table Responsive */
+.table-responsive {
+    overflow-x: auto;
+}
+
+/* DataTables Customization */
+.dataTables_wrapper {
+    padding-top: 10px;
+}
+
+.dataTables_wrapper .dataTables_paginate {
+    padding-top: 15px;
+}
+
+.dataTables_wrapper .dataTables_info {
+    padding-top: 15px;
+}
+
+/* Status Filter Buttons */
+.status-filter-btn {
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+.status-filter-btn.active {
+    font-weight: 600;
+}
+
+/* Contribution Type Icons */
+.contribution-icon {
+    margin-right: 5px;
+}
+
+.contribution-icon.sss {
+    color: #17a2b8;
+}
+
+.contribution-icon.pagibig {
+    color: #28a745;
+}
+
+.contribution-icon.philhealth {
+    color: #ffc107;
+}
+
+/* Notes Display */
+.notes-display {
+    font-size: 0.85rem;
+    color: #6c757d;
+    font-style: italic;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.empty-state p {
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+/* Success Animation */
+.success-animation {
+    animation: successPulse 0.5s ease;
+}
+
+@keyframes successPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Error Animation */
+.error-animation {
+    animation: errorShake 0.5s ease;
+}
+
+@keyframes errorShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
