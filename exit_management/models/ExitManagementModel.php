@@ -54,6 +54,219 @@ class ExitManagementModel
     }
 
     /**
+     * Check whether a table exists in the current database
+     */
+    protected function tableExists(string $tableName): bool
+    {
+        $stmt = $this->db->prepare("SHOW TABLES LIKE ?");
+        $stmt->execute([$tableName]);
+        return (bool)$stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Get approved exit cases for interviews
+     */
+    public function getApprovedExitCases(): array
+    {
+        $cases = [];
+
+        if ($this->tableExists('exit_resignations')) {
+            $stmt = $this->db->query("SELECT
+                'resignation' AS exit_case_type,
+                r.id AS exit_case_id,
+                e.employee_id AS employee_id,
+                e.full_name,
+                COALESCE(u.username, e.employee_id) AS username,
+                e.email,
+                e.department,
+                e.position,
+                e.date_hired,
+                e.employment_status,
+                COALESCE(m.full_name, '') AS manager_name,
+                r.reason AS exit_reason,
+                r.notice_date,
+                r.last_working_date,
+                r.approved_by,
+                approver.full_name AS approved_by_name,
+                r.approved_at,
+                r.resignation_type AS exit_subtype
+            FROM exit_resignations r
+            JOIN employees e ON r.employee_id = e.employee_id
+            LEFT JOIN users u ON e.user_id = u.id
+            LEFT JOIN users m ON u.manager_id = m.id
+            LEFT JOIN users approver ON r.approved_by = approver.id
+            WHERE r.status = 'approved'
+            ORDER BY e.full_name");
+            $cases = array_merge($cases, $stmt->fetchAll(PDO::FETCH_ASSOC));
+        }
+
+        if ($this->tableExists('exit_terminations')) {
+            $stmt = $this->db->query("SELECT
+                'termination' AS exit_case_type,
+                t.id AS exit_case_id,
+                e.employee_id AS employee_id,
+                e.full_name,
+                COALESCE(u.username, e.employee_id) AS username,
+                e.email,
+                e.department,
+                e.position,
+                e.date_hired,
+                e.employment_status,
+                COALESCE(m.full_name, '') AS manager_name,
+                t.termination_reason AS exit_reason,
+                t.effective_date,
+                t.effective_date AS last_working_date,
+                t.approved_by,
+                approver.full_name AS approved_by_name,
+                t.approved_at,
+                NULL AS exit_subtype
+            FROM exit_terminations t
+            JOIN employees e ON t.employee_id = e.employee_id
+            LEFT JOIN users u ON e.user_id = u.id
+            LEFT JOIN users m ON u.manager_id = m.id
+            LEFT JOIN users approver ON t.approved_by = approver.id
+            WHERE t.status = 'approved'
+            ORDER BY e.full_name");
+            $cases = array_merge($cases, $stmt->fetchAll(PDO::FETCH_ASSOC));
+        }
+
+        usort($cases, function ($a, $b) {
+            return strcasecmp($a['full_name'] ?? '', $b['full_name'] ?? '');
+        });
+
+        return $cases;
+    }
+
+    /**
+     * Get approved exit case details by type and ID
+     */
+    public function getExitCaseDetails(string $exitCaseType, int $exitCaseId): ?array
+    {
+        if ($exitCaseType === 'resignation') {
+            $stmt = $this->db->prepare("SELECT
+                'resignation' AS exit_case_type,
+                r.id AS exit_case_id,
+                e.employee_id AS employee_id,
+                e.full_name,
+                e.department,
+                e.position,
+                e.date_hired,
+                e.employment_status,
+                COALESCE(m.full_name, '') AS manager_name,
+                r.reason AS exit_reason,
+                r.notice_date,
+                r.last_working_date,
+                r.approved_by,
+                approver.full_name AS approved_by_name,
+                r.approved_at
+            FROM exit_resignations r
+            JOIN employees e ON r.employee_id = e.employee_id
+            LEFT JOIN users u ON e.user_id = u.id
+            LEFT JOIN users m ON u.manager_id = m.id
+            LEFT JOIN users approver ON r.approved_by = approver.id
+            WHERE r.id = ? AND r.status = 'approved'");
+        } elseif ($exitCaseType === 'termination') {
+            $stmt = $this->db->prepare("SELECT
+                'termination' AS exit_case_type,
+                t.id AS exit_case_id,
+                e.employee_id AS employee_id,
+                e.full_name,
+                e.department,
+                e.position,
+                e.date_hired,
+                e.employment_status,
+                COALESCE(m.full_name, '') AS manager_name,
+                t.termination_reason AS exit_reason,
+                t.effective_date,
+                t.effective_date AS last_working_date,
+                t.approved_by,
+                approver.full_name AS approved_by_name,
+                t.approved_at
+            FROM exit_terminations t
+            JOIN employees e ON t.employee_id = e.employee_id
+            LEFT JOIN users u ON e.user_id = u.id
+            LEFT JOIN users m ON u.manager_id = m.id
+            LEFT JOIN users approver ON t.approved_by = approver.id
+            WHERE t.id = ? AND t.status = 'approved'");
+        } else {
+            return null;
+        }
+
+        $stmt->execute([$exitCaseId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    /**
+     * Get employee engagement-related records for an employee
+     */
+    public function getEngagementRecords(string $employeeId): array
+    {
+        $records = [
+            'exit_surveys' => [],
+            'grievances' => [],
+            'feedback_history' => $this->getFeedbackHistoryByEmployee($employeeId)
+        ];
+
+        if ($this->tableExists('exit_survey_responses')) {
+            $stmt = $this->db->prepare("SELECT
+                sr.id AS response_id,
+                sr.survey_id,
+                sv.title AS survey_title,
+                sr.responses,
+                sr.submitted_at
+            FROM exit_survey_responses sr
+            LEFT JOIN exit_surveys sv ON sr.survey_id = sv.id
+            WHERE sr.employee_id = ?
+            ORDER BY sr.submitted_at DESC");
+            $stmt->execute([$employeeId]);
+            $records['exit_surveys'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+
+        if ($this->tableExists('grievances')) {
+            $stmt = $this->db->prepare("SELECT
+                g.id,
+                g.subject,
+                g.description,
+                g.status,
+                g.priority,
+                g.created_at,
+                g.updated_at,
+                COALESCE(u.full_name, '') AS assigned_to_name
+            FROM grievances g
+            LEFT JOIN users u ON g.assigned_to = u.id
+            WHERE g.employee_id = ?
+            ORDER BY g.created_at DESC");
+            $stmt->execute([$employeeId]);
+            $records['grievances'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+
+        return $records;
+    }
+
+    /**
+     * Get exit interview feedback history for an employee
+     */
+    public function getFeedbackHistoryByEmployee(string $employeeId): array
+    {
+        if (!$this->tableExists('exit_interview_feedback')) {
+            return [];
+        }
+
+        $stmt = $this->db->prepare("SELECT
+                ei.id AS interview_id,
+                ei.scheduled_date,
+                ei.status,
+                f.overall_satisfaction,
+                f.submitted_at
+            FROM exit_interviews ei
+            JOIN exit_interview_feedback f ON ei.id = f.interview_id
+            WHERE ei.employee_id = ?
+            ORDER BY f.submitted_at DESC");
+        $stmt->execute([$employeeId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Get all employees eligible for exit management
      * Returns employees list, with optional user link and fallback.
      */
@@ -275,14 +488,59 @@ class ExitManagementModel
     /**
      * Get employee details by ID
      */
-    public function getEmployeeById(int $employeeId): ?array
+    public function getEmployeeById($employeeId): ?array
     {
-        $stmt = $this->db->prepare("
-            SELECT u.*, u.department, u.position
-            FROM users u
-            WHERE u.id = ?
-        ");
+        $stmt = $this->db->prepare("SELECT
+                e.*, 
+                u.username AS user_username,
+                u.full_name AS user_full_name,
+                u.email AS user_email,
+                u.status AS user_status,
+                u.manager_id AS manager_id,
+                m.full_name AS manager_name
+            FROM employees e
+            LEFT JOIN users u ON e.user_id = u.id
+            LEFT JOIN users m ON u.manager_id = m.id
+            WHERE e.employee_id = ?
+            LIMIT 1");
         $stmt->execute([$employeeId]);
+        $employee = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($employee) {
+            return $employee;
+        }
+
+        if (is_numeric($employeeId)) {
+            $stmt = $this->db->prepare("SELECT
+                    u.*, 
+                    m.full_name AS manager_name
+                FROM users u
+                LEFT JOIN users m ON u.manager_id = m.id
+                WHERE u.id = ?
+                LIMIT 1");
+            $stmt->execute([$employeeId]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($user) {
+                $user['employee_id'] = $user['id'];
+                $user['full_name'] = $user['full_name'] ?? null;
+                $user['department'] = $user['department'] ?? null;
+                $user['position'] = $user['position'] ?? null;
+                $user['date_hired'] = $user['date_hired'] ?? null;
+                $user['employment_status'] = $user['status'] ?? null;
+                return $user;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Get user details by ID
+     */
+    public function getUserById(int $userId): ?array
+    {
+        $stmt = $this->db->prepare("SELECT * FROM users WHERE id = ? LIMIT 1");
+        $stmt->execute([$userId]);
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 

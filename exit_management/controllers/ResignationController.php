@@ -86,16 +86,43 @@ class ResignationController extends ExitManagementController
     /**
      * Approve or reject resignation
      */
-    public function processResignation(int $resignationId, string $action, int $approvedBy): array
+    public function processResignation(int $resignationId, string $action, int $approvedBy, string $status = '', ?string $comments = null): array
     {
         try {
-            $status = ($action === 'approve') ? 'approved' : 'rejected';
-            $success = $this->resignationModel->updateResignationStatus($resignationId, $status, $approvedBy);
+            $resignation = $this->resignationModel->getResignationById($resignationId);
+            if (!$resignation) {
+                return ['success' => false, 'message' => 'Resignation not found'];
+            }
+
+            $currentStatus = $resignation['status'] ?? '';
+            $targetStatus = $status;
+
+            if (empty($targetStatus)) {
+                if ($action === 'approve') {
+                    if ($currentStatus === 'pending_review') {
+                        $targetStatus = 'pending_legal_review';
+                    } elseif ($currentStatus === 'pending_legal_review') {
+                        $targetStatus = 'approved';
+                    }
+                } elseif ($action === 'reject') {
+                    if ($currentStatus === 'pending_review') {
+                        $targetStatus = 'rejected';
+                    } elseif ($currentStatus === 'pending_legal_review') {
+                        $targetStatus = 'rejected_by_legal';
+                    }
+                }
+            }
+
+            if (empty($targetStatus)) {
+                return ['success' => false, 'message' => 'Invalid resignation action for the current status'];
+            }
+
+            $success = $this->resignationModel->updateResignationStatus($resignationId, $targetStatus, $approvedBy, $comments);
 
             if ($success) {
                 return [
                     'success' => true,
-                    'message' => "Resignation $status successfully"
+                    'message' => "Resignation updated to $targetStatus successfully"
                 ];
             } else {
                 return ['success' => false, 'message' => 'Failed to update resignation status'];
@@ -116,7 +143,7 @@ class ResignationController extends ExitManagementController
     /**
      * Get resignations by status
      */
-    public function getResignations(string $status = null): array
+    public function getResignations(?string $status = null): array
     {
         return $this->resignationModel->getResignations($status);
     }
@@ -226,8 +253,15 @@ class ResignationController extends ExitManagementController
     {
         switch ($action) {
             case 'submit_resignation':
+                return ['success' => false, 'message' => 'Resignation creation is managed through the Employee Portal.'];
             case 'update_resignation':
-                return $this->submitResignation($data);
+                return $this->processResignation(
+                    $data['resignation_id'] ?? 0,
+                    $data['action'] ?? '',
+                    $data['approved_by'] ?? ($_SESSION['user']['id'] ?? 0),
+                    $data['status'] ?? '',
+                    $data['comments'] ?? $data['approval_comments'] ?? null
+                );
 
             case 'get_resignation':
                 return $this->getResignation($data['resignation_id'] ?? 0);
@@ -236,7 +270,9 @@ class ResignationController extends ExitManagementController
                 return $this->processResignation(
                     $data['resignation_id'] ?? 0,
                     $data['action'] ?? '',
-                    $data['approved_by'] ?? 0
+                    $data['approved_by'] ?? ($_SESSION['user']['id'] ?? 0),
+                    $data['status'] ?? '',
+                    $data['comments'] ?? null
                 );
 
             case 'get_pending_resignations':

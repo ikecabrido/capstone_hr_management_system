@@ -386,6 +386,9 @@ class ExitManagementController
                 case 'get_employees_with_resignations':
                     return $this->model->getEmployeesWithResignations();
 
+                case 'get_approved_exit_cases':
+                    return $this->model->getApprovedExitCases();
+
                 case 'get_employee_salary_components':
                     return $this->model->getEmployeeSalaryComponents($data['employee_id'] ?? '');
 

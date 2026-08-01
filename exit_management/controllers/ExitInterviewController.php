@@ -19,11 +19,20 @@ class ExitInterviewController extends ExitManagementController
     {
         try {
             // Validate required fields
-            $required = ['employee_id', 'interviewer_id', 'scheduled_date', 'scheduled_time'];
+            $required = ['exit_case_type', 'exit_case_id', 'employee_id', 'interviewer_id', 'scheduled_date', 'scheduled_time'];
             foreach ($required as $field) {
                 if (empty($data[$field])) {
                     return ['success' => false, 'message' => "Field '$field' is required"];
                 }
+            }
+
+            $exitCaseType = $data['exit_case_type'];
+            $exitCaseId = (int)$data['exit_case_id'];
+            $approvedCase = $this->interviewModel->getApprovedExitCase($exitCaseType, $exitCaseId);
+            $employeeId = (string)$data['employee_id'];
+
+            if (!$approvedCase || (string)$approvedCase['employee_id'] !== $employeeId) {
+                return ['success' => false, 'message' => 'Selected exit case is not approved or does not match the employee'];
             }
 
             $interviewId = $this->interviewModel->scheduleInterview($data);
@@ -97,7 +106,7 @@ class ExitInterviewController extends ExitManagementController
     /**
      * Get all interviews (support status filter)
      */
-    public function getInterviews(string $status = null): array
+    public function getInterviews(?string $status = null): array
     {
         return $this->interviewModel->getAllInterviews($status);
     }
@@ -130,8 +139,38 @@ class ExitInterviewController extends ExitManagementController
     {
         switch ($action) {
             case 'submit_interview':
-            case 'update_interview':
                 return $this->scheduleInterview($data);
+
+            case 'update_interview':
+                $interviewId = (int)($data['interview_id'] ?? 0);
+                if ($interviewId <= 0) {
+                    return ['success' => false, 'message' => 'Interview ID is required for update'];
+                }
+
+                $required = ['exit_case_type', 'exit_case_id', 'employee_id', 'interviewer_id', 'scheduled_date', 'scheduled_time'];
+                foreach ($required as $field) {
+                    if (empty($data[$field])) {
+                        return ['success' => false, 'message' => "Field '$field' is required for update"];
+                    }
+                }
+
+                $exitCaseType = $data['exit_case_type'];
+                $exitCaseId = (int)$data['exit_case_id'];
+                $approvedCase = $this->interviewModel->getApprovedExitCase($exitCaseType, $exitCaseId);
+                $employeeId = (string)$data['employee_id'];
+
+                if (!$approvedCase || (string)$approvedCase['employee_id'] !== $employeeId) {
+                    return ['success' => false, 'message' => 'Selected exit case is not approved or does not match the employee'];
+                }
+
+                unset($data['interview_id']);
+                $success = $this->interviewModel->updateInterview($interviewId, $data);
+
+                if ($success) {
+                    return ['success' => true, 'message' => 'Exit interview updated successfully', 'interview_id' => $interviewId];
+                }
+
+                return ['success' => false, 'message' => 'Failed to update exit interview'];
 
             case 'submit_feedback':
             case 'update_feedback':
@@ -226,7 +265,7 @@ class ExitInterviewController extends ExitManagementController
                 ];
             }
 
-            $interview = $this->interviewModel->getInterview($interviewId);
+            $interview = $this->interviewModel->getInterviewById($interviewId);
 
             if (!$interview) {
                 return [
@@ -245,8 +284,8 @@ class ExitInterviewController extends ExitManagementController
                 'data' => [
                     'id' => $interview['id'],
                     'employee_id' => $interview['employee_id'],
-                    'employee_name' => $employee ? $employee['first_name'] . ' ' . $employee['last_name'] : 'Unknown',
-                    'interviewer_name' => $interviewer ? $interviewer['first_name'] . ' ' . $interviewer['last_name'] : 'Unknown',
+                    'employee_name' => $employee ? ($employee['full_name'] ?? trim(($employee['first_name'] ?? '') . ' ' . ($employee['last_name'] ?? ''))) : 'Unknown',
+                    'interviewer_name' => $interviewer ? ($interviewer['full_name'] ?? trim(($interviewer['first_name'] ?? '') . ' ' . ($interviewer['last_name'] ?? ''))) : 'Unknown',
                     'scheduled_date' => $interview['scheduled_date'],
                     'status' => $interview['status']
                 ]

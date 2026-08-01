@@ -24,15 +24,6 @@
                                 <div id="eligibilityMessage" class="mt-2" style="display: none;"></div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="resignationType">Resignation Type *</label>
-                                <select class="form-control" id="resignationType" name="resignation_type" required>
-                                    <option value="voluntary">Voluntary</option>
-                                    <option value="involuntary">Involuntary</option>
-                                </select>
-                            </div>
-                        </div>
                     </div>
 
                     <div class="form-group">
@@ -67,8 +58,10 @@
                         <div class="form-group">
                             <label for="approvalStatus">Status</label>
                             <select class="form-control" id="approvalStatus" name="status">
-                                <option value="approved">Approve</option>
+                                <option value="pending_legal_review">Approve HR review (send to Legal)</option>
+                                <option value="approved">Approve final</option>
                                 <option value="rejected">Reject</option>
+                                <option value="rejected_by_legal">Reject by Legal</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -79,7 +72,76 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="resignationSubmitBtn">Submit Resignation</button>
+                    <button type="submit" class="btn btn-primary" id="resignationSubmitBtn">Save Decision</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Termination Modal -->
+<div class="modal fade exit-modal" id="terminationModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger">
+                <h5 class="modal-title" id="terminationModalTitle">Initiate Termination</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="terminationForm">
+                <div class="modal-body">
+                    <input type="hidden" id="terminationId" name="termination_id">
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="terminationEmployeeSelect">Employee *</label>
+                                <select class="form-control" id="terminationEmployeeSelect" name="employee_id" required>
+                                    <option value="">Select Employee</option>
+                                </select>
+                                <div id="terminationEligibilityMessage" class="mt-2" style="display: none;"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="terminationEffectiveDate">Effective Date *</label>
+                                <input type="date" class="form-control" id="terminationEffectiveDate" name="effective_date" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="terminationReason">Termination Reason *</label>
+                        <textarea class="form-control" id="terminationReason" name="termination_reason" rows="3" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="terminationComments">Additional Comments</label>
+                        <textarea class="form-control" id="terminationComments" name="comments" rows="2"></textarea>
+                    </div>
+
+                    <div id="terminationApprovalSection" style="display: none;">
+                        <hr>
+                        <h6>Approval</h6>
+                        <div class="form-group">
+                            <label for="terminationApprovalStatus">Status</label>
+                            <select class="form-control" id="terminationApprovalStatus" name="status">
+                                <option value="pending_legal_review">Send to Legal Review</option>
+                                <option value="approved">Approve</option>
+                                <option value="rejected">Reject</option>
+                                <option value="rejected_by_legal">Reject by Legal</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="terminationApprovalComments">Approval Comments</label>
+                            <textarea class="form-control" id="terminationApprovalComments" name="approval_comments" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger" id="terminationSubmitBtn">Submit Termination</button>
                 </div>
             </form>
         </div>
@@ -103,10 +165,13 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="interviewEmployeeSelect">Employee *</label>
-                                <select class="form-control" id="interviewEmployeeSelect" name="employee_id" required>
-                                    <option value="">Select Employee</option>
+                                <label for="interviewCaseSelect">Approved Exit Case *</label>
+                                <select class="form-control" id="interviewCaseSelect" required>
+                                    <option value="">Select Approved Exit Case</option>
                                 </select>
+                                <input type="hidden" id="interviewExitCaseType" name="exit_case_type" />
+                                <input type="hidden" id="interviewExitCaseId" name="exit_case_id" />
+                                <input type="hidden" id="interviewEmployeeId" name="employee_id" />
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -196,19 +261,79 @@
                         <hr>
                         <h6>Interview Feedback</h6>
                         <div class="form-group">
-                            <label for="interviewFeedback">Feedback</label>
-                            <textarea class="form-control" id="interviewFeedback" name="feedback" rows="4"></textarea>
+                            <label for="interviewOverallSatisfaction">Overall Satisfaction</label>
+                            <select class="form-control" id="interviewOverallSatisfaction" name="overall_satisfaction">
+                                <option value="">Select Rating</option>
+                                <option value="1">1 - Very Dissatisfied</option>
+                                <option value="2">2 - Dissatisfied</option>
+                                <option value="3">3 - Neutral</option>
+                                <option value="4">4 - Satisfied</option>
+                                <option value="5">5 - Very Satisfied</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label for="interviewWorkEnvironmentRating">Work Environment Rating</label>
+                                <select class="form-control" id="interviewWorkEnvironmentRating" name="work_environment_rating">
+                                    <option value="">Select Rating</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label for="interviewManagementRating">Management Rating</label>
+                                <select class="form-control" id="interviewManagementRating" name="management_rating">
+                                    <option value="">Select Rating</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label for="interviewCompensationRating">Compensation Rating</label>
+                                <select class="form-control" id="interviewCompensationRating" name="compensation_rating">
+                                    <option value="">Select Rating</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label for="interviewWorkLifeBalanceRating">Work-Life Balance Rating</label>
+                                <select class="form-control" id="interviewWorkLifeBalanceRating" name="work_life_balance_rating">
+                                    <option value="">Select Rating</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label for="interviewRating">Overall Rating (1-5)</label>
-                            <select class="form-control" id="interviewRating" name="rating">
-                                <option value="">Select Rating</option>
-                                <option value="1">1 - Poor</option>
-                                <option value="2">2 - Below Average</option>
-                                <option value="3">3 - Average</option>
-                                <option value="4">4 - Good</option>
-                                <option value="5">5 - Excellent</option>
+                            <label for="interviewReasonForLeaving">Reason for Leaving</label>
+                            <textarea class="form-control" id="interviewReasonForLeaving" name="reason_for_leaving" rows="2"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="interviewWouldRecommend">Would Recommend Working Here?</label>
+                            <select class="form-control" id="interviewWouldRecommend" name="would_recommend">
+                                <option value="">Select</option>
+                                <option value="yes">Yes</option>
+                                <option value="no">No</option>
                             </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="interviewAdditionalComments">Additional Comments</label>
+                            <textarea class="form-control" id="interviewAdditionalComments" name="additional_comments" rows="3"></textarea>
                         </div>
                     </div>
                 </div>

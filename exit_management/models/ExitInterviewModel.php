@@ -4,19 +4,79 @@ require_once 'ExitManagementModel.php';
 
 class ExitInterviewModel extends ExitManagementModel
 {
+    public function __construct()
+    {
+        parent::__construct();
+        $this->ensureExitInterviewSchema();
+    }
+
+    protected function ensureExitInterviewSchema(): void
+    {
+        if (!$this->tableExists('exit_interviews')) {
+            return;
+        }
+
+        $requiredColumns = [
+            'exit_case_type' => "ENUM('resignation','termination') DEFAULT NULL",
+            'exit_case_id' => 'INT(11) DEFAULT NULL',
+            'completed_at' => 'TIMESTAMP NULL DEFAULT NULL'
+        ];
+
+        foreach ($requiredColumns as $column => $definition) {
+            $stmt = $this->db->prepare("SHOW COLUMNS FROM exit_interviews LIKE ?");
+            $stmt->execute([$column]);
+            if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+                $this->db->exec("ALTER TABLE exit_interviews ADD COLUMN {$column} {$definition}");
+            }
+        }
+
+        $this->ensureTableAutoIncrement('exit_interviews');
+    }
+
+    /**
+     * Get user details by ID.
+     */
+    public function getUserById(int $userId): ?array
+    {
+        return parent::getUserById($userId);
+    }
+
+    /**
+     * Validate that a selected exit case exists and is approved.
+     */
+    public function getApprovedExitCase(string $exitCaseType, int $exitCaseId): ?array
+    {
+        if ($exitCaseType === 'resignation') {
+            $stmt = $this->db->prepare("SELECT id, employee_id FROM exit_resignations WHERE id = ? AND status = 'approved'");
+        } elseif ($exitCaseType === 'termination') {
+            $stmt = $this->db->prepare("SELECT id, employee_id FROM exit_terminations WHERE id = ? AND status = 'approved'");
+        } else {
+            return null;
+        }
+
+        $stmt->execute([$exitCaseId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
     /**
      * Schedule an exit interview
      */
     public function scheduleInterview(array $data): int
     {
+        if ($this->hasExistingActiveInterview($data['exit_case_type'], (int)$data['exit_case_id'])) {
+            throw new Exception('An active exit interview already exists for the selected exit case');
+        }
+
         $stmt = $this->db->prepare("
-            INSERT INTO exit_interviews (employee_id, interviewer_id, scheduled_date,
+            INSERT INTO exit_interviews (employee_id, exit_case_type, exit_case_id, interviewer_id, scheduled_date,
                                        scheduled_time, location, notes, status, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, 'scheduled', NOW())
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'scheduled', NOW())
         ");
 
         $stmt->execute([
             $data['employee_id'],
+            $data['exit_case_type'],
+            $data['exit_case_id'],
             $data['interviewer_id'],
             $data['scheduled_date'],
             $data['scheduled_time'],
@@ -32,15 +92,21 @@ class ExitInterviewModel extends ExitManagementModel
      */
     public function updateInterview(int $interviewId, array $data): bool
     {
+        if ($this->hasExistingActiveInterview($data['exit_case_type'], (int)$data['exit_case_id'], $interviewId)) {
+            throw new Exception('Another active exit interview already exists for the selected exit case');
+        }
+
         $stmt = $this->db->prepare("
             UPDATE exit_interviews
-            SET employee_id = ?, interviewer_id = ?, scheduled_date = ?,
+            SET employee_id = ?, exit_case_type = ?, exit_case_id = ?, interviewer_id = ?, scheduled_date = ?,
                 scheduled_time = ?, location = ?, notes = ?, updated_at = NOW()
             WHERE id = ?
         ");
 
         return $stmt->execute([
             $data['employee_id'],
+            $data['exit_case_type'],
+            $data['exit_case_id'],
             $data['interviewer_id'],
             $data['scheduled_date'],
             $data['scheduled_time'],
@@ -51,16 +117,54 @@ class ExitInterviewModel extends ExitManagementModel
     }
 
     /**
+     * Check for an existing active interview for the same exit case
+     */
+    public function hasExistingActiveInterview(string $exitCaseType, int $exitCaseId, int $excludeInterviewId = 0): bool
+    {
+        $query = "SELECT COUNT(*) FROM exit_interviews WHERE exit_case_type = ? AND exit_case_id = ? AND status = 'scheduled'";
+        if ($excludeInterviewId > 0) {
+            $query .= " AND id != ?";
+        }
+
+        $stmt = $this->db->prepare($query);
+        if ($excludeInterviewId > 0) {
+            $stmt->execute([$exitCaseType, $exitCaseId, $excludeInterviewId]);
+        } else {
+            $stmt->execute([$exitCaseType, $exitCaseId]);
+        }
+
+        return (int)$stmt->fetchColumn() > 0;
+    }
+
+    /**
      * Get exit interview by ID
      */
     public function getInterviewById(int $interviewId): ?array
     {
         $stmt = $this->db->prepare("
-            SELECT ei.*, e.full_name, e.employee_id as emp_id,
-                   u.full_name as interviewer_name
+            SELECT
+                ei.*,
+                e.employee_id AS employee_id,
+                e.full_name AS employee_full_name,
+                e.department AS employee_department,
+                e.position AS employee_position,
+                e.date_hired AS employee_date_hired,
+                e.employment_status AS employee_employment_status,
+                COALESCE(mu.full_name, '') AS manager_name,
+                iu.full_name AS interviewer_name,
+                CASE WHEN ei.exit_case_type = 'resignation' THEN r.reason ELSE t.termination_reason END AS exit_reason,
+                CASE WHEN ei.exit_case_type = 'resignation' THEN r.last_working_date ELSE t.effective_date END AS exit_date,
+                r.notice_date,
+                t.effective_date AS termination_effective_date,
+                COALESCE(r.approved_by, t.approved_by) AS case_approved_by,
+                COALESCE(r.approved_at, t.approved_at) AS case_approved_at
             FROM exit_interviews ei
             JOIN employees e ON ei.employee_id = e.employee_id
-            LEFT JOIN users u ON ei.interviewer_id = u.id
+            LEFT JOIN users iu ON ei.interviewer_id = iu.id
+            LEFT JOIN users u ON e.user_id = u.id
+            LEFT JOIN users mu ON u.manager_id = mu.id
+            LEFT JOIN exit_resignations r ON ei.exit_case_type = 'resignation' AND ei.exit_case_id = r.id
+            LEFT JOIN exit_terminations t ON ei.exit_case_type = 'termination' AND ei.exit_case_id = t.id
             WHERE ei.id = ?
         ");
         $stmt->execute([$interviewId]);
@@ -86,7 +190,7 @@ class ExitInterviewModel extends ExitManagementModel
     /**
      * Get all interviews with optional status filter and pagination support
      */
-    public function getAllInterviews(string $status = null, int $page = 1, int $limit = 10, string $search = ''): array
+    public function getAllInterviews(?string $status = null, int $page = 1, int $limit = 10, string $search = ''): array
     {
         $offset = ($page - 1) * $limit;
 
@@ -94,6 +198,8 @@ class ExitInterviewModel extends ExitManagementModel
             SELECT
                 ei.id,
                 ei.employee_id,
+                ei.exit_case_type,
+                ei.exit_case_id,
                 ei.interviewer_id,
                 ei.scheduled_date,
                 ei.scheduled_time,
@@ -228,7 +334,9 @@ class ExitInterviewModel extends ExitManagementModel
     {
         $stmt = $this->db->query("
             SELECT ei.*, e.full_name, e.employee_id as emp_id,
-                   CONCAT(u.first_name, ' ', u.last_name) as interviewer_name
+                   u.full_name as interviewer_name,
+                   ei.exit_case_type,
+                   ei.exit_case_id
             FROM exit_interviews ei
             JOIN employees e ON ei.employee_id = e.employee_id
             LEFT JOIN users u ON ei.interviewer_id = u.id

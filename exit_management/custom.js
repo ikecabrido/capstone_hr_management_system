@@ -220,6 +220,16 @@ function renderResignationsPagination(containerId, response, status, currentPage
     renderPagination(containerId, response.total, response.page || currentPage, response.limit || 10, onPageChange);
 }
 
+function renderTerminationsPagination(containerId, response, status, currentPage) {
+    if (!response || !response.total) {
+        $(`#${containerId}`).empty();
+        return;
+    }
+
+    const onPageChange = (page) => `loadTerminationsTable('${status}', ${page})`;
+    renderPagination(containerId, response.total, response.page || currentPage, response.limit || 10, onPageChange);
+}
+
 // Legacy function for interviews table
 function renderInterviewsPagination(containerId, response, status, currentPage) {
     if (!response || !response.total) {
@@ -237,6 +247,21 @@ function initializeModals() {
     $('#resignationForm').on('submit', function(e) {
         e.preventDefault();
         submitResignationForm();
+    });
+
+    $('#terminationForm').on('submit', function(e) {
+        e.preventDefault();
+        submitTerminationForm();
+    });
+
+    $('#terminationEmployeeSelect').on('change', function() {
+        const employeeId = $(this).val();
+        if (employeeId) {
+            checkTerminationEligibility(employeeId);
+        } else {
+            $('#terminationEligibilityMessage').hide();
+            $('#terminationSubmitBtn').prop('disabled', false);
+        }
     });
 
     // Interview Modal
@@ -366,6 +391,33 @@ function checkEmployeeEligibility(employeeId) {
     });
 }
 
+function checkTerminationEligibility(employeeId) {
+    $.post('exit_management.php', {
+        ajax_action: 'check_termination_eligibility',
+        controller: 'termination',
+        employee_id: employeeId
+    }, function(response) {
+        const messageDiv = $('#terminationEligibilityMessage');
+        messageDiv.removeClass('alert alert-success alert-danger').empty();
+
+        if (response.success) {
+            messageDiv.addClass('alert alert-success').html('<i class="fas fa-check-circle"></i> ' + response.message);
+            $('#terminationSubmitBtn').prop('disabled', false);
+        } else {
+            messageDiv.addClass('alert alert-danger').html('<i class="fas fa-exclamation-triangle"></i> ' + response.message);
+            $('#terminationSubmitBtn').prop('disabled', true);
+        }
+        messageDiv.show();
+    }, 'json').fail(function(err) {
+        console.error('Error checking termination eligibility:', err);
+        $('#terminationEligibilityMessage').removeClass('alert alert-success alert-danger')
+            .addClass('alert alert-warning')
+            .html('<i class="fas fa-exclamation-triangle"></i> Unable to check eligibility. Please try again.')
+            .show();
+        $('#terminationSubmitBtn').prop('disabled', false);
+    });
+}
+
 // Load employees for dropdowns
 function loadEmployees(callback) {
     console.log('[LOAD EMPLOYEES] Starting employee load...');
@@ -385,12 +437,12 @@ function loadEmployees(callback) {
                 }).join('');
 
             console.log('[LOAD EMPLOYEES] Generated options HTML:', employeeOptions.substring(0, 200));
-            $('#employeeSelect, #interviewEmployeeSelect, #documentEmployeeSelect').html(employeeOptions);
+            $('#employeeSelect, #terminationEmployeeSelect, #interviewEmployeeSelect, #documentEmployeeSelect').html(employeeOptions);
             console.log('[LOAD EMPLOYEES] Dropdown populated successfully');
         } else {
             console.warn('[LOAD EMPLOYEES] No employees returned or not an array:', response);
             // Set empty state message
-            $('#employeeSelect').html('<option value="">No employees available</option>');
+            $('#employeeSelect, #terminationEmployeeSelect').html('<option value="">No employees available</option>');
         }
 
         if (typeof callback === 'function') {
@@ -409,22 +461,43 @@ function loadEmployees(callback) {
 }
 
 // Load employees with resignations for exit interview modal
-function loadEmployeesWithResignations(callback) {
+function loadApprovedExitCases(callback) {
     $.post('exit_management.php', {
-        ajax_action: 'get_employees_with_resignations'
+        ajax_action: 'get_approved_exit_cases'
     }, function(response) {
         if (response && response.length > 0) {
-            const employeeOptions = '<option value="">Select Employee</option>' +
-                response.map(emp => `<option value="${emp.id}">${emp.full_name} (${emp.username})</option>`).join('');
+            const caseOptions = '<option value="">Select Approved Exit Case</option>' +
+                response.map(emp => `
+                    <option value="${emp.exit_case_type}:${emp.exit_case_id}"
+                            data-employee-id="${emp.employee_id}">
+                        ${emp.full_name} (${emp.username}) - ${emp.exit_case_type.charAt(0).toUpperCase() + emp.exit_case_type.slice(1)} - ${emp.exit_reason || ''} (${emp.exit_date})
+                    </option>
+                `).join('');
 
-            $('#interviewEmployeeSelect').html(employeeOptions);
+            $('#interviewCaseSelect').html(caseOptions);
         } else {
-            $('#interviewEmployeeSelect').html('<option value="">No employees with resignations found</option>');
+            $('#interviewCaseSelect').html('<option value="">No approved exit cases found</option>');
         }
+
+        $('#interviewCaseSelect').off('change').on('change', function() {
+            const selected = $(this).val();
+            if (selected) {
+                const [caseType, caseId] = selected.split(':');
+                const employeeId = $(this).find('option:selected').data('employee-id');
+                $('#interviewExitCaseType').val(caseType);
+                $('#interviewExitCaseId').val(caseId);
+                $('#interviewEmployeeId').val(employeeId);
+            } else {
+                $('#interviewExitCaseType').val('');
+                $('#interviewExitCaseId').val('');
+                $('#interviewEmployeeId').val('');
+            }
+        });
+
         if (typeof callback === 'function') callback();
-    }).fail(function(err) {
-        console.error('Error loading resigning employees:', err);
-        $('#interviewEmployeeSelect').html('<option value="">Error loading employees</option>');
+    }, 'json').fail(function(err) {
+        console.error('Error loading approved exit cases:', err);
+        $('#interviewCaseSelect').html('<option value="">Error loading exit cases</option>');
         if (typeof callback === 'function') callback();
     });
 }
@@ -531,22 +604,26 @@ function loadResignations(callback) {
 
 // Modal display functions
 function showResignationModal(resignationId = null) {
-    if (resignationId) {
-        // Edit mode
-        $('#resignationModalTitle').text('Edit Resignation');
-        loadEmployees(function() {
-            loadResignationData(resignationId);
-        });
-    } else {
-        // Create mode
-        $('#resignationModalTitle').text('Submit Resignation');
-        $('#resignationForm')[0].reset();
-        $('#resignationId').val('');
-        $('#approvalSection').hide();
-        $('#eligibilityMessage').hide();
-        loadEmployees();
+    if (!resignationId) {
+        showToast('warning', 'Resignation creation is managed through the Employee Portal.');
+        return;
     }
+
+    console.log('Opening resignation modal for ID:', resignationId);
+    $('#resignationModalTitle').text('Review Resignation');
+    $('#resignationForm')[0].reset();
+    $('#resignationId').val(resignationId);
+    $('#approvalSection').show();
+    $('#eligibilityMessage').hide();
+    $('#resignationForm').find('input, textarea, select').prop('disabled', true);
+    $('#resignationId').prop('disabled', false);
+    $('#approvalSection').find('select, textarea').prop('disabled', false);
+    $('#resignationSubmitBtn').show().prop('disabled', false).text('Save Decision');
     $('#resignationModal').modal('show');
+
+    loadEmployees(function() {
+        loadResignationData(resignationId);
+    });
 }
 
 function showInterviewModal(interviewId = null) {
@@ -554,7 +631,10 @@ function showInterviewModal(interviewId = null) {
         $('#interviewModalTitle').text('Edit Exit Interview');
         $('#interviewForm')[0].reset();
         $('#interviewId').val('');
-        loadEmployeesWithResignations(function() {
+        $('#interviewExitCaseType').val('');
+        $('#interviewExitCaseId').val('');
+        $('#interviewEmployeeId').val('');
+        loadApprovedExitCases(function() {
             loadInterviewers(function() {
                 loadInterviewData(interviewId);
                 $('#interviewModal').modal('show');
@@ -565,7 +645,10 @@ function showInterviewModal(interviewId = null) {
         $('#interviewForm')[0].reset();
         $('#interviewId').val('');
         $('#feedbackSection').hide();
-        loadEmployeesWithResignations();
+        $('#interviewExitCaseType').val('');
+        $('#interviewExitCaseId').val('');
+        $('#interviewEmployeeId').val('');
+        loadApprovedExitCases();
         loadInterviewers();
         $('#interviewModal').modal('show');
     }
@@ -653,9 +736,14 @@ function showSurveyModal(surveyId = null) {
 function submitResignationForm() {
     const formData = new FormData($('#resignationForm')[0]);
     const resignationId = $('#resignationId').val();
-    
+
+    if (!resignationId) {
+        showToast('error', 'Resignation creation is managed through the Employee Portal.');
+        return;
+    }
+
     // Add action and controller parameters
-    formData.append('ajax_action', resignationId ? 'update_resignation' : 'submit_resignation');
+    formData.append('ajax_action', 'update_resignation');
     formData.append('controller', 'resignation');
 
     $('#resignationSubmitBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
@@ -1074,7 +1162,7 @@ function calculateSettlement() {
 }
 
 // Data loading functions (stubs - need to be implemented based on controller methods)
-function loadResignationData(id) {
+function loadResignationData(id, callback) {
     // Load resignation data for editing
     $.post('exit_management.php', {
         ajax_action: 'get_resignation',
@@ -1097,8 +1185,64 @@ function loadResignationData(id) {
                     }
                 }
             });
+
+            if (response.hr_approval_comments) {
+                $('#approvalComments').val(response.hr_approval_comments);
+            }
+            if (response.legal_approval_comments && !response.hr_approval_comments) {
+                $('#approvalComments').val(response.legal_approval_comments);
+            }
+
+            renderResignationApprovalOptions(response.status, response);
+        }
+
+        if (typeof callback === 'function') {
+            callback();
         }
     }, 'json');
+}
+
+function renderResignationApprovalOptions(status, response = {}) {
+    const $approvalSection = $('#approvalSection');
+    const $approvalStatus = $('#approvalStatus');
+    const $approvalComments = $('#approvalComments');
+    const $submitBtn = $('#resignationSubmitBtn');
+
+    $approvalStatus.empty();
+    $approvalComments.prop('disabled', false);
+    $approvalStatus.prop('disabled', false);
+    $submitBtn.show().prop('disabled', false);
+
+    if (status === 'pending_review') {
+        $('#resignationModalTitle').text('Review Resignation');
+        $approvalStatus.append(`
+            <option value="pending_legal_review">Approve HR review (send to Legal)</option>
+            <option value="rejected">Reject</option>
+        `);
+        $approvalSection.show();
+        $submitBtn.text('Save Decision');
+    } else if (status === 'pending_legal_review') {
+        $('#resignationModalTitle').text('Legal Review');
+        $approvalStatus.append(`
+            <option value="approved">Approve Final</option>
+            <option value="rejected_by_legal">Reject by Legal</option>
+        `);
+        $approvalSection.show();
+        $submitBtn.text('Save Decision');
+    } else {
+        $('#resignationModalTitle').text('View Resignation');
+        $approvalStatus.append(`<option value="${status}">${status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</option>`);
+        $approvalStatus.prop('disabled', true);
+        $approvalComments.prop('disabled', true);
+        $submitBtn.hide();
+        $approvalSection.show();
+    }
+
+    // Keep all resignation fields read-only
+    $('#resignationForm').find('input, textarea, select').prop('disabled', true);
+    $('#resignationId').prop('disabled', false);
+    $approvalStatus.prop('disabled', status !== 'pending_review' && status !== 'pending_legal_review');
+    $approvalComments.prop('disabled', status !== 'pending_review' && status !== 'pending_legal_review');
 }
 
 function loadInterviewData(id) {
@@ -1112,15 +1256,19 @@ function loadInterviewData(id) {
         console.log('Interview response:', response);
         if (response && !response.error) {
             $('#interviewId').val(response.id || id);
+            const caseValue = response.exit_case_type && response.exit_case_id ? `${response.exit_case_type}:${response.exit_case_id}` : '';
+            if (caseValue) {
+                $('#interviewCaseSelect').val(caseValue).trigger('change');
+            }
+
             Object.keys(response).forEach(key => {
-                if (key === 'employee_id') {
-                    $('#interviewEmployeeSelect').val(response[key]);
+                if (key === 'exit_case_type' || key === 'exit_case_id' || key === 'employee_id') {
+                    return;
                 } else if (key === 'interviewer_id') {
                     $('#interviewerSelect').val(response[key]);
                 } else if (key === 'scheduled_date') {
                     $('#interviewDate').val(response[key]);
                 } else if (key === 'scheduled_time') {
-                    // Split time into hour and minute for dropdowns
                     if (response[key]) {
                         const timeParts = response[key].split(':');
                         $('#interviewHour').val(timeParts[0] || '');
@@ -1332,18 +1480,20 @@ function loadResignationsTable(status = 'active', page = 1, searchTerm = '') {
                 const tooltip = resignation.archive_reason ? `Archive reason: ${resignation.archive_reason}` : (resignation.archived_from_status ? `Archived from status: ${resignation.archived_from_status}` : '');
 
                 const actions = `
-                    <button class="btn btn-sm btn-info" onclick="showResignationModal(${resignation.id})">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    ${resignation.status === 'archived' ? `
-                    <button class="btn btn-sm btn-success" onclick="unarchiveResignation(${resignation.id})" title="Unarchive Resignation">
-                        <i class="fas fa-undo"></i>
-                    </button>
-                    ` : `
-                    <button class="btn btn-sm btn-secondary" onclick="archiveResignation(${resignation.id})" title="Archive Resignation">
-                        <i class="fas fa-archive"></i>
-                    </button>
-                    `}
+                    <div class="table-actions">
+                        <button type="button" class="btn btn-sm btn-info action-button" onclick="showResignationModal(${resignation.id})" title="Review Resignation" aria-label="Review Resignation" data-title="Review Resignation">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        ${resignation.status === 'archived' ? `
+                        <button type="button" class="btn btn-sm btn-success action-button" onclick="unarchiveResignation(${resignation.id})" title="Unarchive Resignation" aria-label="Unarchive Resignation" data-title="Unarchive Resignation">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                        ` : `
+                        <button type="button" class="btn btn-sm btn-secondary action-button" onclick="archiveResignation(${resignation.id})" title="Archive Resignation" aria-label="Archive Resignation" data-title="Archive Resignation">
+                            <i class="fas fa-archive"></i>
+                        </button>
+                        `}
+                    </div>
                 `;
 
                 tbody.append(`
@@ -1352,13 +1502,12 @@ function loadResignationsTable(status = 'active', page = 1, searchTerm = '') {
                         <td>${resignation.department || '-'}</td>
                         <td>${resignation.email || '-'}</td>
                         <td>${resignation.position || '-'}</td>
-                        <td>${resignation.resignation_type || '-'}</td>
                         <td>${resignation.reason || '-'}</td>
                         <td>${resignation.notice_date || '-'}</td>
                         <td>${resignation.last_working_date || '-'}</td>
                         <td>${resignation.comments ? resignation.comments.substring(0, 50) + '...' : '-'}</td>
-                        <td>${statusBadge}</td>
-                        <td>${actions}</td>
+                        <td class="status-cell">${statusBadge}</td>
+                        <td class="actions-cell">${actions}</td>
                     </tr>
                 `);
             });
@@ -1367,13 +1516,218 @@ function loadResignationsTable(status = 'active', page = 1, searchTerm = '') {
             renderResignationsPagination('resignations-pagination', response, status, page);
         } else {
             console.log('[loadResignationsTable] No records found');
-            tbody.append('<tr><td colspan="11" class="text-center">No resignations found</td></tr>');
+            tbody.append('<tr><td colspan="10" class="text-center">No resignations found</td></tr>');
             $('#resignations-pagination').empty();
         }
     }).fail(function(xhr, jqStatus, error) {
         console.error('[loadResignationsTable] AJAX error. jqStatus:', jqStatus, 'error:', error, 'response:', xhr.responseText);
-        $('#resignations-tbody').html('<tr><td colspan="11" class="text-center text-danger">Error loading resignations. Check console for details.</td></tr>');
+        $('#resignations-tbody').html('<tr><td colspan="10" class="text-center text-danger">Error loading resignations. Check console for details.</td></tr>');
         $('#resignations-pagination').empty();
+    });
+}
+
+function loadTerminationsTable(status = 'active', page = 1, searchTerm = '') {
+    console.log('[loadTerminationsTable] status:', status, 'page:', page, 'search:', searchTerm);
+    let apiStatus = status;
+    if (status === 'active' || status === null) {
+        apiStatus = null;
+    } else if (status === 'all') {
+        apiStatus = 'all';
+    }
+
+    const payload = {
+        ajax_action: 'get_terminations',
+        controller: 'termination',
+        status: apiStatus,
+        page: page,
+        limit: 10,
+        search: searchTerm
+    };
+
+    const tbody = $('#terminations-tbody');
+    showTableLoading(tbody, 9);
+
+    $.post('exit_management.php', payload, function(response) {
+        tbody.empty();
+
+        if (response && response.data && response.data.length > 0) {
+            response.data.forEach(function(termination) {
+                const statusBadge = getStatusBadge(termination.status);
+                const actions = `
+                    <div class="table-actions">
+                        <button type="button" class="btn btn-sm btn-info action-button" onclick="showTerminationModal(${termination.id})" title="Review Termination" aria-label="Review Termination">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        ${termination.status === 'archived' ? `
+                        <button type="button" class="btn btn-sm btn-success action-button" onclick="unarchiveTermination(${termination.id})" title="Unarchive Termination" aria-label="Unarchive Termination">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                        ` : `
+                        <button type="button" class="btn btn-sm btn-secondary action-button" onclick="archiveTermination(${termination.id})" title="Archive Termination" aria-label="Archive Termination">
+                            <i class="fas fa-archive"></i>
+                        </button>
+                        `}
+                    </div>
+                `;
+
+                tbody.append(`
+                    <tr>
+                        <td>${termination.employee_name || '<em class="text-danger">Missing Employee</em>'}</td>
+                        <td>${termination.department || '-'}</td>
+                        <td>${termination.email || '-'}</td>
+                        <td>${termination.position || '-'}</td>
+                        <td>${termination.termination_reason || '-'}</td>
+                        <td>${termination.effective_date || '-'}</td>
+                        <td>${termination.comments ? termination.comments.substring(0, 50) + '...' : '-'}</td>
+                        <td class="status-cell">${statusBadge}</td>
+                        <td class="actions-cell">${actions}</td>
+                    </tr>
+                `);
+            });
+
+            renderTerminationsPagination('terminations-pagination', response, status, page);
+        } else {
+            tbody.append('<tr><td colspan="9" class="text-center">No terminations found</td></tr>');
+            $('#terminations-pagination').empty();
+        }
+    }, 'json').fail(function(xhr, status, error) {
+        console.error('[loadTerminationsTable] AJAX error:', status, error, xhr.responseText);
+        tbody.html('<tr><td colspan="9" class="text-center text-danger">Error loading terminations. Check console for details.</td></tr>');
+        $('#terminations-pagination').empty();
+    });
+}
+
+function showTerminationModal(terminationId = null) {
+    $('#terminationForm')[0].reset();
+    $('#terminationId').val('');
+    $('#terminationApprovalSection').hide();
+    $('#terminationEligibilityMessage').hide();
+    $('#terminationSubmitBtn').prop('disabled', false).text('Submit Termination');
+
+    if (terminationId) {
+        $('#terminationModalTitle').text('Review Termination');
+        $('#terminationApprovalSection').show();
+        $('#terminationForm input, #terminationForm textarea, #terminationForm select').prop('disabled', false);
+        $('#terminationEmployeeSelect').prop('disabled', true);
+
+        $.post('exit_management.php', {
+            ajax_action: 'get_termination_details',
+            controller: 'termination',
+            termination_id: terminationId
+        }, function(response) {
+            if (response.success) {
+                $('#terminationId').val(response.data.id);
+                $('#terminationEmployeeSelect').val(response.data.employee_id);
+                $('#terminationEffectiveDate').val(response.data.effective_date);
+                $('#terminationReason').val(response.data.termination_reason);
+                $('#terminationComments').val(response.data.comments || '');
+                $('#terminationApprovalStatus').val(response.data.status || 'pending_review');
+                $('#terminationApprovalComments').val('');
+                $('#terminationModal').modal('show');
+            } else {
+                showToast('error', response.message || 'Unable to load termination details.');
+            }
+        }, 'json').fail(function(xhr, status, error) {
+            console.error('Error loading termination details:', status, error, xhr.responseText);
+            showToast('error', 'Error loading termination details.');
+        });
+    } else {
+        $('#terminationModalTitle').text('Initiate Termination');
+        $('#terminationModal').modal('show');
+    }
+}
+
+function submitTerminationForm() {
+    const terminationId = $('#terminationId').val();
+    const employeeId = $('#terminationEmployeeSelect').val();
+    const terminationReason = $('#terminationReason').val();
+    const effectiveDate = $('#terminationEffectiveDate').val();
+    const comments = $('#terminationComments').val();
+
+    if (!employeeId || !terminationReason || !effectiveDate) {
+        showToast('warning', 'Please complete all required termination fields.');
+        return;
+    }
+
+    const payload = {
+        ajax_action: terminationId ? 'process_termination' : 'submit_termination',
+        controller: 'termination',
+        employee_id: employeeId,
+        termination_reason: terminationReason,
+        effective_date: effectiveDate,
+        comments: comments
+    };
+
+    if (terminationId) {
+        payload.termination_id = terminationId;
+        payload.status = $('#terminationApprovalStatus').val();
+        payload.approval_comments = $('#terminationApprovalComments').val();
+    }
+
+    $.post('exit_management.php', payload, function(response) {
+        if (response.success) {
+            showToast('success', response.message || 'Termination saved successfully.');
+            $('#terminationModal').modal('hide');
+            loadTerminationsTable();
+        } else {
+            showToast('error', response.message || 'Failed to save termination.');
+        }
+    }, 'json').fail(function(xhr, status, error) {
+        console.error('Error submitting termination:', status, error, xhr.responseText);
+        showToast('error', 'Error submitting termination. See console for details.');
+    });
+}
+
+function onTerminationSearchChange() {
+    const searchTerm = $('#termination-search').val().toLowerCase();
+    const status = $('#termination-status-filter').val();
+    loadTerminationsTable(status, 1, searchTerm);
+}
+
+function onTerminationStatusFilterChange() {
+    const selectedStatus = $('#termination-status-filter').val();
+    $('#termination-search').val('');
+    loadTerminationsTable(selectedStatus, 1);
+}
+
+function archiveTermination(id) {
+    if (!confirm('Archive this termination record?')) {
+        return;
+    }
+
+    $.post('exit_management.php', {
+        ajax_action: 'archive_termination',
+        controller: 'termination',
+        termination_id: id,
+        archive_reason: 'Manual archive'
+    }, function(response) {
+        if (response.success) {
+            showToast('success', response.message || 'Termination archived successfully.');
+            loadTerminationsTable();
+        } else {
+            showToast('error', response.message || 'Failed to archive termination.');
+        }
+    }, 'json').fail(function(xhr, status, error) {
+        console.error('Error archiving termination:', status, error, xhr.responseText);
+        showToast('error', 'Error archiving termination.');
+    });
+}
+
+function unarchiveTermination(id) {
+    $.post('exit_management.php', {
+        ajax_action: 'unarchive_termination',
+        controller: 'termination',
+        termination_id: id
+    }, function(response) {
+        if (response.success) {
+            showToast('success', response.message || 'Termination unarchived successfully.');
+            loadTerminationsTable();
+        } else {
+            showToast('error', response.message || 'Failed to unarchive termination.');
+        }
+    }, 'json').fail(function(xhr, status, error) {
+        console.error('Error unarchiving termination:', status, error, xhr.responseText);
+        showToast('error', 'Error unarchiving termination.');
     });
 }
 
@@ -1397,7 +1751,7 @@ function loadArchivedResignationsTable(page = 1) {
         renderArchivedResignationsPage();
     }).fail(function(xhr, status, error) {
         console.error('Error loading archived resignations:', status, error, xhr.responseText);
-        $('#archived-resignations-tbody').html('<tr><td colspan="11" class="text-center text-danger">Error loading archived resignations</td></tr>');
+        $('#archived-resignations-tbody').html('<tr><td colspan="10" class="text-center text-danger">Error loading archived resignations</td></tr>');
     });
 }
 
@@ -1406,7 +1760,7 @@ function renderArchivedResignationsPage() {
     tbody.empty();
 
     if (!archivedResignationsData.length) {
-        tbody.append('<tr><td colspan="11" class="text-center">No archived resignations found</td></tr>');
+        tbody.append('<tr><td colspan="10" class="text-center">No archived resignations found</td></tr>');
         $('#archived-resignations-pagination').empty();
         return;
     }
@@ -1421,9 +1775,11 @@ function renderArchivedResignationsPage() {
     pageItems.forEach(function(resignation) {
         const statusBadge = getStatusBadge(resignation.status);
         const actions = `
-            <button class="btn btn-sm btn-success" onclick="unarchiveResignation(${resignation.id})" title="Unarchive Resignation">
-                <i class="fas fa-undo"></i>
-            </button>
+            <div class="table-actions">
+                <button class="btn btn-sm btn-success action-button" onclick="unarchiveResignation(${resignation.id})" title="Unarchive Resignation" aria-label="Unarchive Resignation" data-title="Unarchive Resignation">
+                    <i class="fas fa-undo"></i>
+                </button>
+            </div>
         `;
 
         tbody.append(`
@@ -1437,8 +1793,8 @@ function renderArchivedResignationsPage() {
                 <td>${resignation.notice_date || '-'}</td>
                 <td>${resignation.last_working_date || '-'}</td>
                 <td>${resignation.comments ? resignation.comments.substring(0, 50) + '...' : '-'}</td>
-                <td>${statusBadge}</td>
-                <td>${actions}</td>
+                <td class="status-cell">${statusBadge}</td>
+                <td class="actions-cell">${actions}</td>
             </tr>
         `);
     });
@@ -1769,10 +2125,31 @@ function loadSurveysTable(status = 'all', page = 1, limit = 10, searchTerm = '')
 
 // Helper functions
 function getStatusBadge(status) {
+    const normalized = (status || '').toLowerCase();
+    const statusLabels = {
+        'pending': 'Pending',
+        'pending_review': 'Pending Review',
+        'pending_legal_review': 'Pending Legal Review',
+        'approved': 'Approved',
+        'rejected': 'Rejected',
+        'rejected_by_legal': 'Rejected by Legal',
+        'withdrawn': 'Withdrawn',
+        'completed': 'Completed',
+        'active': 'Active',
+        'inactive': 'Inactive',
+        'scheduled': 'Scheduled',
+        'draft': 'Draft',
+        'archived': 'Archived'
+    };
+
     const statusClasses = {
         'pending': 'badge badge-warning',
+        'pending_review': 'badge badge-warning',
+        'pending_legal_review': 'badge badge-info',
         'approved': 'badge badge-success',
         'rejected': 'badge badge-danger',
+        'rejected_by_legal': 'badge badge-danger',
+        'withdrawn': 'badge badge-secondary',
         'completed': 'badge badge-success',
         'active': 'badge badge-primary',
         'inactive': 'badge badge-secondary',
@@ -1781,8 +2158,9 @@ function getStatusBadge(status) {
         'archived': 'badge badge-dark'
     };
 
-    const cssClass = statusClasses[status] || 'badge badge-secondary';
-    return `<span class="${cssClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
+    const label = statusLabels[normalized] || status || 'Unknown';
+    const cssClass = statusClasses[normalized] || 'badge badge-secondary';
+    return `<span class="${cssClass}">${label}</span>`;
 }
 
 // Toast notification function
@@ -1928,31 +2306,6 @@ function onSurveyStatusFilterChange() {
     // Clear search when switching filters
     $('#survey-search').val('');
     loadSurveysTable(selectedStatus === 'active' ? 'all' : selectedStatus, 1);
-}
-
-function loadSectionData(sectionName) {
-    switch (sectionName) {
-        case 'resignations':
-            onResignationStatusFilterChange();
-            break;
-        case 'interviews':
-            onInterviewStatusFilterChange();
-            break;
-        case 'transfers':
-            onTransferStatusFilterChange();
-            break;
-        case 'settlements':
-            onSettlementStatusFilterChange();
-            break;
-        case 'documents':
-            onDocumentStatusFilterChange();
-            break;
-        case 'surveys':
-            onSurveyStatusFilterChange();
-            break;
-        default:
-            loadDashboardData();
-    }
 }
 
 // Action functions
@@ -3043,7 +3396,7 @@ function renderRecentResignations(resignations) {
 
     let html = '';
     resignations.forEach(function(res) {
-        const statusClass = getStatusBadgeClass(res.status);
+        const statusBadge = getStatusBadge(res.status);
         const daysLeft = res.days_left >= 0 ? res.days_left : 'Exited';
         const noticeDate = formatDate(res.notice_date);
         const lastDate = formatDate(res.last_working_date);
@@ -3055,7 +3408,7 @@ function renderRecentResignations(resignations) {
                     <td>${res.reason || 'N/A'}</td>
                     <td>${noticeDate}</td>
                     <td>${lastDate}</td>
-                    <td><span class="badge ${statusClass}">${res.status}</span></td>
+                    <td>${statusBadge}</td>
                     <td>${daysLeft}</td>
                 </tr>`;
     });
@@ -3065,12 +3418,23 @@ function renderRecentResignations(resignations) {
 
 // Get status badge CSS class
 function getStatusBadgeClass(status) {
-    switch(status.toLowerCase()) {
-        case 'pending': return 'badge-warning';
-        case 'approved': return 'badge-success';
-        case 'rejected': return 'badge-danger';
-        case 'completed': return 'badge-info';
-        default: return 'badge-secondary';
+    switch((status || '').toLowerCase()) {
+        case 'pending':
+        case 'pending_review':
+            return 'badge-warning';
+        case 'pending_legal_review':
+            return 'badge-info';
+        case 'approved':
+            return 'badge-success';
+        case 'rejected':
+        case 'rejected_by_legal':
+            return 'badge-danger';
+        case 'withdrawn':
+            return 'badge-secondary';
+        case 'completed':
+            return 'badge-info';
+        default:
+            return 'badge-secondary';
     }
 }
 
@@ -3153,8 +3517,14 @@ function loadDashboardMetrics() {
 // Section data loading function
 function loadSectionData(sectionName) {
     switch (sectionName) {
+        case 'dashboard':
+            loadDashboardData();
+            break;
         case 'resignations':
             loadResignationsTable();
+            break;
+        case 'terminations':
+            loadTerminationsTable();
             break;
         case 'interviews':
             loadInterviewsTable();

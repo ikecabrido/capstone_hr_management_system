@@ -4,7 +4,7 @@ require_once "../auth/database.php";
 $db = Database::getInstance()->getConnection();
 
 // Check if tables already exist
-$tables = ['exit_resignations', 'exit_interviews', 'exit_knowledge_transfer_plans', 'exit_knowledge_transfer_items', 'exit_employee_settlements', 'exit_documents', 'exit_surveys', 'exit_survey_questions', 'exit_survey_responses', 'exit_survey_answers'];
+$tables = ['exit_resignations', 'exit_terminations', 'exit_interviews', 'exit_knowledge_transfer_plans', 'exit_knowledge_transfer_items', 'exit_employee_settlements', 'exit_documents', 'exit_surveys', 'exit_survey_questions', 'exit_survey_responses', 'exit_survey_answers'];
 $existingTables = [];
 
 foreach ($tables as $table) {
@@ -33,9 +33,18 @@ CREATE TABLE `exit_resignations` (
   `comments` text,
   `submitted_by` int(11) DEFAULT NULL,
   `preclearance_desk_person` int(11) DEFAULT NULL,
-  `status` enum('pending','approved','rejected','withdrawn') DEFAULT 'pending',
+  `status` enum('pending_review','pending_legal_review','approved','rejected','rejected_by_legal','withdrawn') DEFAULT 'pending_review',
   `approved_by` int(11) DEFAULT NULL,
   `approved_at` timestamp NULL DEFAULT NULL,
+  `hr_approved_by` int(11) DEFAULT NULL,
+  `hr_approved_at` datetime DEFAULT NULL,
+  `hr_approval_comments` text DEFAULT NULL,
+  `reviewed_by` int(11) DEFAULT NULL,
+  `reviewed_at` datetime DEFAULT NULL,
+  `review_remarks` text DEFAULT NULL,
+  `legal_approved_by` int(11) DEFAULT NULL,
+  `legal_approved_at` datetime DEFAULT NULL,
+  `legal_approval_comments` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
@@ -45,22 +54,69 @@ CREATE TABLE `exit_resignations` (
   KEY `fk_resignation_approved_by` (`approved_by`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Table structure for table `exit_terminations`
+CREATE TABLE `exit_terminations` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `employee_id` varchar(50) NOT NULL,
+  `termination_reason` text NOT NULL,
+  `effective_date` date NOT NULL,
+  `comments` text,
+  `submitted_by` int(11) DEFAULT NULL,
+  `status` enum('pending_review','pending_legal_review','approved','rejected','rejected_by_legal','withdrawn') DEFAULT 'pending_review',
+  `reviewed_by` int(11) DEFAULT NULL,
+  `reviewed_at` datetime DEFAULT NULL,
+  `review_remarks` text DEFAULT NULL,
+  `legal_approved_by` int(11) DEFAULT NULL,
+  `legal_approved_at` datetime DEFAULT NULL,
+  `legal_approval_comments` text DEFAULT NULL,
+  `approved_by` int(11) DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `fk_termination_employee` (`employee_id`),
+  KEY `fk_termination_submitted_by` (`submitted_by`),
+  KEY `fk_termination_approved_by` (`approved_by`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Table structure for table `exit_interviews`
 CREATE TABLE `exit_interviews` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `employee_id` varchar(50) NOT NULL,
+  `exit_case_type` enum('resignation','termination') NOT NULL,
+  `exit_case_id` int(11) NOT NULL,
   `interviewer_id` int(11) DEFAULT NULL,
   `scheduled_date` date NOT NULL,
   `scheduled_time` time NOT NULL,
   `location` varchar(255) DEFAULT 'Virtual',
   `notes` text,
   `status` enum('scheduled','completed','cancelled') DEFAULT 'scheduled',
+  `completed_at` timestamp NULL DEFAULT NULL,
   `feedback` text,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `fk_interview_employee` (`employee_id`),
+  KEY `fk_interview_exit_case` (`exit_case_id`),
   KEY `fk_interview_interviewer` (`interviewer_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table structure for table `exit_interview_feedback`
+CREATE TABLE `exit_interview_feedback` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `interview_id` int(11) NOT NULL,
+  `overall_satisfaction` tinyint(1) NOT NULL,
+  `work_environment_rating` tinyint(1) NOT NULL,
+  `management_rating` tinyint(1) NOT NULL,
+  `compensation_rating` tinyint(1) NOT NULL,
+  `work_life_balance_rating` tinyint(1) NOT NULL,
+  `reason_for_leaving` text NOT NULL,
+  `suggestions` text,
+  `would_recommend` enum('yes','no') NOT NULL,
+  `additional_comments` text,
+  `submitted_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `fk_feedback_interview` (`interview_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for table `exit_knowledge_transfer_plans`
@@ -213,8 +269,10 @@ CREATE TABLE `exit_survey_answers` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Constraints
-ALTER TABLE `exit_resignations` ADD CONSTRAINT `fk_resignation_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_resignation_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE, ADD CONSTRAINT `fk_resignation_submitted_by` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_resignation_preclearance_desk` FOREIGN KEY (`preclearance_desk_person`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+ALTER TABLE `exit_resignations` ADD CONSTRAINT `fk_resignation_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_resignation_hr_approved_by` FOREIGN KEY (`hr_approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_resignation_legal_approved_by` FOREIGN KEY (`legal_approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_resignation_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE, ADD CONSTRAINT `fk_resignation_submitted_by` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_resignation_preclearance_desk` FOREIGN KEY (`preclearance_desk_person`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+ALTER TABLE `exit_terminations` ADD CONSTRAINT `fk_termination_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_termination_legal_approved_by` FOREIGN KEY (`legal_approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_termination_reviewed_by` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_termination_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE, ADD CONSTRAINT `fk_termination_submitted_by` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 ALTER TABLE `exit_interviews` ADD CONSTRAINT `fk_interview_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE, ADD CONSTRAINT `fk_interview_interviewer` FOREIGN KEY (`interviewer_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+ALTER TABLE `exit_interview_feedback` ADD CONSTRAINT `fk_feedback_interview` FOREIGN KEY (`interview_id`) REFERENCES `exit_interviews` (`id`) ON DELETE CASCADE;
 ALTER TABLE `exit_knowledge_transfer_plans` ADD CONSTRAINT `fk_transfer_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_transfer_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE, ADD CONSTRAINT `fk_transfer_successor` FOREIGN KEY (`successor_id`) REFERENCES `employees` (`employee_id`) ON DELETE SET NULL;
 ALTER TABLE `exit_knowledge_transfer_items` ADD CONSTRAINT `fk_item_plan` FOREIGN KEY (`plan_id`) REFERENCES `exit_knowledge_transfer_plans` (`id`) ON DELETE CASCADE;
 ALTER TABLE `exit_employee_settlements` ADD CONSTRAINT `fk_settlement_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_settlement_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL, ADD CONSTRAINT `fk_settlement_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`employee_id`) ON DELETE CASCADE, ADD CONSTRAINT `fk_settlement_resignation` FOREIGN KEY (`resignation_id`) REFERENCES `exit_resignations` (`id`) ON DELETE SET NULL;

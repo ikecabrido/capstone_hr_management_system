@@ -9,6 +9,7 @@ class ResignationModel extends ExitManagementModel
     {
         parent::__construct();
         $this->ensureExitResignationsAutoIncrement();
+        $this->ensureResignationSchema();
         $this->ensurePayrollClearancesTable();
     }
 
@@ -29,6 +30,49 @@ class ResignationModel extends ExitManagementModel
                 }
             }
             $this->db->exec("ALTER TABLE exit_resignations MODIFY id int(11) NOT NULL AUTO_INCREMENT");
+        }
+    }
+
+    private function ensureResignationSchema(): void
+    {
+        try {
+            $stmt = $this->db->query("SHOW TABLES LIKE 'exit_resignations'");
+            if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+                return;
+            }
+
+            $desiredStatusEnum = "'pending_review','pending_legal_review','approved','rejected','rejected_by_legal','withdrawn'";
+            $statusStmt = $this->db->prepare("SHOW COLUMNS FROM exit_resignations LIKE 'status'");
+            $statusStmt->execute();
+            $statusColumn = $statusStmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($statusColumn && stripos($statusColumn['Type'], 'pending_review') === false) {
+                $this->db->exec("UPDATE exit_resignations SET status = 'pending_review' WHERE status = 'pending_hr_review'");
+                $this->db->exec("UPDATE exit_resignations SET status = 'rejected' WHERE status = 'rejected_by_hr'");
+                $this->db->exec("ALTER TABLE exit_resignations MODIFY status ENUM($desiredStatusEnum) NOT NULL DEFAULT 'pending_review'");
+            }
+
+            $requiredColumns = [
+                'hr_approved_by' => 'int(11) DEFAULT NULL',
+                'hr_approved_at' => 'datetime DEFAULT NULL',
+                'hr_approval_comments' => 'text DEFAULT NULL',
+                'reviewed_by' => 'int(11) DEFAULT NULL',
+                'reviewed_at' => 'datetime DEFAULT NULL',
+                'review_remarks' => 'text DEFAULT NULL',
+                'legal_approved_by' => 'int(11) DEFAULT NULL',
+                'legal_approved_at' => 'datetime DEFAULT NULL',
+                'legal_approval_comments' => 'text DEFAULT NULL'
+            ];
+
+            foreach ($requiredColumns as $column => $definition) {
+                $columnStmt = $this->db->prepare("SHOW COLUMNS FROM exit_resignations LIKE ?");
+                $columnStmt->execute([$column]);
+                if (!$columnStmt->fetch(PDO::FETCH_ASSOC)) {
+                    $this->db->exec("ALTER TABLE exit_resignations ADD COLUMN $column $definition");
+                }
+            }
+        } catch (Exception $e) {
+            // Ignore schema migration errors and preserve existing table behavior
         }
     }
 
@@ -86,7 +130,7 @@ class ResignationModel extends ExitManagementModel
             $stmt = $this->db->prepare(" 
                 INSERT INTO exit_resignations (employee_id, resignation_type, reason, notice_date,
                                         last_working_date, comments, submitted_by, status, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'pending_review', NOW())
             ");
 
             $this->db->beginTransaction();
@@ -106,30 +150,6 @@ class ResignationModel extends ExitManagementModel
             }
 
             $resignationId = (int)$this->db->lastInsertId();
-
-            // Create a draft settlement for payroll clearance linkage
-            $salaryComponents = $this->getEmployeeSalaryComponents($data['employee_id']);
-            $settlementData = [
-                'employee_id' => $data['employee_id'],
-                'resignation_id' => $resignationId,
-                'basic_salary' => $salaryComponents['basic_salary'] ?? 0,
-                'hra' => $salaryComponents['hra'] ?? 0,
-                'conveyance' => $salaryComponents['conveyance'] ?? 0,
-                'lta' => $salaryComponents['lta'] ?? 0,
-                'medical_allowance' => $salaryComponents['medical_allowance'] ?? 0,
-                'other_allowances' => $salaryComponents['other_allowances'] ?? 0,
-                'provident_fund' => $salaryComponents['provident_fund'] ?? 0,
-                'gratuity' => $salaryComponents['gratuity'] ?? 0,
-                'notice_pay' => $salaryComponents['notice_pay'] ?? 0,
-                'outstanding_loans' => $salaryComponents['outstanding_loans'] ?? 0,
-                'other_deductions' => $salaryComponents['other_deductions'] ?? 0,
-                'settlement_date' => $data['last_working_date'] ?? date('Y-m-d'),
-                'created_by' => $data['submitted_by'] ?? null,
-            ];
-
-            $settlementModel = new SettlementModel();
-            $settlementData['net_payable'] = $settlementModel->calculateTotalSettlement($settlementData);
-            $settlementId = $settlementModel->createSettlement($settlementData);
 
             $this->db->commit();
             return $resignationId;
@@ -180,7 +200,7 @@ class ResignationModel extends ExitManagementModel
     /**
      * Get resignations with pagination support
      */
-    public function getResignations(string $status = null, int $page = 1, int $limit = 10, string $search = ''): array
+    public function getResignations(?string $status = null, int $page = 1, int $limit = 10, string $search = ''): array
     {
         $offset = ($page - 1) * $limit;
 
@@ -271,6 +291,8 @@ class ResignationModel extends ExitManagementModel
 
             if ($status === 'all') {
                 $whereClause = "";
+            } elseif ($status === 'pending') {
+                $whereClause = " WHERE r.status IN ('pending_review', 'pending_legal_review')";
             } elseif ($status) {
                 $whereClause = " WHERE r.status = :status";
                 $params['status'] = $status;
@@ -341,23 +363,58 @@ class ResignationModel extends ExitManagementModel
     /**
      * Update resignation status
      */
-    public function updateResignationStatus(int $resignationId, string $status, string $approvedBy = null): bool
+    public function updateResignationStatus(int $resignationId, string $status, ?int $approverId = null, ?string $comments = null): bool
     {
-        if ($approvedBy) {
+        $allowedStatuses = [
+            'pending_review',
+            'pending_legal_review',
+            'approved',
+            'rejected',
+            'rejected_by_legal',
+            'withdrawn'
+        ];
+
+        if (!in_array($status, $allowedStatuses, true)) {
+            throw new Exception('Invalid resignation status: ' . $status);
+        }
+
+        if ($status === 'pending_review' || $status === 'withdrawn') {
             $stmt = $this->db->prepare("
                 UPDATE exit_resignations
-                SET status = ?, approved_by = ?, approved_at = NOW()
-                WHERE id = ?
-            ");
-            return $stmt->execute([$status, $approvedBy, $resignationId]);
-        } else {
-            $stmt = $this->db->prepare("
-                UPDATE exit_resignations
-                SET status = ?
+                SET status = ?, updated_at = NOW()
                 WHERE id = ?
             ");
             return $stmt->execute([$status, $resignationId]);
         }
+
+        if ($status === 'pending_legal_review' || $status === 'rejected') {
+            $stmt = $this->db->prepare("
+                UPDATE exit_resignations
+                SET status = ?, hr_approved_by = ?, hr_approved_at = NOW(), hr_approval_comments = ?, reviewed_by = ?, reviewed_at = NOW(), review_remarks = ?, updated_at = NOW()
+                WHERE id = ?
+            ");
+            return $stmt->execute([$status, $approverId, $comments, $approverId, $comments, $resignationId]);
+        }
+
+        if ($status === 'approved') {
+            $stmt = $this->db->prepare("
+                UPDATE exit_resignations
+                SET status = ?, legal_approved_by = ?, legal_approved_at = NOW(), legal_approval_comments = ?, approved_by = ?, approved_at = NOW(), updated_at = NOW()
+                WHERE id = ?
+            ");
+            return $stmt->execute([$status, $approverId, $comments, $approverId, $resignationId]);
+        }
+
+        if ($status === 'rejected_by_legal') {
+            $stmt = $this->db->prepare("
+                UPDATE exit_resignations
+                SET status = ?, legal_approved_by = ?, legal_approved_at = NOW(), legal_approval_comments = ?, updated_at = NOW()
+                WHERE id = ?
+            ");
+            return $stmt->execute([$status, $approverId, $comments, $resignationId]);
+        }
+
+        return false;
     }
 
     /**
@@ -408,14 +465,14 @@ class ResignationModel extends ExitManagementModel
         }
 
         // Check for existing pending resignation
-        $stmt = $this->db->prepare("SELECT COUNT(*) FROM exit_resignations WHERE employee_id = ? AND status = 'pending'");
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM exit_resignations WHERE employee_id = ? AND status IN ('pending_review','pending_legal_review')");
         $stmt->execute([$employeeId]);
         $pendingCount = (int)$stmt->fetchColumn();
 
         if ($pendingCount > 0) {
             return [
                 'eligible' => false,
-                'reason' => 'Employee already has a pending resignation request.'
+                'reason' => 'Employee already has an active resignation request in review.'
             ];
         }
 

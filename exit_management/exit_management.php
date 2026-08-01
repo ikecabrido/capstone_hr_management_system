@@ -3,6 +3,7 @@ session_start();
 require_once "../auth/auth_check.php";
 require_once "controllers/ExitManagementController.php";
 require_once "controllers/ResignationController.php";
+require_once "controllers/TerminationController.php";
 require_once "controllers/ExitInterviewController.php";
 require_once "controllers/KnowledgeTransferController.php";
 require_once "controllers/SettlementController.php";
@@ -14,6 +15,7 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
 // Initialize controllers
 $exitController = new ExitManagementController();
 $resignationController = new ResignationController();
+$terminationController = new TerminationController();
 $interviewController = new ExitInterviewController();
 $transferController = new KnowledgeTransferController();
 $settlementController = new SettlementController();
@@ -52,6 +54,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
     switch ($controller) {
         case 'resignation':
             $response = $resignationController->handleAjaxRequest($action, $data);
+            break;
+        case 'termination':
+            $response = $terminationController->handleAjaxRequest($action, $data);
             break;
         case 'interview':
             $response = $interviewController->handleAjaxRequest($action, $data);
@@ -194,43 +199,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
             role="menu"
             data-accordion="false">
             <li class="nav-item">
-              <a href="#dashboard" class="nav-link active" onclick="showSection('dashboard')">
+              <a href="#dashboard" class="nav-link active" onclick="showSection('dashboard', event)">
                 <i class="nav-icon fas fa-tachometer-alt"></i>
                 <p>Dashboard</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#resignations" class="nav-link" onclick="showSection('resignations')">
+              <a href="#resignations" class="nav-link" onclick="showSection('resignations', event)">
                 <i class="nav-icon fas fa-user-times"></i>
                 <p>Resignations</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#interviews" class="nav-link" onclick="showSection('interviews')">
+              <a href="#terminations" class="nav-link" onclick="showSection('terminations', event)">
+                <i class="nav-icon fas fa-gavel"></i>
+                <p>Terminations</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#interviews" class="nav-link" onclick="showSection('interviews', event)">
                 <i class="nav-icon fas fa-comments"></i>
                 <p>Exit Interviews</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#transfers" class="nav-link" onclick="showSection('transfers')">
+              <a href="#transfers" class="nav-link" onclick="showSection('transfers', event)">
                 <i class="nav-icon fas fa-exchange-alt"></i>
                 <p>Knowledge Transfer</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#settlements" class="nav-link" onclick="showSection('settlements')">
+              <a href="#settlements" class="nav-link" onclick="showSection('settlements', event)">
                 <i class="nav-icon fas fa-calculator"></i>
                 <p>Settlements</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#documents" class="nav-link" onclick="showSection('documents')">
+              <a href="#documents" class="nav-link" onclick="showSection('documents', event)">
                 <i class="nav-icon fas fa-file-alt"></i>
                 <p>Documentation</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#surveys" class="nav-link" onclick="showSection('surveys')">
+              <a href="#surveys" class="nav-link" onclick="showSection('surveys', event)">
                 <i class="nav-icon fas fa-poll"></i>
                 <p>Post-Exit Surveys</p>
               </a>
@@ -508,8 +519,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                   <select id="resignation-status-filter" class="form-control form-control-sm" onchange="onResignationStatusFilterChange()" style="flex: 1; white-space: nowrap;">
                     <option value="active">Active</option>
                     <option value="pending">Pending</option>
+                    <option value="pending_review">Pending Review</option>
+                    <option value="pending_legal_review">Pending Legal Review</option>
                     <option value="approved">Approved</option>
                     <option value="rejected">Rejected</option>
+                    <option value="rejected_by_legal">Rejected by Legal</option>
                     <option value="withdrawn">Withdrawn</option>
                     <option value="archived">Archived</option>
                     <option value="all">All</option>
@@ -519,25 +533,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                   <button type="button" class="btn btn-warning btn-sm mr-2" onclick="toggleArchivedResignations()">
                     <i class="fas fa-archive"></i> Archive
                   </button>
-                  <button type="button" class="btn btn-primary btn-sm" onclick="showResignationModal()">
-                    <i class="fas fa-plus"></i> Add
-                  </button>
                 </div>
               </div>
               <div class="card-body">
                 <div class="table-responsive">
                   <table id="resignations-table" class="table table-bordered table-striped table-sm">
                     <colgroup>
-                      <col style="width: 13%;">
-                      <col style="width: 8%;">
                       <col style="width: 15%;">
-                      <col style="width: 12%;">
-                      <col style="width: 10%;">
-                      <col style="width: 9%;">
-                      <col style="width: 9%;">
-                      <col style="width: 9%;">
                       <col style="width: 8%;">
+                      <col style="width: 14%;">
+                      <col style="width: 10%;">
                       <col style="width: 11%;">
+                      <col style="width: 8%;">
+                      <col style="width: 10%;">
+                      <col style="width: 8%;">
+                      <col style="width: 10%;">
                       <col style="width: 6%;">
                     </colgroup>
                     <thead>
@@ -546,7 +556,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                         <th>Department</th>
                         <th>Email</th>
                         <th>Position</th>
-                        <th>Resignation Type</th>
                         <th>Reason</th>
                         <th>Notice Date</th>
                         <th>Last Working Date</th>
@@ -566,16 +575,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                   <div class="table-responsive">
                     <table id="archived-resignations-table" class="table table-bordered table-striped table-sm">
                       <colgroup>
-                        <col style="width: 13%;">
-                        <col style="width: 8%;">
                         <col style="width: 15%;">
-                        <col style="width: 12%;">
-                        <col style="width: 10%;">
-                        <col style="width: 9%;">
-                        <col style="width: 9%;">
-                        <col style="width: 9%;">
                         <col style="width: 8%;">
+                        <col style="width: 14%;">
+                        <col style="width: 10%;">
                         <col style="width: 11%;">
+                        <col style="width: 8%;">
+                        <col style="width: 10%;">
+                        <col style="width: 8%;">
+                        <col style="width: 10%;">
                         <col style="width: 6%;">
                       </colgroup>
                       <thead>
@@ -584,7 +592,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                           <th>Department</th>
                           <th>Email</th>
                           <th>Position</th>
-                          <th>Resignation Type</th>
                           <th>Reason</th>
                           <th>Notice Date</th>
                           <th>Last Working Date</th>
@@ -603,6 +610,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
 
                 <!-- Pagination for main resignations table -->
                 <div id="resignations-pagination" class="mt-3 d-flex justify-content-between align-items-center"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Terminations Section -->
+          <div id="terminations-section" class="section" style="display: none;">
+            <div class="card">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2" style="flex: 1;">
+                  <div class="input-group input-group-sm" style="flex: 19;">
+                    <input type="text" id="termination-search" class="form-control" placeholder="Search terminations..." onkeyup="onTerminationSearchChange()">
+                    <div class="input-group-append">
+                      <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    </div>
+                  </div>
+                  <select id="termination-status-filter" class="form-control form-control-sm" onchange="onTerminationStatusFilterChange()" style="flex: 1; white-space: nowrap;">
+                    <option value="active">Active</option>
+                    <option value="pending_review">Pending Review</option>
+                    <option value="pending_legal_review">Pending Legal Review</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="rejected_by_legal">Rejected by Legal</option>
+                    <option value="withdrawn">Withdrawn</option>
+                    <option value="archived">Archived</option>
+                    <option value="all">All</option>
+                  </select>
+                </div>
+                <div class="card-tools d-flex align-items-center">
+                  <button type="button" class="btn btn-success btn-sm" onclick="showTerminationModal()">
+                    <i class="fas fa-plus"></i> New Termination
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table id="terminations-table" class="table table-bordered table-striped table-sm">
+                    <colgroup>
+                      <col style="width: 14%;">
+                      <col style="width: 10%;">
+                      <col style="width: 14%;">
+                      <col style="width: 10%;">
+                      <col style="width: 10%;">
+                      <col style="width: 10%;">
+                      <col style="width: 16%;">
+                      <col style="width: 8%;">
+                    </colgroup>
+                    <thead>
+                      <tr>
+                        <th>Employee</th>
+                        <th>Department</th>
+                        <th>Email</th>
+                        <th>Position</th>
+                        <th>Reason</th>
+                        <th>Effective Date</th>
+                        <th>Comments</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="terminations-tbody">
+                      <!-- Data will be loaded here -->
+                    </tbody>
+                  </table>
+                </div>
+                <div id="terminations-pagination" class="mt-3 d-flex justify-content-between align-items-center"></div>
               </div>
             </div>
           </div>
@@ -826,9 +898,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                   <button type="button" class="btn btn-warning btn-sm mr-2" onclick="archiveSurveys()">
                     <i class="fas fa-archive"></i> Archive
                   </button>
-                  <button type="button" class="btn btn-primary btn-sm" onclick="showSurveyModal()">
-                    <i class="fas fa-plus"></i> Add
-                  </button>
+
                 </div>
               </div>
               <div class="card-body">
@@ -879,20 +949,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
 
   <script>
     // Section navigation
-    function showSection(sectionName) {
+    function showSection(sectionName, event) {
+      if (event && typeof event.preventDefault === 'function') {
+        event.preventDefault();
+      }
+
       // Hide all sections
       document.querySelectorAll('.section').forEach(section => {
         section.style.display = 'none';
       });
 
       // Show selected section
-      document.getElementById(sectionName + '-section').style.display = 'block';
+      const sectionElement = document.getElementById(sectionName + '-section');
+      if (sectionElement) {
+        sectionElement.style.display = 'block';
+      }
 
       // Update active nav link
       document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
       });
-      event.target.closest('.nav-link').classList.add('active');
+      if (event && event.target) {
+        const navLink = event.target.closest('.nav-link');
+        if (navLink) {
+          navLink.classList.add('active');
+        }
+      }
 
       // Load data for the section
       loadSectionData(sectionName);
