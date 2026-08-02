@@ -9,11 +9,9 @@ session_start();
 
 if (isset($_SESSION['user']) && !isset($_SESSION['user_id'])) {
 
-    $_SESSION['name'] = $_SESSION['user']['name'];
     $_SESSION['role'] = $_SESSION['user']['role'];
     $_SESSION['user_id'] = $_SESSION['user']['id'];
     $_SESSION['theme'] = $_SESSION['user']['theme'];
-    $_SESSION['full_name'] = $_SESSION['user']['name'];
     $_SESSION['username'] = $_SESSION['user']['username'];
 }
 

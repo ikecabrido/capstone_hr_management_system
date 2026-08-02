@@ -1,6 +1,6 @@
 <?php
+session_start();
 
-// Set headers FIRST before any output
 header('Content-Type: application/json');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 
@@ -24,7 +24,8 @@ function sendResponse($success, $message, $statusCode = 200, $redirect = null)
 
 // Handle non-POST requests early
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    sendResponse(false, 'Method not allowed', 405);
+    http_response_code(405);
+    exit;
 }
 try {
     require_once "auth/auth.php";
@@ -42,6 +43,8 @@ try {
     if (!$result['success']) {
         sendResponse(false, $result['message'], 401);
     }
+
+    $_SESSION['user'] = $result['user'];
 
     // Successful login
     $qrToken = trim($_POST['qr_token'] ?? '');

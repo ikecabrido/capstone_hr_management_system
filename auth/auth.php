@@ -17,6 +17,7 @@ class Auth
 
     public function login($username, $password)
     {
+
         $user = $this->userModel->findByUsername($username);
 
         if (!$user || !password_verify($password, $user['password'])) {
@@ -46,10 +47,16 @@ class Auth
                 'message' => 'Only admin and authorized personnel can login here.'
             ];
         }
+        // Store authenticated user in session
+        $_SESSION['user'] = $user;
 
-        if (!isset($_SESSION['token']) || empty($_SESSION['token'])) {
+        // Generate CSRF/session token
+        if (empty($_SESSION['token'])) {
             $_SESSION['token'] = bin2hex(random_bytes(16));
         }
+
+        // Prevent session fixation
+        session_regenerate_id(true);
 
         return [
             'success' => true,
