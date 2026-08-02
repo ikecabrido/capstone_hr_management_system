@@ -92,7 +92,70 @@ class ExitInterviewController extends ExitManagementController
         $feedback = $this->interviewModel->getFeedbackByInterview($interviewId);
         $interview['feedback'] = $feedback;
 
+        if (!isset($interview['feedback'])) {
+            $interview['feedback'] = null;
+        }
+
+        // hr_assessment is loaded by model.getInterviewById but ensure key exists
+        if (!isset($interview['hr_assessment'])) {
+            $interview['hr_assessment'] = $this->interviewModel->getHrAssessmentByInterview($interviewId);
+        }
+
+        // Attach exit case details and engagement data
+        if (!empty($interview['exit_case_type']) && !empty($interview['exit_case_id'])) {
+            $interview['exit_case_details'] = $this->interviewModel->getExitCaseDetails(
+                $interview['exit_case_type'],
+                (int)$interview['exit_case_id']
+            );
+        }
+
+        if (!empty($interview['employee_id'])) {
+            $interview['engagement_records'] = $this->interviewModel->getEngagementRecords($interview['employee_id']);
+        } else {
+            $interview['engagement_records'] = [];
+        }
+
         return $interview;
+    }
+
+    /**
+     * Get HR assessment for an interview
+     */
+    public function getHrAssessment(int $interviewId): array
+    {
+        $assessment = $this->interviewModel->getHrAssessmentByInterview($interviewId);
+        if (!$assessment) {
+            return ['success' => false, 'message' => 'No HR assessment found'];
+        }
+
+        return ['success' => true, 'data' => $assessment];
+    }
+
+    /**
+     * Save HR assessment (admin-only)
+     */
+    public function saveHrAssessment(int $interviewId, array $data): array
+    {
+        $role = strtolower((string)($_SESSION['user']['role'] ?? ''));
+        $isAdmin = in_array($role, ['admin', 'superadmin', 'administrator', 'hr_admin'], true);
+
+        if (empty($_SESSION['user']) || !$isAdmin) {
+            return ['success' => false, 'message' => 'Permission denied'];
+        }
+
+        $userId = $_SESSION['user']['id'] ?? null;
+
+        try {
+            $saved = $this->interviewModel->saveHrAssessment($interviewId, $data, $userId);
+
+            if ($saved) {
+                return ['success' => true, 'message' => 'HR assessment saved successfully'];
+            }
+
+            return ['success' => false, 'message' => 'Failed to save HR assessment'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
     }
 
     /**
@@ -106,9 +169,12 @@ class ExitInterviewController extends ExitManagementController
     /**
      * Get all interviews (support status filter)
      */
-    public function getInterviews(?string $status = null): array
+    public function getInterviews(?string $status = null, int $page = 1, int $limit = 10, string $search = ''): array
     {
-        return $this->interviewModel->getAllInterviews($status);
+        // Auto-archive interviews that have remained completed for longer than the configured interval.
+        $this->interviewModel->archiveDueCompletedInterviews(3);
+
+        return $this->interviewModel->getAllInterviews($status, $page, $limit, $search);
     }
 
     /**
@@ -117,6 +183,22 @@ class ExitInterviewController extends ExitManagementController
     public function completeInterview(int $interviewId): array
     {
         try {
+            $interview = $this->interviewModel->getInterviewById($interviewId);
+            if (!$interview) {
+                return ['success' => false, 'message' => 'Interview not found'];
+            }
+
+            $scheduledDate = $interview['scheduled_date'] ?? null;
+            $today = date('Y-m-d');
+            $canComplete = !$scheduledDate || $scheduledDate <= $today;
+
+            if (!$canComplete) {
+                return [
+                    'success' => false,
+                    'message' => 'This interview cannot be completed yet because its scheduled date is still in the future.'
+                ];
+            }
+
             $success = $this->interviewModel->updateInterviewStatus($interviewId, 'completed');
 
             if ($success) {
@@ -190,7 +272,7 @@ class ExitInterviewController extends ExitManagementController
                 $page = (int)($data['page'] ?? 1);
                 $limit = (int)($data['limit'] ?? 10);
                 $search = $data['search'] ?? '';
-                return $this->interviewModel->getAllInterviews($status, $page, $limit, $search);
+                return $this->getInterviews($status, $page, $limit, $search);
 
             case 'complete_interview':
                 return $this->completeInterview($data['interview_id'] ?? 0);
@@ -201,8 +283,20 @@ class ExitInterviewController extends ExitManagementController
             case 'unarchive_interview':
                 return $this->unarchiveInterview($data['interview_id'] ?? 0);
 
+            case 'get_archived_interviews':
+                $page = (int)($data['page'] ?? 1);
+                $limit = (int)($data['limit'] ?? 10);
+                $search = $data['search'] ?? '';
+                return $this->interviewModel->getArchivedInterviews($page, $limit, $search);
+
             case 'get_interview_details':
                 return $this->getInterviewDetails($data['interview_id'] ?? 0);
+
+            case 'get_hr_assessment':
+                return $this->getHrAssessment($data['interview_id'] ?? 0);
+
+            case 'save_hr_assessment':
+                return $this->saveHrAssessment($data['interview_id'] ?? 0, $data['assessment'] ?? []);
 
             default:
                 return parent::handleAjaxRequest($action, $data);
@@ -210,10 +304,23 @@ class ExitInterviewController extends ExitManagementController
     }
 
     /**
+     * Verify current user can manage interview archives
+     */
+    private function userCanManageInterviewArchives(): bool
+    {
+        $role = strtolower((string)($_SESSION['user']['role'] ?? ''));
+        return in_array($role, ['admin', 'superadmin', 'administrator', 'hr_admin'], true);
+    }
+
+    /**
      * Archive interview
      */
     public function archiveInterview(int $interviewId): array
     {
+        if (empty($_SESSION['user']) || !$this->userCanManageInterviewArchives()) {
+            return ['success' => false, 'message' => 'Permission denied'];
+        }
+
         try {
             $archiveReason = $_POST['archive_reason'] ?? 'Manual archive';
             $success = $this->interviewModel->archiveInterview($interviewId, $archiveReason);
@@ -236,6 +343,10 @@ class ExitInterviewController extends ExitManagementController
      */
     public function unarchiveInterview(int $interviewId): array
     {
+        if (empty($_SESSION['user']) || !$this->userCanManageInterviewArchives()) {
+            return ['success' => false, 'message' => 'Permission denied'];
+        }
+
         try {
             $success = $this->interviewModel->unarchiveInterview($interviewId);
 
@@ -258,10 +369,10 @@ class ExitInterviewController extends ExitManagementController
     private function getInterviewDetails(int $interviewId): array
     {
         try {
-            if (empty($interviewId)) {
+            if (!is_numeric($interviewId) || $interviewId <= 0) {
                 return [
                     'success' => false,
-                    'message' => 'Interview ID is required'
+                    'message' => 'A valid interview ID is required'
                 ];
             }
 
@@ -274,27 +385,41 @@ class ExitInterviewController extends ExitManagementController
                 ];
             }
 
-            // Get employee name
-            $employee = $this->interviewModel->getEmployeeById($interview['employee_id']);
-            // Get interviewer name
-            $interviewer = $this->interviewModel->getUserById($interview['interviewer_id']);
+            $employeeName = 'Unknown';
+            if (!empty($interview['employee_id'])) {
+                $employee = $this->interviewModel->getEmployeeById($interview['employee_id']);
+                if ($employee) {
+                    $employeeName = $employee['full_name'] ?? trim(($employee['first_name'] ?? '') . ' ' . ($employee['last_name'] ?? ''));
+                }
+            }
+            if ($employeeName === 'Unknown' && !empty($interview['employee_full_name'])) {
+                $employeeName = $interview['employee_full_name'];
+            }
+
+            $interviewerName = 'Unknown';
+            if (!empty($interview['interviewer_id'])) {
+                $interviewer = $this->interviewModel->getUserById($interview['interviewer_id']);
+                if ($interviewer) {
+                    $interviewerName = $interviewer['full_name'] ?? trim(($interviewer['first_name'] ?? '') . ' ' . ($interviewer['last_name'] ?? ''));
+                }
+            }
 
             return [
                 'success' => true,
                 'data' => [
                     'id' => $interview['id'],
-                    'employee_id' => $interview['employee_id'],
-                    'employee_name' => $employee ? ($employee['full_name'] ?? trim(($employee['first_name'] ?? '') . ' ' . ($employee['last_name'] ?? ''))) : 'Unknown',
-                    'interviewer_name' => $interviewer ? ($interviewer['full_name'] ?? trim(($interviewer['first_name'] ?? '') . ' ' . ($interviewer['last_name'] ?? ''))) : 'Unknown',
-                    'scheduled_date' => $interview['scheduled_date'],
-                    'status' => $interview['status']
+                    'employee_id' => $interview['employee_id'] ?? null,
+                    'employee_name' => $employeeName,
+                    'interviewer_name' => $interviewerName,
+                    'scheduled_date' => $interview['scheduled_date'] ?? null,
+                    'status' => $interview['status'] ?? null
                 ]
             ];
         } catch (Exception $e) {
             error_log("Error getting interview details: " . $e->getMessage());
             return [
                 'success' => false,
-                'message' => 'An error occurred while retrieving interview details'
+                'message' => 'An error occurred while retrieving interview details: ' . $e->getMessage()
             ];
         }
     }

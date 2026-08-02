@@ -10,6 +10,7 @@ class ExitManagementModel
     {
         $this->db = Database::getInstance()->getConnection();
         $this->ensureTableAutoIncrement('exit_employee_settlements');
+        $this->ensureTableAutoIncrement('exit_archive');
     }
 
     /**
@@ -36,6 +37,22 @@ class ExitManagementModel
                         $this->db->exec("UPDATE {$tableName} SET {$primaryKey} = {$nextId} WHERE {$primaryKey} = 0 LIMIT 1");
                         $nextId++;
                     }
+                }
+
+                $indexStmt = $this->db->prepare("SHOW INDEX FROM {$tableName} WHERE Column_name = ?");
+                $indexStmt->execute([$primaryKey]);
+                $indexInfo = $indexStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                $hasPrimaryKey = false;
+                foreach ($indexInfo as $indexRow) {
+                    if (($indexRow['Key_name'] ?? '') === 'PRIMARY') {
+                        $hasPrimaryKey = true;
+                        break;
+                    }
+                }
+
+                if (!$hasPrimaryKey) {
+                    $this->db->exec("ALTER TABLE {$tableName} ADD PRIMARY KEY ({$primaryKey})");
                 }
 
                 $this->db->exec("ALTER TABLE {$tableName} MODIFY {$primaryKey} int(11) NOT NULL AUTO_INCREMENT");
@@ -82,10 +99,11 @@ class ExitManagementModel
                 e.position,
                 e.date_hired,
                 e.employment_status,
-                COALESCE(m.full_name, '') AS manager_name,
+                '' AS manager_name,
                 r.reason AS exit_reason,
                 r.notice_date,
                 r.last_working_date,
+                r.last_working_date AS exit_date,
                 r.approved_by,
                 approver.full_name AS approved_by_name,
                 r.approved_at,
@@ -93,7 +111,6 @@ class ExitManagementModel
             FROM exit_resignations r
             JOIN employees e ON r.employee_id = e.employee_id
             LEFT JOIN users u ON e.user_id = u.id
-            LEFT JOIN users m ON u.manager_id = m.id
             LEFT JOIN users approver ON r.approved_by = approver.id
             WHERE r.status = 'approved'
             ORDER BY e.full_name");
@@ -112,10 +129,11 @@ class ExitManagementModel
                 e.position,
                 e.date_hired,
                 e.employment_status,
-                COALESCE(m.full_name, '') AS manager_name,
+                '' AS manager_name,
                 t.termination_reason AS exit_reason,
                 t.effective_date,
                 t.effective_date AS last_working_date,
+                t.effective_date AS exit_date,
                 t.approved_by,
                 approver.full_name AS approved_by_name,
                 t.approved_at,
@@ -123,7 +141,6 @@ class ExitManagementModel
             FROM exit_terminations t
             JOIN employees e ON t.employee_id = e.employee_id
             LEFT JOIN users u ON e.user_id = u.id
-            LEFT JOIN users m ON u.manager_id = m.id
             LEFT JOIN users approver ON t.approved_by = approver.id
             WHERE t.status = 'approved'
             ORDER BY e.full_name");
@@ -152,7 +169,7 @@ class ExitManagementModel
                 e.position,
                 e.date_hired,
                 e.employment_status,
-                COALESCE(m.full_name, '') AS manager_name,
+                '' AS manager_name,
                 r.reason AS exit_reason,
                 r.notice_date,
                 r.last_working_date,
@@ -162,7 +179,6 @@ class ExitManagementModel
             FROM exit_resignations r
             JOIN employees e ON r.employee_id = e.employee_id
             LEFT JOIN users u ON e.user_id = u.id
-            LEFT JOIN users m ON u.manager_id = m.id
             LEFT JOIN users approver ON r.approved_by = approver.id
             WHERE r.id = ? AND r.status = 'approved'");
         } elseif ($exitCaseType === 'termination') {
@@ -175,7 +191,7 @@ class ExitManagementModel
                 e.position,
                 e.date_hired,
                 e.employment_status,
-                COALESCE(m.full_name, '') AS manager_name,
+                '' AS manager_name,
                 t.termination_reason AS exit_reason,
                 t.effective_date,
                 t.effective_date AS last_working_date,
@@ -185,7 +201,6 @@ class ExitManagementModel
             FROM exit_terminations t
             JOIN employees e ON t.employee_id = e.employee_id
             LEFT JOIN users u ON e.user_id = u.id
-            LEFT JOIN users m ON u.manager_id = m.id
             LEFT JOIN users approver ON t.approved_by = approver.id
             WHERE t.id = ? AND t.status = 'approved'");
         } else {
@@ -494,13 +509,12 @@ class ExitManagementModel
                 e.*, 
                 u.username AS user_username,
                 u.full_name AS user_full_name,
-                u.email AS user_email,
-                u.status AS user_status,
-                u.manager_id AS manager_id,
-                m.full_name AS manager_name
+                NULL AS user_email,
+                NULL AS user_status,
+                NULL AS manager_id,
+                '' AS manager_name
             FROM employees e
             LEFT JOIN users u ON e.user_id = u.id
-            LEFT JOIN users m ON u.manager_id = m.id
             WHERE e.employee_id = ?
             LIMIT 1");
         $stmt->execute([$employeeId]);
@@ -512,10 +526,10 @@ class ExitManagementModel
 
         if (is_numeric($employeeId)) {
             $stmt = $this->db->prepare("SELECT
-                    u.*, 
-                    m.full_name AS manager_name
+                    u.*,
+                    NULL AS manager_id,
+                    '' AS manager_name
                 FROM users u
-                LEFT JOIN users m ON u.manager_id = m.id
                 WHERE u.id = ?
                 LIMIT 1");
             $stmt->execute([$employeeId]);

@@ -1,5 +1,15 @@
 // Exit Management JavaScript
+let interviewModalViewOnlyMode = false;
+
 $(document).ready(function() {
+    $.ajaxSetup({
+        cache: false,
+        timeout: 15000,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    });
+
     // Initialize all modal functions
     initializeModals();
     loadEmployees();
@@ -7,6 +17,135 @@ $(document).ready(function() {
     initExitModalPickers();
     setInterval(loadPayrollApprovalNotifications, 60000); // refresh payroll approval notifications every minute
 });
+
+function setInterviewModalMode(viewOnly = false) {
+    interviewModalViewOnlyMode = viewOnly;
+    const $formFields = $('#interviewForm').find('input:not([type=hidden]), textarea, select');
+    $formFields.prop('disabled', viewOnly);
+
+    if (viewOnly) {
+        $('#interviewSubmitBtn').hide();
+        $('#saveHrAssessmentBtn').hide();
+        $('#editInterviewBtn').show();
+        $('#interviewForm').find('.form-control').addClass('disabled');
+        $('#interviewCaseSelect').hide();
+        $('#interviewCaseDisplay').show();
+    } else {
+        $('#interviewSubmitBtn').show();
+        $('#editInterviewBtn').hide();
+        $('#interviewForm').find('.form-control').removeClass('disabled');
+        $('#interviewCaseSelect').show();
+        $('#interviewCaseDisplay').hide();
+
+        if ($('#interviewId').val()) {
+            $('#interviewSubmitBtn').text('Save Changes');
+        } else {
+            $('#interviewSubmitBtn').text('Schedule Interview');
+        }
+
+        updateInterviewSubmitState();
+    }
+}
+
+function normalizeInterviewTime(value) {
+    if (!value) {
+        return '';
+    }
+
+    const [hours = '', minutes = ''] = String(value).split(':');
+    const hourValue = parseInt(hours, 10);
+    const minuteValue = parseInt(minutes, 10);
+
+    if (Number.isNaN(hourValue) || Number.isNaN(minuteValue)) {
+        return '';
+    }
+
+    return `${String(hourValue).padStart(2, '0')}:${String(minuteValue).padStart(2, '0')}`;
+}
+
+function buildInterviewTimeValue() {
+    const hour = String($('#interviewHour').val() || '').trim();
+    const minute = String($('#interviewMinute').val() || '').trim();
+    const meridiem = $('#interviewMeridiem').val() || 'AM';
+
+    if (!hour || !minute) {
+        return '';
+    }
+
+    let hourValue = parseInt(hour, 10);
+    if (Number.isNaN(hourValue)) {
+        return '';
+    }
+
+    if (meridiem === 'PM' && hourValue < 12) {
+        hourValue += 12;
+    } else if (meridiem === 'AM' && hourValue === 12) {
+        hourValue = 0;
+    }
+
+    const minuteValue = String(parseInt(minute, 10)).padStart(2, '0');
+    return `${String(hourValue).padStart(2, '0')}:${minuteValue}`;
+}
+
+function populateInterviewTimeFields(value) {
+    const normalized = normalizeInterviewTime(value);
+    if (!normalized) {
+        $('#interviewHour').val('');
+        $('#interviewMinute').val('');
+        $('#interviewMeridiem').val('AM');
+        return;
+    }
+
+    const [hourPart, minutePart] = normalized.split(':');
+    let hourValue = parseInt(hourPart, 10);
+    const minuteValue = parseInt(minutePart, 10);
+
+    if (Number.isNaN(hourValue) || Number.isNaN(minuteValue)) {
+        $('#interviewHour').val('');
+        $('#interviewMinute').val('');
+        $('#interviewMeridiem').val('AM');
+        return;
+    }
+
+    let meridiem = 'AM';
+    if (hourValue >= 12) {
+        meridiem = 'PM';
+    }
+
+    if (hourValue > 12) {
+        hourValue -= 12;
+    } else if (hourValue === 0) {
+        hourValue = 12;
+    }
+
+    $('#interviewHour').val(String(hourValue));
+    $('#interviewMinute').val(String(minuteValue).padStart(2, '0'));
+    $('#interviewMeridiem').val(meridiem);
+}
+
+function formatInterviewTimeDisplay(value) {
+    if (!value) {
+        return '';
+    }
+
+    const normalized = normalizeInterviewTime(value);
+    if (!normalized) {
+        return '';
+    }
+
+    const [hourPart, minutePart] = normalized.split(':');
+    const hour = parseInt(hourPart, 10);
+    const minute = parseInt(minutePart, 10);
+    const suffix = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+
+    return `${displayHour}:${String(minute).padStart(2, '0')} ${suffix}`;
+}
+
+function canManageHrAssessment() {
+    const role = String(window.exitManagementUserRole || '').toLowerCase();
+    return ['admin', 'superadmin', 'administrator', 'hr_admin'].includes(role);
+}
 
 function initExitModalPickers() {
     if (typeof flatpickr !== 'function') {
@@ -270,6 +409,36 @@ function initializeModals() {
         submitInterviewForm();
     });
 
+    $('#interviewCaseSelect, #interviewerSelect, #interviewDate, #interviewHour, #interviewMinute, #interviewMeridiem').on('change input', function() {
+        updateInterviewSubmitState();
+    });
+
+    // Save HR Assessment button
+    $('#saveHrAssessmentBtn').on('click', function() {
+        if (!canManageHrAssessment()) {
+            showToast('error', 'HR assessment saving is restricted to administrators.');
+            return;
+        }
+
+        const interviewId = $('#interviewId').val();
+        if (!interviewId) {
+            showToast('error', 'Cannot save HR assessment: interview not loaded');
+            return;
+        }
+        saveHrAssessment(interviewId);
+    });
+
+    $('#editInterviewBtn').on('click', function() {
+        setInterviewModalMode(false);
+        $('#interviewModalTitle').text('Edit Exit Interview');
+        if (canManageHrAssessment()) {
+            $('#saveHrAssessmentBtn').show();
+        } else {
+            $('#saveHrAssessmentBtn').hide();
+        }
+        $('#interviewSubmitBtn').text($('#interviewId').val() ? 'Save Changes' : 'Schedule Interview');
+    });
+
     // Transfer Modal
     $('#transferForm').on('submit', function(e) {
         e.preventDefault();
@@ -329,6 +498,22 @@ function initializeModals() {
     // Remove a single option row
     $(document).on('click', '.remove-option', function() {
         $(this).closest('.option-row').remove();
+    });
+
+    // Confirmation modal action
+    $('#confirmActionBtn').on('click', function() {
+        if (typeof confirmationCallback === 'function') {
+            const callback = confirmationCallback;
+            confirmationCallback = null;
+            $('#confirmationModal').modal('hide');
+            callback();
+        } else {
+            $('#confirmationModal').modal('hide');
+        }
+    });
+
+    $('#confirmationModal').on('hidden.bs.modal', function() {
+        confirmationCallback = null;
     });
 
     // Employee eligibility check on selection change
@@ -461,21 +646,59 @@ function loadEmployees(callback) {
 }
 
 // Load employees with resignations for exit interview modal
+function updateInterviewSubmitState() {
+    const selectedCase = $('#interviewCaseSelect').val();
+    const selectedInterviewer = $('#interviewerSelect').val();
+    const scheduledDate = $('#interviewDate').val();
+    const interviewTime = buildInterviewTimeValue();
+    const hasDateTime = scheduledDate && interviewTime;
+    const canSubmit = !!selectedCase && !!selectedInterviewer && !!hasDateTime;
+
+    if (!selectedCase) {
+        $('#interviewCaseHelpText').text('Please select an approved exit case before scheduling the interview.').show();
+    } else {
+        $('#interviewCaseHelpText').hide();
+    }
+
+    $('#interviewSubmitBtn').prop('disabled', !canSubmit);
+}
+
 function loadApprovedExitCases(callback) {
     $.post('exit_management.php', {
-        ajax_action: 'get_approved_exit_cases'
+        ajax_action: 'get_approved_exit_cases',
+        controller: 'exit_management'
     }, function(response) {
-        if (response && response.length > 0) {
+        console.debug('Approved cases response raw:', response);
+        const cases = Array.isArray(response)
+            ? response
+            : (response && Array.isArray(response.data)
+                ? response.data
+                : (response && Array.isArray(response.cases)
+                    ? response.cases
+                    : (response && typeof response === 'object'
+                        ? Object.values(response).find(value => Array.isArray(value)) || []
+                        : [])));
+
+        if (response && response.success === false) {
+            console.error('Approved cases fetch failed:', response.message || response);
+        }
+
+        if (cases && cases.length > 0) {
             const caseOptions = '<option value="">Select Approved Exit Case</option>' +
-                response.map(emp => `
-                    <option value="${emp.exit_case_type}:${emp.exit_case_id}"
-                            data-employee-id="${emp.employee_id}">
-                        ${emp.full_name} (${emp.username}) - ${emp.exit_case_type.charAt(0).toUpperCase() + emp.exit_case_type.slice(1)} - ${emp.exit_reason || ''} (${emp.exit_date})
-                    </option>
-                `).join('');
+                cases.map(emp => {
+                    const exitDate = emp.exit_date || emp.last_working_date || emp.effective_date || '';
+                    const exitType = emp.exit_case_type ? emp.exit_case_type.charAt(0).toUpperCase() + emp.exit_case_type.slice(1) : '';
+                    return `
+                        <option value="${emp.exit_case_type}:${emp.exit_case_id}"
+                                data-employee-id="${emp.employee_id}">
+                            ${emp.full_name} (${emp.username}) - ${exitType} - ${emp.exit_reason || ''} (${exitDate})
+                        </option>
+                    `;
+                }).join('');
 
             $('#interviewCaseSelect').html(caseOptions);
         } else {
+            console.warn('No approved exit cases returned', response);
             $('#interviewCaseSelect').html('<option value="">No approved exit cases found</option>');
         }
 
@@ -492,12 +715,15 @@ function loadApprovedExitCases(callback) {
                 $('#interviewExitCaseId').val('');
                 $('#interviewEmployeeId').val('');
             }
+            updateInterviewSubmitState();
         });
 
+        updateInterviewSubmitState();
         if (typeof callback === 'function') callback();
     }, 'json').fail(function(err) {
         console.error('Error loading approved exit cases:', err);
         $('#interviewCaseSelect').html('<option value="">Error loading exit cases</option>');
+        updateInterviewSubmitState();
         if (typeof callback === 'function') callback();
     });
 }
@@ -626,17 +852,18 @@ function showResignationModal(resignationId = null) {
     });
 }
 
-function showInterviewModal(interviewId = null) {
+function showInterviewModal(interviewId = null, viewOnly = false) {
     if (interviewId) {
-        $('#interviewModalTitle').text('Edit Exit Interview');
+        $('#interviewModalTitle').text(viewOnly ? 'View Exit Interview' : 'Edit Exit Interview');
         $('#interviewForm')[0].reset();
         $('#interviewId').val('');
         $('#interviewExitCaseType').val('');
         $('#interviewExitCaseId').val('');
         $('#interviewEmployeeId').val('');
+        setInterviewModalMode(viewOnly);
         loadApprovedExitCases(function() {
             loadInterviewers(function() {
-                loadInterviewData(interviewId);
+                loadInterviewData(interviewId, viewOnly);
                 $('#interviewModal').modal('show');
             });
         });
@@ -648,6 +875,14 @@ function showInterviewModal(interviewId = null) {
         $('#interviewExitCaseType').val('');
         $('#interviewExitCaseId').val('');
         $('#interviewEmployeeId').val('');
+        // hide read-only and HR sections for new schedules
+        $('#employeeInfoSection').hide();
+        $('#exitCaseInfoSection').hide();
+        $('#engagementSection').hide();
+        $('#hrAssessmentSection').hide();
+        $('#saveHrAssessmentBtn').hide();
+        $('#interviewSubmitBtn').prop('disabled', true).text('Schedule Interview');
+        setInterviewModalMode(false);
         loadApprovedExitCases();
         loadInterviewers();
         $('#interviewModal').modal('show');
@@ -777,12 +1012,9 @@ function submitInterviewForm() {
     const formData = new FormData($('#interviewForm')[0]);
     const interviewId = $('#interviewId').val();
     
-    // Combine hour and minute into scheduled_time
-    const hour = $('#interviewHour').val();
-    const minute = $('#interviewMinute').val();
-    if (hour && minute) {
-        const scheduledTime = `${hour}:${minute}`;
-        formData.set('scheduled_time', scheduledTime);
+    const interviewTime = buildInterviewTimeValue();
+    if (interviewTime) {
+        formData.set('scheduled_time', interviewTime);
     }
     
     formData.append('ajax_action', interviewId ? 'update_interview' : 'submit_interview');
@@ -812,6 +1044,41 @@ function submitInterviewForm() {
         complete: function() {
             $('#interviewSubmitBtn').prop('disabled', false).html('Schedule Interview');
         }
+    });
+}
+
+// Save HR assessment via AJAX
+function saveHrAssessment(interviewId) {
+    const assessment = {
+        summary: $('#hrSummary').val(),
+        key_findings: $('#hrKeyFindings').val(),
+        hr_recommendations: $('#hrRecommendations').val(),
+        follow_up_actions: $('#hrFollowUpActions').val(),
+        rehire_eligibility: $('#hrRehireEligibility').val(),
+        knowledge_transfer_required: $('#hrKnowledgeTransfer').is(':checked') ? 1 : 0,
+        clearance_recommendation: $('#hrClearanceRecommendation').val()
+    };
+
+    $('#saveHrAssessmentBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+
+    $.post('exit_management.php', {
+        ajax_action: 'save_hr_assessment',
+        controller: 'interview',
+        interview_id: interviewId,
+        assessment: assessment
+    }, function(response) {
+        if (response && response.success) {
+            showToast('success', response.message || 'HR assessment saved');
+            // reload interview data
+            loadInterviewData(interviewId);
+        } else {
+            showToast('error', response ? response.message : 'Failed to save HR assessment');
+        }
+    }, 'json').fail(function(err) {
+        console.error('Error saving HR assessment:', err);
+        showToast('error', 'An error occurred while saving HR assessment');
+    }).always(function() {
+        $('#saveHrAssessmentBtn').prop('disabled', false).html('Save HR Assessment');
     });
 }
 
@@ -1245,20 +1512,30 @@ function renderResignationApprovalOptions(status, response = {}) {
     $approvalComments.prop('disabled', status !== 'pending_review' && status !== 'pending_legal_review');
 }
 
-function loadInterviewData(id) {
-    // Load interview data for editing
-    console.log('Loading interview data for ID:', id);
+function loadInterviewData(id, viewOnly = false) {
+    // Load interview data for viewing or editing
+    console.log('Loading interview data for ID:', id, 'viewOnly=', viewOnly);
     $.post('exit_management.php', {
         ajax_action: 'get_interview',
         controller: 'interview',
         interview_id: id
     }, function(response) {
         console.log('Interview response:', response);
+        if (response && response.data && !response.error) {
+            response = response.data;
+        }
         if (response && !response.error) {
-            $('#interviewId').val(response.id || id);
+            response.id = response.id || id;
+            $('#interviewId').val(response.id);
             const caseValue = response.exit_case_type && response.exit_case_id ? `${response.exit_case_type}:${response.exit_case_id}` : '';
             if (caseValue) {
                 $('#interviewCaseSelect').val(caseValue).trigger('change');
+                $('#interviewCaseDisplay').text($('#interviewCaseSelect option:selected').text());
+            } else {
+                const caseText = response.exit_case_type && response.exit_case_id
+                    ? `${response.exit_case_type}:${response.exit_case_id}`
+                    : 'Not available';
+                $('#interviewCaseDisplay').text(caseText);
             }
 
             Object.keys(response).forEach(key => {
@@ -1270,9 +1547,7 @@ function loadInterviewData(id) {
                     $('#interviewDate').val(response[key]);
                 } else if (key === 'scheduled_time') {
                     if (response[key]) {
-                        const timeParts = response[key].split(':');
-                        $('#interviewHour').val(timeParts[0] || '');
-                        $('#interviewMinute').val(timeParts[1] || '');
+                        populateInterviewTimeFields(response[key]);
                     }
                 } else {
                     const $field = $(`#${key}`);
@@ -1286,6 +1561,118 @@ function loadInterviewData(id) {
                     }
                 }
             });
+
+            // Populate read-only Employee Info if present
+            if (response.employee_full_name) {
+                $('#employeeFullName').text(response.employee_full_name);
+                $('#employeeDepartment').text(response.employee_department || '');
+                $('#employeePosition').text(response.employee_position || '');
+                $('#employeeDateHired').text(response.employee_date_hired || '');
+                // calculate years of service
+                if (response.employee_date_hired) {
+                    const hired = new Date(response.employee_date_hired);
+                    const now = new Date();
+                    const years = now.getFullYear() - hired.getFullYear();
+                    $('#employeeYearsOfService').text(years + ' years');
+                } else {
+                    $('#employeeYearsOfService').text('');
+                }
+                $('#employeeManager').text(response.manager_name || '');
+                $('#employeeInfoSection').show();
+            }
+
+            // Populate Exit Case Info from enriched exit_case_details if available
+            const caseDetails = response.exit_case_details || null;
+            if (caseDetails) {
+                $('#exitCaseReason').text(caseDetails.exit_reason || '');
+                $('#exitCaseNoticeDate').text(caseDetails.notice_date || '');
+                $('#exitCaseDate').text(caseDetails.last_working_date || caseDetails.effective_date || '');
+                const approvedBy = caseDetails.approved_by_name ? `${caseDetails.approved_by_name} @ ${caseDetails.approved_at || ''}` : '';
+                $('#exitCaseApproved').text(approvedBy);
+                $('#exitCaseInfoSection').show();
+            } else if (response.exit_reason || response.exit_date || response.notice_date) {
+                $('#exitCaseReason').text(response.exit_reason || '');
+                $('#exitCaseNoticeDate').text(response.notice_date || '');
+                $('#exitCaseDate').text(response.exit_date || response.termination_effective_date || '');
+                const approvedBy = response.case_approved_by ? (response.case_approved_by + ' @ ' + (response.case_approved_at || '')) : '';
+                $('#exitCaseApproved').text(approvedBy);
+                $('#exitCaseInfoSection').show();
+            }
+
+            // Populate Engagement panel with available records
+            const engagementRecords = response.engagement_records || {};
+            let engagementHtml = '<p class="text-muted">No engagement or survey records available.</p>';
+
+            if (engagementRecords.exit_surveys && engagementRecords.exit_surveys.length) {
+                engagementHtml = '<div class="list-group">';
+                engagementRecords.exit_surveys.slice(0, 3).forEach(survey => {
+                    engagementHtml += `<div class="list-group-item py-2 d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="font-weight-bold">${survey.survey_title || survey.title || 'Exit Survey'}</div>
+                            <div class="text-muted small">Submitted ${survey.submitted_at || ''}</div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="viewSurveyResponseDetails(${survey.response_id})">View Responses</button>
+                    </div>`;
+                });
+                if (engagementRecords.exit_surveys.length > 3) {
+                    engagementHtml += `<div class="list-group-item text-center text-muted py-2">And ${engagementRecords.exit_surveys.length - 3} more response(s)</div>`;
+                }
+                engagementHtml += '</div>';
+            } else if (engagementRecords.grievances && engagementRecords.grievances.length) {
+                engagementHtml = '<div class="list-group">';
+                engagementRecords.grievances.slice(0, 3).forEach(grievance => {
+                    engagementHtml += `<div class="list-group-item py-2">
+                        <div class="font-weight-bold">${grievance.subject || 'Grievance'}</div>
+                        <div class="text-muted small">Status: ${grievance.status || 'N/A'} · Updated ${grievance.updated_at || grievance.created_at || ''}</div>
+                    </div>`;
+                });
+                if (engagementRecords.grievances.length > 3) {
+                    engagementHtml += `<div class="list-group-item text-center text-muted py-2">And ${engagementRecords.grievances.length - 3} more grievance(s)</div>`;
+                }
+                engagementHtml += '</div>';
+            } else if (engagementRecords.feedback_history && engagementRecords.feedback_history.length) {
+                engagementHtml = '<div class="list-group">';
+                engagementRecords.feedback_history.slice(0, 3).forEach(feedback => {
+                    engagementHtml += `<div class="list-group-item py-2">
+                        <div class="font-weight-bold">Interview ${feedback.interview_id} (${feedback.status || ''})</div>
+                        <div class="text-muted small">Rating: ${feedback.overall_satisfaction || 'N/A'} · ${feedback.submitted_at || ''}</div>
+                    </div>`;
+                });
+                if (engagementRecords.feedback_history.length > 3) {
+                    engagementHtml += `<div class="list-group-item text-center text-muted py-2">And ${engagementRecords.feedback_history.length - 3} more feedback record(s)</div>`;
+                }
+                engagementHtml += '</div>';
+            }
+
+            $('#engagementPlaceholder').html(engagementHtml);
+            $('#engagementSection').show();
+
+            // Populate HR assessment if present
+            if (response.hr_assessment) {
+                const hr = response.hr_assessment;
+                $('#hrSummary').val(hr.summary || '');
+                $('#hrKeyFindings').val(hr.key_findings || '');
+                $('#hrRecommendations').val(hr.hr_recommendations || '');
+                $('#hrFollowUpActions').val(hr.follow_up_actions || '');
+                $('#hrRehireEligibility').val(hr.rehire_eligibility || '');
+                $('#hrKnowledgeTransfer').prop('checked', hr.knowledge_transfer_required == 1 || hr.knowledge_transfer_required === '1');
+                $('#hrClearanceRecommendation').val(hr.clearance_recommendation || 'pending');
+                $('#hrAssessmentSection').show();
+            } else {
+                // show empty HR section when editing
+                $('#hrAssessmentSection').show();
+            }
+
+            if (canManageHrAssessment()) {
+                $('#saveHrAssessmentBtn').show();
+            } else {
+                $('#saveHrAssessmentBtn').hide();
+            }
+
+            setInterviewModalMode(viewOnly);
+            if (!viewOnly && $('#interviewId').val()) {
+                $('#interviewSubmitBtn').text('Save Changes');
+            }
         } else {
             console.error('Error loading interview:', response);
         }
@@ -1691,25 +2078,26 @@ function onTerminationStatusFilterChange() {
 }
 
 function archiveTermination(id) {
-    if (!confirm('Archive this termination record?')) {
-        return;
-    }
-
-    $.post('exit_management.php', {
-        ajax_action: 'archive_termination',
-        controller: 'termination',
-        termination_id: id,
-        archive_reason: 'Manual archive'
-    }, function(response) {
-        if (response.success) {
-            showToast('success', response.message || 'Termination archived successfully.');
-            loadTerminationsTable();
-        } else {
-            showToast('error', response.message || 'Failed to archive termination.');
-        }
-    }, 'json').fail(function(xhr, status, error) {
-        console.error('Error archiving termination:', status, error, xhr.responseText);
-        showToast('error', 'Error archiving termination.');
+    showConfirmation('Archive this termination record?', function() {
+        $.post('exit_management.php', {
+            ajax_action: 'archive_termination',
+            controller: 'termination',
+            termination_id: id,
+            archive_reason: 'Manual archive'
+        }, function(response) {
+            if (response.success) {
+                showToast('success', response.message || 'Termination archived successfully.');
+                loadTerminationsTable();
+            } else {
+                showToast('error', response.message || 'Failed to archive termination.');
+            }
+        }, 'json').fail(function(xhr, status, error) {
+            console.error('Error archiving termination:', status, error, xhr.responseText);
+            showToast('error', 'Error archiving termination.');
+        });
+    }, {
+        confirmButtonText: 'Archive',
+        confirmButtonClass: 'btn-warning'
     });
 }
 
@@ -1840,6 +2228,19 @@ function toggleArchivedResignations(open = false) {
     }
 }
 
+function isInterviewCompletable(scheduledDate) {
+    if (!scheduledDate) {
+        return true;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const interviewDate = new Date(scheduledDate);
+    interviewDate.setHours(0, 0, 0, 0);
+
+    return interviewDate <= today;
+}
+
 function loadInterviewsTable(status = 'all', page = 1, searchTerm = '') {
     const tbody = $('#interviews-tbody');
     showTableLoading(tbody, 5);
@@ -1857,20 +2258,26 @@ function loadInterviewsTable(status = 'all', page = 1, searchTerm = '') {
         if (response && response.data && response.data.length > 0) {
             response.data.forEach(function(interview) {
                 const statusBadge = getStatusBadge(interview.status);
-                const actions = `
-                    <button class="btn btn-sm btn-info" onclick="showInterviewModal(${interview.id})">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-sm btn-success" onclick="completeInterview(${interview.id})">
+                const canComplete = isInterviewCompletable(interview.scheduled_date);
+                const completeButton = canComplete
+                    ? `<button class="btn btn-sm btn-success" onclick="completeInterview(${interview.id})" title="Complete Interview">
                         <i class="fas fa-check"></i>
+                    </button>`
+                    : `<button class="btn btn-sm btn-secondary" disabled title="Cannot complete past interview">
+                        <i class="fas fa-check"></i>
+                    </button>`;
+                const actions = `
+                    <button class="btn btn-sm btn-info" onclick="showInterviewModal(${interview.id}, true)" title="View Interview">
+                        <i class="fas fa-eye"></i>
                     </button>
+                    ${completeButton}
                     <button class="btn btn-sm btn-warning" onclick="archiveInterview(${interview.id})" title="Archive Interview">
                         <i class="fas fa-archive"></i>
                     </button>
                 `;
 
                 tbody.append(`
-                    <tr>
+                    <tr data-id="${interview.id}" data-status="${interview.status || ''}">
                         <td>${interview.employee_name}</td>
                         <td>${interview.interviewer_name}</td>
                         <td>${interview.scheduled_date}</td>
@@ -1886,11 +2293,125 @@ function loadInterviewsTable(status = 'all', page = 1, searchTerm = '') {
             tbody.append('<tr><td colspan="5" class="text-center">No interviews found</td></tr>');
             $('#interviews-pagination').empty();
         }
+
+        loadArchivedInterviewSummary();
     }).fail(function(xhr, status, error) {
         console.error('Error loading interviews:', status, error, xhr.responseText);
         tbody.html('<tr><td colspan="5" class="text-center text-danger">Error loading interviews</td></tr>');
         $('#interviews-pagination').empty();
+        $('#archive-notif-count').hide();
     });
+}
+
+let archivedInterviewsData = [];
+let archivedInterviewPage = 1;
+let archivedInterviewTotal = 0;
+const archivedInterviewPageSize = 10;
+
+function loadArchivedInterviewSummary() {
+    $.post('exit_management.php', {
+        ajax_action: 'get_archived_interviews',
+        controller: 'interview',
+        page: 1,
+        limit: 1
+    }, function(response) {
+        const badge = $('#archive-notif-count');
+        const archiveButton = $('#viewArchivedInterviewsButton');
+        if (!response || typeof response.new_count === 'undefined' || typeof response.total === 'undefined') {
+            badge.hide();
+            archiveButton.attr('title', 'Archived interviews');
+            return;
+        }
+
+        if (response.new_count > 0) {
+            badge.text(response.new_count).show();
+            archiveButton.attr('title', `${response.new_count} new archived interviews`);
+        } else {
+            badge.hide();
+            archiveButton.attr('title', response.total > 0 ? `${response.total} archived interviews` : 'No archived interviews yet');
+        }
+    }, 'json').fail(function() {
+        $('#archive-notif-count').hide();
+    });
+}
+
+function loadArchivedInterviewsTable(page = 1) {
+    const tbody = $('#archived-interviews-tbody');
+    tbody.html('<tr><td colspan="7" class="text-center text-muted">Loading...</td></tr>');
+
+    $.post('exit_management.php', {
+        ajax_action: 'get_archived_interviews',
+        controller: 'interview',
+        page: page,
+        limit: archivedInterviewPageSize
+    }, function(response) {
+        if (response && response.data && response.data.length > 0) {
+            archivedInterviewsData = response.data;
+            archivedInterviewPage = page;
+            archivedInterviewTotal = response.total || response.data.length;
+            renderArchivedInterviewsPage();
+            return;
+        }
+
+        archivedInterviewsData = [];
+        archivedInterviewTotal = 0;
+        tbody.html('<tr><td colspan="7" class="text-center text-muted">No archived interviews yet</td></tr>');
+        $('#archived-interviews-pagination').empty();
+    }, 'json').fail(function() {
+        archivedInterviewsData = [];
+        archivedInterviewTotal = 0;
+        tbody.html('<tr><td colspan="7" class="text-center text-danger">Unable to load archived interviews</td></tr>');
+        $('#archived-interviews-pagination').empty();
+    });
+}
+
+function renderArchivedInterviewsPage() {
+    const tbody = $('#archived-interviews-tbody');
+    tbody.empty();
+
+    if (!archivedInterviewsData.length) {
+        tbody.html('<tr><td colspan="7" class="text-center text-muted">No archived interviews yet</td></tr>');
+        $('#archived-interviews-pagination').empty();
+        return;
+    }
+
+    archivedInterviewsData.forEach(function(interview) {
+        tbody.append(`
+            <tr>
+                <td>${interview.employee_name || 'Unknown'}</td>
+                <td>${interview.interviewer_name || 'Unknown'}</td>
+                <td>${interview.scheduled_date || ''}</td>
+                <td>${interview.status || ''}</td>
+                <td>${interview.archived_at || ''}</td>
+                <td>${interview.archive_reason || ''}</td>
+                <td>
+                    <button class="btn btn-sm btn-success" onclick="unarchiveInterview(${interview.original_id || interview.archive_id || interview.id})" title="Unarchive Interview">
+                        <i class="fas fa-undo"></i>
+                    </button>
+                </td>
+            </tr>
+        `);
+    });
+
+    const pagination = $('#archived-interviews-pagination');
+    pagination.empty();
+
+    const totalPages = Math.ceil(archivedInterviewTotal / archivedInterviewPageSize);
+    if (totalPages > 1) {
+        for (let i = 1; i <= totalPages; i++) {
+            const activeClass = i === archivedInterviewPage ? 'btn-primary' : 'btn-outline-secondary';
+            pagination.append(`<button class="btn btn-sm ${activeClass} mr-1" onclick="goToArchivedInterviewPage(${i})">${i}</button>`);
+        }
+    }
+}
+
+function goToArchivedInterviewPage(page) {
+    loadArchivedInterviewsTable(page);
+}
+
+function openArchiveModal() {
+    $('#archivedInterviewsModal').modal('show');
+    loadArchivedInterviewsTable(1);
 }
 
 function loadTransfersTable(status = 'all', page = 1, limit = 10, searchTerm = '') {
@@ -2164,13 +2685,98 @@ function getStatusBadge(status) {
 }
 
 // Toast notification function
-function showToast(type, message) {
-    // Assuming you have a toast system in place
-    if (typeof showToastMessage === 'function') {
-        showToastMessage(type, message);
+function showToast(type, message, title) {
+    const normalizedType = String(type || 'info').toLowerCase();
+    const titles = {
+        success: 'Success',
+        error: 'Error',
+        warning: 'Warning',
+        info: 'Information'
+    };
+    const toastTitle = title || titles[normalizedType] || 'Notice';
+
+    if (window.$ && typeof window.$(document).Toasts === 'function') {
+        const toastClass = normalizedType === 'success'
+            ? 'bg-success'
+            : normalizedType === 'error'
+                ? 'bg-danger'
+                : normalizedType === 'warning'
+                    ? 'bg-warning'
+                    : 'bg-info';
+
+        $(document).Toasts('create', {
+            class: toastClass,
+            title: toastTitle,
+            subtitle: '',
+            body: message,
+            autohide: true,
+            delay: 4000,
+            close: true
+        });
+    } else if (window.toastr && typeof window.toastr[normalizedType] === 'function') {
+        toastr[normalizedType](message, toastTitle, {
+            closeButton: true,
+            progressBar: true,
+            timeOut: 4000,
+            positionClass: 'toast-top-right'
+        });
+    } else if (typeof showToastMessage === 'function') {
+        showToastMessage(normalizedType, message);
     } else {
-        alert(message);
+        createCustomToast(normalizedType, toastTitle, message);
     }
+}
+
+function ensureCustomToastContainer() {
+    if ($('#customToastContainer').length) {
+        return;
+    }
+
+    $('body').append(
+        '<div id="customToastContainer" style="position: fixed; top: 1rem; right: 1rem; z-index: 11000; display: flex; flex-direction: column; gap: .75rem;"></div>'
+    );
+}
+
+function createCustomToast(type, title, message) {
+    ensureCustomToastContainer();
+
+    const toastId = `customToast_${Date.now()}`;
+    const colors = {
+        success: '#28a745',
+        error: '#dc3545',
+        warning: '#ffc107',
+        info: '#17a2b8'
+    };
+    const bgColor = colors[type] || '#17a2b8';
+    const textColor = type === 'warning' ? '#212529' : '#fff';
+
+    const toastHtml = `
+        <div id="${toastId}" style="min-width: 280px; max-width: 360px; border-radius: .375rem; box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15); background: ${bgColor}; color: ${textColor}; padding: 12px 14px; position: relative; overflow: hidden;">
+            <strong style="display: block; margin-bottom: 4px;">${title}</strong>
+            <div style="font-size: .95rem; line-height: 1.3;">${message}</div>
+            <button type="button" onclick="document.getElementById('${toastId}')?.remove()" style="position: absolute; top: 8px; right: 8px; border: none; background: transparent; color: ${textColor}; font-size: 1rem; cursor: pointer;">&times;</button>
+        </div>
+    `;
+
+    $('#customToastContainer').append(toastHtml);
+    setTimeout(() => { $(`#${toastId}`).fadeOut(300, function() { $(this).remove(); }); }, 4000);
+}
+
+let confirmationCallback = null;
+
+function showConfirmation(message, callback, options = {}) {
+    confirmationCallback = typeof callback === 'function' ? callback : null;
+    $('#confirmationMessage').text(message || 'Are you sure you want to proceed?');
+
+    const buttonText = options.confirmButtonText || 'Confirm';
+    const buttonClass = options.confirmButtonClass || 'btn-warning';
+
+    $('#confirmActionBtn')
+        .text(buttonText)
+        .removeClass('btn-success btn-danger btn-warning btn-primary btn-info')
+        .addClass(buttonClass);
+
+    $('#confirmationModal').modal('show');
 }
 
 let lastPayrollApprovalCount = 0;
@@ -2186,6 +2792,8 @@ function loadDashboardData() {
             $('#active-transfers').text(response.active_transfers || 0);
             $('#pending-settlements').text(response.pending_settlements || 0);
         }
+    }).fail(function(xhr, status, errorThrown) {
+        console.error('Error loading dashboard stats:', status, errorThrown, xhr.status, xhr.statusText, xhr.responseText);
     });
 
     loadPayrollApprovalNotifications();
@@ -2194,7 +2802,9 @@ function loadDashboardData() {
     loadResignationTrendChart();
     loadResignationReasonsChart();
     loadExitStatusChart();
-    loadResignationTypeChart();
+    // resignation type chart removed
+    loadTerminationTrendChart();
+    loadTerminationStatusChart();
     loadRecentResignations();
     loadDashboardMetrics();
 }
@@ -2236,8 +2846,8 @@ function loadPayrollApprovalNotifications() {
         }
 
         lastPayrollApprovalCount = count;
-    }).fail(function(xhr, status, error) {
-        console.error('Error loading payroll clearance notifications:', status, error, xhr.responseText);
+    }).fail(function(xhr, status, errorThrown) {
+        console.error('Error loading payroll clearance notifications:', status, errorThrown, xhr.status, xhr.statusText, xhr.responseText);
     });
 }
 
@@ -2333,7 +2943,7 @@ function archiveResignation(id) {
 }
 
 function unarchiveResignation(id) {
-    if (confirm('Are you sure you want to unarchive this resignation?')) {
+    showConfirmation('Are you sure you want to unarchive this resignation?', function() {
         $.post('exit_management.php', {
             ajax_action: 'unarchive_resignation',
             controller: 'resignation',
@@ -2348,7 +2958,10 @@ function unarchiveResignation(id) {
                 showToast('error', response.message);
             }
         }, 'json');
-    }
+    }, {
+        confirmButtonText: 'Unarchive',
+        confirmButtonClass: 'btn-success'
+    });
 }
 
 // Archive resignation form handler
@@ -2427,6 +3040,8 @@ $(document).ready(function() {
                 $('#archiveInterviewModal').modal('hide');
                 loadInterviewsTable();
                 loadDashboardData();
+                loadArchivedInterviewsTable(1);
+                loadArchivedInterviewSummary();
             } else {
                 showToast('error', response.message);
             }
@@ -2549,7 +3164,7 @@ $(document).ready(function() {
 });
 
 function completeInterview(id) {
-    if (confirm('Mark this interview as completed?')) {
+    showConfirmation('Mark this interview as completed?', function() {
         $.post('exit_management.php', {
             ajax_action: 'complete_interview',
             controller: 'interview',
@@ -2563,11 +3178,14 @@ function completeInterview(id) {
                 showToast('error', response.message);
             }
         });
-    }
+    }, {
+        confirmButtonText: 'Complete',
+        confirmButtonClass: 'btn-success'
+    });
 }
 
 function deleteTransferPlan(id) {
-    if (confirm('Are you sure you want to delete this knowledge transfer plan? This will also delete all associated transfer items.')) {
+    showConfirmation('Are you sure you want to delete this knowledge transfer plan? This will also delete all associated transfer items.', function() {
         $.post('exit_management.php', {
             ajax_action: 'delete_transfer_plan',
             controller: 'transfer',
@@ -2581,7 +3199,10 @@ function deleteTransferPlan(id) {
                 showToast('error', response.message);
             }
         });
-    }
+    }, {
+        confirmButtonText: 'Delete',
+        confirmButtonClass: 'btn-danger'
+    });
 }
 
 function viewTransferItems(id) {
@@ -2687,7 +3308,7 @@ function downloadDocument(id) {
 }
 
 function deleteDocument(id) {
-    if (confirm('Are you sure you want to delete this document?')) {
+    showConfirmation('Are you sure you want to delete this document?', function() {
         $.post('exit_management.php', {
             ajax_action: 'delete_document',
             controller: 'documentation',
@@ -2700,7 +3321,10 @@ function deleteDocument(id) {
                 showToast('error', response.message);
             }
         }, 'json');
-    }
+    }, {
+        confirmButtonText: 'Delete',
+        confirmButtonClass: 'btn-danger'
+    });
 }
 
 function viewSurveyResponses(id) {
@@ -2742,8 +3366,62 @@ function viewSurveyResponses(id) {
     });
 }
 
+function viewSurveyResponseDetails(responseId) {
+    $.post('exit_management.php', {
+        ajax_action: 'get_response_details',
+        controller: 'survey',
+        response_id: responseId
+    }, function(response) {
+        if (response && response.response) {
+            const responseData = response.response;
+            const answers = response.answers || [];
+            let answersHtml = '<div class="table-responsive"><table class="table table-striped"><thead><tr><th>Question</th><th>Answer</th></tr></thead><tbody>';
+
+            answers.forEach(answer => {
+                let answerValue = answer.answer_value || answer.answer_text || '';
+                if (answer.question_type === 'checkbox' && answer.answer_array) {
+                    answerValue = Array.isArray(answer.answer_array) ? answer.answer_array.join(', ') : answer.answer_array;
+                }
+
+                answersHtml += `<tr><td>${answer.question_text || ''}</td><td>${answerValue}</td></tr>`;
+            });
+
+            answersHtml += '</tbody></table></div>';
+            const modal = `
+                <div class="modal fade" id="surveyResponseDetailsModal" tabindex="-1" role="dialog">
+                    <div class="modal-dialog modal-xl" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Survey Response Details</h5>
+                                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                            </div>
+                            <div class="modal-body">
+                                <p><strong>Survey:</strong> ${responseData.survey_title || 'Unknown'}</p>
+                                <p><strong>Respondent:</strong> ${responseData.full_name || responseData.respondent_name || 'Unknown'}</p>
+                                <p><strong>Submitted At:</strong> ${responseData.submitted_at || ''}</p>
+                                ${answersHtml}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            $('body').append(modal);
+            $('#surveyResponseDetailsModal').modal('show');
+            $('#surveyResponseDetailsModal').on('hidden.bs.modal', function() {
+                $(this).remove();
+            });
+        } else {
+            showToast('info', 'Survey response details could not be found.');
+        }
+    }, 'json').fail(function(err) {
+        console.error('AJAX error loading survey response details:', err);
+        showToast('error', 'Failed to load survey response details.');
+    });
+}
+
 function duplicateSurvey(id) {
-    if (confirm('Create a copy of this survey?')) {
+    showConfirmation('Create a copy of this survey?', function() {
         $.post('exit_management.php', {
             ajax_action: 'duplicate_survey',
             controller: 'survey',
@@ -2756,7 +3434,10 @@ function duplicateSurvey(id) {
                 showToast('error', response.message);
             }
         });
-    }
+    }, {
+        confirmButtonText: 'Duplicate',
+        confirmButtonClass: 'btn-primary'
+    });
 }
 
 // Answer Survey Functions
@@ -3190,6 +3871,7 @@ function renderResignationTrendChart(labels, data) {
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     display: false
@@ -3309,57 +3991,7 @@ function renderExitStatusChart(labels, data) {
 }
 
 // Load resignation type chart
-function loadResignationTypeChart() {
-    $.post('exit_management.php', {
-        ajax_action: 'get_resignation_types'
-    }, function(response) {
-        if (response && response.labels && response.data) {
-            renderResignationTypeChart(response.labels, response.data);
-        }
-    }, 'json');
-}
-
-// Render resignation type bar chart
-function renderResignationTypeChart(labels, data) {
-    const ctx = document.getElementById('resignationTypeChart');
-    if (!ctx) return;
-
-    if (charts.resignationType) {
-        charts.resignationType.destroy();
-    }
-
-    const colors = ['#3498db', '#2ecc71', '#e74c3c', '#f39c12', '#9b59b6'];
-
-    charts.resignationType = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Count',
-                data: data,
-                backgroundColor: colors.slice(0, labels.length),
-                borderColor: colors.slice(0, labels.length),
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1
-                    }
-                }
-            }
-        }
-    });
-}
+// Resignation type chart removed per UI request
 
 // Load recent resignations table
 function loadRecentResignations() {
@@ -3510,7 +4142,7 @@ function loadDashboardMetrics() {
             $('#avg-interviews').text(response.interview_rate + '%' || '0%');
         }
     }, 'json').fail(function(jqXHR, textStatus, errorThrown) {
-        console.error('loadDashboardMetrics AJAX error:', textStatus, errorThrown, jqXHR.responseText);
+        console.error('loadDashboardMetrics AJAX error:', textStatus, errorThrown, jqXHR.status, jqXHR.statusText, jqXHR.responseText);
     });
 }
 
@@ -3583,7 +4215,6 @@ function onSurveySearchChange() {
     loadSurveysTable(status, 1, searchTerm);
 }
 
-// Archive Functions
 function archiveSettlement(id) {
     // Get settlement data first
     $.post('exit_management.php', {
@@ -3608,7 +4239,7 @@ function archiveSettlement(id) {
 }
 
 function unarchiveSettlement(id) {
-    if (confirm('Are you sure you want to unarchive this settlement?')) {
+    showConfirmation('Are you sure you want to unarchive this settlement?', function() {
         $.post('exit_management.php', {
             ajax_action: 'unarchive_settlement',
             controller: 'settlement',
@@ -3622,17 +4253,25 @@ function unarchiveSettlement(id) {
                 showToast('error', response.message);
             }
         }, 'json');
-    }
+    }, {
+        confirmButtonText: 'Unarchive',
+        confirmButtonClass: 'btn-success'
+    });
 }
 
 function archiveInterview(id) {
+    if (!id || Number(id) <= 0) {
+        showToast('error', 'Invalid interview ID, cannot archive this record.');
+        return;
+    }
+
     // Get interview data first
     $.post('exit_management.php', {
         ajax_action: 'get_interview_details',
         controller: 'interview',
         interview_id: id
     }, function(response) {
-        if (response.success) {
+        if (response && response.success) {
             // Populate modal with interview data
             $('#archiveInterviewId').val(id);
             $('#archiveInterviewEmployeeId').val(response.data.employee_id);
@@ -3643,13 +4282,15 @@ function archiveInterview(id) {
             // Show modal
             $('#archiveInterviewModal').modal('show');
         } else {
-            showToast('error', 'Failed to load interview details');
+            showToast('error', response?.message || 'Failed to load interview details');
         }
-    }, 'json');
+    }, 'json').fail(function(xhr, status, error) {
+        showToast('error', 'Failed to load interview details: ' + (xhr.responseText || status || error));
+    });
 }
 
 function unarchiveInterview(id) {
-    if (confirm('Are you sure you want to unarchive this interview?')) {
+    showConfirmation('Are you sure you want to unarchive this interview?', function() {
         $.post('exit_management.php', {
             ajax_action: 'unarchive_interview',
             controller: 'interview',
@@ -3659,11 +4300,16 @@ function unarchiveInterview(id) {
                 showToast('success', response.message);
                 loadInterviewsTable();
                 loadDashboardData();
+                loadArchivedInterviewsTable(archivedInterviewPage);
+                loadArchivedInterviewSummary();
             } else {
                 showToast('error', response.message);
             }
         }, 'json');
-    }
+    }, {
+        confirmButtonText: 'Unarchive',
+        confirmButtonClass: 'btn-success'
+    });
 }
 
 function archiveDocument(id) {
@@ -3690,7 +4336,7 @@ function archiveDocument(id) {
 }
 
 function unarchiveDocument(id) {
-    if (confirm('Are you sure you want to unarchive this document?')) {
+    showConfirmation('Are you sure you want to unarchive this document?', function() {
         $.post('exit_management.php', {
             ajax_action: 'unarchive_document',
             controller: 'documentation',
@@ -3704,7 +4350,10 @@ function unarchiveDocument(id) {
                 showToast('error', response.message);
             }
         }, 'json');
-    }
+    }, {
+        confirmButtonText: 'Unarchive',
+        confirmButtonClass: 'btn-success'
+    });
 }
 
 function archiveSurvey(id) {
@@ -3731,7 +4380,7 @@ function archiveSurvey(id) {
 }
 
 function unarchiveSurvey(id) {
-    if (confirm('Are you sure you want to unarchive this survey?')) {
+    showConfirmation('Are you sure you want to unarchive this survey?', function() {
         $.post('exit_management.php', {
             ajax_action: 'unarchive_survey',
             controller: 'survey',
@@ -3745,7 +4394,10 @@ function unarchiveSurvey(id) {
                 showToast('error', response.message);
             }
         }, 'json');
-    }
+    }, {
+        confirmButtonText: 'Unarchive',
+        confirmButtonClass: 'btn-success'
+    });
 }
 
 function archiveTransferPlan(id) {
@@ -3772,7 +4424,7 @@ function archiveTransferPlan(id) {
 }
 
 function unarchiveTransferPlan(id) {
-    if (confirm('Are you sure you want to unarchive this transfer plan?')) {
+    showConfirmation('Are you sure you want to unarchive this transfer plan?', function() {
         $.post('exit_management.php', {
             ajax_action: 'unarchive_transfer_plan',
             controller: 'transfer',
@@ -3786,7 +4438,10 @@ function unarchiveTransferPlan(id) {
                 showToast('error', response.message);
             }
         }, 'json');
-    }
+    }, {
+        confirmButtonText: 'Unarchive',
+        confirmButtonClass: 'btn-success'
+    });
 }
 
 function archiveTransferItem(id) {
@@ -3813,7 +4468,7 @@ function archiveTransferItem(id) {
 }
 
 function unarchiveTransferItem(id) {
-    if (confirm('Are you sure you want to unarchive this transfer item?')) {
+    showConfirmation('Are you sure you want to unarchive this transfer item?', function() {
         $.post('exit_management.php', {
             ajax_action: 'unarchive_transfer_item',
             controller: 'transfer',
@@ -3827,5 +4482,86 @@ function unarchiveTransferItem(id) {
                 showToast('error', response.message);
             }
         }, 'json');
-    }
+    }, {
+        confirmButtonText: 'Unarchive',
+        confirmButtonClass: 'btn-success'
+    });
+}
+
+// Load termination trend chart
+function loadTerminationTrendChart() {
+    $.post('exit_management.php', {
+        ajax_action: 'get_termination_trend'
+    }, function(response) {
+        if (response && response.labels && response.data) {
+            renderTerminationTrendChart(response.labels, response.data);
+        }
+    }, 'json').fail(function(xhr, status, errorThrown) {
+        console.error('Error loading termination trend:', status, errorThrown, xhr.status, xhr.statusText, xhr.responseText);
+    });
+}
+
+function renderTerminationTrendChart(labels, data) {
+    const ctx = document.getElementById('terminationTrendChart');
+    if (!ctx) return;
+
+    if (charts.terminationTrend) charts.terminationTrend.destroy();
+
+    charts.terminationTrend = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Terminations',
+                data: data,
+                borderColor: '#c0392b',
+                backgroundColor: 'rgba(192, 57, 43, 0.08)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+}
+
+// Load termination status distribution
+function loadTerminationStatusChart() {
+    $.post('exit_management.php', {
+        ajax_action: 'get_termination_status'
+    }, function(response) {
+        if (response && response.labels && response.data) {
+            renderTerminationStatusChart(response.labels, response.data);
+        }
+    }, 'json').fail(function(xhr, status, errorThrown) {
+        console.error('Error loading termination status:', status, errorThrown, xhr.status, xhr.statusText, xhr.responseText);
+    });
+}
+
+function renderTerminationStatusChart(labels, data) {
+    const ctx = document.getElementById('terminationStatusChart');
+    if (!ctx) return;
+
+    if (charts.terminationStatus) charts.terminationStatus.destroy();
+
+    const colors = ['#2ecc71', '#f39c12', '#e74c3c', '#9b59b6', '#3498db'];
+
+    charts.terminationStatus = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: colors.slice(0, labels.length),
+                borderColor: '#fff',
+                borderWidth: 2
+            }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+    });
 }

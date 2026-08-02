@@ -11,6 +11,7 @@ require_once "controllers/DocumentationController.php";
 require_once "controllers/SurveyController.php";
 
 $theme = $_SESSION['user']['theme'] ?? 'light';
+session_write_close();
 
 // Initialize controllers
 $exitController = new ExitManagementController();
@@ -111,6 +112,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
   <link rel="stylesheet" href="../layout/toast.css" />
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+  <script>
+    window.exitManagementUserRole = <?= json_encode($_SESSION['user']['role'] ?? '') ?>;
+  </script>
 </head>
 
 <body
@@ -362,48 +366,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
             </div>
 
             <!-- Charts Row -->
+            <!-- Charts: top row reasons/status, bottom row trends (2 + 2) -->
             <div class="row mt-4">
-              <div class="col-lg-6">
-                <div class="card">
+              <div class="col-lg-6 col-md-6 mb-3">
+                <div class="card h-100">
                   <div class="card-header">
-                    <h3 class="card-title">Resignation Trend (Last 6 Months)</h3>
+                    <h3 class="card-title">Resignation Reasons</h3>
                   </div>
-                  <div class="card-body">
-                    <canvas id="resignationTrendChart"></canvas>
+                  <div class="card-body" style="min-height:260px;">
+                    <canvas id="resignationReasonsChart" height="240"></canvas>
                   </div>
                 </div>
               </div>
-              <div class="col-lg-6">
-                <div class="card">
+
+              <div class="col-lg-6 col-md-6 mb-3">
+                <div class="card h-100">
                   <div class="card-header">
-                    <h3 class="card-title">Resignation Reasons Distribution</h3>
+                    <h3 class="card-title">Termination Status</h3>
                   </div>
-                  <div class="card-body">
-                    <canvas id="resignationReasonsChart"></canvas>
+                  <div class="card-body" style="min-height:260px;">
+                    <canvas id="terminationStatusChart" height="240"></canvas>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Exit Status Summary -->
             <div class="row mt-4">
-              <div class="col-lg-4">
-                <div class="card">
+              <div class="col-lg-6 col-md-6 mb-3">
+                <div class="card h-100">
                   <div class="card-header">
-                    <h3 class="card-title">Exit Status Overview</h3>
+                    <h3 class="card-title">Resignation Trend</h3>
                   </div>
-                  <div class="card-body">
-                    <canvas id="exitStatusChart"></canvas>
+                  <div class="card-body" style="min-height:260px;">
+                    <canvas id="resignationTrendChart" height="240"></canvas>
                   </div>
                 </div>
               </div>
-              <div class="col-lg-8">
-                <div class="card">
+
+              <div class="col-lg-6 col-md-6 mb-3">
+                <div class="card h-100">
                   <div class="card-header">
-                    <h3 class="card-title">Resignation Type Distribution</h3>
+                    <h3 class="card-title">Termination Trend</h3>
                   </div>
-                  <div class="card-body">
-                    <canvas id="resignationTypeChart"></canvas>
+                  <div class="card-body" style="min-height:260px;">
+                    <canvas id="terminationTrendChart" height="240"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Exit Status below (full width) -->
+            <div class="row mt-4">
+              <div class="col-12">
+                <div class="card h-100">
+                  <div class="card-header">
+                    <h3 class="card-title">Exit Status Overview</h3>
+                  </div>
+                  <div class="card-body" style="min-height:260px;">
+                    <canvas id="exitStatusChart" height="240"></canvas>
                   </div>
                 </div>
               </div>
@@ -700,8 +720,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                   </select>
                 </div>
                 <div class="card-tools d-flex align-items-center">
-                  <button type="button" class="btn btn-warning btn-sm mr-2" onclick="archiveInterviews()">
-                    <i class="fas fa-archive"></i> Archive
+                  <button type="button" id="viewArchivedInterviewsButton" class="btn btn-warning btn-sm mr-2" onclick="openArchiveModal()">
+                    <i class="fas fa-box-open"></i> Archived <span id="archive-notif-count" class="badge badge-danger ml-1" style="display:none;">0</span>
                   </button>
                   <button type="button" class="btn btn-success btn-sm" onclick="showInterviewModal()">
                     <i class="fas fa-plus"></i> Add
@@ -723,6 +743,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                     <!-- Data will be loaded here -->
                   </tbody>
                 </table>
+
               </div>
             </div>
           </div>

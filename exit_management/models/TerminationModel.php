@@ -154,83 +154,100 @@ class TerminationModel extends ExitManagementModel
 
     public function getTerminations(?string $status = null, int $page = 1, int $limit = 10, string $search = ''): array
     {
-        if (!$this->tableExists('exit_terminations')) {
+        try {
+            if (!$this->tableExists('exit_terminations')) {
+                return [
+                    'data' => [],
+                    'total' => 0,
+                    'page' => $page,
+                    'limit' => $limit,
+                    'total_pages' => 0
+                ];
+            }
+
+            $offset = max(0, ($page - 1) * $limit);
+
+            $baseSelect = "
+                SELECT
+                    t.id,
+                    t.employee_id,
+                    t.termination_reason,
+                    t.effective_date,
+                    t.comments,
+                    t.status,
+                    t.created_at,
+                    t.updated_at,
+                    e.full_name as employee_name,
+                    e.email,
+                    e.department,
+                    e.position
+                FROM exit_terminations t
+                LEFT JOIN employees e ON t.employee_id = e.employee_id
+            ";
+
+            $baseCount = "
+                SELECT COUNT(*) as total
+                FROM exit_terminations t
+                LEFT JOIN employees e ON t.employee_id = e.employee_id
+            ";
+
+            $params = [];
+            $whereClause = "";
+
+            if ($status === 'all') {
+                // no filter
+            } elseif ($status === 'active') {
+                $whereClause = " WHERE t.status != 'archived'";
+            } elseif ($status) {
+                $whereClause = " WHERE t.status = :status";
+                $params['status'] = $status;
+            }
+
+            if (!empty($search)) {
+                $searchCondition = $whereClause ? " AND" : " WHERE";
+                $searchCondition .= " (e.full_name LIKE :search0 OR e.email LIKE :search1 OR t.termination_reason LIKE :search2)";
+                $whereClause .= $searchCondition;
+                $params['search0'] = "%$search%";
+                $params['search1'] = "%$search%";
+                $params['search2'] = "%$search%";
+            }
+
+            // Use integer limits directly in SQL to avoid DB driver binding issues for LIMIT/OFFSET
+            $limitInt = (int)$limit;
+            $offsetInt = (int)$offset;
+
+            $sql = $baseSelect . $whereClause . " ORDER BY t.created_at DESC LIMIT $limitInt OFFSET $offsetInt";
+            $countSql = $baseCount . $whereClause;
+
+            $countStmt = $this->db->prepare($countSql);
+            $countStmt->execute($params);
+            $countRow = $countStmt->fetch(PDO::FETCH_ASSOC);
+            $totalCount = $countRow ? (int)$countRow['total'] : 0;
+
+            $stmt = $this->db->prepare($sql);
+            foreach ($params as $key => $value) {
+                $stmt->bindValue(':' . $key, $value);
+            }
+            $stmt->execute();
+
+            return [
+                'data' => $stmt->fetchAll(PDO::FETCH_ASSOC),
+                'total' => $totalCount,
+                'page' => $page,
+                'limit' => $limitInt,
+                'total_pages' => $limitInt > 0 ? ceil($totalCount / $limitInt) : 0
+            ];
+        } catch (Exception $e) {
+            error_log('getTerminations error: ' . $e->getMessage());
             return [
                 'data' => [],
                 'total' => 0,
                 'page' => $page,
                 'limit' => $limit,
-                'total_pages' => 0
+                'total_pages' => 0,
+                'error' => $e->getMessage()
             ];
         }
-        $offset = ($page - 1) * $limit;
-        $sql = "
-            SELECT
-                t.id,
-                t.employee_id,
-                t.termination_reason,
-                t.effective_date,
-                t.comments,
-                t.status,
-                t.created_at,
-                t.updated_at,
-                e.full_name as employee_name,
-                e.email,
-                e.department,
-                e.position
-            FROM exit_terminations t
-            LEFT JOIN employees e ON t.employee_id = e.employee_id
-        ";
-
-        $countSql = "
-            SELECT COUNT(*) as total
-            FROM exit_terminations t
-            LEFT JOIN employees e ON t.employee_id = e.employee_id
-        ";
-
-        $params = [];
-        $whereClause = "";
-
-        if ($status === 'all') {
-            $whereClause = "";
-        } elseif ($status === 'active') {
-            $whereClause = " WHERE t.status != 'archived'";
-        } elseif ($status) {
-            $whereClause = " WHERE t.status = :status";
-            $params['status'] = $status;
-        }
-
-        if (!empty($search)) {
-            $searchCondition = $whereClause ? " AND" : " WHERE";
-            $searchCondition .= " (e.full_name LIKE :search0 OR e.email LIKE :search1 OR t.termination_reason LIKE :search2)";
-            $whereClause .= $searchCondition;
-            $params['search0'] = "%$search%";
-            $params['search1'] = "%$search%";
-            $params['search2'] = "%$search%";
-        }
-
-        $sql .= $whereClause . ' ORDER BY t.created_at DESC LIMIT :limit OFFSET :offset';
-        $countSql .= $whereClause;
-
-        $countStmt = $this->db->prepare($countSql);
-        $countStmt->execute($params);
-        $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
-
-        $stmt = $this->db->prepare($sql);
-        foreach ($params as $key => $value) {
-            $stmt->bindValue(':' . $key, $value);
-        }
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-        $stmt->execute();
-
-        return [
-            'data' => $stmt->fetchAll(PDO::FETCH_ASSOC),
-            'total' => $totalCount,
-            'page' => $page,
-            'limit' => $limit,
-            'total_pages' => ceil($totalCount / $limit)
-        ];
     }
 
     public function updateTerminationStatus(int $terminationId, string $status, ?int $approverId = null, ?string $comments = null): bool

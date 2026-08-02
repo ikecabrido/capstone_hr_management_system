@@ -323,6 +323,59 @@ class ExitManagementController
     }
 
     /**
+     * Get termination trend (last 6 months)
+     */
+    public function getTerminationTrend(): array
+    {
+        try {
+            $db = $this->model->getConnection();
+            $query = "SELECT DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as count
+                      FROM exit_terminations
+                      WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+                      GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+                      ORDER BY month";
+
+            $stmt = $db->query($query);
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $months = [];
+            $counts = [];
+            foreach ($results as $row) {
+                $months[] = $row['month'];
+                $counts[] = (int)$row['count'];
+            }
+
+            return ['labels' => $months, 'data' => $counts];
+        } catch (Exception $e) {
+            return ['labels' => [], 'data' => []];
+        }
+    }
+
+    /**
+     * Get termination status distribution
+     */
+    public function getTerminationStatusDistribution(): array
+    {
+        try {
+            $db = $this->model->getConnection();
+            $query = "SELECT status, COUNT(*) as count FROM exit_terminations GROUP BY status";
+            $stmt = $db->query($query);
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $statuses = [];
+            $counts = [];
+            foreach ($results as $row) {
+                $statuses[] = ucfirst($row['status']);
+                $counts[] = (int)$row['count'];
+            }
+
+            return ['labels' => $statuses, 'data' => $counts];
+        } catch (Exception $e) {
+            return ['labels' => [], 'data' => []];
+        }
+    }
+
+    /**
      * Get dashboard metrics
      */
     public function getDashboardMetrics(): array
@@ -412,6 +465,12 @@ class ExitManagementController
 
                 case 'get_resignation_types':
                     return $this->getResignationTypeDistribution();
+
+                case 'get_termination_trend':
+                    return $this->getTerminationTrend();
+
+                case 'get_termination_status':
+                    return $this->getTerminationStatusDistribution();
 
                 case 'get_dashboard_metrics':
                     return $this->getDashboardMetrics();

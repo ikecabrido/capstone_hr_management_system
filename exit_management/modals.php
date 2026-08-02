@@ -169,6 +169,8 @@
                                 <select class="form-control" id="interviewCaseSelect" required>
                                     <option value="">Select Approved Exit Case</option>
                                 </select>
+                                <div id="interviewCaseDisplay" class="form-control-plaintext" style="display:none; white-space: normal; word-break: break-word;"></div>
+                                <small id="interviewCaseHelpText" class="form-text text-danger" style="display:none;">Please select an approved exit case before scheduling the interview.</small>
                                 <input type="hidden" id="interviewExitCaseType" name="exit_case_type" />
                                 <input type="hidden" id="interviewExitCaseId" name="exit_case_id" />
                                 <input type="hidden" id="interviewEmployeeId" name="employee_id" />
@@ -193,55 +195,23 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label>Interview Time</label>
+                                <label>Interview Time *</label>
                                 <div class="row">
-                                    <div class="col-6">
-                                        <select class="form-control" id="interviewHour">
-                                            <option value="">Hour</option>
-                                            <option value="00">00</option>
-                                            <option value="01">01</option>
-                                            <option value="02">02</option>
-                                            <option value="03">03</option>
-                                            <option value="04">04</option>
-                                            <option value="05">05</option>
-                                            <option value="06">06</option>
-                                            <option value="07">07</option>
-                                            <option value="08">08</option>
-                                            <option value="09">09</option>
-                                            <option value="10">10</option>
-                                            <option value="11">11</option>
-                                            <option value="12">12</option>
-                                            <option value="13">13</option>
-                                            <option value="14">14</option>
-                                            <option value="15">15</option>
-                                            <option value="16">16</option>
-                                            <option value="17">17</option>
-                                            <option value="18">18</option>
-                                            <option value="19">19</option>
-                                            <option value="20">20</option>
-                                            <option value="21">21</option>
-                                            <option value="22">22</option>
-                                            <option value="23">23</option>
-                                        </select>
+                                    <div class="col-4">
+                                        <input type="number" class="form-control" id="interviewHour" min="1" max="12" placeholder="HH">
                                     </div>
-                                    <div class="col-6">
-                                        <select class="form-control" id="interviewMinute">
-                                            <option value="">Minute</option>
-                                            <option value="00">00</option>
-                                            <option value="05">05</option>
-                                            <option value="10">10</option>
-                                            <option value="15">15</option>
-                                            <option value="20">20</option>
-                                            <option value="25">25</option>
-                                            <option value="30">30</option>
-                                            <option value="35">35</option>
-                                            <option value="40">40</option>
-                                            <option value="45">45</option>
-                                            <option value="50">50</option>
-                                            <option value="55">55</option>
+                                    <div class="col-4">
+                                        <input type="number" class="form-control" id="interviewMinute" min="0" max="59" step="5" placeholder="MM">
+                                    </div>
+                                    <div class="col-4">
+                                        <select class="form-control" id="interviewMeridiem">
+                                            <option value="AM">AM</option>
+                                            <option value="PM">PM</option>
                                         </select>
                                     </div>
                                 </div>
+                                <input type="hidden" id="interviewTime" name="scheduled_time">
+                                <small class="form-text text-muted">Enter the interview time in separate fields.</small>
                             </div>
                         </div>
                     </div>
@@ -336,9 +306,146 @@
                             <textarea class="form-control" id="interviewAdditionalComments" name="additional_comments" rows="3"></textarea>
                         </div>
                     </div>
+                    <!-- Employee Info (read-only) -->
+                    <div id="employeeInfoSection" class="mt-3" style="display: none;">
+                        <hr>
+                        <h6>Employee Information</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Employee</label>
+                                    <div id="employeeFullName" class="form-control-plaintext"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Department</label>
+                                    <div id="employeeDepartment" class="form-control-plaintext"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Position</label>
+                                    <div id="employeePosition" class="form-control-plaintext"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Date Hired</label>
+                                    <div id="employeeDateHired" class="form-control-plaintext"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Years of Service</label>
+                                    <div id="employeeYearsOfService" class="form-control-plaintext"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Manager</label>
+                                    <div id="employeeManager" class="form-control-plaintext"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Exit Case Info (read-only) -->
+                    <div id="exitCaseInfoSection" class="mt-3" style="display: none;">
+                        <hr>
+                        <h6>Exit Case Information</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Exit Reason</label>
+                                    <div id="exitCaseReason" class="form-control-plaintext"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Notice Date</label>
+                                    <div id="exitCaseNoticeDate" class="form-control-plaintext"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Last Working / Effective Date</label>
+                                    <div id="exitCaseDate" class="form-control-plaintext"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Case Approved By / At</label>
+                                    <div id="exitCaseApproved" class="form-control-plaintext"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Employee Engagement placeholder -->
+                    <div id="engagementSection" class="mt-3" style="display: none;">
+                        <hr>
+                        <h6>Employee Engagement</h6>
+                        <div class="form-group">
+                            <div id="engagementPlaceholder" class="text-muted">Survey integration placeholder (post-exit surveys will appear here).</div>
+                        </div>
+                    </div>
+
+                    <!-- HR Assessment (admin editable) -->
+                    <div id="hrAssessmentSection" class="mt-3" style="display: none;">
+                        <hr>
+                        <h6>HR Assessment</h6>
+                        <div class="form-group">
+                            <label for="hrSummary">Interview Summary</label>
+                            <textarea class="form-control" id="hrSummary" name="hr_summary" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="hrKeyFindings">Key Findings</label>
+                            <textarea class="form-control" id="hrKeyFindings" name="hr_key_findings" rows="2"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="hrRecommendations">HR Recommendations</label>
+                            <textarea class="form-control" id="hrRecommendations" name="hr_recommendations" rows="2"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="hrFollowUpActions">Follow-up Actions</label>
+                            <textarea class="form-control" id="hrFollowUpActions" name="hr_follow_up_actions" rows="2"></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-md-4">
+                                <label for="hrRehireEligibility">Rehire Eligibility</label>
+                                <select class="form-control" id="hrRehireEligibility" name="hr_rehire_eligibility">
+                                    <option value="">Select</option>
+                                    <option value="yes">Yes</option>
+                                    <option value="no">No</option>
+                                    <option value="conditional">Conditional</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-md-4">
+                                <label for="hrKnowledgeTransfer">Knowledge Transfer Required</label>
+                                <div class="form-control-plaintext"><input type="checkbox" id="hrKnowledgeTransfer" name="hr_knowledge_transfer"> Yes</div>
+                            </div>
+                            <div class="form-group col-md-4">
+                                <label for="hrClearanceRecommendation">Clearance Recommendation</label>
+                                <select class="form-control" id="hrClearanceRecommendation" name="hr_clearance_recommendation">
+                                    <option value="pending">Pending</option>
+                                    <option value="clear">Clear</option>
+                                    <option value="not_clear">Not Clear</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-info" id="editInterviewBtn" style="display:none;">Edit Interview</button>
+                    <button type="button" class="btn btn-primary" id="saveHrAssessmentBtn" style="display:none;">Save HR Assessment</button>
                     <button type="submit" class="btn btn-success" id="interviewSubmitBtn">Schedule Interview</button>
                 </div>
             </form>
@@ -917,6 +1024,46 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-warning" id="confirmActionBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Archived Interviews Modal -->
+<div class="modal fade exit-modal" id="archivedInterviewsModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary">
+                <h5 class="modal-title">Archived Exit Interviews</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped table-sm">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Interviewer</th>
+                                <th>Scheduled Date</th>
+                                <th>Status</th>
+                                <th>Archived At</th>
+                                <th>Reason</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="archived-interviews-tbody">
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">Loading archived interviews...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="archived-interviews-pagination" class="mt-2 d-flex justify-content-end"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
