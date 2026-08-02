@@ -19,14 +19,26 @@ class Employee
     }
     public function getByUserId($user_id)
     {
-        $query = "SELECT e.*, u.username, u.role, u.is_admin
-                  FROM " . $this->table . " e
-                  JOIN users u ON e.user_id = u.id
-                  WHERE e.user_id = :user_id LIMIT 1";
+        $query = "
+        SELECT 
+            e.*,
+            u.username,
+            u.role,
+            u.is_admin,
+            p.title AS position
+        FROM {$this->table} e
+        JOIN users u 
+            ON e.user_id = u.id
+        LEFT JOIN positions p
+            ON e.position_id = p.id
+        WHERE e.user_id = :user_id
+        LIMIT 1
+    ";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':user_id', $user_id);
-        $stmt->execute();
+        $stmt->execute([
+            ':user_id' => $user_id
+        ]);
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }

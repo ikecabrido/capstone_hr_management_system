@@ -175,7 +175,7 @@ class NotificationController
         try {
 
             $employeeNotifications = $this->notificationModel
-                ->getEmployeeNotifications($employee['id']);
+                ->getEmployeeNotifications($employee['employee_id']);
 
             $notificationCount = count($employeeNotifications);
 
@@ -200,7 +200,7 @@ class NotificationController
 
         $this->recipientModel->markAsRead(
             $_GET['id'],
-            $employee['id']
+            $employee['employee_id']
         );
 
         Helper::redirect('index.php?url=employee-notifications');

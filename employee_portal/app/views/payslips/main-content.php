@@ -1,4 +1,4 @@
-<div class="w-full ml-28 mt-6">
+<div class="w-full ml-4 mt-6">
     <div class="content-wrapper w-auto">
         <div class="card shadow-lg border-0 rounded-4">
 

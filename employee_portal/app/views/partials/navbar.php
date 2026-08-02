@@ -11,7 +11,7 @@ if (isset($_SESSION['user_id'])) {
 
     if ($employee) {
 
-        $notificationData = NotificationHelper::getEmployeeNotifications($employee['id']);
+        $notificationData = NotificationHelper::getEmployeeNotifications($employee['employee_id']);
 
         $notificationCount = $notificationData['count'];
         $latestNotifications = $notificationData['latest'];

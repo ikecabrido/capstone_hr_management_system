@@ -11,9 +11,9 @@ class MedicalRecord
     }
     public function getByEmployee($employee_id)
     {
-        $query = "SELECT c.*, e.full_name
+        $query = "SELECT c.*, e.first_name, e.last_name
               FROM {$this->table} c
-              JOIN employees e ON c.patient_id = e.id
+              JOIN employees e ON c.patient_id = e.employee_id
               WHERE c.patient_id = ?
               ORDER BY c.created_at DESC";
 

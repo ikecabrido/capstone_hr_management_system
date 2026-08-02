@@ -133,7 +133,6 @@
                     <?php endif; ?>
                 </div>
             </section>
-
             <!-- Leave Balance -->
             <div class="max-w-5xl mx-auto mt-8">
 
@@ -298,10 +297,8 @@
                 </div>
 
             </div>
-
             <!-- Recent Attendance -->
             <div class="max-w-5xl mx-auto mt-8 mb-10">
-
                 <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
 
                     <!-- Header -->

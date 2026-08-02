@@ -1,4 +1,4 @@
-<div class="w-[500px]">
+<div class="w-[800px] card shadow-sm border-0 mb-4">
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-primary text-white">
             <h5 class="mb-0">
@@ -10,10 +10,10 @@
 
             <div class="row mb-3">
                 <div class="col-5 text-muted font-weight-bold">
-                    Employee No.
+                    Employee Code.
                 </div>
                 <div class="col-7">
-                    <?= htmlspecialchars($employee['employee_no'] ?? '-') ?>
+                    <?= htmlspecialchars($employeeInfo['employee_code'] ?? '-') ?>
                 </div>
             </div>
 
@@ -22,7 +22,8 @@
                     Name
                 </div>
                 <div class="col-7">
-                    <?= htmlspecialchars($employee['full_name'] ?? '-') ?>
+                    <?= htmlspecialchars($employeeInfo['first_name'] ?? '-') ?>
+                    <?= htmlspecialchars($employeeInfo['last_name'] ?? '-') ?>
                 </div>
             </div>
 
@@ -31,7 +32,7 @@
                     Department
                 </div>
                 <div class="col-7">
-                    <?= htmlspecialchars($employee['department'] ?? '-') ?>
+                    <?= htmlspecialchars($employeeInfo['department'] ?? '-') ?>
                 </div>
             </div>
 
@@ -39,8 +40,9 @@
                 <div class="col-5 text-muted font-weight-bold">
                     Position
                 </div>
+
                 <div class="col-7">
-                    <?= htmlspecialchars($employee['position_name'] ?? '-') ?>
+                    <?= htmlspecialchars($employeeInfo['position'] ?? '-') ?>
                 </div>
             </div>
 
@@ -49,8 +51,8 @@
                     Date Hired
                 </div>
                 <div class="col-7">
-                    <?= !empty($employee['date_hired'])
-                        ? date('F d, Y', strtotime($employee['date_hired']))
+                    <?= !empty($employeeInfo['hire_date'])
+                        ? date('F d, Y', strtotime($employeeInfo['hire_date']))
                         : '-' ?>
                 </div>
             </div>
@@ -61,7 +63,7 @@
                 </div>
                 <div class="col-7">
                     <span class="badge badge-success px-3 py-2">
-                        <?= ucfirst($employee['employment_status'] ?? '-') ?>
+                        <?= ucfirst($employeeInfo['employment_status'] ?? '-') ?>
                     </span>
                 </div>
             </div>

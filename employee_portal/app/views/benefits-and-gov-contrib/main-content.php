@@ -64,11 +64,12 @@
                                                 <?= htmlspecialchars($benefit['record_type']); ?>
                                             </span>
                                         </td>
-
                                         <td>
-                                            <?= htmlspecialchars($benefit['period']); ?>
+                                            <?= !empty($benefit['period'])
+                                                ? date('F Y', strtotime($benefit['period'] . '-01'))
+                                                : '-'; ?>
+                                            <small class="text-muted d-block">(Month &amp; Year)</small>
                                         </td>
-
                                         <td>
                                             <?= htmlspecialchars($benefit['description']); ?>
                                         </td>
@@ -87,7 +88,6 @@
                                                     class="btn btn-primary btn-sm me-1">
 
                                                     <i class="fas fa-eye me-1"></i>
-                                                    View
 
                                                 </a>
 
@@ -97,7 +97,6 @@
                                                     class="btn btn-success btn-sm">
 
                                                     <i class="fas fa-download me-1"></i>
-                                                    Download
 
                                                 </a>
 

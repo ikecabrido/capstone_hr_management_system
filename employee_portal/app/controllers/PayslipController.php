@@ -16,7 +16,7 @@ class PayslipController
             Session::get('user_id')
         );
 
-        $records = $this->payslipModel->getByEmployee($employee['id']);
+        $records = $this->payslipModel->getByEmployee($employee['employee_id']);
 
         $title = "My Payslips";
         $content = __DIR__ . '/../views/payslips/main-content.php';

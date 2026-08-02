@@ -17,12 +17,10 @@ class DocumentsController
     public function index()
     {
         $userId = $_SESSION['user_id'];
-
-        $empdocs = $this->documentsModel->getBySubmittedBy($userId);
-        
+        $employeeInfo = $this->employeeModel->getByUserId($userId);
+        $empdocs = $this->documentsModel->getBySubmittedBy($employeeInfo['employee_id']);
         $departments = $this->departmentsModel->all();
-        $employees = $this->employeeModel->all();
-
+        
         $title = "Employee Documents";
         $content = __DIR__ . '/../views/employee-documents/main-content.php';
 

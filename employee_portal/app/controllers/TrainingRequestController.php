@@ -174,7 +174,7 @@ class TrainingRequestController
         if ($employee) {
 
             $trainingRequests = $this->trainingRequestModel
-                ->getByEmployeeId($employee['id']);
+                ->getByEmployeeId($employee['employee_id']);
         }
 
         $title = "Training Requests";
@@ -201,7 +201,7 @@ class TrainingRequestController
 
                 'employee_user_id'       => $employee['user_id'],
 
-                'employee_id'            => $employee['id'],
+                'employee_id'            => $employee['employee_id'],
 
                 'goal_id'                => !empty($_POST['goal_id'])
                     ? $_POST['goal_id']

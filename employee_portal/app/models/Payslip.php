@@ -13,7 +13,7 @@ class Payslip
     {
         $query = "SELECT p.*, full_name
               FROM {$this->table} p
-              JOIN employees e ON p.employee_id = e.id
+              JOIN employees e ON p.employee_id = e.employee_id
               ORDER BY p.payslip_id DESC";
 
         $stmt = $this->conn->prepare($query);
@@ -25,7 +25,7 @@ class Payslip
         $query = "SELECT p.*, 
                      CONCAT(e.first_name, ' ', e.last_name) AS full_name
               FROM {$this->table} p
-              JOIN employees e ON p.employee_id = e.id
+              JOIN employees e ON p.employee_id = e.employee_id
               WHERE p.id = ?";
 
         $stmt = $this->conn->prepare($query);
@@ -34,9 +34,9 @@ class Payslip
     }
     public function getByEmployee($id)
     {
-        $query = "SELECT p.*, e.full_name
+        $query = "SELECT p.*, e.first_name, e.last_name
               FROM {$this->table} p
-              JOIN employees e ON p.employee_id = e.id
+              JOIN employees e ON p.employee_id = e.employee_id
               WHERE p.employee_id = ?";
 
         $stmt = $this->conn->prepare($query);
@@ -47,11 +47,11 @@ class Payslip
     {
         $query = "
         SELECT p.*, 
-               e.full_name,  
+               e.first_name, e.last_name  
                pos.title AS position, 
                et.name AS employment_type
         FROM {$this->table} p
-        JOIN employees e ON p.employee_id = e.id
+        JOIN employees e ON p.employee_id = e.employee_id
         LEFT JOIN positions pos ON e.position_id = pos.id
         LEFT JOIN employment_types et ON e.employment_type_id = et.id
         WHERE p.payslip_id = :id

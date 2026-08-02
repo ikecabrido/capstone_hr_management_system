@@ -16,7 +16,7 @@ class PayrollRequestController
     {
         $this->payrollRequestModel = new PayrollRequest();
         $this->employeeModel = new Employee();
-        $this->userModel = new User();
+        $this->userModel = new Users();
     }
     public function store()
     {

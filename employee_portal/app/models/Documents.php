@@ -89,28 +89,26 @@ class Documents
 
         return $stmt->execute();
     }
-    public function getBySubmittedBy($userId)
+    public function getBySubmittedBy($employeeId)
     {
-        $sql = "SELECT
-                ed.*,
-                e.first_name, 
-                e.last_name,
-                d.department_name
-            FROM ep_employee_documents ed
-            LEFT JOIN employees e
-                ON e.user_id = ed.submit_by
-            LEFT JOIN (
-                SELECT id, MAX(department_name) AS department_name
-                FROM departments
-                GROUP BY id
-            ) d
-                ON d.id = ed.department
-            WHERE ed.submit_by = :user_id
-            ORDER BY ed.submitted_on DESC";
+        $sql = "
+        SELECT
+            ed.*,
+            e.first_name,
+            e.last_name,
+            d.department_name
+        FROM ep_employee_documents ed
+        LEFT JOIN employees e
+            ON e.employee_id = ed.submit_by
+        LEFT JOIN departments d
+            ON d.id = ed.department
+        WHERE ed.submit_by = :employee_id
+        ORDER BY ed.submitted_on DESC
+    ";
 
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([
-            ':user_id' => $userId
+            ':employee_id' => $employeeId
         ]);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);

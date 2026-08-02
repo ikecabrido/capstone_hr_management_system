@@ -19,7 +19,7 @@ class LearningAndDevelopmentController
 
         $employee = $employeeModel->findByUserId($user_id);
 
-        $employee_id = $employee['id'];
+        $employee_id = $employee['employee_id'];
 
         $trainingRecords = $this->learningAndDevelopmentModel
             ->getTrainingRecords($employee_id);

@@ -1,4 +1,4 @@
-<div class="w-full ml-16">
+<div class="w-full ml-6 mr-2">
     <div class="content-wrapper w-full">
         <?php require __DIR__ . '/../partials/notif.php'; ?>
 

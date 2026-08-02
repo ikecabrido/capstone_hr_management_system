@@ -17,7 +17,7 @@ class LeaveRequestController
     {
         $user_id = AuthController::getCurrentUserId();
         $employee = $this->employeeModel->getByUserId($user_id);
-        $employee_id = $employee['id'];
+        $employee_id = $employee['employee_id'];
 
         $leaves = $this->leaveModel->getLeavesByEmployee($employee_id);
         $allLeaveTypes = $this->leaveTypeModel->getAllLeaveTypes();

@@ -274,6 +274,7 @@
                                 </td>
 
                             </tr>
+                            
                             <?php require __DIR__ . '/view.php'; ?>
                         <?php endforeach; ?>
 
@@ -298,17 +299,6 @@
                                 <p class="text-muted mb-3">
                                     You haven't submitted any payroll document requests yet.
                                 </p>
-
-                                <button
-                                    type="button"
-                                    class="btn btn-primary btn-sm"
-                                    data-toggle="modal"
-                                    data-target="#payrollRequestModal">
-
-                                    <i class="fas fa-plus mr-1"></i>
-                                    Submit Your First Request
-
-                                </button>
 
                             </td>
 

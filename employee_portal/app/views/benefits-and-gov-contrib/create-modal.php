@@ -30,13 +30,13 @@
                             <input
                                 type="text"
                                 class="form-control"
-                                value="<?= htmlspecialchars($employeeID['full_name'] ?? ''); ?>"
+                                value="<?= htmlspecialchars($employeeID['first_name'] ?? ''); ?> <?= htmlspecialchars($employeeID['last_name'] ?? ''); ?>"
                                 readonly>
 
                             <input
                                 type="hidden"
                                 name="employee_id"
-                                value="<?= $employeeID['id'] ?? ''; ?>">
+                                value="<?= $employeeID['employee_id'] ?? ''; ?>">
 
                         </div>
                         <!-- Record Type -->

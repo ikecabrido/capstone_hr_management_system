@@ -36,8 +36,36 @@
                                 type="text"
                                 class="form-control"
                                 name="title"
-                                placeholder="Enter document title"
+                                list="documentTitles"
+                                placeholder="Select or enter a document title"
                                 required>
+
+                            <datalist id="documentTitles">
+                                <option value="Certificate of Employment">
+                                <option value="Employment Contract">
+                                <option value="Payslip">
+                                <option value="Payroll Summary">
+                                <option value="Leave Application">
+                                <option value="Leave Approval">
+                                <option value="Medical Certificate">
+                                <option value="Performance Evaluation">
+                                <option value="Training Certificate">
+                                <option value="Training Attendance">
+                                <option value="Memorandum">
+                                <option value="Notice of Promotion">
+                                <option value="Notice of Salary Adjustment">
+                                <option value="Certificate of Compensation">
+                                <option value="Certificate of Contribution">
+                                <option value="Employment Verification Letter">
+                                <option value="Clearance Form">
+                                <option value="Employee ID Request">
+                                <option value="Government Contribution Record">
+                                <option value="Tax Certificate (BIR Form 2316)">
+                            </datalist>
+
+                            <small class="text-muted">
+                                Select a common document title or type your own.
+                            </small>
                         </div>
 
                         <div class="col-12">
@@ -75,7 +103,6 @@
 
                             </select>
                         </div>
-
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">
                                 Submitted By
@@ -84,13 +111,13 @@
                             <input
                                 type="text"
                                 class="form-control"
-                                value="<?= htmlspecialchars($_SESSION['full_name']); ?>"
+                                value="<?= htmlspecialchars($employeeInfo['first_name']); ?> <?= htmlspecialchars($employeeInfo['last_name']); ?> "
                                 readonly>
 
                             <input
                                 type="hidden"
                                 name="submit_by"
-                                value="<?= $_SESSION['user_id']; ?>">
+                                value="<?= $employeeInfo['employee_id']; ?>">
                         </div>
 
                         <div class="col-12">

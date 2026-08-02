@@ -1,4 +1,4 @@
-<div class="col-lg-6">
+<div class="w-[800px] card shadow-sm border-0 mb-4">
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-warning text-dark">
             <h5 class="mb-0">

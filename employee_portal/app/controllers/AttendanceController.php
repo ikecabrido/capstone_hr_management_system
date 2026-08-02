@@ -1,4 +1,4 @@
-<?php
+  <?php
 
 /**
  * Attendance Controller for Time & Attendance System
@@ -334,7 +334,7 @@ class AttendanceController
 
         $user_id = Session::get('user_id');
         $employee = $this->authController->checkUserEmployee($user_id);
-        $employee_id = $employee['id'];
+        $employee_id = $employee['employee_id'];
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $action = $_POST['action'];

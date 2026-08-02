@@ -136,6 +136,8 @@ class EmployeePortalController
         });
 
         $notifications = $this->notificationModel->getEmployeeNotifications($employee_id);
+        $employeeInfo = $this->authController->checkUserEmployee($user_id);
+
 
         $content = __DIR__ . '/../views/employee-portal/main-content.php';
         require __DIR__ . '/../views/employee-portal/index.php';
