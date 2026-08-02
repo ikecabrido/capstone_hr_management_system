@@ -21,7 +21,7 @@ $content = $content ?? __DIR__ . '/main-content.php';
     <link rel="stylesheet" href="<?= $base ?>/assets/plugins/fontawesome-free/css/all.min.css">
     <link rel="stylesheet" href="<?= $base ?>/assets/dist/css/adminlte.css">
     <link rel="stylesheet" href="<?= $base ?>/employee_portal/app/views/partials/custom.css">
-    <link rel="stylesheet" href="<?= $base ?>/employee_portal/public/assets/css/employee-portal.css">
+    <link rel="stylesheet" href="<?= $base ?>/employee_portal/public/assets/css/employeeDashboard.css">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

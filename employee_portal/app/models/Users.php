@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/Database.php';
 
-class User
+class Users
 {
     private $conn;
     private $table = "users";

@@ -9,13 +9,12 @@ session_start();
 
 if (isset($_SESSION['user']) && !isset($_SESSION['user_id'])) {
 
-    $_SESSION['user_id'] = $_SESSION['user']['id'];
-    $_SESSION['employee_id'] = $_SESSION['user']['employee_id'];
-    $_SESSION['username'] = $_SESSION['user']['username'];
     $_SESSION['name'] = $_SESSION['user']['name'];
-    $_SESSION['full_name'] = $_SESSION['user']['name'];
     $_SESSION['role'] = $_SESSION['user']['role'];
+    $_SESSION['user_id'] = $_SESSION['user']['id'];
     $_SESSION['theme'] = $_SESSION['user']['theme'];
+    $_SESSION['full_name'] = $_SESSION['user']['name'];
+    $_SESSION['username'] = $_SESSION['user']['username'];
 }
 
 require 'app/controllers/AuthController.php';
@@ -33,6 +32,7 @@ require 'app/controllers/OnlineMeetingController.php';
 require 'app/controllers/PayrollRequestController.php';
 require 'app/controllers/EmployeePortalController.php';
 require 'app/controllers/TrainingRequestController.php';
+require 'app/controllers/ResignationRequestController.php';
 require 'app/controllers/PerformanceFeedbackController.php';
 require 'app/controllers/BenefitsAndGovContribController.php';
 require 'app/controllers/LearningAndDevelopmentController.php';
@@ -448,10 +448,31 @@ switch ($url) {
     case 'admin-employee-list':
         (new EmployeePortalController)->employeeList();
         break;
+
     case 'admin-view-attendance':
         (new EmployeePortalController)->viewAttendance();
         break;
+    /*
+|--------------------------------------------------------------------------
+| Resignation Request Routes
+|--------------------------------------------------------------------------
+|
+*/
+    case 'admin-resignation-request':
+        (new ResignationRequestController)->adminIndex();
+        break;
 
+    case 'resignation-request-create':
+        (new ResignationRequestController)->create();
+        break;
+
+    case 'admin-resignation-remarks':
+        (new ResignationRequestController)->updateRemarks();
+        break;
+
+    case 'admin-resignation-update-status':
+        (new ResignationRequestController)->updateStatus();
+        break;
 
     /*
 |--------------------------------------------------------------------------

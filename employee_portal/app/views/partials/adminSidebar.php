@@ -1,6 +1,7 @@
+<?php require __DIR__ . '/fetchName.php'; ?>
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <!-- Brand Logo -->
-    <a href="employee_portal.html" class="brand-link">
+    <a href="#" class="brand-link ">
         <img src="<?= $base ?>/assets/pics/bcpLogo.png" alt="AdminLTE Logo" class="brand-image elevation-3"
             style="opacity: 0.9" />
         <span class="brand-text font-weight-light">BCP Bulacan </span>
@@ -8,16 +9,22 @@
 
     <!-- Sidebar -->
     <div class="sidebar">
-        <!-- Sidebar user panel (optional) -->
+        <!-- Sidebar user panel -->
         <div class="user-panel mt-3 pb-3 mb-3 d-flex">
             <div class="image">
-                <img src="<?= $base ?>/employee_portal/public/assets/image/default_user_icon.webp" class="img-circle elevation-2" alt="User Image" />
+                <img src="<?= $base ?>/employee_portal/public/assets/image/default_user_icon.webp"
+                    class="img-circle elevation-2"
+                    alt="User Image" />
             </div>
 
             <div class="info">
-                <a href="#" class="d-block">
-                    <?= htmlspecialchars($_SESSION['username'] ?? 'Admin') ?>
-                </a>
+                <span class="d-block fw-bold">
+                    <?= htmlspecialchars(($employee['first_name'] ?? '') . ' ' . ($employee['last_name'] ?? 'Admin')) ?>
+                </span>
+
+                <small class="text-muted">
+                    @<?= htmlspecialchars($_SESSION['username'] ?? 'admin') ?>
+                </small>
             </div>
         </div>
 
@@ -100,6 +107,12 @@
                     <a href="/capstone_hr_management_system/employee_portal/index.php?url=admin-manage-user" class="nav-link">
                         <i class="fas fa-user-cog nav-icon"></i>
                         <p>User Account Management</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/capstone_hr_management_system/employee_portal/index.php?url=admin-resignation-request" class="nav-link d-flex align-items-center">
+                        <i class="fas fa-user-minus nav-icon mr-3"></i>
+                        <p>Resignation Request <br> Management</p>
                     </a>
                 </li>
                 <li class="nav-item">

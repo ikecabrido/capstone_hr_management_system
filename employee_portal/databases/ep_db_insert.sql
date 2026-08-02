@@ -389,3 +389,58 @@ VALUES
         'Guidance Office',
         '2022-10-12'
     );
+
+INSERT INTO
+    ep_resignation_requests (
+        employee_id,
+        resignation_type,
+        resignation_reason,
+        resignation_letter,
+        date_submitted,
+        intended_last_working_day,
+        status,
+        employee_remarks,
+        hr_remarks,
+        reviewed_by,
+        reviewed_at
+    )
+VALUES
+    (
+        1,
+        'With Notice',
+        'I have accepted a new career opportunity that aligns with my professional goals.',
+        'uploads/resignation_letters/resignation_1.pdf',
+        '2026-08-01 09:15:00',
+        '2026-08-31',
+        'Pending',
+        'I will ensure a proper turnover of my responsibilities.',
+        NULL,
+        NULL,
+        NULL
+    ),
+    (
+        2,
+        'Immediate',
+        'Due to personal and family circumstances, I am requesting immediate resignation.',
+        'uploads/resignation_letters/resignation_2.pdf',
+        '2026-07-28 14:20:00',
+        '2026-07-29',
+        'Approved',
+        'Thank you for the opportunity to work with the institution.',
+        'Approved. Immediate resignation has been accepted.',
+        1,
+        '2026-07-29 10:30:00'
+    ),
+    (
+        3,
+        'With Notice',
+        'I am pursuing further studies and will no longer be able to continue my employment.',
+        NULL,
+        '2026-07-25 08:45:00',
+        '2026-08-25',
+        'Rejected',
+        'I appreciate the support provided during my employment.',
+        'Please discuss your concerns with your department head before resubmitting.',
+        1,
+        '2026-07-26 11:15:00'
+    );

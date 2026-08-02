@@ -128,6 +128,24 @@ CREATE TABLE
         INDEX idx_requested (requested_at)
     );
 
+CREATE TABLE
+    ep_resignation_requests (
+        resignation_id INT AUTO_INCREMENT PRIMARY KEY,
+        employee_id INT NOT NULL,
+        resignation_type ENUM ('Immediate', 'With Notice') DEFAULT 'With Notice',
+        resignation_reason TEXT NOT NULL,
+        attachment VARCHAR(255) DEFAULT NULL,
+        date_submitted DATETIME DEFAULT CURRENT_TIMESTAMP,
+        intended_last_working_day DATE NOT NULL,
+        status ENUM ('Pending', 'Approved', 'Rejected', 'Cancelled') DEFAULT 'Pending',
+        employee_remarks TEXT DEFAULT NULL,
+        hr_remarks TEXT DEFAULT NULL,
+        reviewed_by INT DEFAULT NULL,
+        reviewed_at DATETIME DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    );
+
 --  /*
 -- |--------------------------------------------------------------------------
 -- | ALTER TABLES
@@ -141,4 +159,3 @@ ADD COLUMN password_reset_expires DATETIME;
 ALTER TABLE ep_employee_benefits ADD CONSTRAINT fk_employee_benefits_employee FOREIGN KEY (employee_id) REFERENCES employees (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE ep_notification_recipients ADD CONSTRAINT fk_notification FOREIGN KEY (notification_id) REFERENCES ep_notifications (notification_id) ON DELETE CASCADE;
-    

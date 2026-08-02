@@ -1,16 +1,27 @@
+<?php require __DIR__ . '/fetchName.php'; ?>
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
-    <a href="employee_portal.html" class="brand-link">
+    <a href="#" class="brand-link">
         <img src="<?= $base ?>/assets/pics/bcpLogo.png" alt="AdminLTE Logo" class="brand-image elevation-3"
             style="opacity: 0.9" />
         <span class="brand-text font-weight-light">BCP Bulacan </span>
     </a>
     <div class="sidebar">
+        <!-- Sidebar user panel -->
         <div class="user-panel mt-3 pb-3 mb-3 d-flex">
             <div class="image">
-                <img src="<?= $base ?>/assets/dist/img/user2-160x160.jpg" class="img-circle elevation-2" alt="User Image" />
+                <img src="<?= $base ?>/employee_portal/public/assets/image/default_user_icon.webp"
+                    class="img-circle elevation-2"
+                    alt="User Image" />
             </div>
+
             <div class="info">
-                <a href="#" class="d-block"><?php echo isset($_SESSION['username']) ? $_SESSION['username'] : 'User'; ?></a>
+                <span class="d-block fw-bold">
+                    <?= htmlspecialchars(($employee['first_name'] ?? '') . ' ' . ($employee['last_name'] ?? 'Admin')) ?>
+                </span>
+
+                <small class="text-muted">
+                    @<?= htmlspecialchars($_SESSION['username'] ?? 'admin') ?>
+                </small>
             </div>
         </div>
         <nav class="mt-2">

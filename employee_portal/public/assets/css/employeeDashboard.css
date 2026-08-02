@@ -606,3 +606,19 @@ body {
             color: #e9a8a8;
             border-color: #6b2f2f;
         }
+
+        .btn-group {
+    position: relative;
+}
+
+.btn-group .dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1055;
+}
+
+.btn-group .dropdown-menu.show {
+    display: block;
+}
