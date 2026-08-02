@@ -28,6 +28,7 @@ require 'app/controllers/NotificationController.php';
 require 'app/controllers/MedicalRecordController.php';
 require 'app/controllers/OnlineMeetingController.php';
 require 'app/controllers/PayrollRequestController.php';
+require 'app/controllers/ManageEmployeeController.php';
 require 'app/controllers/EmployeePortalController.php';
 require 'app/controllers/TrainingRequestController.php';
 require 'app/controllers/ResignationRequestController.php';
@@ -437,6 +438,16 @@ switch ($url) {
     case 'admin-toggle-user':
         (new ManageUserController)->toggleAdmin();
         break;
+
+    // Create Employee Profile
+    case 'employee-create':
+        (new ManageEmployeeController)->createProfile();
+        break;
+
+    case 'admin-employee-store':
+        (new ManageEmployeeController)->store();
+        break;
+
     /*
 |--------------------------------------------------------------------------
 | View Employee List and View Attendance Routes

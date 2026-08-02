@@ -145,42 +145,60 @@ class Users
     public function create($data)
     {
         $sql = "INSERT INTO {$this->table}
-                (
-                    role,
-                    username,
-                    email,
-                    password
-                )
-                VALUES
-                (
-                    :role,
-                    :username,
-                    :email,
-                    :password
-                )";
+            (
+                role,
+                username,
+                email,
+                password
+            )
+            VALUES
+            (
+                :role,
+                :username,
+                :email,
+                :password
+            )";
 
         $stmt = $this->conn->prepare($sql);
 
-        return $stmt->execute([
+        $success = $stmt->execute([
             ':role' => $data['role'],
             ':username' => $data['username'],
             ':email' => $data['email'],
             ':password' => $data['password']
         ]);
+
+        if ($success) {
+            return $this->conn->lastInsertId();
+        }
+
+        return false;
     }
     public function filterSelf($excludeUserId = null)
     {
+        $query = "
+        SELECT
+            u.*,
+            e.employee_id
+        FROM {$this->table} u
+        LEFT JOIN employees e
+            ON e.user_id = u.id
+    ";
+
         if ($excludeUserId) {
-            $query = "SELECT * FROM {$this->table}
-                  WHERE id != :user_id
-                  ORDER BY id DESC";
+            $query .= "
+            WHERE u.id != :user_id
+            ORDER BY u.id DESC
+        ";
 
             $stmt = $this->conn->prepare($query);
             $stmt->bindValue(':user_id', $excludeUserId, PDO::PARAM_INT);
             $stmt->execute();
         } else {
-            $query = "SELECT * FROM {$this->table} ORDER BY id DESC";
-            $stmt = $this->conn->query($query);
+            $query .= " ORDER BY u.id DESC";
+
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
         }
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -195,6 +213,24 @@ class Users
 
         return $stmt->execute([
             ':id' => $id
+        ]);
+    }
+    public function update($id, $username, $email)
+    {
+        $sql = "
+        UPDATE {$this->table}
+        SET
+            username = :username,
+            email = :email
+        WHERE id = :id
+    ";
+
+        $stmt = $this->conn->prepare($sql);
+
+        return $stmt->execute([
+            ':id' => $id,
+            ':username' => $username,
+            ':email' => $email
         ]);
     }
 }

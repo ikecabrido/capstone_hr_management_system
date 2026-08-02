@@ -27,32 +27,47 @@ class AuthController
 
         try {
             $username = Helper::sanitize($_POST['username'] ?? '');
-            $password   = trim($_POST['password'] ?? '');
+            $password = trim($_POST['password'] ?? '');
 
             if (empty($username) || empty($password)) {
-                throw new Exception("Please fill in all fields");
+                throw new Exception("Please fill in all fields.");
             }
 
             $user = $this->userModel->login($username);
 
             if (!$user || empty($user['id'])) {
-                throw new Exception("Invalid credentials");
+                throw new Exception("Invalid credentials.");
             }
 
             if (!password_verify($password, $user['password'])) {
-                throw new Exception("Invalid credentials");
+                throw new Exception("Invalid credentials.");
+            }
+
+            // Check if employee profile exists
+            $employee = $this->employeeModel->findByUserId($user['id']);
+
+            if (!$employee) {
+                Session::set(
+                    'profile_incomplete',
+                    'Your employee profile has not been completed yet. Please contact the HR Administrator.'
+                );
+
+                Helper::redirect('index.php?url=auth-index');
+                exit;
             }
 
             Session::set('user_id', $user['id']);
             Session::set('username', $user['username']);
             Session::set('role', $user['role']);
-            Session::set('full_name', $user['full_name']);
-            Session::set('success', "Login successful!");
+            Session::set('is_admin', $user['is_admin']);
+            Session::set('success', 'Login successful!');
 
             Helper::redirect('index.php?url=dashboard');
+            exit;
         } catch (Exception $e) {
             Session::set('error', $e->getMessage());
             Helper::redirect('index.php?url=auth-index');
+            exit;
         }
     }
     public function logout()

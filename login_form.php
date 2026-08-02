@@ -15,7 +15,7 @@ $qrToken = isset($_GET['qr_token']) ? trim($_GET['qr_token']) : '';
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
   <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-  <title>Human Resource Managment</title>
+  <title>Human Resource Management</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="stylesheet" href="assets/dist/css/adminlte.min.css" />
   <link rel="stylesheet" href="assets/plugins/toastr/toastr.min.css">
@@ -61,7 +61,9 @@ $qrToken = isset($_GET['qr_token']) ? trim($_GET['qr_token']) : '';
 </head>
 
 <body>
+  <?php require __DIR__ . '/employee_portal/app/views/partials/notif.php'; ?>
   <div class="bigbox">
+
     <div class="box1">
       <h1>
         Human Resource <br />
@@ -71,7 +73,9 @@ $qrToken = isset($_GET['qr_token']) ? trim($_GET['qr_token']) : '';
     </div>
     <div class="box2">
       <form action="login.php" method="POST">
+
         <div class="header">
+
           <img
             src="assets/pics/bcpLogo.png"
             alt="AdminLTE Logo"

@@ -78,6 +78,22 @@
 
                         </div>
                     </div>
+                    <div class="form-check mt-3">
+                        <input
+                            class="form-check-input"
+                            type="checkbox"
+                            id="createEmployeeProfile"
+                            name="create_employee_profile"
+                            value="1">
+
+                        <label class="form-check-label" for="createEmployeeProfile">
+                            Create employee profile now
+                        </label>
+
+                        <small class="text-muted d-block">
+                            If unchecked, the employee will complete their profile after their first login.
+                        </small>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button

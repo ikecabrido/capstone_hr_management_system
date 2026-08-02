@@ -39,7 +39,18 @@ class EmployeePortalController
 
     public function index()
     {
+        if (Session::get('is_admin') == 1) {
 
+            Session::set('success', null);
+
+            Session::set(
+                'error',
+                'Administrator accounts cannot access the Employee Portal. Please log in to the HR Management System.'
+            );
+
+            header("Location: http://localhost/capstone_hr_management_system/login_form.php");
+            exit;
+        }
         $title = "Employee Portal";
 
         $user_id = Session::get('user_id');
@@ -149,7 +160,6 @@ class EmployeePortalController
         $content = __DIR__ . '/../views/admin/main-content.php';
         require __DIR__ . '/../views/admin/index.php';
     }
-
     public function employeeList()
     {
         $employees = $this->employeeModel->getNonAdminEmployees();

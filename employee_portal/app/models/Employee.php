@@ -186,4 +186,77 @@ class Employee
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
+    public function createProfile($data)
+    {
+        $sql = "
+        INSERT INTO employees
+        (
+            user_id,
+            first_name,
+            middle_name,
+            last_name,
+            suffix,
+            gender,
+            birth_date,
+            birth_place,
+            civil_status,
+            citizenship,
+            religion,
+            mobile_no,
+            phone_no,
+            current_address,
+            permanent_address,
+            profile_image,
+            credentials,
+            graduate_level,
+            created_by
+        )
+        VALUES
+        (
+            :user_id,
+            :first_name,
+            :middle_name,
+            :last_name,
+            :suffix,
+            :gender,
+            :birth_date,
+            :birth_place,
+            :civil_status,
+            :citizenship,
+            :religion,
+            :mobile_no,
+            :phone_no,
+            :current_address,
+            :permanent_address,
+            :profile_image,
+            :credentials,
+            :graduate_level,
+            :created_by
+        )
+    ";
+
+        $stmt = $this->conn->prepare($sql);
+
+        return $stmt->execute([
+            ':user_id'           => $data['user_id'],
+            ':first_name'        => $data['first_name'],
+            ':middle_name'       => $data['middle_name'],
+            ':last_name'         => $data['last_name'],
+            ':suffix'            => $data['suffix'],
+            ':gender'            => $data['gender'],
+            ':birth_date'        => $data['birth_date'],
+            ':birth_place'       => $data['birth_place'],
+            ':civil_status'      => $data['civil_status'],
+            ':citizenship'       => $data['citizenship'],
+            ':religion'          => $data['religion'],
+            ':mobile_no'         => $data['mobile_no'],
+            ':phone_no'          => $data['phone_no'],
+            ':current_address'   => $data['current_address'],
+            ':permanent_address' => $data['permanent_address'],
+            ':profile_image'     => $data['profile_image'],
+            ':credentials'       => $data['credentials'],
+            ':graduate_level'    => $data['graduate_level'],
+            ':created_by'        => $data['created_by']
+        ]);
+    }
 }

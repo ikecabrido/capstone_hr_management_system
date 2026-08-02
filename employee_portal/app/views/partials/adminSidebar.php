@@ -98,7 +98,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link d-flex align-items-center">
+                    <a href="/capstone_hr_management_system/employee_portal/index.php?url=admin-training-request" class="nav-link d-flex align-items-center">
                         <i class="fas fa-chalkboard-teacher nav-icon mr-3"></i>
                         <p class="m-0">Manage Online <br> Training Request</p>
                     </a>

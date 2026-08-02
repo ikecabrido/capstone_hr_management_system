@@ -1,11 +1,14 @@
 <?php
 require_once __DIR__ . '/../models/Users.php';
+require_once __DIR__ . '/../models/Employee.php';
 class ManageUserController
 {
     private $userModel;
+    private $employeeModel;
     public function __construct()
     {
-        $this->userModel = new User();
+        $this->userModel = new Users();
+        $this->employeeModel = new Employee();
     }
     public function adminIndex()
     {
@@ -20,38 +23,53 @@ class ManageUserController
     public function create()
     {
         try {
-            $email = $_POST['email'];
+            $email = trim($_POST['email']);
             $password = $_POST['password'];
 
             $checkEmail = $this->userModel->findByEmail($email);
+
             if (!empty($checkEmail)) {
-                $_SESSION['error'] = "Email already exists...";
+                $_SESSION['error'] = "Email already exists.";
                 Helper::redirect('index.php?url=admin-manage-user');
                 exit;
             }
 
-            $hashedPassword = password_hash(
-                $password,
-                PASSWORD_DEFAULT
-            );
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
             $data = [
-                'role' => $_POST['role'],
-                'username' => $_POST['username'],
-                'email' => $_POST['email'],
+                'role'     => $_POST['role'],
+                'username' => trim($_POST['username']),
+                'email'    => $email,
                 'password' => $hashedPassword
             ];
 
-            if (!$this->userModel->create($data)) {
-                throw new Exception("Failed to save the record to the database.");
+            $userId = $this->userModel->create($data);
+            
+            if (!$userId) {
+                throw new Exception("Failed to create user.");
             }
 
-            $_SESSION['success'] = "New user created successfully.";
+            // Admin wants to create the employee profile immediately
+            if (!empty($_POST['create_employee_profile'])) {
+
+                $_SESSION['success'] = "User account created. Please complete the employee profile.";
+
+                Helper::redirect("index.php?url=employee-create&user_id={$userId}");
+                exit;
+            }
+
+            // Employee will complete the profile after first login
+            $_SESSION['success'] = "User account created successfully. The employee can complete their profile after their first login.";
+
+            Helper::redirect('index.php?url=admin-manage-user');
+            exit;
         } catch (Exception $e) {
             $_SESSION['error'] = $e->getMessage();
             error_log($e->getMessage());
+
+            Helper::redirect('index.php?url=admin-manage-user');
+            exit;
         }
-        header('Location: index.php?url=admin-manage-user');
-        exit;
     }
     public function update()
     {

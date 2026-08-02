@@ -1,5 +1,4 @@
 <?php require __DIR__ . '/style.php'; ?>
-<?php require __DIR__ . '/style.php'; ?>
 
 <div class="w-full mt-4">
     <div class="content-wrapper px-4 py-4">
@@ -147,11 +146,26 @@
                                                     onclick="return confirm('<?= $isAdmin
                                                                                     ? 'Remove administrator privileges from this user?'
                                                                                     : 'Grant administrator privileges to this user?'; ?>')">
-
                                                     <i class="fas <?= $isAdmin ? 'fa-user-shield' : 'fa-crown'; ?>"></i>
                                                     <?= $isAdmin ? 'Remove Admin' : 'Set as Admin'; ?>
                                                 </button>
                                             </form>
+                                            <?php if (empty($user['employee_id'])): ?>
+                                                <a
+                                                    href="index.php?url=employee-create&user_id=<?= $user['id']; ?>"
+                                                    class="btn btn-sm btn-outline-primary"
+                                                    title="Complete Employee Profile">
+
+                                                    <i class="fas fa-id-card ml-1"></i>
+                                                    Complete Profile
+                                                </a>
+                                            <?php else: ?>
+                                                <span class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-check-circle ml-1"></i>
+                                                    Employee Created
+                                                </span>
+                                            <?php endif; ?>
+                                        </td>
                                     </tr>
 
                                 <?php endforeach; ?>
