@@ -97,4 +97,21 @@ class ResignationRequest
             ':resignation_id' => $data['resignation_id']
         ]);
     }
+    public function getByEmployee($employeeId)
+    {
+        $query = "
+        SELECT *
+        FROM {$this->table}
+        WHERE employee_id = :employee_id
+          AND status != 'Cancelled'
+        ORDER BY date_submitted DESC
+    ";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([
+            ':employee_id' => $employeeId
+        ]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

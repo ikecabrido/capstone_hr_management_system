@@ -17,7 +17,7 @@ class AuthController
     private $employeeModel;
     public function __construct()
     {
-        $this->userModel = new User();
+        $this->userModel = new Users();
         $this->auditLog  = new AuditLog();
         $this->employeeModel = new Employee();
     }

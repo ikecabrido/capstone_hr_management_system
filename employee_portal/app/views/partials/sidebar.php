@@ -165,6 +165,12 @@
                         <p>Grievance</p>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a href="/capstone_hr_management_system/employee_portal/index.php?url=resignation-request" class="nav-link d-flex align-items-center">
+                        <i class="fas fa-user-minus nav-icon mr-3"></i>
+                        <p>Resignation Request <br> Management</p>
+                    </a>
+                </li>
                 <li class="nav-item has-treeview">
                     <a href="#" class="nav-link">
                         <i class="nav-icon fas fa-inbox"></i>

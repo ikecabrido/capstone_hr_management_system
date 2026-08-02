@@ -77,6 +77,7 @@ class ResignationRequestController
             'employee_remarks' => trim($_POST['employee_remarks'] ?? null),
             'resignation_reason' => trim($_POST['resignation_reason']),
             'intended_last_working_day' => $_POST['intended_last_working_day'],
+            'status' => "Pending",
             'attachment' => $attachment
         ]);
 
@@ -129,6 +130,45 @@ class ResignationRequestController
         }
 
         header('Location: index.php?url=admin-resignation-request');
+        exit;
+    }
+    public function index()
+    {
+        $employee = $this->employeeModel->findByUserId($_SESSION['user_id']);
+
+        $resignationRequests = [];
+
+        if ($employee) {
+            $resignationRequests = $this->resignationRequestModel
+                ->getByEmployee($employee['employee_id']);
+        }
+
+        $title = "Benefits & Government Contributions";
+        $content = __DIR__ . '/../views/resignation-request/main-content.php';
+
+        require __DIR__ . '/../views/employee-portal/index.php';
+    }
+    public function cancel()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: index.php?url=resignation-request');
+            exit;
+        }
+
+        $success = $this->resignationRequestModel->updateStatus([
+            'resignation_id' => $_POST['resignation_id'],
+            'status' => 'Cancelled',
+            'hr_remarks' => null,
+            'reviewed_by' => null,
+            'reviewed_at' => null
+        ]);
+
+        $_SESSION[$success ? 'success' : 'error'] =
+            $success
+            ? 'Resignation request cancelled successfully.'
+            : 'Failed to cancel resignation request.';
+
+        header('Location: index.php?url=resignation-request');
         exit;
     }
 }

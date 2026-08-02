@@ -16,6 +16,7 @@ $qrToken = isset($_GET['qr_token']) ? trim($_GET['qr_token']) : '';
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
   <meta http-equiv="X-UA-Compatible" content="ie=edge" />
   <title>Human Resource Managment</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="stylesheet" href="assets/dist/css/adminlte.min.css" />
   <link rel="stylesheet" href="assets/plugins/toastr/toastr.min.css">
   <link rel="stylesheet" href="login.css" />
@@ -95,13 +96,29 @@ $qrToken = isset($_GET['qr_token']) ? trim($_GET['qr_token']) : '';
         </div>
         <div class="label">
           <label for="password">Password</label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            placeholder="Your Password.."
-            required
-            autocomplete="current-password" />
+
+          <div style="position:relative;">
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Your Password..."
+              required
+              autocomplete="current-password">
+
+            <span
+              id="togglePassword"
+              style="
+                position:absolute;
+                top:50%;
+                right:15px;
+                transform:translateY(-50%);
+                cursor:pointer;
+                color:#666;
+                z-index:10;">
+              <i class="fa-solid fa-eye"></i>
+            </span>
+          </div>
         </div>
         <button type="submit" name="login" id="loginBtn">Login</button>
         <p class="para mt-3 d-flex justify-content-center">Looking for Portal?<span><a class="link" href="employee_portal/"> Click Here!</a></span></p>
@@ -113,6 +130,26 @@ $qrToken = isset($_GET['qr_token']) ? trim($_GET['qr_token']) : '';
   <script src="assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
   <script src="assets/plugins/toastr/toastr.min.js"></script>
   <script src="assets/dist/js/adminlte.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+
+      const toggle = document.getElementById("togglePassword");
+      const password = document.getElementById("password");
+
+      toggle.addEventListener("click", function() {
+
+        if (password.type === "password") {
+          password.type = "text";
+          this.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
+        } else {
+          password.type = "password";
+          this.innerHTML = '<i class="fa-solid fa-eye"></i>';
+        }
+
+      });
+
+    });
+  </script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       const loginForm = document.querySelector('form');

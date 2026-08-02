@@ -474,6 +474,13 @@ switch ($url) {
         (new ResignationRequestController)->updateStatus();
         break;
 
+    case 'resignation-request':
+        (new ResignationRequestController)->index();
+        break;
+
+    case 'resignation-request-cancel':
+        (new ResignationRequestController)->cancel();
+        break;
     /*
 |--------------------------------------------------------------------------
 | Default

@@ -112,8 +112,7 @@
 
                         <textarea
                             class="form-control"
-                            rows="3"
-                            placeholder="Enter remarks..."><?= htmlspecialchars($request['hr_remarks'] ?? ''); ?></textarea>
+                            rows="3" readonly><?= htmlspecialchars($request['hr_remarks'] ?? ''); ?></textarea>
                     </div>
                     <div class="col-12">
                         <label class="form-label fw-semibold">
