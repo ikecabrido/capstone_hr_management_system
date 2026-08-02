@@ -149,11 +149,11 @@ class ResignationController extends ExitManagementController
     }
 
     /**
-     * Get archived resignations
+     * Get archived resignations with pagination and search
      */
-    public function getArchivedResignations(): array
+    public function getArchivedResignations(int $page = 1, int $limit = 10, string $search = ''): array
     {
-        return $this->resignationModel->getResignations('archived');
+        return $this->resignationModel->getResignations('archived', $page, $limit, $search);
     }
 
     /**
@@ -285,7 +285,7 @@ class ResignationController extends ExitManagementController
                 $search = $data['search'] ?? '';
 
                 if ($status === 'archived') {
-                    return $this->getArchivedResignations();
+                    return $this->getArchivedResignations($page, $limit, $search);
                 }
                 if ($status === 'all') {
                     return $this->resignationModel->getResignations('all', $page, $limit, $search);
@@ -293,7 +293,10 @@ class ResignationController extends ExitManagementController
                 return $this->resignationModel->getResignations($status, $page, $limit, $search);
 
             case 'get_archived_resignations':
-                return $this->getArchivedResignations();
+                $page = (int)($data['page'] ?? 1);
+                $limit = (int)($data['limit'] ?? 10);
+                $search = $data['search'] ?? '';
+                return $this->getArchivedResignations($page, $limit, $search);
 
             case 'get_resignation_details':
                 return $this->getResignationDetails($data['resignation_id'] ?? 0);

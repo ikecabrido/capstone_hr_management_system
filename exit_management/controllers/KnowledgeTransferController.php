@@ -12,22 +12,142 @@ class KnowledgeTransferController extends ExitManagementController
         $this->transferModel = new KnowledgeTransferModel();
     }
 
+    private function isValidDate(string $date): bool
+    {
+        $dt = DateTime::createFromFormat('Y-m-d', $date);
+        return $dt && $dt->format('Y-m-d') === $date;
+    }
+
+    private function employeeExists($employeeId): bool
+    {
+        return !empty($this->transferModel->getEmployeeById($employeeId));
+    }
+
+    private function validateTransferItem(array $item, int $index): array
+    {
+        $allowedTypes = ['document', 'process', 'contact', 'system', 'other'];
+        $allowedPriorities = ['low', 'medium', 'high'];
+        $allowedStatuses = ['pending', 'in_progress', 'completed'];
+
+        $type = trim($item['type'] ?? '');
+        $title = trim($item['title'] ?? '');
+        $priority = trim($item['priority'] ?? 'medium');
+        $status = trim($item['status'] ?? 'pending');
+        $notes = isset($item['notes']) ? trim($item['notes']) : null;
+        $description = trim($item['description'] ?? '');
+        $notesEmpty = $notes === null || $notes === '';
+
+        if ($type === '' && $title === '' && $description === '' && $notesEmpty) {
+            return ['success' => true, 'item' => null];
+        }
+
+        if ($type === '') {
+            return ['success' => false, 'message' => "Item #" . ($index + 1) . " type is required"];
+        }
+
+        if (!in_array($type, $allowedTypes, true)) {
+            return ['success' => false, 'message' => "Item #" . ($index + 1) . " has invalid type"];
+        }
+
+        if ($title === '') {
+            return ['success' => false, 'message' => "Item #" . ($index + 1) . " title is required"];
+        }
+
+        if (strlen($title) > 255) {
+            return ['success' => false, 'message' => "Item #" . ($index + 1) . " title cannot exceed 255 characters"];
+        }
+
+        if ($priority !== '' && !in_array($priority, $allowedPriorities, true)) {
+            return ['success' => false, 'message' => "Item #" . ($index + 1) . " has invalid priority"];
+        }
+
+        if ($status !== '' && !in_array($status, $allowedStatuses, true)) {
+            return ['success' => false, 'message' => "Item #" . ($index + 1) . " has invalid status"];
+        }
+
+        return ['success' => true, 'item' => [
+            'type' => $type,
+            'title' => $title,
+            'description' => trim($item['description'] ?? '' ) ?: null,
+            'notes' => $notes,
+            'priority' => $priority ?: 'medium',
+            'status' => $status ?: 'pending',
+            'id' => isset($item['id']) ? (int)$item['id'] : null
+        ]];
+    }
+
+    private function validateTransferItems(array $items): array
+    {
+        $validated = [];
+
+        foreach ($items as $index => $item) {
+            $result = $this->validateTransferItem($item, $index);
+            if (!$result['success']) {
+                return $result;
+            }
+
+            if ($result['item'] !== null) {
+                $validated[] = $result['item'];
+            }
+        }
+
+        return ['success' => true, 'items' => $validated];
+    }
+
+    private function validateTransferPlanData(array $data): array
+    {
+        $required = ['employee_id', 'successor_id', 'start_date', 'end_date'];
+        foreach ($required as $field) {
+            if (empty($data[$field])) {
+                return ['success' => false, 'message' => "Field '$field' is required"];
+            }
+        }
+
+        if (!$this->isValidDate($data['start_date'])) {
+            return ['success' => false, 'message' => 'Start date is invalid'];
+        }
+
+        if (!$this->isValidDate($data['end_date'])) {
+            return ['success' => false, 'message' => 'End date is invalid'];
+        }
+
+        if (strtotime($data['start_date']) > strtotime($data['end_date'])) {
+            return ['success' => false, 'message' => 'Start date must be before or equal to end date'];
+        }
+
+        if (!$this->employeeExists($data['employee_id'])) {
+            return ['success' => false, 'message' => 'Employee ID is invalid'];
+        }
+
+        if (!$this->employeeExists($data['successor_id'])) {
+            return ['success' => false, 'message' => 'Successor ID is invalid'];
+        }
+
+        return ['success' => true];
+    }
+
     /**
      * Create knowledge transfer plan
      */
     public function createTransferPlan(array $data): array
     {
         try {
-            // Validate required fields
-            $required = ['employee_id', 'successor_id', 'start_date', 'end_date'];
-            foreach ($required as $field) {
-                if (empty($data[$field])) {
-                    return ['success' => false, 'message' => "Field '$field' is required"];
-                }
+            $validation = $this->validateTransferPlanData($data);
+            if (!$validation['success']) {
+                return $validation;
             }
 
-            // Add created_by from session
+            $items = [];
+            if (isset($data['items']) && is_array($data['items'])) {
+                $itemsValidation = $this->validateTransferItems($data['items']);
+                if (!$itemsValidation['success']) {
+                    return $itemsValidation;
+                }
+                $items = $itemsValidation['items'];
+            }
+
             $data['created_by'] = $_SESSION['user']['id'] ?? 0;
+            $data['items'] = $items;
 
             $planId = $this->transferModel->createTransferPlan($data);
 
@@ -42,12 +162,66 @@ class KnowledgeTransferController extends ExitManagementController
     }
 
     /**
+     * Update a knowledge transfer plan
+     */
+    public function updateTransferPlan(array $data): array
+    {
+        try {
+            $planId = (int)($data['plan_id'] ?? 0);
+            if ($planId <= 0) {
+                return ['success' => false, 'message' => 'Invalid transfer plan ID'];
+            }
+
+            $validation = $this->validateTransferPlanData($data);
+            if (!$validation['success']) {
+                return $validation;
+            }
+
+            $items = [];
+            if (isset($data['items']) && is_array($data['items'])) {
+                $itemsValidation = $this->validateTransferItems($data['items']);
+                if (!$itemsValidation['success']) {
+                    return $itemsValidation;
+                }
+                $items = $itemsValidation['items'];
+            }
+
+            $updated = $this->transferModel->updateTransferPlan($planId, $data);
+            if (!$updated) {
+                return ['success' => false, 'message' => 'Failed to update transfer plan'];
+            }
+
+            $this->transferModel->deleteTransferItemsByPlanId($planId);
+            if (count($items) > 0) {
+                $this->addTransferItems($planId, $items);
+            }
+
+            return [
+                'success' => true,
+                'message' => 'Knowledge transfer plan updated successfully',
+                'plan_id' => $planId
+            ];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
      * Add items to transfer plan
      */
     public function addTransferItems(int $planId, array $items): array
     {
         try {
-            $success = $this->transferModel->addTransferItems($planId, $items);
+            if ($planId <= 0) {
+                return ['success' => false, 'message' => 'Invalid transfer plan ID'];
+            }
+
+            $itemsValidation = $this->validateTransferItems($items);
+            if (!$itemsValidation['success']) {
+                return $itemsValidation;
+            }
+
+            $success = $this->transferModel->addTransferItems($planId, $itemsValidation['items']);
 
             if ($success) {
                 return [
@@ -65,9 +239,18 @@ class KnowledgeTransferController extends ExitManagementController
     /**
      * Update transfer item status
      */
-    public function updateItemStatus(int $itemId, string $status, string $notes = null): array
+    public function updateItemStatus(int $itemId, string $status, ?string $notes = null): array
     {
         try {
+            if ($itemId <= 0) {
+                return ['success' => false, 'message' => 'Invalid item ID'];
+            }
+
+            $allowedStatuses = ['pending', 'in_progress', 'completed'];
+            if (!in_array($status, $allowedStatuses, true)) {
+                return ['success' => false, 'message' => 'Invalid item status'];
+            }
+
             $success = $this->transferModel->updateItemStatus($itemId, $status, $notes);
 
             if ($success) {
@@ -154,7 +337,7 @@ class KnowledgeTransferController extends ExitManagementController
     /**
      * Get all transfer plans with optional status filter
      */
-    public function getTransferPlans(string $status = null): array
+    public function getTransferPlans(?string $status = null): array
     {
         return $this->transferModel->getAllTransferPlans($status);
     }
@@ -174,7 +357,11 @@ class KnowledgeTransferController extends ExitManagementController
     {
         switch ($action) {
             case 'submit_transfer_plan':
+                return $this->createTransferPlan($data);
+
             case 'update_transfer_plan':
+                return $this->updateTransferPlan($data);
+
             case 'create_transfer_plan':
                 return $this->createTransferPlan($data);
 
@@ -211,13 +398,19 @@ class KnowledgeTransferController extends ExitManagementController
                     $data['search'] ?? ''
                 );
 
+            case 'get_archived_transfer_plans':
+                $page = (int)($data['page'] ?? 1);
+                $limit = (int)($data['limit'] ?? 10);
+                $search = $data['search'] ?? '';
+                return $this->transferModel->getArchivedTransferPlans($page, $limit, $search);
+
             case 'get_transfer_items':
                 return $this->getTransferItems($data['plan_id'] ?? 0);
 
             case 'archive_transfer_plan':
                 return $this->archiveTransferPlan(
                     $data['plan_id'] ?? 0,
-                    $data['reason'] ?? ''
+                    $data['reason'] ?? $data['archive_reason'] ?? ''
                 );
 
             case 'unarchive_transfer_plan':
@@ -226,7 +419,7 @@ class KnowledgeTransferController extends ExitManagementController
             case 'archive_transfer_item':
                 return $this->archiveTransferItem(
                     $data['item_id'] ?? 0,
-                    $data['reason'] ?? ''
+                    $data['reason'] ?? $data['archive_reason'] ?? ''
                 );
 
             case 'unarchive_transfer_item':
@@ -375,7 +568,7 @@ class KnowledgeTransferController extends ExitManagementController
             }
 
             // Get plan to find employee
-            $plan = $this->transferModel->getTransferPlan($item['plan_id']);
+            $plan = $this->transferModel->getTransferPlanById($item['plan_id']);
             $employee = null;
             if ($plan) {
                 $employee = $this->transferModel->getEmployeeById($plan['employee_id']);
@@ -386,8 +579,8 @@ class KnowledgeTransferController extends ExitManagementController
                 'data' => [
                     'id' => $item['id'],
                     'employee_id' => $plan ? $plan['employee_id'] : 0,
-                    'employee_name' => $employee ? $employee['first_name'] . ' ' . $employee['last_name'] : 'Unknown',
-                    'type' => $item['type'],
+                    'employee_name' => $employee ? trim(($employee['first_name'] ?? '') . ' ' . ($employee['last_name'] ?? '')) : 'Unknown',
+                    'type' => $item['item_type'] ?? $item['type'] ?? '',
                     'title' => $item['title'],
                     'status' => $item['status']
                 ]

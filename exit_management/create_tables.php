@@ -143,6 +143,7 @@ CREATE TABLE `exit_knowledge_transfer_items` (
   `item_type` enum('document','process','contact','system','other') NOT NULL,
   `title` varchar(255) NOT NULL,
   `description` text,
+  `notes` text,
   `priority` enum('low','medium','high') DEFAULT 'medium',
   `status` enum('pending','in_progress','completed') DEFAULT 'pending',
   `completed_at` timestamp NULL DEFAULT NULL,

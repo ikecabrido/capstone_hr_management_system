@@ -908,6 +908,22 @@ body.dark-mode .card-body {
   color: #fff !important;
 }
 
+.archive-count-badge {
+  min-width: 20px;
+  height: 20px;
+  line-height: 18px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px !important;
+  font-size: 11px;
+  font-weight: 700;
+  z-index: 5;
+  top: -6px !important;
+  right: -6px !important;
+}
+
 /* Dark mode table adjustments */
 body.dark-mode .table thead {
   background: linear-gradient(135deg, #333 0%, #2a2a2a 100%) !important;

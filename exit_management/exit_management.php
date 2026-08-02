@@ -765,14 +765,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                     <option value="all">All</option>
                     <option value="active">Active</option>
                     <option value="completed">Completed</option>
-                    <option value="pending">Pending</option>
+                    <option value="cancelled">Cancelled</option>
                   </select>
                 </div>
                 <div class="card-tools d-flex align-items-center">
-                  <button type="button" class="btn btn-warning btn-sm mr-2" onclick="archiveTransfers()">
+                  <button type="button" class="btn btn-warning btn-sm mr-2 position-relative" onclick="archiveTransfers()">
                     <i class="fas fa-archive"></i> Archive
+                    <span id="transfer-archive-notif-count" class="badge badge-danger archive-count-badge" style="display:none; position:absolute; top:0; right:0; transform: translate(50%, -50%);">0</span>
                   </button>
-                  <button type="button" class="btn btn-warning btn-sm" onclick="showTransferModal()">
+                  <button type="button" class="btn btn-success btn-sm" onclick="showTransferModal()">
                     <i class="fas fa-plus"></i> Add
                   </button>
                 </div>

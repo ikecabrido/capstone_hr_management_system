@@ -514,7 +514,7 @@
                                             <option value="system">System</option>
                                             <option value="contact">Contact</option>
                                             <option value="document">Document</option>
-                                            <option value="skill">Skill</option>
+                                            <option value="other">Other</option>
                                         </select>
                                     </div>
                                     <div class="col-md-4">
@@ -527,9 +527,6 @@
                                             <option value="high">High</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-2">
-                                        <input type="date" class="form-control" name="items[0][due_date]">
-                                    </div>
                                     <div class="col-md-1">
                                         <button type="button" class="btn btn-danger btn-sm remove-item">
                                             <i class="fas fa-trash"></i>
@@ -537,8 +534,11 @@
                                     </div>
                                 </div>
                                 <div class="row mt-2">
-                                    <div class="col-12">
+                                    <div class="col-12 mb-2">
                                         <textarea class="form-control" name="items[0][description]" rows="2" placeholder="Description"></textarea>
+                                    </div>
+                                    <div class="col-12">
+                                        <textarea class="form-control" name="items[0][notes]" rows="2" placeholder="Notes"></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -550,6 +550,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-info" id="editTransferBtn" style="display:none;">Edit Transfer Plan</button>
                     <button type="submit" class="btn btn-warning" id="transferSubmitBtn">Create Transfer Plan</button>
                 </div>
             </form>
@@ -1061,6 +1062,46 @@
                     </table>
                 </div>
                 <div id="archived-interviews-pagination" class="mt-2 d-flex justify-content-end"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Archived Transfer Plans Modal -->
+<div class="modal fade exit-modal" id="archivedTransfersModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary">
+                <h5 class="modal-title">Archived Transfer Plans</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped table-sm">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Status</th>
+                                <th>Archived At</th>
+                                <th>Reason</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="archived-transfers-tbody">
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">Loading archived transfers...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="archived-transfers-pagination" class="mt-2 d-flex justify-content-end"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>

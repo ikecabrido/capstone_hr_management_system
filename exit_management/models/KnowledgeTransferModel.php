@@ -69,21 +69,35 @@ class KnowledgeTransferModel extends ExitManagementModel
     {
         $stmt = $this->db->prepare("
             INSERT INTO exit_knowledge_transfer_items (plan_id, item_type, title,
-                                               description, priority, status, created_at)
-            VALUES (?, ?, ?, ?, ?, 'pending', NOW())
+                                               description, notes, priority, status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW())
         ");
 
         foreach ($items as $item) {
+            if (empty($item['type']) || empty($item['title'])) {
+                continue;
+            }
+
             $stmt->execute([
                 $planId,
                 $item['type'],
                 $item['title'],
                 $item['description'] ?? null,
+                $item['notes'] ?? null,
                 $item['priority'] ?? 'medium'
             ]);
         }
 
         return true;
+    }
+
+    /**
+     * Delete transfer items for a plan
+     */
+    public function deleteTransferItemsByPlanId(int $planId): bool
+    {
+        $stmt = $this->db->prepare("DELETE FROM exit_knowledge_transfer_items WHERE plan_id = ?");
+        return $stmt->execute([$planId]);
     }
 
     /**
@@ -153,9 +167,19 @@ class KnowledgeTransferModel extends ExitManagementModel
     }
 
     /**
+     * Get transfer item by ID
+     */
+    public function getTransferItem(int $itemId): ?array
+    {
+        $stmt = $this->db->prepare("SELECT * FROM exit_knowledge_transfer_items WHERE id = ?");
+        $stmt->execute([$itemId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    /**
      * Update transfer item status
      */
-    public function updateItemStatus(int $itemId, string $status, string $notes = null): bool
+    public function updateItemStatus(int $itemId, string $status, ?string $notes = null): bool
     {
         $stmt = $this->db->prepare("
             UPDATE exit_knowledge_transfer_items
@@ -210,7 +234,7 @@ class KnowledgeTransferModel extends ExitManagementModel
     /**
      * Get all transfer plans with optional status filter and pagination
      */
-    public function getAllTransferPlans(string $status = null, int $page = 1, int $limit = 10, string $search = ''): array
+    public function getAllTransferPlans(?string $status = null, int $page = 1, int $limit = 10, string $search = ''): array
     {
         $offset = ($page - 1) * $limit;
 
@@ -279,6 +303,88 @@ class KnowledgeTransferModel extends ExitManagementModel
     }
 
     /**
+     * Get archived transfer plans from exit_archive with pagination and new-count metadata
+     */
+    public function getArchivedTransferPlans(int $page = 1, int $limit = 10, string $search = ''): array
+    {
+        $offset = ($page - 1) * $limit;
+
+        $sql = "
+            SELECT
+                a.id as archive_id,
+                a.original_id as plan_id,
+                a.employee_id,
+                COALESCE(
+                    e.full_name,
+                    JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.employee_id')),
+                    JSON_UNQUOTE(JSON_EXTRACT(a.content, '$.employee_id'))
+                ) as employee_name,
+                COALESCE(
+                    JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.start_date')),
+                    JSON_UNQUOTE(JSON_EXTRACT(a.content, '$.start_date'))
+                ) as start_date,
+                COALESCE(
+                    JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.end_date')),
+                    JSON_UNQUOTE(JSON_EXTRACT(a.content, '$.end_date'))
+                ) as end_date,
+                COALESCE(
+                    JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.status')),
+                    JSON_UNQUOTE(JSON_EXTRACT(a.content, '$.status'))
+                ) as status,
+                a.archived_at,
+                a.archive_reason,
+                IF(a.archived_at >= DATE_SUB(NOW(), INTERVAL 1 DAY), 1, 0) as is_new
+            FROM exit_archive a
+            LEFT JOIN employees e ON a.employee_id = e.employee_id
+            WHERE a.archive_type = 'transfer_plan' AND a.restored = 0
+        ";
+
+        $countSql = "SELECT COUNT(*) as total FROM exit_archive a WHERE a.archive_type = 'transfer_plan' AND a.restored = 0";
+        $newCountSql = "SELECT COUNT(*) as new_count FROM exit_archive a WHERE a.archive_type = 'transfer_plan' AND a.restored = 0 AND a.archived_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)";
+
+        $params = [];
+        if (!empty($search)) {
+            $searchCondition = " AND (e.full_name LIKE :search OR JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.start_date')) LIKE :search OR JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.end_date')) LIKE :search OR JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.status')) LIKE :search OR a.archive_reason LIKE :search)";
+            $sql .= $searchCondition;
+            $countSql .= $searchCondition;
+            $newCountSql .= $searchCondition;
+            $params['search'] = "%$search%";
+        }
+
+        $sql .= ' ORDER BY a.archived_at DESC LIMIT :limit OFFSET :offset';
+
+        $countStmt = $this->db->prepare($countSql);
+        foreach ($params as $key => $value) {
+            $countStmt->bindValue(':' . $key, $value, PDO::PARAM_STR);
+        }
+        $countStmt->execute();
+        $total = (int)$countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+        $newCountStmt = $this->db->prepare($newCountSql);
+        foreach ($params as $key => $value) {
+            $newCountStmt->bindValue(':' . $key, $value, PDO::PARAM_STR);
+        }
+        $newCountStmt->execute();
+        $newCount = (int)$newCountStmt->fetch(PDO::FETCH_ASSOC)['new_count'];
+
+        $stmt = $this->db->prepare($sql);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue(':' . $key, $value, PDO::PARAM_STR);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return [
+            'data' => $stmt->fetchAll(PDO::FETCH_ASSOC),
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit,
+            'new_count' => $newCount
+        ];
+    }
+
+    /**
      * Delete a knowledge transfer plan and its associated items
      */
     public function deleteTransferPlan(int $planId): bool
@@ -326,8 +432,8 @@ class KnowledgeTransferModel extends ExitManagementModel
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
 
-            $title = "Transfer Plan - " . ($plan['title'] ?? 'Unknown Plan');
-            $description = "Archived knowledge transfer plan";
+            $title = "Knowledge Transfer Plan #{$planId}";
+            $description = "Archived knowledge transfer plan for employee {$plan['employee_id']}";
             $content = json_encode($plan);
             $archivedBy = $_SESSION['user']['id'] ?? 1;
 
@@ -363,8 +469,8 @@ class KnowledgeTransferModel extends ExitManagementModel
      */
     public function archiveTransferItem(int $itemId, string $archiveReason = 'Manual archive'): bool
     {
-        // Get the full transfer item data
-        $stmt = $this->db->prepare("SELECT * FROM exit_knowledge_transfer_items WHERE id = ?");
+        // Get the full transfer item data and owner plan details
+        $stmt = $this->db->prepare("SELECT iti.*, ktp.employee_id FROM exit_knowledge_transfer_items iti JOIN exit_knowledge_transfer_plans ktp ON iti.plan_id = ktp.id WHERE iti.id = ?");
         $stmt->execute([$itemId]);
         $item = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$item) {
@@ -390,12 +496,12 @@ class KnowledgeTransferModel extends ExitManagementModel
             $archiveStmt->execute([
                 'transfer_item',
                 $itemId,
-                $item['employee_id'],
+                $item['employee_id'] ?? null,
                 $title,
                 $description,
                 $content,
-                $item['status'],
-                $item['created_by'],
+                $item['status'] ?? null,
+                null,
                 $archivedBy,
                 $archiveReason,
                 $content
@@ -419,8 +525,8 @@ class KnowledgeTransferModel extends ExitManagementModel
      */
     public function unarchiveTransferPlan(int $planId): bool
     {
-        // Get archived data
-        $stmt = $this->db->prepare("SELECT * FROM exit_archive WHERE archive_type = 'transfer_plan' AND original_id = ?");
+        // Get the latest non-restored archived record for this transfer plan
+        $stmt = $this->db->prepare("SELECT * FROM exit_archive WHERE archive_type = 'transfer_plan' AND original_id = ? AND restored = 0 ORDER BY archived_at DESC LIMIT 1");
         $stmt->execute([$planId]);
         $archive = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$archive) {
@@ -439,19 +545,20 @@ class KnowledgeTransferModel extends ExitManagementModel
             // Insert back into exit_knowledge_transfer_plans
             $insertStmt = $this->db->prepare("
                 INSERT INTO exit_knowledge_transfer_plans (
-                    id, employee_id, title, description, status, created_by, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    id, employee_id, successor_id, start_date, end_date, status, created_by, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
 
             $insertStmt->execute([
                 $planData['id'],
                 $planData['employee_id'],
-                $planData['title'],
-                $planData['description'],
+                $planData['successor_id'] ?? null,
+                $planData['start_date'] ?? null,
+                $planData['end_date'] ?? null,
                 $planData['status'] ?? 'active',
-                $planData['created_by'],
-                $planData['created_at'],
-                date('Y-m-d H:i:s')
+                $planData['created_by'] ?? null,
+                $planData['created_at'] ?? date('Y-m-d H:i:s'),
+                $planData['updated_at'] ?? date('Y-m-d H:i:s')
             ]);
 
             // Update archive record to mark as restored
@@ -477,8 +584,8 @@ class KnowledgeTransferModel extends ExitManagementModel
      */
     public function unarchiveTransferItem(int $itemId): bool
     {
-        // Get archived data
-        $stmt = $this->db->prepare("SELECT * FROM exit_archive WHERE archive_type = 'transfer_item' AND original_id = ?");
+        // Get the latest non-restored archived record for this transfer item
+        $stmt = $this->db->prepare("SELECT * FROM exit_archive WHERE archive_type = 'transfer_item' AND original_id = ? AND restored = 0 ORDER BY archived_at DESC LIMIT 1");
         $stmt->execute([$itemId]);
         $archive = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$archive) {
@@ -497,22 +604,21 @@ class KnowledgeTransferModel extends ExitManagementModel
             // Insert back into exit_knowledge_transfer_items
             $insertStmt = $this->db->prepare("
                 INSERT INTO exit_knowledge_transfer_items (
-                    id, plan_id, employee_id, title, description, priority, due_date, status, created_by, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                id, plan_id, item_type, title, description, notes, priority, status, completed_at, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
 
             $insertStmt->execute([
                 $itemData['id'],
                 $itemData['plan_id'],
-                $itemData['employee_id'],
+                $itemData['item_type'] ?? $itemData['type'],
                 $itemData['title'],
-                $itemData['description'],
-                $itemData['priority'],
-                $itemData['due_date'],
+                $itemData['description'] ?? null,
+                $itemData['notes'] ?? null,
+                $itemData['priority'] ?? 'medium',
                 $itemData['status'] ?? 'pending',
-                $itemData['created_by'],
-                $itemData['created_at'],
-                date('Y-m-d H:i:s')
+                $itemData['completed_at'] ?? null,
+                $itemData['created_at'] ?? date('Y-m-d H:i:s')
             ]);
 
             // Update archive record to mark as restored

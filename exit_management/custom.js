@@ -1,5 +1,6 @@
 // Exit Management JavaScript
 let interviewModalViewOnlyMode = false;
+let transferModalViewOnlyMode = false;
 
 $(document).ready(function() {
     $.ajaxSetup({
@@ -47,6 +48,30 @@ function setInterviewModalMode(viewOnly = false) {
     }
 }
 
+function setTransferModalMode(viewOnly = false) {
+    transferModalViewOnlyMode = viewOnly;
+    const $formFields = $('#transferForm').find('input:not([type=hidden]), textarea, select');
+    $formFields.prop('disabled', viewOnly);
+
+    if (viewOnly) {
+        $('#transferSubmitBtn').hide();
+        $('#editTransferBtn').show();
+        $('#addTransferItem, .remove-item').hide();
+        $('#transferForm').find('.form-control').addClass('disabled');
+    } else {
+        $('#transferSubmitBtn').show();
+        $('#editTransferBtn').hide();
+        $('#addTransferItem, .remove-item').show();
+        $('#transferForm').find('.form-control').removeClass('disabled');
+
+        if ($('#transferPlanId').val()) {
+            $('#transferSubmitBtn').text('Save Changes');
+        } else {
+            $('#transferSubmitBtn').text('Create Transfer Plan');
+        }
+    }
+}
+
 function normalizeInterviewTime(value) {
     if (!value) {
         return '';
@@ -61,6 +86,71 @@ function normalizeInterviewTime(value) {
     }
 
     return `${String(hourValue).padStart(2, '0')}:${String(minuteValue).padStart(2, '0')}`;
+}
+
+function normalizeDateInputValue(value) {
+    if (!value) {
+        return '';
+    }
+
+    if (value instanceof Date) {
+        if (Number.isNaN(value.getTime())) {
+            return '';
+        }
+        return value.toISOString().slice(0, 10);
+    }
+
+    const dateString = String(value).trim();
+    if (!dateString) {
+        return '';
+    }
+
+    const ymdMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (ymdMatch) {
+        return `${ymdMatch[1]}-${ymdMatch[2]}-${ymdMatch[3]}`;
+    }
+
+    const dateTimeMatch = dateString.match(/^(\d{4}-\d{2}-\d{2})[T\s].*$/);
+    if (dateTimeMatch) {
+        return dateTimeMatch[1];
+    }
+
+    const parsedDate = new Date(dateString.replace(/\s+/g, 'T'));
+    if (!Number.isNaN(parsedDate.getTime())) {
+        return parsedDate.toISOString().slice(0, 10);
+    }
+
+    const parts = dateString.split(/[-\/\. ]+/);
+    if (parts.length >= 3) {
+        const [first, second, third] = parts;
+        if (first.length === 4) {
+            return `${first.padStart(4, '0')}-${second.padStart(2, '0')}-${third.padStart(2, '0')}`;
+        }
+        if (third.length === 4) {
+            return `${third.padStart(4, '0')}-${first.padStart(2, '0')}-${second.padStart(2, '0')}`;
+        }
+    }
+
+    return '';
+}
+
+function setDateInputValue(selector, value) {
+    const normalized = normalizeDateInputValue(value);
+    const element = document.querySelector(selector);
+    if (!element) {
+        return;
+    }
+
+    if (element._flatpickr && typeof element._flatpickr.setDate === 'function') {
+        if (normalized) {
+            element._flatpickr.setDate(normalized, true);
+        } else {
+            element._flatpickr.clear();
+        }
+        return;
+    }
+
+    element.value = normalized;
 }
 
 function buildInterviewTimeValue() {
@@ -349,34 +439,34 @@ function renderPagination(containerId, total, currentPage, limit, onPageChange) 
 }
 
 // Legacy function for resignations table
-function renderResignationsPagination(containerId, response, status, currentPage) {
+function renderResignationsPagination(containerId, response, status, currentPage, searchTerm = '') {
     if (!response || !response.total) {
         $(`#${containerId}`).empty();
         return;
     }
 
-    const onPageChange = (page) => `loadResignationsTable('${status}', ${page})`;
+    const onPageChange = (page) => `loadResignationsTable('${status}', ${page}, '${escapeJsString(searchTerm)}')`;
     renderPagination(containerId, response.total, response.page || currentPage, response.limit || 10, onPageChange);
 }
 
-function renderTerminationsPagination(containerId, response, status, currentPage) {
+function renderTerminationsPagination(containerId, response, status, currentPage, searchTerm = '') {
     if (!response || !response.total) {
         $(`#${containerId}`).empty();
         return;
     }
 
-    const onPageChange = (page) => `loadTerminationsTable('${status}', ${page})`;
+    const onPageChange = (page) => `loadTerminationsTable('${status}', ${page}, '${escapeJsString(searchTerm)}')`;
     renderPagination(containerId, response.total, response.page || currentPage, response.limit || 10, onPageChange);
 }
 
 // Legacy function for interviews table
-function renderInterviewsPagination(containerId, response, status, currentPage) {
+function renderInterviewsPagination(containerId, response, status, currentPage, searchTerm = '') {
     if (!response || !response.total) {
         $(`#${containerId}`).empty();
         return;
     }
 
-    const onPageChange = (page) => `loadInterviewsTable('${status}', ${page})`;
+    const onPageChange = (page) => `loadInterviewsTable('${status}', ${page}, '${escapeJsString(searchTerm)}')`;
     renderPagination(containerId, response.total, response.page || currentPage, response.limit || 10, onPageChange);
 }
 
@@ -437,6 +527,12 @@ function initializeModals() {
             $('#saveHrAssessmentBtn').hide();
         }
         $('#interviewSubmitBtn').text($('#interviewId').val() ? 'Save Changes' : 'Schedule Interview');
+    });
+
+    $('#editTransferBtn').on('click', function() {
+        setTransferModalMode(false);
+        $('#transferModalTitle').text('Edit Knowledge Transfer Plan');
+        $('#transferSubmitBtn').text($('#transferPlanId').val() ? 'Save Changes' : 'Create Transfer Plan');
     });
 
     // Transfer Modal
@@ -512,8 +608,21 @@ function initializeModals() {
         }
     });
 
+    $('#confirmationModal').on('show.bs.modal', function() {
+        const currentMaxZ = Math.max(1050, ...$('.modal:visible').map(function() {
+            return Number($(this).css('z-index')) || 1050;
+        }).get());
+        const newZ = currentMaxZ + 20;
+        $(this).css('z-index', newZ);
+        setTimeout(function() {
+            $('.modal-backdrop').not('.stacked').css('z-index', newZ - 10).addClass('stacked');
+        }, 0);
+    });
+
     $('#confirmationModal').on('hidden.bs.modal', function() {
         confirmationCallback = null;
+        $(this).css('z-index', '');
+        $('.modal-backdrop.stacked').css('z-index', '').removeClass('stacked');
     });
 
     // Employee eligibility check on selection change
@@ -750,13 +859,17 @@ function loadInterviewers(callback) {
 }
 
 // Load employees with resignations for transfer modal (employee leaving)
-function loadEmployeesWithResignationsForTransfers() {
+function loadEmployeesWithResignationsForTransfers(callback) {
     $.post('exit_management.php', {
         ajax_action: 'get_employees_with_resignations'
     }, function(response) {
         if (response && response.length > 0) {
             const employeeOptions = '<option value="">Select Employee Leaving</option>' +
-                response.map(emp => `<option value="${emp.id}">${emp.full_name} (${emp.username})</option>`).join('');
+                response.map(emp => {
+                    const resignationLabel = emp.resignation_type ? ` (${emp.resignation_type})` : '';
+                    const workingDateLabel = emp.last_working_date ? ` - LW: ${emp.last_working_date}` : '';
+                    return `<option value="${emp.id}">${emp.full_name} (${emp.username})${resignationLabel}${workingDateLabel}</option>`;
+                }).join('');
 
             $('#transferEmployeeSelect').html(employeeOptions);
         } else {
@@ -777,7 +890,10 @@ function loadSuccessors(callback) {
     }, function(response) {
         if (response && response.length > 0) {
             const successorOptions = '<option value="">Select Successor</option>' +
-                response.map(emp => `<option value="${emp.id}">${emp.full_name} (${emp.username})</option>`).join('');
+                response.map(emp => {
+                    const positionLabel = emp.position ? ` (${emp.position})` : ' (No position assigned)';
+                    return `<option value="${emp.id}">${emp.full_name} (${emp.username})${positionLabel}</option>`;
+                }).join('');
 
             $('#successorSelect').html(successorOptions);
         } else {
@@ -890,21 +1006,37 @@ function showInterviewModal(interviewId = null, viewOnly = false) {
 }
 
 function showTransferModal(planId = null) {
-    if (planId) {
-        $('#transferModalTitle').text('Edit Transfer Plan');
+    console.log('showTransferModal called with planId:', planId);
+    let transferPlanId = planId === null || planId === undefined || planId === '' ? null : Number(planId);
+    if (Number.isNaN(transferPlanId)) {
+        transferPlanId = null;
+    }
+
+    if (transferPlanId !== null) {
+        $('#transferModalTitle').text('View Knowledge Transfer Plan');
+        $('#transferSubmitBtn').hide();
+        $('#editTransferBtn').show();
         $('#transferForm')[0].reset();
         $('#transferPlanId').val('');
+        $('#transferItemsContainer').html(getTransferItemTemplate(0));
+        setTransferModalMode(true);
+
         loadEmployeesWithResignationsForTransfers(function() {
             loadSuccessors(function() {
-                loadTransferData(planId);
-                $('#transferModal').modal('show');
+                loadTransferData(transferPlanId, true, function() {
+                    console.log('Showing transfer modal after load for planId:', transferPlanId);
+                    $('#transferModal').modal('show');
+                });
             });
         });
     } else {
         $('#transferModalTitle').text('Create Knowledge Transfer Plan');
+        $('#transferSubmitBtn').show().text('Create Transfer Plan');
+        $('#editTransferBtn').hide();
         $('#transferForm')[0].reset();
         $('#transferPlanId').val('');
         $('#transferItemsContainer').html(getTransferItemTemplate(0));
+        setTransferModalMode(false);
         loadEmployeesWithResignationsForTransfers();
         loadSuccessors();
         $('#transferModal').modal('show');
@@ -1111,7 +1243,9 @@ function submitTransferForm() {
             showToast('error', 'An error occurred while saving the transfer plan.');
         },
         complete: function() {
-            $('#transferSubmitBtn').prop('disabled', false).html('Create Transfer Plan');
+            const transferPlanId = $('#transferPlanId').val();
+            const buttonText = transferPlanId ? 'Save Changes' : 'Create Transfer Plan';
+            $('#transferSubmitBtn').prop('disabled', false).html(buttonText);
         }
     });
 }
@@ -1303,32 +1437,37 @@ function normalizeQuestionIndexes() {
 }
 
 // Template functions
-function getTransferItemTemplate(index) {
+function getTransferItemTemplate(index, item = {}) {
+    const selectedType = item.type || item.item_type || '';
+    const titleValue = item.title || '';
+    const priorityValue = item.priority || 'medium';
+    const descriptionValue = item.description || '';
+    const notesValue = item.notes || '';
+    const itemIdField = item.id ? `<input type="hidden" name="items[${index}][id]" value="${item.id}">` : '';
+
     return `
         <div class="transfer-item mb-3 p-3 border rounded">
+            ${itemIdField}
             <div class="row">
                 <div class="col-md-3">
                     <select class="form-control" name="items[${index}][type]" required>
                         <option value="">Select Type</option>
-                        <option value="process">Process</option>
-                        <option value="system">System</option>
-                        <option value="contact">Contact</option>
-                        <option value="document">Document</option>
-                        <option value="skill">Skill</option>
+                        <option value="process" ${selectedType === 'process' ? 'selected' : ''}>Process</option>
+                        <option value="system" ${selectedType === 'system' ? 'selected' : ''}>System</option>
+                        <option value="contact" ${selectedType === 'contact' ? 'selected' : ''}>Contact</option>
+                        <option value="document" ${selectedType === 'document' ? 'selected' : ''}>Document</option>
+                        <option value="other" ${selectedType === 'other' ? 'selected' : ''}>Other</option>
                     </select>
                 </div>
                 <div class="col-md-4">
-                    <input type="text" class="form-control" name="items[${index}][title]" placeholder="Title" required>
+                    <input type="text" class="form-control" name="items[${index}][title]" placeholder="Title" value="${titleValue.replace(/"/g, '&quot;')}" required>
                 </div>
                 <div class="col-md-2">
                     <select class="form-control" name="items[${index}][priority]">
-                        <option value="medium">Medium</option>
-                        <option value="low">Low</option>
-                        <option value="high">High</option>
+                        <option value="medium" ${priorityValue === 'medium' ? 'selected' : ''}>Medium</option>
+                        <option value="low" ${priorityValue === 'low' ? 'selected' : ''}>Low</option>
+                        <option value="high" ${priorityValue === 'high' ? 'selected' : ''}>High</option>
                     </select>
-                </div>
-                <div class="col-md-2">
-                    <input type="date" class="form-control" name="items[${index}][due_date]">
                 </div>
                 <div class="col-md-1">
                     <button type="button" class="btn btn-danger btn-sm remove-item">
@@ -1337,8 +1476,11 @@ function getTransferItemTemplate(index) {
                 </div>
             </div>
             <div class="row mt-2">
+                <div class="col-12 mb-2">
+                    <textarea class="form-control" name="items[${index}][description]" rows="2" placeholder="Description">${descriptionValue.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+                </div>
                 <div class="col-12">
-                    <textarea class="form-control" name="items[${index}][description]" rows="2" placeholder="Description"></textarea>
+                    <textarea class="form-control" name="items[${index}][notes]" rows="2" placeholder="Notes">${notesValue.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
                 </div>
             </div>
         </div>
@@ -1681,43 +1823,68 @@ function loadInterviewData(id, viewOnly = false) {
     });
 }
 
-function loadTransferData(id) {
-    // Load transfer plan data for editing
-    console.log('Loading transfer plan data for ID:', id);
+function loadTransferData(id, viewOnly = false, callback = null) {
+    // Load transfer plan data for editing or viewing
+    console.log('Loading transfer plan data for ID:', id, 'viewOnly=', viewOnly);
     $.post('exit_management.php', {
         ajax_action: 'get_transfer_plan',
         controller: 'transfer',
         plan_id: id
     }, function(response) {
         console.log('Transfer response:', response);
-        if (response && !response.error) {
-            $('#transferPlanId').val(response.id || id);
-            Object.keys(response).forEach(key => {
-                if (key === 'employee_id') {
-                    $('#transferEmployeeSelect').val(response[key]);
-                } else if (key === 'successor_id') {
-                    $('#successorSelect').val(response[key]);
-                } else if (key === 'start_date') {
-                    $('#transferStartDate').val(response[key]);
-                } else if (key === 'end_date') {
-                    $('#transferEndDate').val(response[key]);
-                } else {
-                    const $field = $(`#${key}`);
-                    if ($field.length) {
-                        $field.val(response[key]);
-                    } else {
-                        const $namedField = $(`[name="${key}"]`);
-                        if ($namedField.length) {
-                            $namedField.val(response[key]);
-                        }
-                    }
-                }
-            });
+        const plan = response && response.success && response.data ? response.data : response;
+
+        if (plan && !plan.error) {
+            $('#transferPlanId').val(plan.id || plan.plan_id || plan.planId || id);
+            $('#transferEmployeeSelect').val(plan.employee_id || '');
+            $('#successorSelect').val(plan.successor_id || '');
+            setDateInputValue('#transferStartDate', plan.start_date);
+            setDateInputValue('#transferEndDate', plan.end_date);
+
+            if (Array.isArray(plan.items) && plan.items.length > 0) {
+                let itemsHtml = '';
+                plan.items.forEach((item, idx) => {
+                    itemsHtml += getTransferItemTemplate(idx);
+                });
+                $('#transferItemsContainer').html(itemsHtml);
+                plan.items.forEach((item, idx) => {
+                    const $itemBlock = $('#transferItemsContainer .transfer-item').eq(idx);
+                    if (!$itemBlock.length) return;
+                    $itemBlock.find(`select[name="items[${idx}][type]"]`).val(item.item_type || item.type || '');
+                    $itemBlock.find(`input[name="items[${idx}][title]"]`).val(item.title || '');
+                    $itemBlock.find(`select[name="items[${idx}][priority]"]`).val(item.priority || 'medium');
+                    $itemBlock.find(`textarea[name="items[${idx}][description]"]`).val(item.description || '');
+                    $itemBlock.find(`textarea[name="items[${idx}][notes]"]`).val(item.notes || '');
+                });
+            } else {
+                $('#transferItemsContainer').html(getTransferItemTemplate(0));
+            }
+
+            if (viewOnly) {
+                $('#transferModalTitle').text('View Knowledge Transfer Plan');
+                $('#transferSubmitBtn').hide();
+                $('#editTransferBtn').show();
+            } else {
+                $('#transferModalTitle').text('Edit Knowledge Transfer Plan');
+                $('#transferSubmitBtn').show().text('Save Changes');
+                $('#editTransferBtn').hide();
+            }
+
+            setTransferModalMode(viewOnly);
+            if (typeof callback === 'function') {
+                callback();
+            }
         } else {
             console.error('Error loading transfer:', response);
+            if (typeof callback === 'function') {
+                callback();
+            }
         }
     }, 'json').fail(function(err) {
         console.error('AJAX error loading transfer:', err);
+        if (typeof callback === 'function') {
+            callback();
+        }
     });
 }
 
@@ -1818,6 +1985,14 @@ function showTableLoading(tbody, colspan, message = 'Loading...') {
     tbody.html(createTableLoaderRow(colspan, message));
 }
 
+function escapeJsString(value) {
+    return String(value)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '\\r');
+}
+
 // Table loading functions
 let archivedResignationsData = [];
 let archivedResignationPage = 1;
@@ -1900,7 +2075,7 @@ function loadResignationsTable(status = 'active', page = 1, searchTerm = '') {
             });
 
             // Add pagination controls
-            renderResignationsPagination('resignations-pagination', response, status, page);
+            renderResignationsPagination('resignations-pagination', response, status, page, searchTerm);
         } else {
             console.log('[loadResignationsTable] No records found');
             tbody.append('<tr><td colspan="10" class="text-center">No resignations found</td></tr>');
@@ -1972,7 +2147,7 @@ function loadTerminationsTable(status = 'active', page = 1, searchTerm = '') {
                 `);
             });
 
-            renderTerminationsPagination('terminations-pagination', response, status, page);
+            renderTerminationsPagination('terminations-pagination', response, status, page, searchTerm);
         } else {
             tbody.append('<tr><td colspan="9" class="text-center">No terminations found</td></tr>');
             $('#terminations-pagination').empty();
@@ -2125,21 +2300,50 @@ function loadArchivedResignationsTable(page = 1) {
 
     $.post('exit_management.php', {
         ajax_action: 'get_archived_resignations',
-        controller: 'resignation'
+        controller: 'resignation',
+        page: page,
+        limit: 10
     }, function(response) {
-        // Handle both paginated response and direct array response
-        if (response && response.data && Array.isArray(response.data)) {
-            archivedResignationsData = response.data;
-        } else if (Array.isArray(response)) {
-            archivedResignationsData = response;
+        tbody.empty();
+
+        if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
+            response.data.forEach(function(resignation) {
+                const statusBadge = getStatusBadge(resignation.status);
+                const tooltip = resignation.archive_reason ? `Archive reason: ${resignation.archive_reason}` : '';
+                const actions = `
+                    <div class="table-actions">
+                        <button class="btn btn-sm btn-success action-button" onclick="unarchiveResignation(${resignation.id})" title="Unarchive Resignation" aria-label="Unarchive Resignation">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </div>
+                `;
+
+                tbody.append(`
+                    <tr title="${tooltip}">
+                        <td>${resignation.employee_name || '<em class="text-danger">Missing Employee</em>'}</td>
+                        <td>${resignation.department || '-'}</td>
+                        <td>${resignation.email || '-'}</td>
+                        <td>${resignation.position || '-'}</td>
+                        <td>${resignation.resignation_type || '-'}</td>
+                        <td>${resignation.reason || '-'}</td>
+                        <td>${resignation.notice_date || '-'}</td>
+                        <td>${resignation.last_working_date || '-'}</td>
+                        <td>${resignation.comments ? resignation.comments.substring(0, 50) + '...' : '-'}</td>
+                        <td class="status-cell">${statusBadge}</td>
+                        <td class="actions-cell">${actions}</td>
+                    </tr>
+                `);
+            });
+
+            renderPagination('archived-resignations-pagination', response.total, page, response.limit || 10, (newPage) => loadArchivedResignationsTable(newPage));
         } else {
-            archivedResignationsData = [];
+            tbody.append('<tr><td colspan="10" class="text-center">No archived resignations found</td></tr>');
+            $('#archived-resignations-pagination').empty();
         }
-        archivedResignationPage = page;
-        renderArchivedResignationsPage();
-    }).fail(function(xhr, status, error) {
+    }, 'json').fail(function(xhr, status, error) {
         console.error('Error loading archived resignations:', status, error, xhr.responseText);
-        $('#archived-resignations-tbody').html('<tr><td colspan="10" class="text-center text-danger">Error loading archived resignations</td></tr>');
+        tbody.html('<tr><td colspan="10" class="text-center text-danger">Error loading archived resignations</td></tr>');
+        $('#archived-resignations-pagination').empty();
     });
 }
 
@@ -2288,7 +2492,7 @@ function loadInterviewsTable(status = 'all', page = 1, searchTerm = '') {
             });
 
             // Add pagination controls
-            renderInterviewsPagination('interviews-pagination', response, status, page);
+            renderInterviewsPagination('interviews-pagination', response, status, page, searchTerm);
         } else {
             tbody.append('<tr><td colspan="5" class="text-center">No interviews found</td></tr>');
             $('#interviews-pagination').empty();
@@ -2432,17 +2636,18 @@ function loadTransfersTable(status = 'all', page = 1, limit = 10, searchTerm = '
         if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
             response.data.forEach(function(plan) {
                 const statusBadge = getStatusBadge(plan.status);
+                const planId = plan.id ?? plan.plan_id ?? plan.planId ?? null;
+                if (planId === null || planId === undefined || planId === '') {
+                    console.warn('Transfer plan missing id, row data:', plan);
+                }
                 const actions = `
-                    <button class="btn btn-sm btn-info" onclick="showTransferModal(${plan.id})">
-                        <i class="fas fa-edit"></i>
+                    <button class="btn btn-sm btn-info" onclick="showTransferModal(${JSON.stringify(planId)})" title="View Transfer Plan">
+                        <i class="fas fa-eye"></i>
                     </button>
-                    <button class="btn btn-sm btn-warning" onclick="viewTransferItems(${plan.id})">
+                    <button class="btn btn-sm btn-warning" onclick="viewTransferItems(${planId})" title="View Transfer Items">
                         <i class="fas fa-list"></i>
                     </button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteTransferPlan(${plan.id})">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                    <button class="btn btn-sm btn-secondary" onclick="archiveTransferPlan(${plan.id})" title="Archive Transfer Plan">
+                    <button class="btn btn-sm btn-secondary" onclick="archiveTransferPlan(${planId})" title="Archive Transfer Plan">
                         <i class="fas fa-archive"></i>
                     </button>
                 `;
@@ -2463,10 +2668,87 @@ function loadTransfersTable(status = 'all', page = 1, limit = 10, searchTerm = '
         }
 
         // Render pagination
-        renderPagination('transfers-pagination', response.total, page, limit, (newPage) => `loadTransfersTable('${status}', ${newPage}, ${limit})`);
+        renderPagination('transfers-pagination', response.total, page, limit, (newPage) => loadTransfersTable(status, newPage, limit, searchTerm));
+        loadArchivedTransferSummary();
     }, 'json').fail(function(err) {
         console.error('Error loading transfers:', err);
         tbody.html('<tr><td colspan="6" class="text-center text-danger">Error loading transfer plans</td></tr>');
+    });
+}
+
+let archivedTransferPage = 1;
+
+function archiveTransfers() {
+    $('#archivedTransfersModal').modal('show');
+    loadArchivedTransfersTable(1);
+}
+
+function loadArchivedTransferSummary() {
+    const badge = $('#transfer-archive-notif-count');
+
+    $.post('exit_management.php', {
+        ajax_action: 'get_archived_transfer_plans',
+        controller: 'transfer',
+        page: 1,
+        limit: 1
+    }, function(response) {
+        if (!response || typeof response.new_count === 'undefined') {
+            badge.hide();
+            return;
+        }
+
+        if (response.new_count > 0) {
+            badge.text(response.new_count).show();
+        } else {
+            badge.hide();
+        }
+    }, 'json').fail(function() {
+        badge.hide();
+    });
+}
+
+function loadArchivedTransfersTable(page = 1) {
+    const tbody = $('#archived-transfers-tbody');
+    tbody.html('<tr><td colspan="7" class="text-center text-muted">Loading archived transfer plans...</td></tr>');
+
+    $.post('exit_management.php', {
+        ajax_action: 'get_archived_transfer_plans',
+        controller: 'transfer',
+        page: page,
+        limit: 10
+    }, function(response) {
+        archivedTransferPage = page;
+        tbody.empty();
+
+        if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
+            response.data.forEach(function(plan) {
+                const statusBadge = getStatusBadge(plan.status);
+                const unarchiveButton = `
+                    <button class="btn btn-sm btn-success" onclick="unarchiveTransferPlan(${plan.plan_id})" title="Unarchive Transfer Plan">
+                        <i class="fas fa-undo"></i>
+                    </button>
+                `;
+
+                tbody.append(`
+                    <tr>
+                        <td>${plan.employee_name || 'Unknown'}</td>
+                        <td>${plan.start_date || '-'}</td>
+                        <td>${plan.end_date || '-'}</td>
+                        <td>${statusBadge}</td>
+                        <td>${plan.archived_at || '-'}</td>
+                        <td>${plan.archive_reason || '-'}</td>
+                        <td>${unarchiveButton}</td>
+                    </tr>
+                `);
+            });
+        } else {
+            tbody.append('<tr><td colspan="7" class="text-center">No archived transfer plans found</td></tr>');
+        }
+
+        renderPagination('archived-transfers-pagination', response.total, page, response.limit || 10, (newPage) => `loadArchivedTransfersTable(${newPage})`);
+    }, 'json').fail(function(err) {
+        console.error('Error loading archived transfer plans:', err);
+        tbody.html('<tr><td colspan="7" class="text-center text-danger">Error loading archived transfer plans</td></tr>');
     });
 }
 
@@ -3119,6 +3401,7 @@ $(document).ready(function() {
             ajax_action: 'archive_transfer_plan',
             controller: 'transfer',
             plan_id: planId,
+            reason: archiveReason,
             archive_reason: archiveReason
         }, function(response) {
             if (response.success) {
@@ -3126,6 +3409,7 @@ $(document).ready(function() {
                 $('#archiveTransferPlanModal').modal('hide');
                 loadTransfersTable();
                 loadDashboardData();
+                loadArchivedTransferSummary();
             } else {
                 showToast('error', response.message);
             }
@@ -3147,6 +3431,7 @@ $(document).ready(function() {
             ajax_action: 'archive_transfer_item',
             controller: 'transfer',
             item_id: itemId,
+            reason: archiveReason,
             archive_reason: archiveReason
         }, function(response) {
             if (response.success) {
@@ -3212,7 +3497,7 @@ function viewTransferItems(id) {
         plan_id: id
     }, function(response) {
         if (response && response.length > 0) {
-            let itemsHtml = '<div class="table-responsive"><table class="table table-striped"><thead><tr><th>Type</th><th>Title</th><th>Priority</th><th>Due Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+            let itemsHtml = '<div class="table-responsive"><table class="table table-striped"><thead><tr><th>Type</th><th>Title</th><th>Priority</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
             response.forEach(item => {
                 const statusBadge = getStatusBadge(item.status);
                 const actions = `
@@ -3220,7 +3505,7 @@ function viewTransferItems(id) {
                         <i class="fas fa-archive"></i>
                     </button>
                 `;
-                itemsHtml += `<tr><td>${item.type}</td><td>${item.title}</td><td>${item.priority}</td><td>${item.due_date || 'N/A'}</td><td>${statusBadge}</td><td>${actions}</td></tr>`;
+                itemsHtml += `<tr><td>${item.item_type || item.type}</td><td>${item.title}</td><td>${item.priority}</td><td>${statusBadge}</td><td>${actions}</td></tr>`;
             });
             itemsHtml += '</tbody></table></div>';
             
@@ -4194,7 +4479,7 @@ function onInterviewSearchChange() {
 function onTransferSearchChange() {
     const searchTerm = $('#transfer-search').val().toLowerCase();
     const status = $('#transfer-status-filter').val();
-    loadTransfersTable(status, 1, searchTerm);
+    loadTransfersTable(status, 1, 10, searchTerm);
 }
 
 function onSettlementSearchChange() {
@@ -4407,11 +4692,12 @@ function archiveTransferPlan(id) {
         controller: 'transfer',
         plan_id: id
     }, function(response) {
-        if (response.success) {
+        const payload = response && response.success && response.data ? response.data : response;
+        if (payload && payload.employee_id) {
             // Populate modal with transfer plan data
             $('#archiveTransferPlanId').val(id);
-            $('#archiveTransferPlanEmployeeId').val(response.data.employee_id);
-            $('#archiveTransferPlanEmployeeName').val(response.data.employee_name);
+            $('#archiveTransferPlanEmployeeId').val(payload.employee_id);
+            $('#archiveTransferPlanEmployeeName').val(payload.employee_name || '');
             $('#archiveTransferPlanReason').val('');
             $('#archiveTransferPlanNotes').val('');
 
@@ -4434,6 +4720,8 @@ function unarchiveTransferPlan(id) {
                 showToast('success', response.message);
                 loadTransfersTable();
                 loadDashboardData();
+                loadArchivedTransfersTable(archivedTransferPage);
+                loadArchivedTransferSummary();
             } else {
                 showToast('error', response.message);
             }

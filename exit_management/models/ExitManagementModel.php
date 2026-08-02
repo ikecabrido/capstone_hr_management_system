@@ -11,6 +11,8 @@ class ExitManagementModel
         $this->db = Database::getInstance()->getConnection();
         $this->ensureTableAutoIncrement('exit_employee_settlements');
         $this->ensureTableAutoIncrement('exit_archive');
+        $this->ensureTableAutoIncrement('exit_knowledge_transfer_plans');
+        $this->ensureTableAutoIncrement('exit_knowledge_transfer_items');
     }
 
     /**
@@ -27,18 +29,19 @@ class ExitManagementModel
                 return;
             }
 
-            if (stripos($column['Extra'] ?? '', 'auto_increment') === false) {
-                $rows = $this->db->query("SELECT {$primaryKey} FROM {$tableName} WHERE {$primaryKey} = 0")->fetchAll(PDO::FETCH_ASSOC);
-                if (!empty($rows)) {
-                    $maxId = (int)$this->db->query("SELECT MAX({$primaryKey}) AS max_id FROM {$tableName}")->fetchColumn();
-                    $nextId = max(1, $maxId + 1);
+            // Repair any existing rows that were created with a zero primary key.
+            $rows = $this->db->query("SELECT {$primaryKey} FROM {$tableName} WHERE {$primaryKey} = 0")->fetchAll(PDO::FETCH_ASSOC);
+            if (!empty($rows)) {
+                $maxId = (int)$this->db->query("SELECT MAX({$primaryKey}) AS max_id FROM {$tableName}")->fetchColumn();
+                $nextId = max(1, $maxId + 1);
 
-                    foreach ($rows as $row) {
-                        $this->db->exec("UPDATE {$tableName} SET {$primaryKey} = {$nextId} WHERE {$primaryKey} = 0 LIMIT 1");
-                        $nextId++;
-                    }
+                foreach ($rows as $row) {
+                    $this->db->exec("UPDATE {$tableName} SET {$primaryKey} = {$nextId} WHERE {$primaryKey} = 0 LIMIT 1");
+                    $nextId++;
                 }
+            }
 
+            if (stripos($column['Extra'] ?? '', 'auto_increment') === false) {
                 $indexStmt = $this->db->prepare("SHOW INDEX FROM {$tableName} WHERE Column_name = ?");
                 $indexStmt->execute([$primaryKey]);
                 $indexInfo = $indexStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -287,7 +290,7 @@ class ExitManagementModel
      */
     public function getEligibleEmployees(): array
     {
-        // Get employees from employees table to support employee_id values used by exit_resignations
+        // Get employees who are new or currently have no assigned position
         $stmt = $this->db->query("
             SELECT
                 e.employee_id AS id,
@@ -299,6 +302,7 @@ class ExitManagementModel
                 e.employment_status AS employee_status
             FROM employees e
             LEFT JOIN users u ON e.user_id = u.id
+            WHERE TRIM(COALESCE(e.position, '')) = ''
             ORDER BY e.created_at DESC
         ");
 
@@ -591,7 +595,7 @@ class ExitManagementModel
             FROM employees e
             INNER JOIN exit_resignations r ON e.employee_id = r.employee_id
             LEFT JOIN users u ON e.user_id = u.id
-            WHERE r.status IN ('pending', 'approved')
+            WHERE r.status = 'approved'
             ORDER BY e.full_name
         ");
 
