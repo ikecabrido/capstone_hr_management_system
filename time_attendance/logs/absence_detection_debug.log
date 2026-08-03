@@ -1,0 +1,271 @@
+TEST\n[detect_attendance_status] run_date=2026-08-03 run_time=2026-08-03 20:07:01
+[detect_attendance_status] employees_retrieved=27
+[detect_attendance_status] employee_id=39 name=Danmark Baldonido attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=39 shift_status=07:00:00/19:00:00 resolved_status=ABSENT reason=After shift end
+[detect_attendance_status] employee_id=39 attempting_markAbsent
+[Attendance::markAbsent] employee_id=39 attendance_date=2026-08-03 existingRecord=false time_in=NULL time_out=NULL status=NULL
+[Attendance::markAbsent] insert_new result=true rowcount=1 query=INSERT INTO ta_attendance
+                  (employee_id, attendance_date, status, recorded_by, late_minutes) VALUES (:employee_id, :attendance_date, 'ABSENT', 'SYSTEM', 0)
+[detect_attendance_status] employee_id=39 markAbsent_returned=true
+[detect_attendance_status] employee_id=5 name=David Brown attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=5 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=40 name=David Jaurigue attendance_exists=true time_in=2026-08-03 19:12:56 time_out=NULL status=LATE
+[detect_attendance_status] employee_id=36 name=De Guzman, Ronald J. attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=36 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=6 name=Emily Davis attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=6 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=10 name=Irene Ronato attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=10 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=2 name=Jane Smith attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=2 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=49 name=Jay-R Alemana attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=49 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=50 name=Jayr Dela Cruz attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=50 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=11 name=Jayson Paigma attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=11 shift_status=06:00:00/17:00:00 resolved_status=ABSENT reason=After shift end
+[detect_attendance_status] employee_id=11 attempting_markAbsent
+[Attendance::markAbsent] employee_id=11 attendance_date=2026-08-03 existingRecord=false time_in=NULL time_out=NULL status=NULL
+[Attendance::markAbsent] insert_new result=true rowcount=1 query=INSERT INTO ta_attendance
+                  (employee_id, attendance_date, status, recorded_by, late_minutes) VALUES (:employee_id, :attendance_date, 'ABSENT', 'SYSTEM', 0)
+[detect_attendance_status] employee_id=11 markAbsent_returned=true
+[detect_attendance_status] employee_id=8 name=Jessica Martinez attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=8 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=14 name=Jhon Carlo Garcia attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=14 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=1 name=John Doe attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=1 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=47 name=Juan Dela Cruz attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=47 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=46 name=Macjane Desipolo attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=46 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=37 name=malana Jeoffrey attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=37 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=41 name=Mark Christian Pangilinan attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=41 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=38 name=michael kanan attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=38 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=3 name=Mike Johnson attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=3 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=42 name=Philip Arevalo attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=42 shift_status=06:00:00/17:00:00 resolved_status=ABSENT reason=After shift end
+[detect_attendance_status] employee_id=42 attempting_markAbsent
+[Attendance::markAbsent] employee_id=42 attendance_date=2026-08-03 existingRecord=false time_in=NULL time_out=NULL status=NULL
+[Attendance::markAbsent] insert_new result=true rowcount=1 query=INSERT INTO ta_attendance
+                  (employee_id, attendance_date, status, recorded_by, late_minutes) VALUES (:employee_id, :attendance_date, 'ABSENT', 'SYSTEM', 0)
+[detect_attendance_status] employee_id=42 markAbsent_returned=true
+[detect_attendance_status] employee_id=13 name=Placer, Jan Russel C. attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=13 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=9 name=Raniel Quebada attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=9 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=7 name=Robert Wilson attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=7 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=12 name=Ronald, De Guzman D. attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=12 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=48 name=Rusty Talento attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=48 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=4 name=Sarah Williams attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=4 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=51 name=Warren Bantanos attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=51 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] run_date=2026-08-03 run_time=2026-08-03 21:29:37
+[detect_attendance_status] employees_retrieved=27
+[detect_attendance_status] employee_id=39 name=Danmark Baldonido attendance_exists=true time_in=NULL time_out=NULL status=ABSENT
+[detect_attendance_status] employee_id=39 shift_status=07:00:00/19:00:00 resolved_status=ABSENT reason=After shift end
+[detect_attendance_status] employee_id=39 attempting_markAbsent
+[Attendance::markAbsent] employee_id=39 attendance_date=2026-08-03 existingRecord=true time_in=NULL time_out=NULL status=ABSENT
+[Attendance::markAbsent] update_existing result=true rowcount=1 query=UPDATE ta_attendance SET status = 'ABSENT', recorded_by = 'SYSTEM', updated_at = CURRENT_TIMESTAMP WHERE attendance_id = :attendance_id
+[detect_attendance_status] employee_id=39 markAbsent_returned=true
+[detect_attendance_status] employee_id=5 name=David Brown attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=5 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=40 name=David Jaurigue attendance_exists=true time_in=2026-08-03 19:12:56 time_out=NULL status=LATE
+[detect_attendance_status] employee_id=36 name=De Guzman, Ronald J. attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=36 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=6 name=Emily Davis attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=6 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=10 name=Irene Ronato attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=10 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=2 name=Jane Smith attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=2 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=49 name=Jay-R Alemana attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=49 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=50 name=Jayr Dela Cruz attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=50 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=11 name=Jayson Paigma attendance_exists=true time_in=NULL time_out=NULL status=ABSENT
+[detect_attendance_status] employee_id=11 shift_status=06:00:00/17:00:00 resolved_status=ABSENT reason=After shift end
+[detect_attendance_status] employee_id=11 attempting_markAbsent
+[Attendance::markAbsent] employee_id=11 attendance_date=2026-08-03 existingRecord=true time_in=NULL time_out=NULL status=ABSENT
+[Attendance::markAbsent] update_existing result=true rowcount=1 query=UPDATE ta_attendance SET status = 'ABSENT', recorded_by = 'SYSTEM', updated_at = CURRENT_TIMESTAMP WHERE attendance_id = :attendance_id
+[detect_attendance_status] employee_id=11 markAbsent_returned=true
+[detect_attendance_status] employee_id=8 name=Jessica Martinez attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=8 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=14 name=Jhon Carlo Garcia attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=14 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=1 name=John Doe attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=1 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=47 name=Juan Dela Cruz attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=47 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=46 name=Macjane Desipolo attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=46 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=37 name=malana Jeoffrey attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=37 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=41 name=Mark Christian Pangilinan attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=41 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=38 name=michael kanan attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=38 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=3 name=Mike Johnson attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=3 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=42 name=Philip Arevalo attendance_exists=true time_in=NULL time_out=NULL status=ABSENT
+[detect_attendance_status] employee_id=42 shift_status=06:00:00/17:00:00 resolved_status=ABSENT reason=After shift end
+[detect_attendance_status] employee_id=42 attempting_markAbsent
+[Attendance::markAbsent] employee_id=42 attendance_date=2026-08-03 existingRecord=true time_in=NULL time_out=NULL status=ABSENT
+[Attendance::markAbsent] update_existing result=true rowcount=1 query=UPDATE ta_attendance SET status = 'ABSENT', recorded_by = 'SYSTEM', updated_at = CURRENT_TIMESTAMP WHERE attendance_id = :attendance_id
+[detect_attendance_status] employee_id=42 markAbsent_returned=true
+[detect_attendance_status] employee_id=13 name=Placer, Jan Russel C. attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=13 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=9 name=Raniel Quebada attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=9 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=7 name=Robert Wilson attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=7 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=12 name=Ronald, De Guzman D. attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=12 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=48 name=Rusty Talento attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=48 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=4 name=Sarah Williams attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=4 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=51 name=Warren Bantanos attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=51 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] run_date=2026-08-03 run_time=2026-08-03 21:41:44
+[detect_attendance_status] employees_retrieved=27
+[detect_attendance_status] employee_id=39 name=Danmark Baldonido attendance_exists=true time_in=NULL time_out=NULL status=ABSENT
+[detect_attendance_status] employee_id=39 shift_status=07:00:00/19:00:00 resolved_status=ABSENT reason=After shift end
+[detect_attendance_status] employee_id=39 attempting_markAbsent
+[Attendance::markAbsent] employee_id=39 attendance_date=2026-08-03 existingRecord=true time_in=NULL time_out=NULL status=ABSENT
+[Attendance::markAbsent] update_existing result=true rowcount=1 query=UPDATE ta_attendance SET status = 'ABSENT', recorded_by = 'SYSTEM', updated_at = CURRENT_TIMESTAMP WHERE attendance_id = :attendance_id
+[detect_attendance_status] employee_id=39 markAbsent_returned=true
+[detect_attendance_status] employee_id=5 name=David Brown attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=5 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=40 name=David Jaurigue attendance_exists=true time_in=2026-08-03 19:12:56 time_out=NULL status=LATE
+[detect_attendance_status] employee_id=36 name=De Guzman, Ronald J. attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=36 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=6 name=Emily Davis attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=6 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=10 name=Irene Ronato attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=10 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=2 name=Jane Smith attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=2 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=49 name=Jay-R Alemana attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=49 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=50 name=Jayr Dela Cruz attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=50 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=11 name=Jayson Paigma attendance_exists=true time_in=NULL time_out=NULL status=ABSENT
+[detect_attendance_status] employee_id=11 shift_status=06:00:00/17:00:00 resolved_status=ABSENT reason=After shift end
+[detect_attendance_status] employee_id=11 attempting_markAbsent
+[Attendance::markAbsent] employee_id=11 attendance_date=2026-08-03 existingRecord=true time_in=NULL time_out=NULL status=ABSENT
+[Attendance::markAbsent] update_existing result=true rowcount=1 query=UPDATE ta_attendance SET status = 'ABSENT', recorded_by = 'SYSTEM', updated_at = CURRENT_TIMESTAMP WHERE attendance_id = :attendance_id
+[detect_attendance_status] employee_id=11 markAbsent_returned=true
+[detect_attendance_status] employee_id=8 name=Jessica Martinez attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=8 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=14 name=Jhon Carlo Garcia attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=14 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=1 name=John Doe attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=1 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=47 name=Juan Dela Cruz attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=47 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=46 name=Macjane Desipolo attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=46 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=37 name=malana Jeoffrey attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=37 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=41 name=Mark Christian Pangilinan attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=41 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=38 name=michael kanan attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=38 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=3 name=Mike Johnson attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=3 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=42 name=Philip Arevalo attendance_exists=true time_in=NULL time_out=NULL status=ABSENT
+[detect_attendance_status] employee_id=42 shift_status=06:00:00/17:00:00 resolved_status=ABSENT reason=After shift end
+[detect_attendance_status] employee_id=42 attempting_markAbsent
+[Attendance::markAbsent] employee_id=42 attendance_date=2026-08-03 existingRecord=true time_in=NULL time_out=NULL status=ABSENT
+[Attendance::markAbsent] update_existing result=true rowcount=1 query=UPDATE ta_attendance SET status = 'ABSENT', recorded_by = 'SYSTEM', updated_at = CURRENT_TIMESTAMP WHERE attendance_id = :attendance_id
+[detect_attendance_status] employee_id=42 markAbsent_returned=true
+[detect_attendance_status] employee_id=13 name=Placer, Jan Russel C. attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=13 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=9 name=Raniel Quebada attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=9 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=7 name=Robert Wilson attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=7 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=12 name=Ronald, De Guzman D. attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=12 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=48 name=Rusty Talento attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=48 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=4 name=Sarah Williams attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=4 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=51 name=Warren Bantanos attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=51 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] run_date=2026-08-03 run_time=2026-08-03 21:43:53
+[detect_attendance_status] employees_retrieved=27
+[detect_attendance_status] employee_id=39 name=Danmark Baldonido attendance_exists=true time_in=NULL time_out=NULL status=ABSENT
+[detect_attendance_status] employee_id=39 shift_status=07:00:00/19:00:00 resolved_status=ABSENT reason=After shift end
+[detect_attendance_status] employee_id=39 attempting_markAbsent
+[Attendance::markAbsent] employee_id=39 attendance_date=2026-08-03 existingRecord=true time_in=NULL time_out=NULL status=ABSENT
+[Attendance::markAbsent] update_existing result=true rowcount=1 query=UPDATE ta_attendance SET status = 'ABSENT', recorded_by = 'SYSTEM', updated_at = CURRENT_TIMESTAMP WHERE attendance_id = :attendance_id
+[detect_attendance_status] employee_id=39 markAbsent_returned=true
+[detect_attendance_status] employee_id=5 name=David Brown attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=5 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=40 name=David Jaurigue attendance_exists=true time_in=2026-08-03 19:12:56 time_out=NULL status=LATE
+[detect_attendance_status] employee_id=36 name=De Guzman, Ronald J. attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=36 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=6 name=Emily Davis attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=6 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=10 name=Irene Ronato attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=10 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=2 name=Jane Smith attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=2 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=49 name=Jay-R Alemana attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=49 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=50 name=Jayr Dela Cruz attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=50 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=11 name=Jayson Paigma attendance_exists=true time_in=NULL time_out=NULL status=ABSENT
+[detect_attendance_status] employee_id=11 shift_status=06:00:00/17:00:00 resolved_status=ABSENT reason=After shift end
+[detect_attendance_status] employee_id=11 attempting_markAbsent
+[Attendance::markAbsent] employee_id=11 attendance_date=2026-08-03 existingRecord=true time_in=NULL time_out=NULL status=ABSENT
+[Attendance::markAbsent] update_existing result=true rowcount=1 query=UPDATE ta_attendance SET status = 'ABSENT', recorded_by = 'SYSTEM', updated_at = CURRENT_TIMESTAMP WHERE attendance_id = :attendance_id
+[detect_attendance_status] employee_id=11 markAbsent_returned=true
+[detect_attendance_status] employee_id=8 name=Jessica Martinez attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=8 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=14 name=Jhon Carlo Garcia attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=14 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=1 name=John Doe attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=1 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=47 name=Juan Dela Cruz attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=47 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=46 name=Macjane Desipolo attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=46 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=37 name=malana Jeoffrey attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=37 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=41 name=Mark Christian Pangilinan attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=41 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=38 name=michael kanan attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=38 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=3 name=Mike Johnson attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=3 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=42 name=Philip Arevalo attendance_exists=true time_in=NULL time_out=NULL status=ABSENT
+[detect_attendance_status] employee_id=42 shift_status=06:00:00/17:00:00 resolved_status=ABSENT reason=After shift end
+[detect_attendance_status] employee_id=42 attempting_markAbsent
+[Attendance::markAbsent] employee_id=42 attendance_date=2026-08-03 existingRecord=true time_in=NULL time_out=NULL status=ABSENT
+[Attendance::markAbsent] update_existing result=true rowcount=1 query=UPDATE ta_attendance SET status = 'ABSENT', recorded_by = 'SYSTEM', updated_at = CURRENT_TIMESTAMP WHERE attendance_id = :attendance_id
+[detect_attendance_status] employee_id=42 markAbsent_returned=true
+[detect_attendance_status] employee_id=13 name=Placer, Jan Russel C. attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=13 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=9 name=Raniel Quebada attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=9 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=7 name=Robert Wilson attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=7 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=12 name=Ronald, De Guzman D. attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=12 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=48 name=Rusty Talento attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=48 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=4 name=Sarah Williams attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=4 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned
+[detect_attendance_status] employee_id=51 name=Warren Bantanos attendance_exists=false time_in=NULL time_out=NULL status=NULL
+[detect_attendance_status] employee_id=51 shift_status=NONE/NONE resolved_status=WAITING_FOR_ASSIGNMENT reason=No shift assigned

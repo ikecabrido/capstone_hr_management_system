@@ -35,38 +35,38 @@ class AbsenceAndLateDetector
     {
         $today = date('Y-m-d');
         
-        // Check if today is a holiday
         HolidayHelper::init($this->conn);
         if (HolidayHelper::isHoliday($today)) {
             return ['message' => 'Today is a holiday, no absence detection'];
         }
 
-        // Check if today is a working day (check day of week)
         $dayOfWeek = date('w');
-        if ($dayOfWeek == 0 || $dayOfWeek == 6) { // Sunday or Saturday
+        if ($dayOfWeek == 0 || $dayOfWeek == 6) {
             return ['message' => 'Today is a weekend, no absence detection'];
         }
 
-        // Get all active employees
         $query = "SELECT e.employee_id, e.full_name, e.department
                   FROM {$this->employees_table} e
-                  WHERE e.employment_status = 'Active'
-                  AND e.employee_id NOT IN (
-                    SELECT DISTINCT employee_id FROM {$this->attendance_table}
-                    WHERE attendance_date = :today
-                  )";
+                  WHERE e.employment_status = 'Active'";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':today', $today);
         $stmt->execute();
-        $absentEmployees = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        $employees = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
         $results = [];
-        foreach ($absentEmployees as $employee) {
+        $now = new \DateTime('now', new \DateTimeZone('Asia/Manila'));
+        $validationService = new \App\Services\AttendanceValidationService();
+
+        foreach ($employees as $employee) {
+            $evaluation = $validationService->resolveExpectedAttendanceStatus($employee['employee_id'], $today, $now);
+            if ($evaluation['status'] !== 'ABSENT') {
+                continue;
+            }
+
             $created = $this->createAbsenceRecord(
                 $employee['employee_id'],
                 $today,
-                'Auto-detected absence'
+                $evaluation['reason'] ?? 'Auto-detected absence'
             );
 
             if ($created) {

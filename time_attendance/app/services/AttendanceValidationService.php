@@ -14,14 +14,16 @@ class AttendanceValidationService
 {
     private $conn;
     private $employees_table = "employees";
+    private $attendance_table = "ta_attendance";
     private $employee_shifts_table = "ta_employee_shifts";
     private $shifts_table = "ta_shifts";
     private $holidays_table = "ta_holidays";
     private $shift_exclusions_table = "ta_shift_exclusions";
     private $flexible_schedules_table = "ta_flexible_schedules";
 
-    // Configuration: Late detection threshold (15-30 mins after shift start)
-    private $late_threshold_minutes = 15; // Minimum minutes after shift start to mark as late
+    // Configuration: Late detection threshold (minutes after shift start)
+    // Business rule: any time_in after shift start is considered LATE, so default to 0
+    private $late_threshold_minutes = 0;
 
     public function __construct()
     {
@@ -121,17 +123,12 @@ class AttendanceValidationService
 
         // Parse shift start time
         $shift_start = new \DateTime($date . ' ' . $shift['start_time']);
-        $late_threshold = clone $shift_start;
-        $late_threshold->modify('+' . $this->late_threshold_minutes . ' minutes');
-
-        // Compare time_in with thresholds
+        // Any time_in after shift start is LATE per business rules
         if ($time_in_obj <= $shift_start) {
-            return 'PRESENT'; // On time
-        } elseif ($time_in_obj <= $late_threshold) {
-            return 'LATE'; // Within 15 minutes (not quite late yet)
-        } else {
-            return 'LATE'; // Beyond 15 minutes
+            return 'PRESENT'; // On time or early
         }
+
+        return 'LATE';
     }
 
     /**
@@ -165,30 +162,59 @@ class AttendanceValidationService
     }
 
     /**
+     * Resolve the expected attendance state for an employee based on current time
+     * and the assigned shift.
+     */
+    public function resolveExpectedAttendanceStatus($employee_id, $date = null, $now = null)
+    {
+        $date = $date ?? date('Y-m-d');
+        $dayOfWeek = date('w', strtotime($date));
+
+        if ($this->isHoliday($date) || $dayOfWeek == 0) {
+            return ['status' => null, 'reason' => 'holiday_or_weekend'];
+        }
+
+        $shift = $this->getEmployeeShiftForDate($employee_id, $date);
+        if (!$shift) {
+            return ['status' => 'WAITING_FOR_ASSIGNMENT', 'shift' => null, 'reason' => 'No shift assigned'];
+        }
+
+        if (empty($shift['start_time']) || empty($shift['end_time'])) {
+            return ['status' => 'WAITING_FOR_TIME_IN', 'shift' => $shift, 'reason' => 'Missing shift times'];
+        }
+
+        $currentTime = $now instanceof \DateTime ? clone $now : new \DateTime($now ?? 'now');
+        $currentTime->setTimezone(new \DateTimeZone('Asia/Manila'));
+
+        $shiftStart = new \DateTime($date . ' ' . $shift['start_time'], new \DateTimeZone('Asia/Manila'));
+        $shiftEnd = new \DateTime($date . ' ' . $shift['end_time'], new \DateTimeZone('Asia/Manila'));
+
+        if ($currentTime < $shiftStart) {
+            return ['status' => 'WAITING_FOR_TIME_IN', 'shift' => $shift, 'reason' => 'Before shift start'];
+        }
+
+        if ($currentTime < $shiftEnd) {
+            return ['status' => 'LATE', 'shift' => $shift, 'reason' => 'After shift start'];
+        }
+
+        return ['status' => 'ABSENT', 'shift' => $shift, 'reason' => 'After shift end'];
+    }
+
+    /**
      * Check for absence detection
      * Called at end of shift or next day
      * Returns true if employee hasn't timed in by end of shift
      */
-    public function shouldMarkAsAbsent($employee_id, $date = null)
+    public function shouldMarkAsAbsent($employee_id, $date = null, $now = null)
     {
         $date = $date ?? date('Y-m-d');
-        $dayOfWeek = date('w', strtotime($date)); // 0=Sunday, 6=Saturday
+        $evaluation = $this->resolveExpectedAttendanceStatus($employee_id, $date, $now);
 
-        // Don't mark as absent on holidays or weekends
-        if ($this->isHoliday($date) || $dayOfWeek == 0) {
+        if ($evaluation['status'] !== 'ABSENT') {
             return false;
         }
 
-        // Get employee's shift
-        $shift = $this->getEmployeeShiftForDate($employee_id, $date);
-
-        if (!$shift) {
-            // No shift assigned = waiting for shift status, not absent
-            return false;
-        }
-
-        // Check if employee has any attendance record for this date
-        $query = "SELECT attendance_id FROM ta_attendance
+        $query = "SELECT attendance_id, time_in FROM {$this->attendance_table}
                   WHERE employee_id = :employee_id
                   AND attendance_date = :date
                   LIMIT 1";
@@ -198,8 +224,12 @@ class AttendanceValidationService
         $stmt->bindParam(':date', $date);
         $stmt->execute();
 
-        // If no attendance record exists, they're absent
-        return $stmt->rowCount() === 0;
+        $attendance = $stmt->fetch(\PDO::FETCH_ASSOC);
+        if (!$attendance) {
+            return true;
+        }
+
+        return empty($attendance['time_in']);
     }
 
     /**
@@ -417,14 +447,16 @@ class AttendanceValidationService
         $employees = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
         $absences = [];
+        $now = new \DateTime('now', new \DateTimeZone('Asia/Manila'));
+
         foreach ($employees as $employee) {
-            $shift = $this->getEmployeeShiftForDate($employee['employee_id'], $date);
-            if (!$shift) {
+            $evaluation = $this->resolveExpectedAttendanceStatus($employee['employee_id'], $date, $now);
+            if ($evaluation['status'] !== 'ABSENT') {
                 continue;
             }
 
-            $attendanceQuery = "SELECT attendance_id
-                                FROM ta_attendance
+            $attendanceQuery = "SELECT attendance_id, time_in
+                                FROM {$this->attendance_table}
                                 WHERE employee_id = :employee_id
                                 AND attendance_date = :date
                                 LIMIT 1";
@@ -433,17 +465,20 @@ class AttendanceValidationService
             $attendanceStmt->bindParam(':date', $date);
             $attendanceStmt->execute();
 
-            if ($attendanceStmt->rowCount() > 0) {
+            $attendance = $attendanceStmt->fetch(\PDO::FETCH_ASSOC);
+            if ($attendance && !empty($attendance['time_in'])) {
                 continue;
             }
 
+            $shift = $this->getEmployeeShiftForDate($employee['employee_id'], $date);
             $absences[] = [
                 'employee_id' => $employee['employee_id'],
                 'full_name' => $employee['full_name'],
                 'department' => $employee['department'],
                 'shift_id' => $shift['shift_id'] ?? null,
-                'start_time' => $shift['start_time'],
-                'end_time' => $shift['end_time']
+                'start_time' => $shift['start_time'] ?? null,
+                'end_time' => $shift['end_time'] ?? null,
+                'expected_status' => 'ABSENT'
             ];
         }
 

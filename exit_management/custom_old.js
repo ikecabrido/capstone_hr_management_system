@@ -258,7 +258,7 @@ function showSurveyModal(surveyId = null) {
         $('#surveyQuestionsContainer').html(getSurveyQuestionTemplate(0));
     }
     $('#surveyModal').modal('show');
-}}
+}
 
 // Form submission functions
 function submitResignationForm() {

@@ -58,6 +58,11 @@ class QRAttendanceController
             $action = '';
             $message = '';
 
+            if ($record && empty($record['time_in']) && isset($record['status']) && strtoupper($record['status']) === 'ABSENT') {
+                $this->log("Attendance already marked absent - refusing QR scan");
+                return $this->error('Your attendance has already been marked absent for today. Please contact HR for assistance.');
+            }
+
             if (!$record) {
                 // No record yet - this is TIME_IN
                 $this->log("No record found - performing TIME_IN");

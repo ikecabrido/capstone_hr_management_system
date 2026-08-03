@@ -15,6 +15,7 @@ require_once __DIR__. '/../services/AttendanceValidationService.php';
 require_once __DIR__. '/../helpers/QRHelper.php';
 require_once __DIR__. '/../helpers/Helper.php';
 require_once __DIR__. '/../helpers/AuditLog.php';
+require_once __DIR__. '/../helpers/OpenAttendanceFinalizer.php';
 require_once __DIR__. '/../core/Session.php';
 
 class AttendanceController
@@ -100,6 +101,20 @@ class AttendanceController
     }
 
     /**
+     * Auto-finalize an open attendance record at shift end when the employee forgot to time out.
+     */
+    private function autoFinalizeOpenAttendanceIfNeeded($employee_id, $attendanceDate = null, $now = null)
+    {
+        return OpenAttendanceFinalizer::finalizeOpenAttendanceIfNeeded(
+            $this->attendanceModel,
+            $this->validationService,
+            $employee_id,
+            $attendanceDate,
+            $now
+        );
+    }
+
+    /**
      * Record Time In for an employee
      * 
      * @param int $employee_id - Employee ID
@@ -133,7 +148,17 @@ class AttendanceController
             // STEP 2: Check if employee has already timed in today
             $existingRecord = $this->attendanceModel->getTodayAttendance($employee_id, $todayDate);
 
-            if ($existingRecord &&!empty($existingRecord['time_in'])) {
+            if ($existingRecord && empty($existingRecord['time_in']) && isset($existingRecord['status']) && $existingRecord['status'] === 'ABSENT') {
+                $this->auditLog->log('TIME_IN_FAILED', $user_id, $employee_id, $existingRecord['attendance_id'], 
+                    ['reason' => 'Marked absent', 'status' => 'ABSENT'], 'FAILED', 'Cannot time in because attendance is already marked absent for today');
+                return [
+                    'success' => false,
+                    'message' => 'Your attendance for today has already been marked ABSENT. Please contact HR to appeal or correct this status.',
+                    'status' => 'ABSENT'
+                ];
+            }
+
+            if ($existingRecord && !empty($existingRecord['time_in'])) {
                 $this->auditLog->log('TIME_IN_FAILED', $user_id, $employee_id, null, 
                     ['reason' => 'Already timed in'], 'FAILED', 'Employee already has time in record for today');
                 return [
@@ -210,6 +235,8 @@ class AttendanceController
         $user_id = Session::get('user_id');
 
         try {
+            $this->autoFinalizeOpenAttendanceIfNeeded($employee_id, date('Y-m-d'));
+
             // Get today's attendance record
             $record = $this->attendanceModel->getTodayAttendance($employee_id);
 
@@ -359,14 +386,31 @@ class AttendanceController
                 ];
             }
 
-            // Mark token as used
-            $this->qrHelper->markUsed($token, $employee_id);
+            $employee = $this->employeeModel->getById($employee_id);
+            $employee_info = $employee ? [
+                'employee_id' => $employee['employee_id'],
+                'full_name' => $employee['full_name'],
+                'department' => $employee['department'] ?? 'N/A',
+                'position' => $employee['position'] ?? 'N/A',
+                'avatar' => $employee['profile_photo'] ?? 'default-user.png'
+            ] : null;
+
+            $this->autoFinalizeOpenAttendanceIfNeeded($employee_id, date('Y-m-d'));
 
             // Check if employee has timed in today
             $todayRecord = $this->attendanceModel->getTodayAttendance($employee_id);
 
+            if ($todayRecord && empty($todayRecord['time_in']) && isset($todayRecord['status']) && $todayRecord['status'] === 'ABSENT') {
+                return [
+                    'success' => false,
+                    'message' => 'Your attendance has already been marked absent for today. Please contact HR for assistance.',
+                    'employee_info' => $employee_info,
+                    'action' => 'ABSENT'
+                ];
+            }
+
             // Smart decision: if already timed in, do time out; otherwise do time in
-            if ($todayRecord &&!empty($todayRecord['time_in']) && empty($todayRecord['time_out'])) {
+            if ($todayRecord && !empty($todayRecord['time_in']) && empty($todayRecord['time_out'])) {
                 // Employee already timed in, so do TIME OUT
                 $result = $this->timeOut($employee_id, 'QR');
             } else if (!$todayRecord || empty($todayRecord['time_in'])) {
@@ -380,6 +424,7 @@ class AttendanceController
             }
 
             if ($result['success']) {
+                $this->qrHelper->markUsed($token, $employee_id);
                 $this->auditLog->log('QR_SCAN_SUCCESS', $user_id, $employee_id, null, 
                     ['token_id' => $tokenData['token_id'], 'action' => isset($result['time_in'])? 'TIME_IN' : 'TIME_OUT'], 'SUCCESS');
             }
@@ -459,6 +504,8 @@ class AttendanceController
                 ];
             }
 
+            $this->autoFinalizeOpenAttendanceIfNeeded($employee_id, date('Y-m-d'));
+
             // Check if employee has timed in today
             error_log("StaticQR: processStaticQR entered for employee_id={$employee_id}");
             $todayRecord = $this->attendanceModel->getTodayAttendance($employee_id);
@@ -476,6 +523,15 @@ class AttendanceController
                 'todayRecord' => $todayRecord,
                 'selected_branch' => ($todayRecord && !empty($todayRecord['time_in']) && empty($todayRecord['time_out'])) ? 'TIME_OUT' : ((!$todayRecord || empty($todayRecord['time_in'])) ? 'TIME_IN' : 'ALREADY_TIMED_OUT')
             ], JSON_UNESCAPED_SLASHES));
+
+            if ($todayRecord && empty($todayRecord['time_in']) && isset($todayRecord['status']) && $todayRecord['status'] === 'ABSENT') {
+                return [
+                    'success' => false,
+                    'message' => 'Your attendance has already been marked absent for today. Please contact HR for assistance.',
+                    'employee_info' => $employee_info,
+                    'action' => 'ABSENT'
+                ];
+            }
 
             // Smart decision: if already timed in, do time out after at least 3 hours; otherwise do time in
             if ($todayRecord && !empty($todayRecord['time_in']) && empty($todayRecord['time_out'])) {

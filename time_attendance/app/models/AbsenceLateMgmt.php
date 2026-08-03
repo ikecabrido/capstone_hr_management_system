@@ -34,6 +34,12 @@ class AbsenceLateMgmt
                         CAST(r.excuse_status AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS excuse_status,
                         CAST(r.reason AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS reason,
                         r.created_at,
+                        NULL AS time_in,
+                        NULL AS time_out,
+                        NULL AS late_minutes,
+                        NULL AS total_hours_worked,
+                        NULL AS regular_hours,
+                        NULL AS overtime_hours,
                         CAST(e.full_name AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS full_name,
                         CAST(e.department AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS department,
                         CAST('legacy' AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS source
@@ -60,6 +66,12 @@ class AbsenceLateMgmt
                             ELSE 'Attendance record'
                         END AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS reason,
                         a.created_at,
+                        a.time_in,
+                        a.time_out,
+                        a.late_minutes,
+                        a.total_hours_worked,
+                        a.regular_hours,
+                        a.overtime_hours,
                         CAST(e.full_name AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS full_name,
                         CAST(e.department AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS department,
                         CAST('attendance' AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_general_ci AS source
@@ -130,6 +142,12 @@ class AbsenceLateMgmt
                     r.excuse_status,
                     r.reason,
                     r.created_at,
+                    NULL AS time_in,
+                    NULL AS time_out,
+                    NULL AS late_minutes,
+                    NULL AS total_hours_worked,
+                    NULL AS regular_hours,
+                    NULL AS overtime_hours,
                     e.full_name,
                     e.department,
                     'legacy' AS source
@@ -163,6 +181,12 @@ class AbsenceLateMgmt
                         ELSE 'Attendance record'
                     END AS reason,
                     a.created_at,
+                    a.time_in,
+                    a.time_out,
+                    a.late_minutes,
+                    a.total_hours_worked,
+                    a.regular_hours,
+                    a.overtime_hours,
                     e.full_name,
                     e.department,
                     'attendance' AS source

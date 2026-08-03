@@ -6,7 +6,7 @@
 
 header('Content-Type: application/json');
 
-require_once __DIR__ . '/../../../../auth/database.php';
+require_once __DIR__ . '/../../../auth/database.php';
 require_once __DIR__ . '/../core/Session.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
 require_once __DIR__ . '/../helpers/EnhancedAbsenceDetector.php';
@@ -32,6 +32,10 @@ try {
     $detector = new \App\Helpers\EnhancedAbsenceDetector();
     $response = [];
 
+    // Support optional date range parameters for replaying detection
+    $start_date = $_GET['start_date'] ?? null;
+    $end_date = $_GET['end_date'] ?? null;
+
     switch ($action) {
         case 'detect_late':
             $result = $detector->detectAndMarkLateToday();
@@ -47,7 +51,11 @@ try {
             break;
 
         case 'detect_absence':
-            $result = $detector->detectAndMarkAbsenceToday();
+            if ($start_date && $end_date) {
+                $result = $detector->detectAndMarkAbsencesRange($start_date, $end_date);
+            } else {
+                $result = $detector->detectAndMarkAbsenceToday();
+            }
             
             $response = [
                 'success' => true,
@@ -61,7 +69,11 @@ try {
 
         case 'detect_all':
             $lateResult = $detector->detectAndMarkLateToday();
-            $absenceResult = $detector->detectAndMarkAbsenceToday();
+            if ($start_date && $end_date) {
+                $absenceResult = $detector->detectAndMarkAbsencesRange($start_date, $end_date);
+            } else {
+                $absenceResult = $detector->detectAndMarkAbsenceToday();
+            }
             
             $response = [
                 'success' => true,

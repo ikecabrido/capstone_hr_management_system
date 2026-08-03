@@ -98,15 +98,25 @@ try {
     $message = '';
 
     if ($existingRecord) {
+        if (empty($existingRecord['time_in']) && isset($existingRecord['status']) && $existingRecord['status'] === 'ABSENT') {
+            $_SESSION['qr_error'] = 'Your attendance has already been marked ABSENT for today. Please contact HR for assistance.';
+            if (AuthController::hasRole('time')) {
+                header("Location: dashboard.php");
+            } else {
+                header("Location: employee_dashboard.php");
+            }
+            exit;
+        }
+
         if (!$existingRecord['time_in']) {
             // Record time_in
-            $updateQuery = "UPDATE attendance SET time_in = :time_in WHERE attendance_id = :id";
+            $updateQuery = "UPDATE ta_attendance SET time_in = :time_in, status = 'PRESENT', recorded_by = 'QR' WHERE attendance_id = :id";
             $updateStmt = $conn->prepare($updateQuery);
             $result = $updateStmt->execute([':time_in' => $now, ':id' => $existingRecord['attendance_id']]);
             $message = 'Time In recorded successfully!';
         } elseif (!$existingRecord['time_out']) {
             // Record time_out
-            $updateQuery = "UPDATE attendance SET time_out = :time_out WHERE attendance_id = :id";
+            $updateQuery = "UPDATE ta_attendance SET time_out = :time_out, recorded_by = 'QR' WHERE attendance_id = :id";
             $updateStmt = $conn->prepare($updateQuery);
             $result = $updateStmt->execute([':time_out' => $now, ':id' => $existingRecord['attendance_id']]);
             $message = 'Time Out recorded successfully!';

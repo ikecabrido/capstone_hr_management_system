@@ -72,6 +72,8 @@ $page_head_extra = "<link rel=\"stylesheet\" href=\"../assets/style.css\">\n<lin
 <?php $page_title = 'Time & Attendance Dashboard'; $page_subtitle = 'Real-time attendance and HR analytics'; $page_icon = 'fa-chart-line';?>
 <?php require_once __DIR__. '/../layout/content_header.php';?>
 
+
+
     <style>
         /* Copied from Absence & Late Management template for consistent HR UI */
 
@@ -797,11 +799,20 @@ $page_head_extra = "<link rel=\"stylesheet\" href=\"../assets/style.css\">\n<lin
             if (isHolidayToday) {
                 return 'HOLIDAY';
             }
-            if (!record.time_in) {
-                return 'ABSENT';
+
+            // If employee has a recorded time_in, derive status from that
+            if (record.time_in) {
+                const time = new Date(record.time_in);
+                // Simple heuristic: present if before or at shift start (handled server-side when inserted)
+                // Fallback: consider hours > 9 as late for legacy records
+                return time.getHours() > 9 ? 'LATE' : 'PRESENT';
             }
-            const time = new Date(record.time_in);
-            return time.getHours() > 9 ? 'LATE' : 'PRESENT';
+
+            // No time_in recorded yet: fall back to stored status or legacy ABSENT
+            if (record.status) {
+                return record.status;
+            }
+            return 'ABSENT';
         }
 
         function getStatusOrder(status) {
@@ -839,7 +850,7 @@ $page_head_extra = "<link rel=\"stylesheet\" href=\"../assets/style.css\">\n<lin
                 const status = getStatus(record);
                 const statusClass = status === 'PRESENT'? 'badge-success' : (
                     status === 'LATE'? 'badge-warning' : (
-                        status === 'HOLIDAY'? 'badge-info' : 'badge-danger'
+                        status === 'HOLIDAY'? 'badge-info' : 'badge-absent'
                     )
                 );
 

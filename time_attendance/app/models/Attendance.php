@@ -114,6 +114,28 @@ class Attendance
     }
 
     /**
+     * Record Time Out at a specific timestamp
+     */
+    public function timeOutAt($attendance_id, $time_out)
+    {
+        if (empty($attendance_id) || !is_numeric($attendance_id) || intval($attendance_id) <= 0) {
+            return false;
+        }
+
+        $query = "UPDATE $this->table 
+                  SET time_out = :time_out, updated_at = CURRENT_TIMESTAMP
+                  WHERE attendance_id = :attendance_id
+                  AND (time_out IS NULL OR time_out = '0000-00-00 00:00:00')";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':attendance_id', $attendance_id, PDO::PARAM_INT);
+        $stmt->bindParam(':time_out', $time_out);
+
+        $result = $stmt->execute();
+        return ($result && $stmt->rowCount() > 0);
+    }
+
+    /**
      * Get attendance records for date range
      */
     public function getByDateRange($start_date, $end_date, $employee_id = null, $limit = 500, $offset = 0)
@@ -274,20 +296,121 @@ class Attendance
     public function markAbsent($employee_id, $attendance_date = null, $notes = null)
     {
         $attendance_date = $attendance_date ?? date('Y-m-d');
+        $debugLogPath = __DIR__ . '/../../logs/absence_detection_debug.log';
 
         $existingRecord = $this->getTodayAttendance($employee_id, $attendance_date);
-        if ($existingRecord) {
+        file_put_contents($debugLogPath, "[Attendance::markAbsent] employee_id={$employee_id} attendance_date={$attendance_date} existingRecord=" . ($existingRecord ? 'true' : 'false') . " time_in=" . ($existingRecord['time_in'] ?? 'NULL') . " time_out=" . ($existingRecord['time_out'] ?? 'NULL') . " status=" . ($existingRecord['status'] ?? 'NULL') . "\n", FILE_APPEND);
+        // If a record exists with time_in, do not mark absent
+        if ($existingRecord && !empty($existingRecord['time_in'])) {
+            file_put_contents($debugLogPath, "[Attendance::markAbsent] skipped because existing time_in present\n", FILE_APPEND);
             return false;
         }
 
-        $query = "INSERT INTO $this->table
-                  (employee_id, attendance_date, status, recorded_by, notes, late_minutes)
-                  VALUES (:employee_id, :attendance_date, 'ABSENT', 'SYSTEM', :notes, 0)";
+        // If a record exists but has no time_in, update it to ABSENT (idempotent)
+        if ($existingRecord && empty($existingRecord['time_in'])) {
+            $query = "UPDATE {$this->table} SET status = 'ABSENT', recorded_by = 'SYSTEM', updated_at = CURRENT_TIMESTAMP";
+            $columnCheck = $this->conn->prepare("SHOW COLUMNS FROM {$this->table} LIKE 'notes'");
+            $columnCheck->execute();
+            if ($columnCheck->rowCount() > 0 && $notes !== null) {
+                $query .= ", notes = CONCAT(IFNULL(notes, ''), '\n', :notes)";
+            }
+            $query .= " WHERE attendance_id = :attendance_id";
+
+            $stmt = $this->conn->prepare($query);
+            if ($columnCheck->rowCount() > 0 && $notes !== null) {
+                $stmt->bindParam(':notes', $notes);
+            }
+            $stmt->bindParam(':attendance_id', $existingRecord['attendance_id'], PDO::PARAM_INT);
+            $result = $stmt->execute();
+            file_put_contents($debugLogPath, "[Attendance::markAbsent] update_existing result=" . ($result ? 'true' : 'false') . " rowcount=" . $stmt->rowCount() . " query=" . $query . "\n", FILE_APPEND);
+            return $result;
+        }
+
+        $columnCheck = $this->conn->prepare("SHOW COLUMNS FROM {$this->table} LIKE 'notes'");
+        $columnCheck->execute();
+        $hasNotesColumn = $columnCheck->rowCount() > 0;
+
+        $query = "INSERT INTO {$this->table}
+                  (employee_id, attendance_date, status, recorded_by, late_minutes";
+        $values = ") VALUES (:employee_id, :attendance_date, 'ABSENT', 'SYSTEM', 0";
+
+        if ($hasNotesColumn) {
+            $query .= ", notes";
+            $values .= ", :notes";
+        }
+
+        $query .= $values . ")";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':employee_id', $employee_id);
         $stmt->bindParam(':attendance_date', $attendance_date);
-        $stmt->bindParam(':notes', $notes);
+
+        if ($hasNotesColumn) {
+            $stmt->bindParam(':notes', $notes);
+        }
+
+        $result = $stmt->execute();
+        file_put_contents($debugLogPath, "[Attendance::markAbsent] insert_new result=" . ($result ? 'true' : 'false') . " rowcount=" . $stmt->rowCount() . " query=" . $query . "\n", FILE_APPEND);
+        if (!$result) {
+            $errorInfo = $stmt->errorInfo();
+            file_put_contents($debugLogPath, "[Attendance::markAbsent] insert_error=" . json_encode($errorInfo) . "\n", FILE_APPEND);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Record a system-generated late attendance status for no time-in yet after shift start
+     */
+    public function markLate($employee_id, $attendance_date = null, $late_minutes = 0, $notes = null)
+    {
+        $attendance_date = $attendance_date ?? date('Y-m-d');
+
+        $existingRecord = $this->getTodayAttendance($employee_id, $attendance_date);
+        if ($existingRecord && !empty($existingRecord['time_in'])) {
+            return false;
+        }
+
+        if ($existingRecord && empty($existingRecord['time_in'])) {
+            $query = "UPDATE {$this->table} SET status = 'LATE', late_minutes = :late_minutes, recorded_by = 'SYSTEM', updated_at = CURRENT_TIMESTAMP";
+            $columnCheck = $this->conn->prepare("SHOW COLUMNS FROM {$this->table} LIKE 'notes'");
+            $columnCheck->execute();
+            if ($columnCheck->rowCount() > 0 && $notes !== null) {
+                $query .= ", notes = CONCAT(IFNULL(notes, ''), '\n', :notes)";
+            }
+            $query .= " WHERE attendance_id = :attendance_id";
+
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':late_minutes', $late_minutes, PDO::PARAM_INT);
+            if ($columnCheck->rowCount() > 0 && $notes !== null) {
+                $stmt->bindParam(':notes', $notes);
+            }
+            $stmt->bindParam(':attendance_id', $existingRecord['attendance_id'], PDO::PARAM_INT);
+            return $stmt->execute();
+        }
+
+        $columnCheck = $this->conn->prepare("SHOW COLUMNS FROM {$this->table} LIKE 'notes'");
+        $columnCheck->execute();
+        $hasNotesColumn = $columnCheck->rowCount() > 0;
+
+        $query = "INSERT INTO {$this->table}
+                  (employee_id, attendance_date, status, recorded_by, late_minutes";
+        $values = ") VALUES (:employee_id, :attendance_date, 'LATE', 'SYSTEM', :late_minutes";
+
+        if ($hasNotesColumn) {
+            $query .= ", notes";
+            $values .= ", :notes";
+        }
+
+        $query .= $values . ")";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':employee_id', $employee_id);
+        $stmt->bindParam(':attendance_date', $attendance_date);
+        $stmt->bindParam(':late_minutes', $late_minutes, PDO::PARAM_INT);
+        if ($hasNotesColumn) {
+            $stmt->bindParam(':notes', $notes);
+        }
 
         return $stmt->execute();
     }

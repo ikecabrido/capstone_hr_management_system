@@ -10,228 +10,133 @@ namespace App\Helpers;
 require_once __DIR__ . '/../../../auth/database.php';
 require_once __DIR__ . '/HolidayHelper.php';
 require_once __DIR__ . '/../models/UnexpectedHoliday.php';
-
+require_once __DIR__ . '/../models/Attendance.php';
+require_once __DIR__ . '/../services/AttendanceValidationService.php';
 class EnhancedAbsenceDetector
 {
     private $conn;
     private $attendance_table = "ta_attendance";
     private $employees_table = "employees";
-    private $shifts_table = "ta_shifts";
-    private $shift_assignments_table = "ta_shift_assignments";
-    private $absence_late_table = "ta_absence_late_records";
-    private $late_threshold_minutes = 30; // 30 minutes late threshold
+    private $late_threshold_minutes = 0; // will read from validation service
     private $unexpectedHolidayModel;
+    private $validationService;
+    private $attendanceModel;
 
     public function __construct()
     {
-        $db = new \Database();
+        $db = \Database::getInstance();
         $this->conn = $db->getConnection();
-        $this->unexpectedHolidayModel = new \UnexpectedHoliday();
+        $this->unexpectedHolidayModel = new \App\Models\UnexpectedHoliday();
+        $this->attendanceModel = new \Attendance();
+        $this->validationService = new \App\Services\AttendanceValidationService();
+        $this->late_threshold_minutes = (int)$this->validationService->getLateThreshold();
     }
 
     /**
-     * Detect and mark LATE arrivals for today
-     * Run this multiple times a day (every hour recommended)
+     * Detect and mark late arrivals for today
      */
     public function detectAndMarkLateToday()
     {
         $today = date('Y-m-d');
-        
-        // Check if today is a holiday or weekend
-        if (!$this->isWorkingDay($today)) {
-            return ['status' => 'skipped', 'reason' => 'Holiday or weekend'];
-        }
 
-        // Find all employees who checked in late today
-        $query = "SELECT 
-                    a.attendance_id,
-                    a.employee_id,
-                    a.time_in,
-                    a.status,
-                    e.full_name,
-                    e.department,
-                    s.shift_id,
-                    s.start_time
+        // Find attendance records with time_in and status null or PRESENT
+        $query = "SELECT a.attendance_id, a.employee_id, a.time_in, e.full_name, e.department
                   FROM {$this->attendance_table} a
                   JOIN {$this->employees_table} e ON a.employee_id = e.employee_id
-                  LEFT JOIN {$this->shift_assignments_table} sa ON a.employee_id = sa.employee_id
-                    AND sa.effective_from <= :today
-                    AND (sa.effective_to IS NULL OR sa.effective_to >= :today)
-                  LEFT JOIN {$this->shifts_table} s ON sa.shift_id = s.shift_id
-                  WHERE a.attendance_date = :today
+                  WHERE a.attendance_date = :date
                   AND a.time_in IS NOT NULL
-                  AND a.status NOT IN ('LATE', 'HOLIDAY', 'LEAVE')
-                  AND s.shift_id IS NOT NULL";
+                  AND (a.status IS NULL OR a.status = 'PRESENT')
+                  AND e.employment_status = 'Active'";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':today', $today);
+        $stmt->bindParam(':date', $today);
         $stmt->execute();
+
         $records = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-
         $results = [];
+
         foreach ($records as $record) {
-            $minutesLate = $this->getMinutesLate($record['time_in'], $record['start_time']);
-
-            // If 30 minutes or more late, mark as LATE
-            if ($minutesLate >= $this->late_threshold_minutes) {
-                $this->updateAttendanceStatus(
-                    $record['attendance_id'],
-                    'LATE',
-                    "Auto-detected late arrival ({$minutesLate} minutes late)"
-                );
-
+            $minutesLate = $this->validationService->calculateMinutesLate($record['employee_id'], $record['time_in'], $today);
+            if ($minutesLate > 0) {
+                // Persist LATE status and minutes
+                $this->attendanceModel->updateStatus($record['attendance_id'], 'LATE', $minutesLate);
                 $results[] = [
+                    'attendance_id' => $record['attendance_id'],
                     'employee_id' => $record['employee_id'],
                     'name' => $record['full_name'],
                     'department' => $record['department'],
-                    'minutes_late' => $minutesLate,
-                    'action' => 'Marked as LATE'
+                    'time_in' => $record['time_in'],
+                    'minutes_late' => $minutesLate
                 ];
-            } elseif ($minutesLate > 0 && $minutesLate < $this->late_threshold_minutes) {
-                // Less than 30 minutes late, mark as PRESENT but with notes
-                $this->updateAttendanceStatus(
-                    $record['attendance_id'],
-                    'PRESENT',
-                    "Arrived {$minutesLate} minutes late (within tolerance)"
-                );
             }
         }
 
-        return [
-            'status' => 'completed',
-            'date' => $today,
-            'late_count' => count($results),
-            'results' => $results
-        ];
+        return ['status' => 'completed', 'date' => $today, 'late_count' => count($results), 'results' => $results];
     }
 
     /**
-     * Detect and mark ABSENCE for employees who haven't checked in by end of shift
-     * Run this once daily at end of business day (e.g., 6 PM)
+     * Detect and mark absences for a date range (inclusive)
+     */
+    public function detectAndMarkAbsencesRange($start_date, $end_date)
+    {
+        $start = new \DateTime($start_date);
+        $end = new \DateTime($end_date);
+        $results = ['status' => 'completed', 'start_date' => $start_date, 'end_date' => $end_date, 'days' => []];
+
+        for ($dt = clone $start; $dt <= $end; $dt->modify('+1 day')) {
+            $date = $dt->format('Y-m-d');
+
+            if (!$this->isWorkingDay($date)) {
+                $results['days'][$date] = ['status' => 'skipped', 'reason' => 'Holiday or weekend'];
+                continue;
+            }
+
+            // Get active employees
+            $employeesQuery = "SELECT employee_id, full_name, department FROM {$this->employees_table} WHERE employment_status = 'Active'";
+            $stmt = $this->conn->prepare($employeesQuery);
+            $stmt->execute();
+            $employees = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            $dayResults = [];
+            $now = new \DateTime($date . ' 23:59:59', new \DateTimeZone('Asia/Manila'));
+
+            foreach ($employees as $employee) {
+                $evaluation = $this->validationService->resolveExpectedAttendanceStatus($employee['employee_id'], $date, $now);
+                if ($evaluation['status'] !== 'ABSENT') {
+                    continue;
+                }
+
+                // If attendance row exists with time_in, skip
+                $attendance = $this->attendanceModel->getTodayAttendance($employee['employee_id'], $date);
+                if ($attendance && !empty($attendance['time_in'])) {
+                    continue;
+                }
+
+                $created = $this->attendanceModel->markAbsent($employee['employee_id'], $date, 'Auto-detected absence - replayed detection for ' . $date);
+                $dayResults[] = ['employee_id' => $employee['employee_id'], 'name' => $employee['full_name'], 'department' => $employee['department'], 'action' => $created ? 'Marked as ABSENT' : 'Already exists/updated'];
+            }
+
+            $results['days'][$date] = ['marked_absent' => count($dayResults), 'details' => $dayResults];
+        }
+
+        return $results;
+    }
+
+    /**
+     * Detect and mark absences for today
      */
     public function detectAndMarkAbsenceToday()
     {
         $today = date('Y-m-d');
-        
-        // Check if today is a holiday or weekend
-        if (!$this->isWorkingDay($today)) {
-            return ['status' => 'skipped', 'reason' => 'Holiday or weekend'];
-        }
-
-        // Get all active employees who should have worked today
-        $query = "SELECT DISTINCT
-                    e.employee_id,
-                    e.full_name,
-                    e.department,
-                    s.shift_id,
-                    s.end_time
-                  FROM {$this->employees_table} e
-                  LEFT JOIN {$this->shift_assignments_table} sa ON e.employee_id = sa.employee_id
-                    AND sa.effective_from <= :today
-                    AND (sa.effective_to IS NULL OR sa.effective_to >= :today)
-                  LEFT JOIN {$this->shifts_table} s ON sa.shift_id = s.shift_id
-                  WHERE e.employment_status = 'Active'
-                  AND (sa.shift_id IS NOT NULL OR sa.shift_id IS NULL)";
-
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':today', $today);
-        $stmt->execute();
-        $employees = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-
-        $results = [];
-        foreach ($employees as $employee) {
-            // Check if employee has attendance record for today
-            $attendanceQuery = "SELECT attendance_id, status, time_in FROM {$this->attendance_table}
-                               WHERE employee_id = :employee_id AND attendance_date = :today LIMIT 1";
-            
-            $attStmt = $this->conn->prepare($attendanceQuery);
-            $attStmt->bindParam(':employee_id', $employee['employee_id'], \PDO::PARAM_INT);
-            $attStmt->bindParam(':today', $today);
-            $attStmt->execute();
-            $attendance = $attStmt->fetch(\PDO::FETCH_ASSOC);
-
-            // If no record and should have worked, create ABSENT record
-            if (!$attendance) {
-                // Create new absence record
-                $this->createAbsenceRecord(
-                    $employee['employee_id'],
-                    $today,
-                    'Auto-detected absence - No check-in by end of shift'
-                );
-
-                $results[] = [
-                    'employee_id' => $employee['employee_id'],
-                    'name' => $employee['full_name'],
-                    'department' => $employee['department'],
-                    'action' => 'Marked as ABSENT'
-                ];
-            }
-        }
-
-        return [
-            'status' => 'completed',
-            'date' => $today,
-            'absence_count' => count($results),
-            'results' => $results
-        ];
+        return $this->detectAndMarkAbsencesRange($today, $today);
     }
 
     /**
-     * Update attendance status
-     */
-    private function updateAttendanceStatus($attendance_id, $status, $notes = '')
-    {
-        $query = "UPDATE {$this->attendance_table}
-                  SET status = :status, notes = CONCAT(IFNULL(notes, ''), '\n', :notes)
-                  WHERE attendance_id = :attendance_id";
-
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':status', $status);
-        $stmt->bindParam(':notes', $notes);
-        $stmt->bindParam(':attendance_id', $attendance_id, \PDO::PARAM_INT);
-
-        return $stmt->execute();
-    }
-
-    /**
-     * Create absence record
+     * Create or update absence record - kept for backward compat but uses Attendance model
      */
     private function createAbsenceRecord($employee_id, $absence_date, $notes = '')
     {
-        $insertQuery = "INSERT INTO {$this->attendance_table}
-                        (employee_id, attendance_date, status, notes, created_at)
-                        VALUES (:employee_id, :absence_date, 'ABSENT', :notes, NOW())";
-
-        $insertStmt = $this->conn->prepare($insertQuery);
-        $insertStmt->bindParam(':employee_id', $employee_id, \PDO::PARAM_INT);
-        $insertStmt->bindParam(':absence_date', $absence_date);
-        $insertStmt->bindParam(':notes', $notes);
-
-        return $insertStmt->execute();
-    }
-
-    /**
-     * Calculate minutes late
-     */
-    private function getMinutesLate($timeIn, $startTime)
-    {
-        if (!$timeIn || !$startTime) {
-            return 0;
-        }
-
-        try {
-            $inTime = new \DateTime($timeIn);
-            $startDateTime = new \DateTime(date('Y-m-d') . ' ' . $startTime);
-
-            if ($inTime <= $startDateTime) {
-                return 0; // On time or early
-            }
-
-            $interval = $startDateTime->diff($inTime);
-            return $interval->h * 60 + $interval->i;
-        } catch (\Exception $e) {
-            return 0;
-        }
+        return $this->attendanceModel->markAbsent($employee_id, $absence_date, $notes);
     }
 
     /**
@@ -239,29 +144,26 @@ class EnhancedAbsenceDetector
      */
     private function isWorkingDay($date)
     {
-        // Check if weekend
         $dayOfWeek = date('w', strtotime($date));
-        if ($dayOfWeek == 0 || $dayOfWeek == 6) { // Sunday or Saturday
+        if ($dayOfWeek == 0) { // Sunday
             return false;
         }
 
-        // Check if standard holiday
         try {
             HolidayHelper::init($this->conn);
             if (HolidayHelper::isHoliday($date)) {
                 return false;
             }
         } catch (\Exception $e) {
-            // If holiday check fails, assume it's a working day
+            // assume working day on error
         }
 
-        // Check if unexpected/emergency holiday (municipal, state crisis, etc.)
         try {
-            if ($this->unexpectedHolidayModel->isUnexpectedHoliday($date)) {
-                return false; // Skip detection - it's an unexpected holiday
+            if ($this->unexpectedHolidayModel && method_exists($this->unexpectedHolidayModel, 'isUnexpectedHoliday') && $this->unexpectedHolidayModel->isUnexpectedHoliday($date)) {
+                return false;
             }
         } catch (\Exception $e) {
-            // If check fails, assume it's a working day
+            // assume working day on error
         }
 
         return true;
@@ -269,23 +171,18 @@ class EnhancedAbsenceDetector
 
     /**
      * Get today's attendance summary (for dashboard)
-     * Includes auto-detected absences and late arrivals
      */
     public function getTodayAttendanceSummary()
     {
         $today = date('Y-m-d');
-        
         $query = "SELECT 
-                    COUNT(*) as total_employees,
-                    SUM(CASE WHEN status = 'PRESENT' THEN 1 ELSE 0 END) as present_count,
-                    SUM(CASE WHEN status = 'LATE' THEN 1 ELSE 0 END) as late_count,
-                    SUM(CASE WHEN status = 'ABSENT' THEN 1 ELSE 0 END) as absent_count,
-                    SUM(CASE WHEN status = 'HOLIDAY' THEN 1 ELSE 0 END) as holiday_count,
-                    SUM(CASE WHEN status = 'LEAVE' THEN 1 ELSE 0 END) as leave_count
-                  FROM {$this->attendance_table} a
-                  JOIN {$this->employees_table} e ON a.employee_id = e.employee_id
-                  WHERE a.attendance_date = :today
-                  AND e.employment_status = 'Active'";
+                    COUNT(DISTINCT e.employee_id) as total_employees,
+                    SUM(CASE WHEN a.status = 'PRESENT' THEN 1 ELSE 0 END) as present_count,
+                    SUM(CASE WHEN a.status = 'LATE' THEN 1 ELSE 0 END) as late_count,
+                    SUM(CASE WHEN a.status = 'ABSENT' THEN 1 ELSE 0 END) as absent_count
+                  FROM {$this->employees_table} e
+                  LEFT JOIN {$this->attendance_table} a ON e.employee_id = a.employee_id AND a.attendance_date = :today
+                  WHERE e.employment_status = 'Active'";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':today', $today);
@@ -294,27 +191,20 @@ class EnhancedAbsenceDetector
         return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Get today's all employees with status (for dashboard)
-     */
     public function getTodayAllEmployeesWithStatus($limit = 100, $offset = 0)
     {
         $today = date('Y-m-d');
-
         $query = "SELECT 
                     COALESCE(a.attendance_id, 0) as attendance_id,
                     e.employee_id,
                     e.full_name,
                     e.department,
-                    e.position,
                     COALESCE(a.time_in, '-') as time_in,
                     COALESCE(a.time_out, '-') as time_out,
                     COALESCE(a.status, 'ABSENT') as status,
-                    COALESCE(a.notes, '') as notes,
                     a.attendance_date
                   FROM {$this->employees_table} e
-                  LEFT JOIN {$this->attendance_table} a ON e.employee_id = a.employee_id 
-                    AND a.attendance_date = :today
+                  LEFT JOIN {$this->attendance_table} a ON e.employee_id = a.employee_id AND a.attendance_date = :today
                   WHERE e.employment_status = 'Active'
                   ORDER BY e.full_name
                   LIMIT :limit OFFSET :offset";

@@ -714,6 +714,8 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
                                 <th>Department</th>
                                 <th>Date</th>
                                 <th>Type</th>
+                                <th>Late Hours</th>
+                                <th>Working Hours</th>
                                 <th>Reason</th>
                                 <th>Submitted</th>
                                 <th>Actions</th>
@@ -729,6 +731,12 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
                                     <span class="badge <?php echo $record['type'] === 'ABSENT' ? 'badge-absent' : 'badge-late'; ?>">
                                         <?php echo $record['type']; ?>
                                     </span>
+                                </td>
+                                <td>
+                                    <?php echo isset($record['late_minutes']) && $record['late_minutes'] !== null ? number_format((float)$record['late_minutes'] / 60, 2) . 'h' : 'N/A'; ?>
+                                </td>
+                                <td>
+                                    <?php echo isset($record['total_hours_worked']) && $record['total_hours_worked'] !== null ? number_format((float)$record['total_hours_worked'], 2) . 'h' : 'N/A'; ?>
                                 </td>
                                 <td>
                                     <?php echo htmlspecialchars(substr($record['reason'] ?? '', 0, 30)); ?>
@@ -810,6 +818,30 @@ $summaryStats = $absenceLateMgmt->getSummaryStats(['start_date' => $filters['sta
                             <div class="form-group">
                                 <label>Reason</label>
                                 <p>${htmlEscape(record.reason || 'Not provided')}</p>
+                            </div>
+                            <div class="form-group">
+                                <label>Late Hours</label>
+                                <p>${record.late_minutes !== null ? `${(parseFloat(record.late_minutes) / 60).toFixed(2)}h` : 'N/A'}</p>
+                            </div>
+                            <div class="form-group">
+                                <label>Time In</label>
+                                <p>${record.time_in ? new Date(record.time_in).toLocaleString() : 'N/A'}</p>
+                            </div>
+                            <div class="form-group">
+                                <label>Time Out</label>
+                                <p>${record.time_out ? new Date(record.time_out).toLocaleString() : 'N/A'}</p>
+                            </div>
+                            <div class="form-group">
+                                <label>Working Hours</label>
+                                <p>${record.total_hours_worked !== null ? `${parseFloat(record.total_hours_worked).toFixed(2)}h` : 'N/A'}</p>
+                            </div>
+                            <div class="form-group">
+                                <label>Regular Hours</label>
+                                <p>${record.regular_hours !== null ? `${parseFloat(record.regular_hours).toFixed(2)}h` : 'N/A'}</p>
+                            </div>
+                            <div class="form-group">
+                                <label>Overtime Hours</label>
+                                <p>${record.overtime_hours !== null ? `${parseFloat(record.overtime_hours).toFixed(2)}h` : 'N/A'}</p>
                             </div>
                             <div class="form-group">
                                 <label>Notes</label>

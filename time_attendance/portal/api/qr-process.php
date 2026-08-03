@@ -127,6 +127,11 @@ try {
     ]);
     $attendance_record = $stmt->fetch();
 
+    if ($attendance_record && empty($attendance_record['time_in']) && isset($attendance_record['status']) && $attendance_record['status'] === 'ABSENT') {
+        http_response_code(403);
+        throw new Exception('Your attendance has already been marked ABSENT for today. Please contact HR.');
+    }
+
     if ($attendance_record && $attendance_record['time_in'] && !$attendance_record['time_out']) {
         $timeInTimestamp = strtotime($attendance_record['time_in']);
         $elapsedSeconds = strtotime($now) - $timeInTimestamp;

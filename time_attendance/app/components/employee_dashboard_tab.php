@@ -178,6 +178,7 @@ try {
                     <h5 class="card-title m-0">
                         <i class="fas fa-clock"></i> Time In / Time Out
                     </h5>
+                    
                 </div>
                 <div class="card-body">
                     <div class="row text-center">
