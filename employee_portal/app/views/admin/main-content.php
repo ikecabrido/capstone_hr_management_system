@@ -1,6 +1,5 @@
 <div class="w-full ml-16">
     <div class="content-wrapper p-4 w-full">
-
         <!-- Header -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>

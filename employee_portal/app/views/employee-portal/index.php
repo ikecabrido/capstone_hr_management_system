@@ -32,7 +32,11 @@ $content = $content ?? __DIR__ . '/main-content.php';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 
-<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed">
+<body
+    class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed"
+    data-logout-url="<?= !empty($_SESSION['user']['is_admin'])
+        ? 'index.php?url=auth-admin-logout'
+        : 'index.php?url=auth-logout'; ?>">
 
     <div class="wrapper">
 

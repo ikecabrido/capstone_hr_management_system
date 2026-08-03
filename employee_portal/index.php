@@ -15,6 +15,7 @@ if (isset($_SESSION['user']) && !isset($_SESSION['user_id'])) {
     $_SESSION['username'] = $_SESSION['user']['username'];
 }
 
+require 'app/core/SessionHelper.php';
 require 'app/controllers/AuthController.php';
 require 'app/controllers/ProfileController.php';
 require 'app/controllers/PayslipController.php';
@@ -44,7 +45,7 @@ require 'app/controllers/LearningAndDevelopmentController.php';
 */
 $url = $_GET['url'] ?? 'auth-index';
 
-
+SessionHelper::checkTimeout();
 /*
 |--------------------------------------------------------------------------
 | Authentication Routes

@@ -28,7 +28,7 @@
                     <button
                         type="button"
                         class="btn btn-primary btn-sm ml-1"
-                        onclick="copyLink('<?= htmlspecialchars($meeting['meeting_link'], ENT_QUOTES); ?>')">
+                        onclick="copyMeetingLink('<?= htmlspecialchars($meeting['meeting_link'], ENT_QUOTES); ?>')">
                         <i class="fas fa-copy me-1"></i> Copy
                     </button>
                     <button class="btn btn-warning btn-sm ml-1"
