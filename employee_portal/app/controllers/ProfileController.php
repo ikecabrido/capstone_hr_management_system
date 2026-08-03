@@ -1,12 +1,15 @@
 <?php
+require_once __DIR__ . '/../models/Users.php';
 require_once __DIR__ . '/../models/Profile.php';
 require_once __DIR__ . '/../models/Employee.php';
 class ProfileController
 {
+    private $userModel;
     private $profileModel;
     private $employeeModel;
     public function __construct()
     {
+        $this->userModel = new Users();
         $this->profileModel = new Profile();
         $this->employeeModel = new Employee();
     }
@@ -15,6 +18,9 @@ class ProfileController
         $user_id = $_SESSION['user_id'] ?? null;
         $userInfos = $this->profileModel->findByUserId($user_id);
 
+        $user = $this->userModel->findById($user_id);
+        $employeeProfileInfo = $this->employeeModel->findByUserId($user_id);
+        
         $title = "Employee Profile";
         $content = __DIR__ . '/../views/profile/main-content.php';
         require __DIR__ . '/../views/employee-portal/index.php';

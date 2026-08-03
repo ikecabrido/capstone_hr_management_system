@@ -468,9 +468,13 @@ switch ($url) {
     case 'employee-hr-store-pending':
         (new ManageEmployeeController)->hrStorePending();
         break;
-        
+
     case 'employee-hr-update':
         (new ManageEmployeeController)->hrUpdate();
+        break;
+
+    case 'employee-profile-update':
+        (new ManageEmployeeController)->employeeProfileUpdate();
         break;
 
     /*

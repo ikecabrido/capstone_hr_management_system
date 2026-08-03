@@ -394,4 +394,49 @@ class Employee
             ':faculty_notes'       => $data['faculty_notes'],
         ]);
     }
+    public function updateProfile($data)
+    {
+        $sql = "UPDATE {$this->table} SET
+                first_name = :first_name,
+                middle_name = :middle_name,
+                last_name = :last_name,
+                suffix = :suffix,
+                gender = :gender,
+                birth_date = :birth_date,
+                birth_place = :birth_place,
+                civil_status = :civil_status,
+                citizenship = :citizenship,
+                religion = :religion,
+                mobile_no = :mobile_no,
+                phone_no = :phone_no,
+                current_address = :current_address,
+                permanent_address = :permanent_address,
+                credentials = :credentials,
+                graduate_level = :graduate_level,
+                profile_image = :profile_image
+            WHERE user_id = :user_id";
+
+        $stmt = $this->conn->prepare($sql);
+
+        return $stmt->execute([
+            ':first_name'        => $data['first_name'],
+            ':middle_name'       => $data['middle_name'],
+            ':last_name'         => $data['last_name'],
+            ':suffix'            => $data['suffix'],
+            ':gender'            => $data['gender'],
+            ':birth_date'        => $data['birth_date'],
+            ':birth_place'       => $data['birth_place'],
+            ':civil_status'      => $data['civil_status'],
+            ':citizenship'       => $data['citizenship'],
+            ':religion'          => $data['religion'],
+            ':mobile_no'         => $data['mobile_no'],
+            ':phone_no'          => $data['phone_no'],
+            ':current_address'   => $data['current_address'],
+            ':permanent_address' => $data['permanent_address'],
+            ':credentials'       => $data['credentials'],
+            ':graduate_level'    => $data['graduate_level'],
+            ':profile_image'     => $data['profile_image'],
+            ':user_id'           => $data['user_id'],
+        ]);
+    }
 }

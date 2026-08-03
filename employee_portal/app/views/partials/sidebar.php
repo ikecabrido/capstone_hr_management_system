@@ -9,9 +9,12 @@
         <!-- Sidebar user panel -->
         <div class="user-panel mt-3 pb-3 mb-3 d-flex">
             <div class="image">
-                <img src="<?= $base ?>/employee_portal/public/assets/image/default_user_icon.webp"
+                <img
+                    src="<?= !empty($employeeProfileInfo['profile_image'])
+                                ? $base . '/employee_portal/public/uploads/profile/' . htmlspecialchars($employeeProfileInfo['profile_image'])
+                                : $base . '/employee_portal/public/assets/image/default_user_icon.webp'; ?>"
                     class="img-circle elevation-2"
-                    alt="User Image" />
+                    alt="User Image">
             </div>
 
             <div class="info">

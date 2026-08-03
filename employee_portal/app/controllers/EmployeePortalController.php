@@ -55,6 +55,7 @@ class EmployeePortalController
 
         $user_id = Session::get('user_id');
         $employee = $this->authController->checkUserEmployee($user_id);
+        $employeeProfileInfo = $this->employeeModel->findByUserId($user_id);
 
         $employee_id = $employee['employee_id'];
 

@@ -372,4 +372,152 @@ class ManageEmployeeController
 
         Helper::redirect('index.php?url=employee-hr-index');
     }
+    public function employeeProfileUpdate()
+    {
+        try {
+
+            /*
+        |--------------------------------------------------------------------------
+        | Validation
+        |--------------------------------------------------------------------------
+        */
+
+            $firstName = trim($_POST['first_name'] ?? '');
+            $middleName = trim($_POST['middle_name'] ?? '');
+            $lastName = trim($_POST['last_name'] ?? '');
+            $suffix = trim($_POST['suffix'] ?? '');
+            $birthDate = $_POST['birth_date'] ?? '';
+
+            if ($firstName === '' || $lastName === '' || $birthDate === '') {
+                throw new Exception("First Name, Last Name, and Birth Date are required.");
+            }
+
+            $namePattern = "/^[a-zA-Z\s'-]+$/";
+
+            if (!preg_match($namePattern, $firstName)) {
+                throw new Exception("First Name contains invalid characters.");
+            }
+
+            if ($middleName !== '' && !preg_match($namePattern, $middleName)) {
+                throw new Exception("Middle Name contains invalid characters.");
+            }
+
+            if (!preg_match($namePattern, $lastName)) {
+                throw new Exception("Last Name contains invalid characters.");
+            }
+
+            if ($suffix !== '' && !preg_match($namePattern, $suffix)) {
+                throw new Exception("Suffix contains invalid characters.");
+            }
+
+            $birth = new DateTime($birthDate);
+            $today = new DateTime();
+
+            if ($today->diff($birth)->y < 18) {
+                throw new Exception("Employee must be at least 18 years old.");
+            }
+
+            /*
+        |--------------------------------------------------------------------------
+        | Existing Employee
+        |--------------------------------------------------------------------------
+        */
+
+            $employee = $this->employeeModel->findByUserId($_POST['user_id']);
+
+            if (!$employee) {
+                throw new Exception("Employee profile not found.");
+            }
+
+            /*
+        |--------------------------------------------------------------------------
+        | Prepare Data
+        |--------------------------------------------------------------------------
+        */
+
+            $data = [
+                'user_id'           => $_POST['user_id'],
+                'first_name'        => $firstName,
+                'middle_name'       => $middleName ?: null,
+                'last_name'         => $lastName,
+                'suffix'            => $suffix ?: null,
+                'gender'            => $_POST['gender'] ?: null,
+                'birth_date'        => $birthDate,
+                'birth_place'       => trim($_POST['birth_place']) ?: null,
+                'civil_status'      => $_POST['civil_status'] ?: null,
+                'citizenship'       => trim($_POST['citizenship']) ?: null,
+                'religion'          => $_POST['religion'] ?: null,
+                'mobile_no'         => trim($_POST['mobile_no']) ?: null,
+                'phone_no'          => trim($_POST['phone_no']) ?: null,
+                'current_address'   => trim($_POST['current_address']) ?: null,
+                'permanent_address' => trim($_POST['permanent_address']) ?: null,
+                'credentials'       => trim($_POST['credentials']) ?: null,
+                'graduate_level'    => $_POST['graduate_level'] ?: null,
+                'profile_image'     => $employee['profile_image'] // keep existing image
+            ];
+
+            /*
+|--------------------------------------------------------------------------
+| Upload New Image
+|--------------------------------------------------------------------------
+*/
+
+            if (!empty($_FILES['profile_image']['name'])) {
+
+                $allowed = ['jpg', 'jpeg', 'png', 'webp'];
+
+                $extension = strtolower(
+                    pathinfo($_FILES['profile_image']['name'], PATHINFO_EXTENSION)
+                );
+
+                if (!in_array($extension, $allowed)) {
+                    throw new Exception("Only JPG, JPEG, PNG, and WEBP images are allowed.");
+                }
+
+                $filename = uniqid('employee_') . '.' . $extension;
+
+                $uploadDir = __DIR__ . '/../../public/uploads/profile/';
+
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0777, true);
+                }
+
+                $destination = $uploadDir . $filename;
+
+                if (!move_uploaded_file($_FILES['profile_image']['tmp_name'], $destination)) {
+                    throw new Exception("Failed to upload profile image.");
+                }
+
+                // Delete old image
+                if (!empty($employee['profile_image'])) {
+
+                    $oldImage = $uploadDir . $employee['profile_image'];
+
+                    if (file_exists($oldImage)) {
+                        unlink($oldImage);
+                    }
+                }
+
+                $data['profile_image'] = $filename;
+            }
+
+            /*
+        |--------------------------------------------------------------------------
+        | Update
+        |--------------------------------------------------------------------------
+        */
+
+            if (!$this->employeeModel->updateProfile($data)) {
+                throw new Exception("Failed to update employee profile.");
+            }
+
+            $_SESSION['success'] = "Employee profile updated successfully.";
+        } catch (Exception $e) {
+
+            $_SESSION['error'] = $e->getMessage();
+            error_log($e->getMessage());
+        }
+
+        Helper::redirect('index.php?url=user-profile');
+    }
 }
