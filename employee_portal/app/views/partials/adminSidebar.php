@@ -110,13 +110,19 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="/capstone_hr_management_system/employee_portal/index.php?url=employee-hr-index" class="nav-link">
+                        <i class="fas fa-user-tie nav-icon"></i>
+                        <p>Employee Management</p>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="/capstone_hr_management_system/employee_portal/index.php?url=admin-resignation-request" class="nav-link d-flex align-items-center">
                         <i class="fas fa-user-minus nav-icon mr-3"></i>
                         <p>Resignation Request <br> Management</p>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="/capstone_hr_management_system/employee_portal/index.php?url=auth-logout" class="nav-link">
+                    <a href="/capstone_hr_management_system/employee_portal/index.php?url=auth-admin-logout" class="nav-link">
                         <i class="nav-icon fas fa-sign-out-alt"></i>
                         <p>Logout</p>
                     </a>

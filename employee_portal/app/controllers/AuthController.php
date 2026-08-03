@@ -101,6 +101,47 @@ class AuthController
         Helper::redirect('index.php');
         exit;
     }
+    public function adminLogout()
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            Session::start();
+        }
+
+        $user_id = $_SESSION['user_id'] ?? null;
+
+        if (!empty($user_id)) {
+            $this->auditLog->log(
+                'ADMIN LOGOUT',
+                $user_id,
+                null,
+                null,
+                [],
+                'SUCCESS'
+            );
+        }
+
+        $_SESSION = [];
+
+        if (ini_get("session.use_cookies")) {
+
+            $params = session_get_cookie_params();
+
+            setcookie(
+                session_name(),
+                '',
+                time() - 42000,
+                $params['path'],
+                $params['domain'],
+                $params['secure'],
+                $params['httponly']
+            );
+        }
+
+        session_destroy();
+
+        header("Location: http://localhost/capstone_hr_management_system/login_form.php");
+        exit;
+    }
     public function index()
     {
         require __DIR__ . '/../views/auth/login.php';
@@ -369,7 +410,6 @@ class AuthController
 
         require __DIR__ . '/../views/auth/index.php';
     }
-
     public function updatePassword()
     {
         Session::start();

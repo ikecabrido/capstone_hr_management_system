@@ -66,6 +66,10 @@ switch ($url) {
         (new AuthController)->logout();
         break;
 
+    case 'auth-admin-logout':
+        (new AuthController)->adminLogout();
+        break;
+
     /*
 |--------------------------------------------------------------------------
 | Employee and Admin Documents Routes
@@ -446,6 +450,26 @@ switch ($url) {
 
     case 'admin-employee-store':
         (new ManageEmployeeController)->store();
+        break;
+
+    case 'employee-hr-create':
+        (new ManageEmployeeController)->hrCreate();
+        break;
+
+    case 'employee-hr-store':
+        (new ManageEmployeeController)->hrStore();
+        break;
+
+    case 'employee-hr-index':
+        (new ManageEmployeeController)->adminIndex();
+        break;
+
+    case 'employee-hr-store-pending':
+        (new ManageEmployeeController)->hrStorePending();
+        break;
+        
+    case 'employee-hr-update':
+        (new ManageEmployeeController)->hrUpdate();
         break;
 
     /*

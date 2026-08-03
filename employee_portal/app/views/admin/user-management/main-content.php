@@ -134,37 +134,74 @@
 
                                             </button>
 
+
                                             <!-- Set as Admin -->
                                             <?php $isAdmin = ((int)$user['is_admin'] === 1); ?>
 
-                                            <form action="index.php?url=admin-toggle-user" method="POST" class="d-inline">
-                                                <input type="hidden" name="id" value="<?= $user['id']; ?>">
+                                            <form action="index.php?url=admin-toggle-user"
+                                                method="POST"
+                                                class="d-inline">
+
+                                                <input type="hidden"
+                                                    name="id"
+                                                    value="<?= $user['id']; ?>">
 
                                                 <button
                                                     type="submit"
-                                                    class="btn btn-sm <?= $isAdmin ? 'btn-outline-secondary' : 'btn-outline-success'; ?>"
-                                                    onclick="return confirm('<?= $isAdmin
-                                                                                    ? 'Remove administrator privileges from this user?'
-                                                                                    : 'Grant administrator privileges to this user?'; ?>')">
+                                                    class="btn btn-sm <?= $isAdmin ? 'btn-outline-secondary' : 'btn-outline-success'; ?>">
+
                                                     <i class="fas <?= $isAdmin ? 'fa-user-shield' : 'fa-crown'; ?>"></i>
+
                                                     <?= $isAdmin ? 'Remove Admin' : 'Set as Admin'; ?>
+
                                                 </button>
+
                                             </form>
+
+
+                                            <!-- Employee Profile -->
                                             <?php if (empty($user['employee_id'])): ?>
+
                                                 <a
                                                     href="index.php?url=employee-create&user_id=<?= $user['id']; ?>"
-                                                    class="btn btn-sm btn-outline-primary"
-                                                    title="Complete Employee Profile">
+                                                    class="btn btn-sm btn-outline-primary">
 
-                                                    <i class="fas fa-id-card ml-1"></i>
+                                                    <i class="fas fa-id-card me-1"></i>
                                                     Complete Profile
+
                                                 </a>
+
                                             <?php else: ?>
+
                                                 <span class="btn btn-sm btn-outline-primary">
-                                                    <i class="fas fa-check-circle ml-1"></i>
+
+                                                    <i class="fas fa-check-circle me-1"></i>
                                                     Employee Created
+
                                                 </span>
+
+                                                <?php if (empty($ifEmployeeExist['employee_code'])): ?>
+
+                                                    <a
+                                                        href="index.php?url=employee-hr-create&employee_id=<?= $user['employee_id']; ?>"
+                                                        class="btn btn-sm btn-outline-success">
+
+                                                        <i class="fas fa-briefcase me-1"></i>
+                                                        Fill Employment Data
+
+                                                    </a>
+
+                                                <?php else: ?>
+
+                                                    <span class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-check-circle me-1"></i>
+                                                        Employee HR Data Created
+                                                    </span>
+
+                                                <?php endif; ?>
                                             <?php endif; ?>
+
+
                                         </td>
                                     </tr>
 

@@ -1,19 +1,42 @@
 <?php
 require_once __DIR__ . '/../models/Users.php';
 require_once __DIR__ . '/../models/Employee.php';
+require_once __DIR__ . '/../models/Departments.php';
 
 class ManageEmployeeController
 {
     private $userModel;
     private $employeeModel;
+    private $departmentModel;
 
     public function __construct()
     {
         $this->userModel = new Users();
         $this->employeeModel = new Employee();
+        $this->departmentModel = new Departments();
     }
-    public function index() {}
+    public function adminIndex()
+    {
+        $currentUserId = $_SESSION['user_id'];
 
+        $departmentHRInfos = $this->departmentModel->getDepartments();
+        $positionHRInfos = $this->employeeModel->getPositions();
+
+        $existingEmployees = $this->employeeModel->all();
+        $existingUsers = $this->userModel->filterSelf($currentUserId);
+
+        $statistics = $this->calculateEmployeeStatistics($existingEmployees);
+
+        $totalEmployees  = $statistics['totalEmployees'];
+        $activeEmployees = $statistics['activeEmployees'];
+        $pendingProfiles = $statistics['pendingProfiles'];
+        $newEmployees    = $statistics['newEmployees'];
+
+        $title = "Employee Management";
+        $content = __DIR__ . '/../views/admin/employee-management/main-content.php';
+
+        require __DIR__ . '/../views/admin/index.php';
+    }
     public function createProfile()
     {
         $userId = filter_input(INPUT_GET, 'user_id', FILTER_VALIDATE_INT);
@@ -155,5 +178,198 @@ class ManageEmployeeController
         }
 
         Helper::redirect('index.php?url=admin-manage-user');
+    }
+    public function hrCreate()
+    {
+        $employeeId = filter_input(INPUT_GET, 'employee_id', FILTER_VALIDATE_INT);
+
+        if (!$employeeId) {
+            $_SESSION['error'] = "Invalid employee.";
+            Helper::redirect('index.php?url=admin-manage-user');
+            exit;
+        }
+
+        $employeeHRInfo = $this->employeeModel->find($employeeId);
+
+        if (!$employeeHRInfo) {
+            $_SESSION['error'] = "Employee not found.";
+            Helper::redirect('index.php?url=admin-manage-user');
+            exit;
+        }
+
+
+        // Dropdown data
+        $departmentHRInfos = $this->departmentModel->getDepartments();
+        $positionHRInfos = $this->employeeModel->getPositions();
+
+        $title = "Fill Employment Information";
+        $content = __DIR__ . '/../views/admin/employee/hr-create.php';
+
+        require __DIR__ . '/../views/admin/index.php';
+    }
+    public function hrStore()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            Helper::redirect('index.php?url=admin-manage-user');
+            exit;
+        }
+
+        $data = [
+            'employee_id'         => (int) ($_POST['employee_id'] ?? 0),
+            'employee_code'       => trim(("EMP-" . $_POST['employee_code']) ?? ''),
+            'department_id'       => !empty($_POST['department_id']) ? (int) $_POST['department_id'] : null,
+            'position_id'         => !empty($_POST['position_id']) ? (int) $_POST['position_id'] : null,
+            'position_title_enum' => !empty($_POST['position_title_enum']) ? trim($_POST['position_title_enum']) : null,
+            'employment_status'   => trim($_POST['employment_status'] ?? ''),
+            'employment_type'     => trim($_POST['employment_type'] ?? ''),
+            'hire_date'           => trim($_POST['hire_date'] ?? ''),
+            'regular_date'        => !empty($_POST['regular_date']) ? $_POST['regular_date'] : null,
+            'unit_load'           => !empty($_POST['unit_load']) ? (int) $_POST['unit_load'] : null,
+            'faculty_notes'       => !empty($_POST['faculty_notes']) ? trim($_POST['faculty_notes']) : null,
+        ];
+
+        if ($this->employeeModel->hrStore($data)) {
+            $_SESSION['success'] = 'Employment information has been saved successfully.';
+        } else {
+            $_SESSION['error'] = 'Failed to save employment information.';
+        }
+
+        Helper::redirect('index.php?url=admin-manage-user');
+        exit;
+    }
+    private function calculateEmployeeStatistics(array $employees): array
+    {
+        $statistics = [
+            'totalEmployees'  => count($employees),
+            'activeEmployees' => 0,
+            'pendingProfiles' => 0,
+            'newEmployees'    => 0,
+        ];
+
+        foreach ($employees as $employee) {
+
+            // Active Employees
+            if (
+                !empty($employee['employment_status']) &&
+                in_array($employee['employment_status'], [
+                    'Regular',
+                    'Probationary',
+                    'Contractual'
+                ])
+            ) {
+                $statistics['activeEmployees']++;
+            }
+
+            // HR Profile Complete
+            $isComplete =
+                !empty($employee['employee_code']) &&
+                !empty($employee['department_id']) &&
+                !empty($employee['position_id']) &&
+                !empty($employee['position_title_enum']) &&
+                !empty($employee['employment_status']) &&
+                !empty($employee['employment_type']) &&
+                !empty($employee['hire_date']);
+
+            if (!$isComplete) {
+                $statistics['pendingProfiles']++;
+            }
+
+            // New Hires This Month
+            if (!empty($employee['hire_date'])) {
+
+                $hireDate = strtotime($employee['hire_date']);
+
+                if (
+                    date('Y', $hireDate) == date('Y') &&
+                    date('m', $hireDate) == date('m')
+                ) {
+                    $statistics['newEmployees']++;
+                }
+            }
+        }
+
+        return $statistics;
+    }
+    public function hrStorePending()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            Helper::redirect('index.php?url=employee-management');
+            exit;
+        }
+
+        $data = [
+            'employee_id'         => (int) ($_POST['employee_id'] ?? 0),
+            'employee_code'       => !empty($_POST['employee_code']) ? 'EMP-' . trim($_POST['employee_code']) : null,
+            'department_id'       => !empty($_POST['department_id']) ? (int) $_POST['department_id'] : null,
+            'position_id'         => !empty($_POST['position_id']) ? (int) $_POST['position_id'] : null,
+            'position_title_enum' => !empty($_POST['position_title_enum']) ? trim($_POST['position_title_enum']) : null,
+            'employment_status'   => !empty($_POST['employment_status']) ? trim($_POST['employment_status']) : null,
+            'employment_type'     => !empty($_POST['employment_type']) ? trim($_POST['employment_type']) : null,
+            'hire_date'           => !empty($_POST['hire_date']) ? $_POST['hire_date'] : null,
+            'regular_date'        => !empty($_POST['regular_date']) ? $_POST['regular_date'] : null,
+            'unit_load'           => !empty($_POST['unit_load']) ? (int) $_POST['unit_load'] : null,
+            'faculty_notes'       => !empty($_POST['faculty_notes']) ? trim($_POST['faculty_notes']) : null,
+        ];
+
+        if (empty($data['employee_id'])) {
+            $_SESSION['error'] = 'Invalid employee.';
+            Helper::redirect('index.php?url=employee-management');
+            exit;
+        }
+
+        if ($this->employeeModel->hrStorePending($data)) {
+
+            $_SESSION['success'] = 'Employment information updated successfully.';
+        } else {
+
+            $_SESSION['error'] = 'No changes were made or update failed.';
+        }
+
+        Helper::redirect('index.php?url=employee-hr-index');
+    }
+    public function hrUpdate()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            Helper::redirect('index.php?url=admin-manage-user');
+            exit;
+        }
+
+        $data = [
+            'employee_id'         => (int) ($_POST['employee_id'] ?? 0),
+            'employee_code'       => !empty($_POST['employee_code']) ? trim('EMP-' . $_POST['employee_code']) : null,
+            'department_id'       => !empty($_POST['department_id']) ? (int) $_POST['department_id'] : null,
+            'position_id'         => !empty($_POST['position_id']) ? (int) $_POST['position_id'] : null,
+            'position_title_enum' => !empty($_POST['position_title_enum']) ? trim($_POST['position_title_enum']) : null,
+            'employment_status'   => !empty($_POST['employment_status']) ? trim($_POST['employment_status']) : null,
+            'employment_type'     => !empty($_POST['employment_type']) ? trim($_POST['employment_type']) : null,
+            'hire_date'           => !empty($_POST['hire_date']) ? $_POST['hire_date'] : null,
+            'regular_date'        => !empty($_POST['regular_date']) ? $_POST['regular_date'] : null,
+            'unit_load'           => $_POST['unit_load'] !== '' ? (int) $_POST['unit_load'] : null,
+            'faculty_notes'       => !empty($_POST['faculty_notes']) ? trim($_POST['faculty_notes']) : null,
+        ];
+
+        $errors = [];
+
+        if ($data['employee_id'] <= 0) {
+            $errors[] = 'Invalid employee.';
+        }
+
+        if (!$this->employeeModel->find($data['employee_id'])) {
+            $errors[] = 'Employee record not found.';
+        }
+
+        if (!empty($errors)) {
+            $_SESSION['error'] = implode('<br>', $errors);
+            Helper::redirect('index.php?url=employee-hr-index');
+            exit;
+        }
+
+        if ($this->employeeModel->hrUpdate($data)) {
+            $_SESSION['success'] = 'Employment information updated successfully.';
+        } else {
+            $_SESSION['error'] = 'Failed to update employment information.';
+        }
+
+        Helper::redirect('index.php?url=employee-hr-index');
     }
 }

@@ -59,4 +59,20 @@ class Departments
         $stmt->bindParam(':id', $departmentId, PDO::PARAM_INT);
         return $stmt->execute();
     }
+
+    public function getDepartments()
+    {
+        $query = "
+        SELECT 
+            id,
+            department_name
+        FROM departments
+        ORDER BY department_name ASC
+    ";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

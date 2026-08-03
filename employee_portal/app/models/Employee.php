@@ -189,7 +189,7 @@ class Employee
     public function createProfile($data)
     {
         $sql = "
-        INSERT INTO employees
+        INSERT INTO {$this->table}
         (
             user_id,
             first_name,
@@ -257,6 +257,141 @@ class Employee
             ':credentials'       => $data['credentials'],
             ':graduate_level'    => $data['graduate_level'],
             ':created_by'        => $data['created_by']
+        ]);
+    }
+    public function getEmployeeListForHR()
+    {
+        $sql = "
+        SELECT 
+            e.*,
+            u.username,
+            u.email
+        FROM {$this->table} e
+        LEFT JOIN users u
+            ON u.id = e.user_id
+        ORDER BY e.created_at DESC
+    ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    public function getPositions()
+    {
+        $query = "
+        SELECT 
+            id,
+            title
+        FROM positions
+        ORDER BY id ASC
+    ";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    public function hrStore(array $data)
+    {
+        $sql = "
+        UPDATE {$this->table}
+        SET
+            employee_code = :employee_code,
+            department_id = :department_id,
+            position_id = :position_id,
+            position_title_enum = :position_title_enum,
+            employment_status = :employment_status,
+            employment_type = :employment_type,
+            hire_date = :hire_date,
+            regular_date = :regular_date,
+            unit_load = :unit_load,
+            faculty_notes = :faculty_notes
+        WHERE employee_id = :employee_id
+    ";
+
+        $stmt = $this->conn->prepare($sql);
+
+        return $stmt->execute([
+            ':employee_id'         => (int) $data['employee_id'],
+            ':employee_code'       => $data['employee_code'],
+            ':department_id'       => !empty($data['department_id']) ? $data['department_id'] : null,
+            ':position_id'         => !empty($data['position_id']) ? $data['position_id'] : null,
+            ':position_title_enum' => !empty($data['position_title_enum']) ? $data['position_title_enum'] : null,
+            ':employment_status'   => $data['employment_status'],
+            ':employment_type'     => $data['employment_type'],
+            ':hire_date'           => $data['hire_date'],
+            ':regular_date'        => !empty($data['regular_date']) ? $data['regular_date'] : null,
+            ':unit_load'           => $data['unit_load'] !== '' ? $data['unit_load'] : null,
+            ':faculty_notes'       => !empty($data['faculty_notes']) ? $data['faculty_notes'] : null,
+        ]);
+    }
+    public function hrStorePending(array $data)
+    {
+        $sql = "
+        UPDATE {$this->table}
+        SET
+            employee_code = COALESCE(employee_code, :employee_code),
+            department_id = COALESCE(department_id, :department_id),
+            position_id = COALESCE(position_id, :position_id),
+            position_title_enum = COALESCE(position_title_enum, :position_title_enum),
+            employment_status = COALESCE(employment_status, :employment_status),
+            employment_type = COALESCE(employment_type, :employment_type),
+            hire_date = COALESCE(hire_date, :hire_date),
+            regular_date = COALESCE(regular_date, :regular_date),
+            unit_load = COALESCE(unit_load, :unit_load),
+            faculty_notes = COALESCE(faculty_notes, :faculty_notes)
+        WHERE employee_id = :employee_id
+    ";
+
+        $stmt = $this->conn->prepare($sql);
+
+        return $stmt->execute([
+            ':employee_id'         => $data['employee_id'],
+            ':employee_code'       => $data['employee_code'],
+            ':department_id'       => $data['department_id'],
+            ':position_id'         => $data['position_id'],
+            ':position_title_enum' => $data['position_title_enum'],
+            ':employment_status'   => $data['employment_status'],
+            ':employment_type'     => $data['employment_type'],
+            ':hire_date'           => $data['hire_date'],
+            ':regular_date'        => $data['regular_date'],
+            ':unit_load'           => $data['unit_load'],
+            ':faculty_notes'       => $data['faculty_notes'],
+        ]);
+    }
+    public function hrUpdate(array $data)
+    {
+        $sql = "
+        UPDATE {$this->table}
+        SET
+            employee_code = :employee_code,
+            department_id = :department_id,
+            position_id = :position_id,
+            position_title_enum = :position_title_enum,
+            employment_status = :employment_status,
+            employment_type = :employment_type,
+            hire_date = :hire_date,
+            regular_date = :regular_date,
+            unit_load = :unit_load,
+            faculty_notes = :faculty_notes
+        WHERE employee_id = :employee_id
+    ";
+
+        $stmt = $this->conn->prepare($sql);
+
+        return $stmt->execute([
+            ':employee_id'         => $data['employee_id'],
+            ':employee_code'       => $data['employee_code'],
+            ':department_id'       => $data['department_id'],
+            ':position_id'         => $data['position_id'],
+            ':position_title_enum' => $data['position_title_enum'],
+            ':employment_status'   => $data['employment_status'],
+            ':employment_type'     => $data['employment_type'],
+            ':hire_date'           => $data['hire_date'],
+            ':regular_date'        => $data['regular_date'],
+            ':unit_load'           => $data['unit_load'],
+            ':faculty_notes'       => $data['faculty_notes'],
         ]);
     }
 }

@@ -13,6 +13,7 @@ class ManageUserController
     public function adminIndex()
     {
         $currentUserId = $_SESSION['user_id'];
+        $ifEmployeeExist = $this->employeeModel->getByUserId($currentUserId);
         $users = $this->userModel->filterSelf($currentUserId);
 
         $title = "User Management";
