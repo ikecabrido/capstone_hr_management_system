@@ -365,6 +365,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
               </div>
             </div>
 
+            <!-- Key Metrics -->
+            <div class="row mt-4 dashboard-box-row">
+              <div class="dashboard-box-col">
+                <div class="small-box bg-primary">
+                  <div class="inner">
+                    <h3 id="total-exited">0</h3>
+                    <p>Total Exited (This Year)</p>
+                  </div>
+                  <div class="icon">
+                    <i class="fas fa-sign-out-alt"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="dashboard-box-col">
+                <div class="small-box bg-info">
+                  <div class="inner">
+                    <h3 id="avg-notice">0</h3>
+                    <p>Avg Notice Period (Days)</p>
+                  </div>
+                  <div class="icon">
+                    <i class="fas fa-calendar"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="dashboard-box-col">
+                <div class="small-box bg-success">
+                  <div class="inner">
+                    <h3 id="top-reason">--</h3>
+                    <p>Top Resignation Reason</p>
+                  </div>
+                  <div class="icon">
+                    <i class="fas fa-chart-pie"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="dashboard-box-col">
+                <div class="small-box bg-warning">
+                  <div class="inner">
+                    <h3 id="avg-interviews">0%</h3>
+                    <p>Interviews Completed</p>
+                  </div>
+                  <div class="icon">
+                    <i class="fas fa-percentage"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Charts Row -->
             <!-- Charts: top row reasons/status, bottom row trends (2 + 2) -->
             <div class="row mt-4">
@@ -429,98 +477,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
               </div>
             </div>
 
-            <!-- Recent Resignations -->
-            <div class="row mt-4">
-              <div class="col-lg-12">
-                <div class="card">
-                  <div class="card-header">
-                    <h3 class="card-title">Recent Resignations</h3>
-                    <div class="card-tools">
-                      <span class="badge badge-info" id="recent-count">0</span>
-                    </div>
-                  </div>
-                  <div class="card-body">
-                    <div class="table-responsive">
-                      <table id="recent-resignations-table" class="table table-bordered table-striped table-sm">
-                        <colgroup>
-                          <col style="width: 14%;">
-                          <col style="width: 11%;">
-                          <col style="width: 10%;">
-                          <col style="width: 15%;">
-                          <col style="width: 13%;">
-                          <col style="width: 13%;">
-                          <col style="width: 13%;">
-                          <col style="width: 11%;">
-                        </colgroup>
-                        <thead>
-                          <tr>
-                            <th>Employee</th>
-                            <th>Department</th>
-                            <th>Type</th>
-                            <th>Reason</th>
-                            <th>Notice Date</th>
-                            <th>Last Working Date</th>
-                            <th>Status</th>
-                            <th>Days Left</th>
-                          </tr>
-                        </thead>
-                        <tbody id="recent-resignations-tbody">
-                          <tr><td colspan="8" class="text-center text-muted">Loading...</td></tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Key Metrics -->
-            <div class="row mt-4 dashboard-box-row">
-              <div class="dashboard-box-col">
-                <div class="small-box bg-primary">
-                  <div class="inner">
-                    <h3 id="total-exited">0</h3>
-                    <p>Total Exited (This Year)</p>
-                  </div>
-                  <div class="icon">
-                    <i class="fas fa-sign-out-alt"></i>
-                  </div>
-                </div>
-              </div>
-              <div class="dashboard-box-col">
-                <div class="small-box bg-info">
-                  <div class="inner">
-                    <h3 id="avg-notice">0</h3>
-                    <p>Avg Notice Period (Days)</p>
-                  </div>
-                  <div class="icon">
-                    <i class="fas fa-calendar"></i>
-                  </div>
-                </div>
-              </div>
-              <div class="dashboard-box-col">
-                <div class="small-box bg-success">
-                  <div class="inner">
-                    <h3 id="top-reason">--</h3>
-                    <p>Top Resignation Reason</p>
-                  </div>
-                  <div class="icon">
-                    <i class="fas fa-chart-pie"></i>
-                  </div>
-                </div>
-              </div>
-              <div class="dashboard-box-col">
-                <div class="small-box bg-warning">
-                  <div class="inner">
-                    <h3 id="avg-interviews">0%</h3>
-                    <p>Interviews Completed</p>
-                  </div>
-                  <div class="icon">
-                    <i class="fas fa-percentage"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
           <!-- Resignations Section -->

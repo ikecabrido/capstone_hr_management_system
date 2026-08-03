@@ -3102,7 +3102,6 @@ function loadDashboardData() {
     // resignation type chart removed
     loadTerminationTrendChart();
     loadTerminationStatusChart();
-    loadRecentResignations();
     loadDashboardMetrics();
 }
 
