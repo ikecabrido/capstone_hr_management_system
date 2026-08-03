@@ -549,8 +549,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                     <option value="all">All</option>
                   </select>
                 </div>
-                <div class="card-tools d-flex align-items-center">
-                  <button type="button" class="btn btn-warning btn-sm mr-2" onclick="toggleArchivedResignations()">
+                  <div class="card-tools d-flex align-items-center">
+                  <button id="open-archived-resignations" type="button" class="btn btn-warning btn-sm mr-2" onclick="openArchivedResignationsModal()">
                     <i class="fas fa-archive"></i> Archive
                   </button>
                 </div>
@@ -658,8 +658,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                   </select>
                 </div>
                 <div class="card-tools d-flex align-items-center">
-                  <button type="button" class="btn btn-success btn-sm" onclick="showTerminationModal()">
+                  <button type="button" class="btn btn-success btn-sm mr-2" onclick="showTerminationModal()">
                     <i class="fas fa-plus"></i> New Termination
+                  </button>
+                  <button id="open-archived-terminations" type="button" class="btn btn-warning btn-sm" onclick="openArchivedTerminationsModal()">
+                    <i class="fas fa-archive"></i> Archive
                   </button>
                 </div>
               </div>

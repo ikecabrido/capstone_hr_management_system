@@ -97,6 +97,11 @@ class TerminationController extends ExitManagementController
         return $this->terminationModel->getTerminations($status, $page, $limit, $search);
     }
 
+    public function getArchivedTerminations(int $page = 1, int $limit = 10, string $search = ''): array
+    {
+        return $this->terminationModel->getArchivedTerminations($page, $limit, $search);
+    }
+
     public function checkEmployeeEligibility(string $employeeId): array
     {
         try {
@@ -192,6 +197,11 @@ class TerminationController extends ExitManagementController
                 return $this->archiveTermination($data['termination_id'] ?? 0);
             case 'unarchive_termination':
                 return $this->unarchiveTermination($data['termination_id'] ?? 0);
+            case 'get_archived_terminations':
+                $page = (int)($data['page'] ?? 1);
+                $limit = (int)($data['limit'] ?? 10);
+                $search = $data['search'] ?? '';
+                return $this->getArchivedTerminations($page, $limit, $search);
             case 'get_termination_details':
                 return $this->getTerminationDetails($data['termination_id'] ?? 0);
             case 'check_termination_eligibility':

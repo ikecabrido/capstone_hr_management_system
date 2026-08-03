@@ -1281,6 +1281,96 @@
     </div>
 </div>
 
+<!-- Archive Termination Modal -->
+<div class="modal fade exit-modal" id="archiveTerminationModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">Archive Termination</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="archiveTerminationForm">
+                <div class="modal-body">
+                    <input type="hidden" id="archiveTerminationId" name="termination_id">
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Note:</strong> Archiving will move this termination record to the archive database.
+                        The record will be completely removed from active terminations and stored in the exit_archive table.
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="archiveTerminationEmployeeId">Employee ID</label>
+                                <input type="text" class="form-control" id="archiveTerminationEmployeeId" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="archiveTerminationEmployeeName">Employee Name</label>
+                                <input type="text" class="form-control" id="archiveTerminationEmployeeName" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="archiveTerminationReason">Archive Reason *</label>
+                        <textarea class="form-control" id="archiveTerminationReason" name="archive_reason" rows="3" placeholder="Please provide a reason for archiving this termination..." required></textarea>
+                        <small class="form-text text-muted">This reason will be stored with the archived record for future reference.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-archive"></i> Archive Termination
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Archived Terminations List Modal -->
+<div class="modal fade exit-modal" id="archivedTerminationsModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info">
+                <h5 class="modal-title">Archived Terminations</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table id="modal-archived-terminations-table" class="table table-bordered table-striped table-sm">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Department</th>
+                                <th>Email</th>
+                                <th>Position</th>
+                                <th>Reason</th>
+                                <th>Effective Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-archived-terminations-tbody">
+                            <tr><td colspan="7" class="text-center text-muted">Loading archived terminations...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="modal-archived-terminations-pagination" class="mt-2 d-flex justify-content-end"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Archive Document Modal -->
 <div class="modal fade exit-modal" id="archiveDocumentModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-dialog-centered modal-lg" role="document">

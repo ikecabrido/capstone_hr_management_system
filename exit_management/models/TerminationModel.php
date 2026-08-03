@@ -250,6 +250,84 @@ class TerminationModel extends ExitManagementModel
         }
     }
 
+    public function getArchivedTerminations(int $page = 1, int $limit = 10, string $search = ''): array
+    {
+        $offset = max(0, ($page - 1) * $limit);
+
+        $sql = "
+            SELECT
+                a.id AS archive_id,
+                JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.id')) AS id,
+                JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.employee_id')) AS employee_id,
+                JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.termination_reason')) AS reason,
+                JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.effective_date')) AS effective_date,
+                JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.comments')) AS comments,
+                JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.status')) AS status,
+                JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.created_at')) AS created_at,
+                a.archived_at AS updated_at,
+                e.full_name AS employee_name,
+                e.email,
+                e.department,
+                e.position,
+                a.archive_reason
+            FROM exit_archive a
+            LEFT JOIN employees e ON JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.employee_id')) = e.employee_id
+            WHERE a.archive_type = 'termination' AND a.restored = 0
+        ";
+
+        $countSql = "
+            SELECT COUNT(*) as total
+            FROM exit_archive a
+            WHERE a.archive_type = 'termination' AND a.restored = 0
+        ";
+
+        $params = [];
+        if (!empty($search)) {
+            $sql .= " AND (e.full_name LIKE :search0 OR e.email LIKE :search1 OR JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.termination_reason')) LIKE :search2)";
+            $countSql .= " AND (e.full_name LIKE :search0 OR e.email LIKE :search1 OR JSON_UNQUOTE(JSON_EXTRACT(a.archive_data, '$.termination_reason')) LIKE :search2)";
+            $params['search0'] = "%$search%";
+            $params['search1'] = "%$search%";
+            $params['search2'] = "%$search%";
+        }
+
+        $sql .= " ORDER BY a.archived_at DESC LIMIT :limit OFFSET :offset";
+
+        try {
+            $countStmt = $this->db->prepare($countSql);
+            foreach ($params as $key => $value) {
+                $countStmt->bindValue(':' . $key, $value);
+            }
+            $countStmt->execute();
+            $totalCount = (int)($countStmt->fetchColumn() ?? 0);
+
+            $stmt = $this->db->prepare($sql);
+            foreach ($params as $key => $value) {
+                $stmt->bindValue(':' . $key, $value);
+            }
+            $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+            $stmt->execute();
+
+            return [
+                'data' => $stmt->fetchAll(PDO::FETCH_ASSOC),
+                'total' => $totalCount,
+                'page' => $page,
+                'limit' => $limit,
+                'total_pages' => $limit > 0 ? (int)ceil($totalCount / $limit) : 0
+            ];
+        } catch (Exception $e) {
+            error_log('getArchivedTerminations error: ' . $e->getMessage());
+            return [
+                'data' => [],
+                'total' => 0,
+                'page' => $page,
+                'limit' => $limit,
+                'total_pages' => 0,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
     public function updateTerminationStatus(int $terminationId, string $status, ?int $approverId = null, ?string $comments = null): bool
     {
         $allowedStatuses = [

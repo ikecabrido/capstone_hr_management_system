@@ -2253,26 +2253,24 @@ function onTerminationStatusFilterChange() {
 }
 
 function archiveTermination(id) {
-    showConfirmation('Archive this termination record?', function() {
-        $.post('exit_management.php', {
-            ajax_action: 'archive_termination',
-            controller: 'termination',
-            termination_id: id,
-            archive_reason: 'Manual archive'
-        }, function(response) {
-            if (response.success) {
-                showToast('success', response.message || 'Termination archived successfully.');
-                loadTerminationsTable();
-            } else {
-                showToast('error', response.message || 'Failed to archive termination.');
-            }
-        }, 'json').fail(function(xhr, status, error) {
-            console.error('Error archiving termination:', status, error, xhr.responseText);
-            showToast('error', 'Error archiving termination.');
-        });
-    }, {
-        confirmButtonText: 'Archive',
-        confirmButtonClass: 'btn-warning'
+    // fetch termination details and open archive modal
+    $.post('exit_management.php', {
+        ajax_action: 'get_termination_details',
+        controller: 'termination',
+        termination_id: id
+    }, function(response) {
+        if (response.success) {
+            $('#archiveTerminationId').val(id);
+            $('#archiveTerminationEmployeeId').val(response.data.employee_id);
+            $('#archiveTerminationEmployeeName').val(response.data.employee_name);
+            $('#archiveTerminationReason').val('');
+            $('#archiveTerminationModal').appendTo('body').modal('show');
+        } else {
+            showToast('error', 'Failed to load termination details');
+        }
+    }, 'json').fail(function(xhr, status, error) {
+        console.error('Error fetching termination details:', status, error, xhr.responseText);
+        showToast('error', 'Error fetching termination details.');
     });
 }
 
@@ -2285,6 +2283,7 @@ function unarchiveTermination(id) {
         if (response.success) {
             showToast('success', response.message || 'Termination unarchived successfully.');
             loadTerminationsTable();
+            loadArchivedTerminationsTable(1, $('#archivedTerminationsModal').is(':visible'));
         } else {
             showToast('error', response.message || 'Failed to unarchive termination.');
         }
@@ -2294,9 +2293,11 @@ function unarchiveTermination(id) {
     });
 }
 
-function loadArchivedResignationsTable(page = 1) {
-    const tbody = $('#archived-resignations-tbody');
-    showTableLoading(tbody, 11);
+function loadArchivedResignationsTable(page = 1, inModal = false) {
+    const tbody = inModal ? $('#modal-archived-resignations-tbody') : $('#archived-resignations-tbody');
+    const paginationId = inModal ? 'modal-archived-resignations-pagination' : 'archived-resignations-pagination';
+    const noDataCols = inModal ? 7 : 10;
+    showTableLoading(tbody, noDataCols);
 
     $.post('exit_management.php', {
         ajax_action: 'get_archived_resignations',
@@ -2318,32 +2319,46 @@ function loadArchivedResignationsTable(page = 1) {
                     </div>
                 `;
 
-                tbody.append(`
-                    <tr title="${tooltip}">
-                        <td>${resignation.employee_name || '<em class="text-danger">Missing Employee</em>'}</td>
-                        <td>${resignation.department || '-'}</td>
-                        <td>${resignation.email || '-'}</td>
-                        <td>${resignation.position || '-'}</td>
-                        <td>${resignation.resignation_type || '-'}</td>
-                        <td>${resignation.reason || '-'}</td>
-                        <td>${resignation.notice_date || '-'}</td>
-                        <td>${resignation.last_working_date || '-'}</td>
-                        <td>${resignation.comments ? resignation.comments.substring(0, 50) + '...' : '-'}</td>
-                        <td class="status-cell">${statusBadge}</td>
-                        <td class="actions-cell">${actions}</td>
-                    </tr>
-                `);
+                if (inModal) {
+                    tbody.append(`
+                        <tr title="${tooltip}">
+                            <td>${resignation.employee_name || '<em class="text-danger">Missing Employee</em>'}</td>
+                            <td>${resignation.department || '-'}</td>
+                            <td>${resignation.email || '-'}</td>
+                            <td>${resignation.position || '-'}</td>
+                            <td>${resignation.resignation_type || '-'}</td>
+                            <td>${resignation.reason || '-'}</td>
+                            <td>${actions}</td>
+                        </tr>
+                    `);
+                } else {
+                    tbody.append(`
+                        <tr title="${tooltip}">
+                            <td>${resignation.employee_name || '<em class="text-danger">Missing Employee</em>'}</td>
+                            <td>${resignation.department || '-'}</td>
+                            <td>${resignation.email || '-'}</td>
+                            <td>${resignation.position || '-'}</td>
+                            <td>${resignation.resignation_type || '-'}</td>
+                            <td>${resignation.reason || '-'}</td>
+                            <td>${resignation.notice_date || '-'}</td>
+                            <td>${resignation.last_working_date || '-'}</td>
+                            <td>${resignation.comments ? resignation.comments.substring(0, 50) + '...' : '-'}</td>
+                            <td class="status-cell">${statusBadge}</td>
+                            <td class="actions-cell">${actions}</td>
+                        </tr>
+                    `);
+                }
             });
 
-            renderPagination('archived-resignations-pagination', response.total, page, response.limit || 10, (newPage) => loadArchivedResignationsTable(newPage));
+            renderPagination(paginationId, response.total, page, response.limit || 10, (newPage) => loadArchivedResignationsTable(newPage, inModal));
         } else {
-            tbody.append('<tr><td colspan="10" class="text-center">No archived resignations found</td></tr>');
-            $('#archived-resignations-pagination').empty();
+            tbody.append(`<tr><td colspan="${noDataCols}" class="text-center">No archived resignations found</td></tr>`);
+            $(`#${paginationId}`).empty();
         }
     }, 'json').fail(function(xhr, status, error) {
         console.error('Error loading archived resignations:', status, error, xhr.responseText);
-        tbody.html('<tr><td colspan="10" class="text-center text-danger">Error loading archived resignations</td></tr>');
-        $('#archived-resignations-pagination').empty();
+        tbody.html(`<tr><td colspan="${noDataCols}" class="text-center text-danger">Error loading archived resignations</td></tr>`);
+        $(`#${paginationId}`).empty();
     });
 }
 
@@ -3224,6 +3239,19 @@ function archiveResignation(id) {
     }, 'json');
 }
 
+// Open archived resignations in a modal (used by Archive header button)
+function openArchivedResignationsModal(page = 1) {
+    console.log('[Archive] Opening archived resignations modal, page=', page);
+    // ensure inline archived container is hidden when opening modal
+    $('#archived-resignations-container').hide();
+
+    $('#modal-archived-resignations-tbody').html('<tr><td colspan="7" class="text-center text-muted">Loading archived resignations...</td></tr>');
+    $('#modal-archived-resignations-pagination').empty();
+    // ensure modal is appended to body so Bootstrap places it above other containers
+    $('#archivedResignationsModal').appendTo('body').modal('show');
+    loadArchivedResignationsTable(page, true);
+}
+
 function unarchiveResignation(id) {
     showConfirmation('Are you sure you want to unarchive this resignation?', function() {
         $.post('exit_management.php', {
@@ -3234,7 +3262,7 @@ function unarchiveResignation(id) {
             if (response.success) {
                 showToast('success', response.message);
                 loadResignationsTable();
-                loadArchivedResignationsTable();
+                loadArchivedResignationsTable(1, $('#archivedResignationsModal').is(':visible'));
                 loadDashboardData();
             } else {
                 showToast('error', response.message);
@@ -3264,7 +3292,7 @@ $(document).ready(function() {
                 showToast('success', response.message);
                 $('#archiveResignationModal').modal('hide');
                 loadResignationsTable();
-                loadArchivedResignationsTable();
+                loadArchivedResignationsTable(1, $('#archivedResignationsModal').is(':visible'));
                 loadDashboardData();
             } else {
                 showToast('error', response.message);
@@ -3273,6 +3301,14 @@ $(document).ready(function() {
             showToast('error', 'Failed to archive resignation');
         });
     });
+});
+
+// Ensure header archive button label is correct and modal is attached to body
+$(document).ready(function() {
+    const headerArchiveBtn = $('#open-archived-resignations');
+    if (headerArchiveBtn.length) {
+        headerArchiveBtn.html('<i class="fas fa-archive"></i> Archive');
+    }
 });
 
 // Archive settlement form handler
@@ -4851,5 +4887,116 @@ function renderTerminationStatusChart(labels, data) {
             }]
         },
         options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+}
+
+// Archive termination form handler
+$(document).ready(function() {
+    $('#archiveTerminationForm').on('submit', function(e) {
+        e.preventDefault();
+        console.log('[ArchiveTermination] submit handler fired');
+
+        const terminationId = $('#archiveTerminationId').val();
+        const archiveReason = ($('#archiveTerminationReason').val() || '').trim();
+
+        if (!archiveReason) {
+            showToast('warning', 'Please provide an archive reason');
+            return;
+        }
+
+        const $submitBtn = $(this).find('button[type="submit"]');
+        $submitBtn.prop('disabled', true).append(' <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
+
+        $.post('exit_management.php', {
+            ajax_action: 'archive_termination',
+            controller: 'termination',
+            termination_id: terminationId,
+            archive_reason: archiveReason
+        }, function(response) {
+            if (response && response.success) {
+                showToast('success', response.message || 'Termination archived successfully.');
+                $('#archiveTerminationModal').modal('hide');
+                loadTerminationsTable();
+                loadArchivedTerminationsTable(1, $('#archivedTerminationsModal').is(':visible'));
+            } else {
+                showToast('error', (response && response.message) || 'Failed to archive termination.');
+            }
+        }, 'json').fail(function(xhr, status, error) {
+            console.error('Error archiving termination:', status, error, xhr.responseText);
+            showToast('error', 'Error archiving termination.');
+        }).always(function() {
+            $submitBtn.prop('disabled', false).find('.spinner-border').remove();
+        });
+    });
+});
+
+// Open archived terminations modal
+function openArchivedTerminationsModal(page = 1) {
+    $('#modal-archived-terminations-tbody').html('<tr><td colspan="7" class="text-center text-muted">Loading archived terminations...</td></tr>');
+    $('#modal-archived-terminations-pagination').empty();
+    $('#archivedTerminationsModal').appendTo('body').modal('show');
+    loadArchivedTerminationsTable(page, true);
+}
+
+// Load archived terminations into inline or modal table
+function loadArchivedTerminationsTable(page = 1, inModal = false) {
+    const tbody = inModal ? $('#modal-archived-terminations-tbody') : $('#archived-terminations-tbody');
+    const paginationId = inModal ? 'modal-archived-terminations-pagination' : 'archived-terminations-pagination';
+    const noDataCols = 7;
+    showTableLoading(tbody, noDataCols);
+
+    $.post('exit_management.php', {
+        ajax_action: 'get_archived_terminations',
+        controller: 'termination',
+        page: page,
+        limit: 10
+    }, function(response) {
+        tbody.empty();
+        if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
+            response.data.forEach(function(termination) {
+                const actions = `
+                    <div class="table-actions">
+                        <button class="btn btn-sm btn-success action-button" onclick="unarchiveTermination(${termination.id})" title="Unarchive Termination">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </div>
+                `;
+
+                if (inModal) {
+                    tbody.append(`
+                        <tr>
+                            <td>${termination.employee_name || '<em class="text-danger">Missing Employee</em>'}</td>
+                            <td>${termination.department || '-'}</td>
+                            <td>${termination.email || '-'}</td>
+                            <td>${termination.position || '-'}</td>
+                            <td>${termination.reason || '-'}</td>
+                            <td>${termination.effective_date || '-'}</td>
+                            <td>${actions}</td>
+                        </tr>
+                    `);
+                } else {
+                    tbody.append(`
+                        <tr>
+                            <td>${termination.employee_name || '<em class="text-danger">Missing Employee</em>'}</td>
+                            <td>${termination.department || '-'}</td>
+                            <td>${termination.email || '-'}</td>
+                            <td>${termination.position || '-'}</td>
+                            <td>${termination.reason || '-'}</td>
+                            <td>${termination.effective_date || '-'}</td>
+                            <td class="actions-cell">${actions}</td>
+                        </tr>
+                    `);
+                }
+            });
+
+            renderPagination(paginationId, response.total, page, response.limit || 10, (newPage) => loadArchivedTerminationsTable(newPage, inModal));
+        } else {
+            tbody.append(`<tr><td colspan="${noDataCols}" class="text-center">No archived terminations found</td></tr>`);
+            $(`#${paginationId}`).empty();
+        }
+    }, 'json').fail(function(xhr, status, error) {
+        console.error('Error loading archived terminations:', status, error, xhr.responseText);
+        tbody.html(`<tr><td colspan="${noDataCols}" class="text-center text-danger">Error loading archived terminations</td></tr>`);
+        $(`#${paginationId}`).empty();
     });
 }
