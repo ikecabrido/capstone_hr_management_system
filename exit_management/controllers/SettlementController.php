@@ -19,20 +19,23 @@ class SettlementController extends ExitManagementController
     {
         try {
             // Validate required fields
-            $required = ['employee_id', 'basic_salary', 'net_payable', 'settlement_date'];
+            $required = ['employee_id', 'basic_salary', 'settlement_date'];
             foreach ($required as $field) {
                 if (!isset($data[$field])) {
                     return ['success' => false, 'message' => "Field '$field' is required"];
                 }
             }
 
-            // Calculate total if not provided
-            if (!isset($data['net_payable'])) {
+            if (!isset($data['net_payable']) || $data['net_payable'] === '') {
                 $data['net_payable'] = $this->settlementModel->calculateTotalSettlement($data);
             }
 
-            // Add created_by from session
+            if (!empty($data['resignation_id']) && $this->settlementModel->hasExistingSettlementForResignation((int)$data['resignation_id'])) {
+                return ['success' => false, 'message' => 'A settlement already exists for this resignation.'];
+            }
+
             $data['created_by'] = $_SESSION['user']['id'] ?? 0;
+            $data['status'] = $data['status'] ?? 'draft';
 
             $settlementId = $this->settlementModel->createSettlement($data);
 
@@ -41,6 +44,35 @@ class SettlementController extends ExitManagementController
                 'message' => 'Settlement created successfully',
                 'settlement_id' => $settlementId
             ];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function updateSettlement(array $data): array
+    {
+        try {
+            if (empty($data['settlement_id'])) {
+                return ['success' => false, 'message' => 'Settlement ID is required for update'];
+            }
+
+            $settlementId = (int)$data['settlement_id'];
+            if (!isset($data['net_payable']) || $data['net_payable'] === '') {
+                $data['net_payable'] = $this->settlementModel->calculateTotalSettlement($data);
+            }
+
+            if (!empty($data['resignation_id']) && $this->settlementModel->hasExistingSettlementForResignation((int)$data['resignation_id'], $settlementId)) {
+                return ['success' => false, 'message' => 'A settlement already exists for this resignation'];
+            }
+
+            $data['updated_by'] = $_SESSION['user']['id'] ?? 0;
+            $success = $this->settlementModel->updateSettlement($settlementId, $data);
+
+            if ($success) {
+                return ['success' => true, 'message' => 'Settlement updated successfully'];
+            }
+
+            return ['success' => false, 'message' => 'Failed to update settlement'];
         } catch (Exception $e) {
             return ['success' => false, 'message' => $e->getMessage()];
         }
@@ -146,14 +178,75 @@ class SettlementController extends ExitManagementController
     /**
      * Print settlement (placeholder for PDF generation)
      */
-    public function printSettlement(int $settlementId): array
+    public function printSettlement(int $settlementId)
     {
-        // This would generate a PDF or redirect to print view
-        // For now, return success
+        $settlement = $this->settlementModel->getSettlementById($settlementId);
+        if (!$settlement) {
+            return ['success' => false, 'message' => 'Settlement not found'];
+        }
+
         return [
             'success' => true,
-            'message' => 'Settlement print functionality not yet implemented'
+            'settlement' => $settlement
         ];
+    }
+
+    public function renderSettlementPrintPage(int $settlementId): string
+    {
+        $settlement = $this->settlementModel->getSettlementById($settlementId);
+        if (!$settlement) {
+            return '<!doctype html><html><head><title>Settlement Not Found</title></head><body><h1>Settlement not found</h1></body></html>';
+        }
+
+        $employeeName = htmlspecialchars($settlement['full_name'] ?? 'Unknown', ENT_QUOTES);
+        $settlementDate = htmlspecialchars($settlement['settlement_date'] ?? '', ENT_QUOTES);
+        $paymentDate = htmlspecialchars($settlement['payment_date'] ?? 'N/A', ENT_QUOTES);
+        $status = htmlspecialchars($settlement['status'] ?? '', ENT_QUOTES);
+        $netPayable = number_format($settlement['net_payable'] ?? 0, 2);
+
+        $html = '<!doctype html><html><head><meta charset="UTF-8"><title>Final Settlement</title>' .
+            '<style>body{font-family:Arial,sans-serif;margin:24px;}h1,h2{margin-bottom:0.5rem;}table{width:100%;border-collapse:collapse;margin-top:1rem;}th,td{padding:8px;border:1px solid #ddd;text-align:left;}th{background:#f4f4f4;}</style>' .
+            '</head><body>' .
+            '<h1>Final Settlement Report</h1>' .
+            '<p><strong>Employee:</strong> ' . $employeeName . '</p>' .
+            '<p><strong>Settlement Date:</strong> ' . $settlementDate . '</p>' .
+            '<p><strong>Payment Date:</strong> ' . $paymentDate . '</p>' .
+            '<p><strong>Status:</strong> ' . $status . '</p>' .
+            '<table><thead><tr><th>Description</th><th>Amount</th></tr></thead><tbody>' .
+            '<tr><td>Basic Salary</td><td>' . number_format($settlement['basic_salary'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>Remaining Salary</td><td>' . number_format($settlement['remaining_salary'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>Unused Leave Conversion</td><td>' . number_format($settlement['unused_leave_conversion'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>Overtime Pay</td><td>' . number_format($settlement['overtime_pay'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>Holiday Pay</td><td>' . number_format($settlement['holiday_pay'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>Bonuses</td><td>' . number_format($settlement['bonuses'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>Commission</td><td>' . number_format($settlement['commission'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>HRA</td><td>' . number_format($settlement['hra'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>Conveyance</td><td>' . number_format($settlement['conveyance'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>LTA</td><td>' . number_format($settlement['lta'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>Medical Allowance</td><td>' . number_format($settlement['medical_allowance'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>Other Allowances</td><td>' . number_format($settlement['other_allowances'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>Separation Pay</td><td>' . number_format($settlement['separation_pay'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>Provident Fund</td><td>' . number_format($settlement['provident_fund'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>Gratuity</td><td>' . number_format($settlement['gratuity'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>Notice Pay</td><td>' . number_format($settlement['notice_pay'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>Tax</td><td>' . number_format($settlement['tax'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>SSS</td><td>' . number_format($settlement['sss'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>PhilHealth</td><td>' . number_format($settlement['philhealth'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>Pag-IBIG</td><td>' . number_format($settlement['pagibig'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>Cash Advance</td><td>' . number_format($settlement['cash_advance'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>Company Loan</td><td>' . number_format($settlement['company_loan'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>Equipment Damage</td><td>' . number_format($settlement['equipment_damage'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>Missing Assets</td><td>' . number_format($settlement['missing_assets'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>Late Deductions</td><td>' . number_format($settlement['late_deductions'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>Absence Deductions</td><td>' . number_format($settlement['absence_deductions'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>Outstanding Loans</td><td>' . number_format($settlement['outstanding_loans'] ?? 0, 2) . '</td></tr>' .
+            '<tr><td>Other Deductions</td><td>' . number_format($settlement['other_deductions'] ?? 0, 2) . '</td></tr>' .
+            '<tr><th>Total Net Payable</th><th>' . $netPayable . '</th></tr>' .
+            '</tbody></table>' .
+            '<script>window.onload=function(){window.print();};</script>' .
+            '</body></html>';
+
+        return $html;
     }
 
     /**
@@ -163,9 +256,11 @@ class SettlementController extends ExitManagementController
     {
         switch ($action) {
             case 'submit_settlement':
-            case 'update_settlement':
             case 'create_settlement':
                 return $this->createSettlement($data);
+
+            case 'update_settlement':
+                return $this->updateSettlement($data);
 
             case 'calculate_settlement':
                 return $this->calculateSettlement($data);
@@ -181,14 +276,6 @@ class SettlementController extends ExitManagementController
 
             case 'get_pending_settlements':
                 return $this->getPendingSettlements();
-
-            case 'get_settlements':
-                return $this->settlementModel->getAllSettlements(
-                    $data['status'] ?? null,
-                    $data['page'] ?? 1,
-                    $data['limit'] ?? 10,
-                    $data['search'] ?? ''
-                );
 
             case 'get_settlements':
                 return $this->settlementModel->getAllSettlements(
@@ -271,7 +358,7 @@ class SettlementController extends ExitManagementController
                 ];
             }
 
-            $settlement = $this->settlementModel->getSettlement($settlementId);
+            $settlement = $this->settlementModel->getSettlementById($settlementId);
 
             if (!$settlement) {
                 return [

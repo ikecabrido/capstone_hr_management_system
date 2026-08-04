@@ -4411,16 +4411,33 @@ function loadEmployeeSalaryComponents(employeeId) {
         if (response && response.success) {
             // Populate salary fields with data from payroll
             $('#basicSalary').val(response.basic_salary || 0);
+            $('#remainingSalary').val(response.remaining_salary || 0);
+            $('#unusedLeaveConversion').val(response.unused_leave_conversion || 0);
+            $('#overtimePay').val(response.overtime_pay || 0);
+            $('#holidayPay').val(response.holiday_pay || 0);
+            $('#bonuses').val(response.bonuses || 0);
+            $('#commission').val(response.commission || 0);
             $('#hra').val(response.hra || 0);
             $('#conveyance').val(response.conveyance || 0);
             $('#lta').val(response.lta || 0);
             $('#medicalAllowance').val(response.medical_allowance || 0);
             $('#otherAllowances').val(response.other_allowances || 0);
+            $('#separationPay').val(response.separation_pay || 0);
+            $('#tax').val(response.tax || 0);
+            $('#sss').val(response.sss || 0);
+            $('#philhealth').val(response.philhealth || 0);
+            $('#pagibig').val(response.pagibig || 0);
             $('#providentFund').val(response.provident_fund || 0);
-            $('#gratuity').val(response.gratuity || 0);
-            $('#noticePay').val(response.notice_pay || 0);
+            $('#cashAdvance').val(response.cash_advance || 0);
+            $('#companyLoan').val(response.company_loan || 0);
+            $('#equipmentDamage').val(response.equipment_damage || 0);
+            $('#missingAssets').val(response.missing_assets || 0);
+            $('#lateDeductions').val(response.late_deductions || 0);
+            $('#absenceDeductions').val(response.absence_deductions || 0);
             $('#outstandingLoans').val(response.outstanding_loans || 0);
             $('#otherDeductions').val(response.other_deductions || 0);
+            $('#gratuity').val(response.gratuity || 0);
+            $('#noticePay').val(response.notice_pay || 0);
 
             // Calculate net payable after populating fields
             calculateSettlement();
@@ -4436,16 +4453,33 @@ function loadEmployeeSalaryComponents(employeeId) {
 // Clear salary component fields
 function clearSalaryFields() {
     $('#basicSalary').val('');
+    $('#remainingSalary').val('');
+    $('#unusedLeaveConversion').val('');
+    $('#overtimePay').val('');
+    $('#holidayPay').val('');
+    $('#bonuses').val('');
+    $('#commission').val('');
     $('#hra').val('');
     $('#conveyance').val('');
     $('#lta').val('');
     $('#medicalAllowance').val('');
     $('#otherAllowances').val('');
+    $('#separationPay').val('');
+    $('#tax').val('');
+    $('#sss').val('');
+    $('#philhealth').val('');
+    $('#pagibig').val('');
     $('#providentFund').val('');
-    $('#gratuity').val('');
-    $('#noticePay').val('');
+    $('#cashAdvance').val('');
+    $('#companyLoan').val('');
+    $('#equipmentDamage').val('');
+    $('#missingAssets').val('');
+    $('#lateDeductions').val('');
+    $('#absenceDeductions').val('');
     $('#outstandingLoans').val('');
     $('#otherDeductions').val('');
+    $('#gratuity').val('');
+    $('#noticePay').val('');
     $('#netPayable').val('');
 }
 

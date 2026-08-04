@@ -84,6 +84,16 @@ class ExitManagementModel
     }
 
     /**
+     * Check whether a column exists in the current table
+     */
+    protected function columnExists(string $tableName, string $columnName): bool
+    {
+        $stmt = $this->db->prepare("SHOW COLUMNS FROM {$tableName} LIKE ?");
+        $stmt->execute([$columnName]);
+        return (bool)$stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Get approved exit cases for interviews
      */
     public function getApprovedExitCases(): array

@@ -605,6 +605,20 @@
                             </div>
                         </div>
                     </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="settlementStatus">Settlement Status</label>
+                                <select class="form-control" id="settlementStatus" name="status">
+                                    <option value="draft">Draft</option>
+                                    <option value="pending_approval">Pending Approval</option>
+                                    <option value="approved">Approved</option>
+                                    <option value="paid">Paid</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- Salary Components -->
                     <div class="card">
@@ -617,6 +631,48 @@
                                     <div class="form-group">
                                         <label for="basicSalary">Basic Salary *</label>
                                         <input type="number" step="0.01" class="form-control" id="basicSalary" name="basic_salary" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="remainingSalary">Remaining Salary</label>
+                                        <input type="number" step="0.01" class="form-control" id="remainingSalary" name="remaining_salary" value="0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="unusedLeaveConversion">Unused Leave Conversion</label>
+                                        <input type="number" step="0.01" class="form-control" id="unusedLeaveConversion" name="unused_leave_conversion" value="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="overtimePay">Overtime Pay</label>
+                                        <input type="number" step="0.01" class="form-control" id="overtimePay" name="overtime_pay" value="0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="holidayPay">Holiday Pay</label>
+                                        <input type="number" step="0.01" class="form-control" id="holidayPay" name="holiday_pay" value="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="bonuses">Bonuses</label>
+                                        <input type="number" step="0.01" class="form-control" id="bonuses" name="bonuses" value="0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="commission">Commission</label>
+                                        <input type="number" step="0.01" class="form-control" id="commission" name="commission" value="0">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -654,6 +710,14 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="separationPay">Separation Pay</label>
+                                        <input type="number" step="0.01" class="form-control" id="separationPay" name="separation_pay" value="0">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -666,8 +730,92 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group">
+                                        <label for="tax">Tax</label>
+                                        <input type="number" step="0.01" class="form-control" id="tax" name="tax" value="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="sss">SSS</label>
+                                        <input type="number" step="0.01" class="form-control" id="sss" name="sss" value="0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="philhealth">PhilHealth</label>
+                                        <input type="number" step="0.01" class="form-control" id="philhealth" name="philhealth" value="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="pagibig">Pag-IBIG</label>
+                                        <input type="number" step="0.01" class="form-control" id="pagibig" name="pagibig" value="0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
                                         <label for="providentFund">Provident Fund</label>
                                         <input type="number" step="0.01" class="form-control" id="providentFund" name="provident_fund" value="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="cashAdvance">Cash Advance</label>
+                                        <input type="number" step="0.01" class="form-control" id="cashAdvance" name="cash_advance" value="0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="companyLoan">Company Loan</label>
+                                        <input type="number" step="0.01" class="form-control" id="companyLoan" name="company_loan" value="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="equipmentDamage">Equipment Damage</label>
+                                        <input type="number" step="0.01" class="form-control" id="equipmentDamage" name="equipment_damage" value="0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="missingAssets">Missing Assets</label>
+                                        <input type="number" step="0.01" class="form-control" id="missingAssets" name="missing_assets" value="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="lateDeductions">Late Deductions</label>
+                                        <input type="number" step="0.01" class="form-control" id="lateDeductions" name="late_deductions" value="0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="absenceDeductions">Absence Deductions</label>
+                                        <input type="number" step="0.01" class="form-control" id="absenceDeductions" name="absence_deductions" value="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="outstandingLoans">Outstanding Loans</label>
+                                        <input type="number" step="0.01" class="form-control" id="outstandingLoans" name="outstanding_loans" value="0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="otherDeductions">Other Deductions</label>
+                                        <input type="number" step="0.01" class="form-control" id="otherDeductions" name="other_deductions" value="0">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -684,16 +832,6 @@
                                         <input type="number" step="0.01" class="form-control" id="noticePay" name="notice_pay" value="0">
                                     </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="outstandingLoans">Outstanding Loans</label>
-                                        <input type="number" step="0.01" class="form-control" id="outstandingLoans" name="outstanding_loans" value="0">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="otherDeductions">Other Deductions</label>
-                                <input type="number" step="0.01" class="form-control" id="otherDeductions" name="other_deductions" value="0">
                             </div>
                         </div>
                     </div>

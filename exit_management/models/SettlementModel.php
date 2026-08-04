@@ -9,33 +9,93 @@ class SettlementModel extends ExitManagementModel
      */
     public function createSettlement(array $data): int
     {
-        $stmt = $this->db->prepare("
-            INSERT INTO exit_employee_settlements (employee_id, resignation_id, basic_salary,
-                                            hra, conveyance, lta, medical_allowance,
-                                            other_allowances, provident_fund, gratuity,
-                                            notice_pay, outstanding_loans, other_deductions,
-                                            net_payable, settlement_date, status, created_by, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, NOW())
-        ");
+        $hasPaymentDate = $this->columnExists('exit_employee_settlements', 'payment_date');
 
-        $stmt->execute([
+        $columns = [
+            'employee_id',
+            'resignation_id',
+            'basic_salary',
+            'remaining_salary',
+            'unused_leave_conversion',
+            'overtime_pay',
+            'holiday_pay',
+            'bonuses',
+            'commission',
+            'hra',
+            'conveyance',
+            'lta',
+            'medical_allowance',
+            'other_allowances',
+            'separation_pay',
+            'tax',
+            'sss',
+            'philhealth',
+            'pagibig',
+            'cash_advance',
+            'company_loan',
+            'equipment_damage',
+            'missing_assets',
+            'late_deductions',
+            'absence_deductions',
+            'provident_fund',
+            'gratuity',
+            'notice_pay',
+            'outstanding_loans',
+            'other_deductions',
+            'net_payable',
+            'settlement_date'
+        ];
+
+        $values = [
             $data['employee_id'],
             $data['resignation_id'] ?? null,
             $data['basic_salary'],
+            $data['remaining_salary'] ?? 0,
+            $data['unused_leave_conversion'] ?? 0,
+            $data['overtime_pay'] ?? 0,
+            $data['holiday_pay'] ?? 0,
+            $data['bonuses'] ?? 0,
+            $data['commission'] ?? 0,
             $data['hra'] ?? 0,
             $data['conveyance'] ?? 0,
             $data['lta'] ?? 0,
             $data['medical_allowance'] ?? 0,
             $data['other_allowances'] ?? 0,
+            $data['separation_pay'] ?? 0,
+            $data['tax'] ?? 0,
+            $data['sss'] ?? 0,
+            $data['philhealth'] ?? 0,
+            $data['pagibig'] ?? 0,
+            $data['cash_advance'] ?? 0,
+            $data['company_loan'] ?? 0,
+            $data['equipment_damage'] ?? 0,
+            $data['missing_assets'] ?? 0,
+            $data['late_deductions'] ?? 0,
+            $data['absence_deductions'] ?? 0,
             $data['provident_fund'] ?? 0,
             $data['gratuity'] ?? 0,
             $data['notice_pay'] ?? 0,
             $data['outstanding_loans'] ?? 0,
             $data['other_deductions'] ?? 0,
             $data['net_payable'],
-            $data['settlement_date'],
-            $data['created_by']
-        ]);
+            $data['settlement_date']
+        ];
+
+        if ($hasPaymentDate) {
+            $columns[] = 'payment_date';
+            $values[] = $data['payment_date'] ?? null;
+        }
+
+        $columns[] = 'status';
+        $columns[] = 'created_by';
+        $values[] = $data['status'] ?? 'draft';
+        $values[] = $data['created_by'];
+
+        $placeholderString = implode(', ', array_fill(0, count($columns), '?'));
+        $columnString = implode(', ', $columns);
+
+        $stmt = $this->db->prepare("INSERT INTO exit_employee_settlements ({$columnString}, created_at) VALUES ({$placeholderString}, NOW())");
+        $stmt->execute($values);
 
         return (int)$this->db->lastInsertId();
     }
@@ -45,33 +105,103 @@ class SettlementModel extends ExitManagementModel
      */
     public function updateSettlement(int $settlementId, array $data): bool
     {
-        $stmt = $this->db->prepare("
+        $hasPaymentDate = $this->columnExists('exit_employee_settlements', 'payment_date');
+
+        $fields = [
+            'employee_id = ?',
+            'resignation_id = ?',
+            'basic_salary = ?',
+            'remaining_salary = ?',
+            'unused_leave_conversion = ?',
+            'overtime_pay = ?',
+            'holiday_pay = ?',
+            'bonuses = ?',
+            'commission = ?',
+            'hra = ?',
+            'conveyance = ?',
+            'lta = ?',
+            'medical_allowance = ?',
+            'other_allowances = ?',
+            'separation_pay = ?',
+            'tax = ?',
+            'sss = ?',
+            'philhealth = ?',
+            'pagibig = ?',
+            'cash_advance = ?',
+            'company_loan = ?',
+            'equipment_damage = ?',
+            'missing_assets = ?',
+            'late_deductions = ?',
+            'absence_deductions = ?',
+            'provident_fund = ?',
+            'gratuity = ?',
+            'notice_pay = ?',
+            'outstanding_loans = ?',
+            'other_deductions = ?',
+            'net_payable = ?',
+            'settlement_date = ?'
+        ];
+
+        if ($hasPaymentDate) {
+            $fields[] = 'payment_date = ?';
+        }
+
+        $fields[] = 'status = ?';
+        $fields[] = 'updated_by = ?';
+        $fields[] = 'updated_at = NOW()';
+
+        $fieldStr = implode(',\n                ', $fields);
+
+        $stmt = $this->db->prepare("\
             UPDATE exit_employee_settlements
-            SET employee_id = ?, basic_salary = ?, hra = ?, conveyance = ?,
-                lta = ?, medical_allowance = ?, other_allowances = ?,
-                provident_fund = ?, gratuity = ?, notice_pay = ?,
-                outstanding_loans = ?, other_deductions = ?, net_payable = ?,
-                settlement_date = ?, updated_at = NOW()
+            SET {$fieldStr}
             WHERE id = ?
         ");
 
-        return $stmt->execute([
+        $values = [
             $data['employee_id'],
+            $data['resignation_id'] ?? null,
             $data['basic_salary'],
+            $data['remaining_salary'] ?? 0,
+            $data['unused_leave_conversion'] ?? 0,
+            $data['overtime_pay'] ?? 0,
+            $data['holiday_pay'] ?? 0,
+            $data['bonuses'] ?? 0,
+            $data['commission'] ?? 0,
             $data['hra'] ?? 0,
             $data['conveyance'] ?? 0,
             $data['lta'] ?? 0,
             $data['medical_allowance'] ?? 0,
             $data['other_allowances'] ?? 0,
+            $data['separation_pay'] ?? 0,
+            $data['tax'] ?? 0,
+            $data['sss'] ?? 0,
+            $data['philhealth'] ?? 0,
+            $data['pagibig'] ?? 0,
+            $data['cash_advance'] ?? 0,
+            $data['company_loan'] ?? 0,
+            $data['equipment_damage'] ?? 0,
+            $data['missing_assets'] ?? 0,
+            $data['late_deductions'] ?? 0,
+            $data['absence_deductions'] ?? 0,
             $data['provident_fund'] ?? 0,
             $data['gratuity'] ?? 0,
             $data['notice_pay'] ?? 0,
             $data['outstanding_loans'] ?? 0,
             $data['other_deductions'] ?? 0,
             $data['net_payable'],
-            $data['settlement_date'],
-            $settlementId
-        ]);
+            $data['settlement_date']
+        ];
+
+        if ($hasPaymentDate) {
+            $values[] = $data['payment_date'] ?? null;
+        }
+
+        $values[] = $data['status'] ?? 'draft';
+        $values[] = $data['updated_by'] ?? null;
+        $values[] = $settlementId;
+
+        return $stmt->execute($values);
     }
 
     /**
@@ -133,9 +263,28 @@ class SettlementModel extends ExitManagementModel
     }
 
     /**
+     * Check if a resignation already has a settlement
+     */
+    public function hasExistingSettlementForResignation(int $resignationId, ?int $excludeSettlementId = null): bool
+    {
+        $sql = "SELECT COUNT(*) FROM exit_employee_settlements WHERE resignation_id = ?";
+        $params = [$resignationId];
+
+        if ($excludeSettlementId !== null) {
+            $sql .= " AND id != ?";
+            $params[] = $excludeSettlementId;
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        return (bool)$stmt->fetchColumn();
+    }
+
+    /**
      * Update settlement status
      */
-    public function updateSettlementStatus(int $settlementId, string $status, string $approvedBy = null): bool
+    public function updateSettlementStatus(int $settlementId, string $status, ?string $approvedBy = null): bool
     {
         $stmt = $this->db->prepare("
             UPDATE exit_employee_settlements
@@ -163,39 +312,51 @@ class SettlementModel extends ExitManagementModel
     /**
      * Get all settlements with optional status filter and pagination
      */
-    public function getAllSettlements(string $status = null, int $page = 1, int $limit = 10, string $search = ''): array
+    public function getAllSettlements(?string $status = null, int $page = 1, int $limit = 10, string $search = ''): array
     {
         $offset = ($page - 1) * $limit;
+        // Build a schema-aware select list: include column if present, otherwise return NULL AS column
+        $baseSelect = [
+            's.id',
+            's.employee_id',
+            'e.full_name AS employee_name',
+            'e.department',
+            'e.position',
+            's.resignation_id',
+            'r.last_working_date',
+            's.settlement_date'
+        ];
 
-        $sql = "
-            SELECT
-                s.id,
-                s.employee_id,
-                s.settlement_date,
-                s.basic_salary,
-                s.hra,
-                s.conveyance,
-                s.lta,
-                s.medical_allowance,
-                s.other_allowances,
-                s.provident_fund,
-                s.gratuity,
-                s.notice_pay,
-                s.outstanding_loans,
-                s.other_deductions,
-                s.net_payable,
-                s.status,
-                s.created_at,
-                s.updated_at,
-                e.full_name as employee_name
-            FROM exit_employee_settlements s
-            JOIN employees e ON s.employee_id = e.employee_id
-        ";
+        $settlementCols = [
+            'payment_date', 'basic_salary', 'remaining_salary', 'unused_leave_conversion', 'overtime_pay', 'holiday_pay',
+            'bonuses', 'commission', 'hra', 'conveyance', 'lta', 'medical_allowance', 'other_allowances', 'separation_pay',
+            'tax', 'sss', 'philhealth', 'pagibig', 'cash_advance', 'company_loan', 'equipment_damage', 'missing_assets',
+            'late_deductions', 'absence_deductions', 'provident_fund', 'gratuity', 'notice_pay', 'outstanding_loans',
+            'other_deductions', 'net_payable'
+        ];
+
+        foreach ($settlementCols as $col) {
+            if ($this->columnExists('exit_employee_settlements', $col)) {
+                $baseSelect[] = "s.{$col}";
+            } else {
+                $baseSelect[] = "NULL AS {$col}";
+            }
+        }
+
+        // Always include status and timestamps (may be present or will be NULL if missing)
+        $baseSelect[] = "COALESCE(s.status, 'unknown') AS status";
+        $baseSelect[] = "s.created_at";
+        $baseSelect[] = "s.updated_at";
+
+        $selectList = implode(",\n                ", $baseSelect);
+
+        $sql = "\n            SELECT\n                {$selectList}\n            FROM exit_employee_settlements s\n            JOIN employees e ON s.employee_id = e.employee_id\n            LEFT JOIN exit_resignations r ON s.resignation_id = r.id\n        ";
 
         $countSql = "
             SELECT COUNT(*) as total
             FROM exit_employee_settlements s
             JOIN employees e ON s.employee_id = e.employee_id
+            LEFT JOIN exit_resignations r ON s.resignation_id = r.id
         ";
 
         $params = [];
@@ -209,11 +370,13 @@ class SettlementModel extends ExitManagementModel
         // Add search condition if provided
         if (!empty($search)) {
             $searchCondition = $whereClause ? " AND" : " WHERE";
-            $searchCondition .= " (e.full_name LIKE :search0 OR s.settlement_date LIKE :search1)";
+            $searchCondition .= " (e.full_name LIKE :search0 OR s.settlement_date LIKE :search1 OR e.employee_id LIKE :search2 OR r.last_working_date LIKE :search3)";
             $whereClause .= $searchCondition;
             $searchParam = "%$search%";
             $params['search0'] = $searchParam;
             $params['search1'] = $searchParam;
+            $params['search2'] = $searchParam;
+            $params['search3'] = $searchParam;
         }
 
         // Get total count
@@ -244,17 +407,34 @@ class SettlementModel extends ExitManagementModel
     public function calculateTotalSettlement(array $components): float
     {
         $earnings = ($components['basic_salary'] ?? 0) +
+                   ($components['remaining_salary'] ?? 0) +
+                   ($components['unused_leave_conversion'] ?? 0) +
+                   ($components['overtime_pay'] ?? 0) +
+                   ($components['holiday_pay'] ?? 0) +
+                   ($components['bonuses'] ?? 0) +
+                   ($components['commission'] ?? 0) +
                    ($components['hra'] ?? 0) +
                    ($components['conveyance'] ?? 0) +
                    ($components['lta'] ?? 0) +
                    ($components['medical_allowance'] ?? 0) +
                    ($components['other_allowances'] ?? 0) +
+                   ($components['separation_pay'] ?? 0) +
                    ($components['gratuity'] ?? 0) +
                    ($components['notice_pay'] ?? 0);
 
-        $deductions = ($components['provident_fund'] ?? 0) +
+        $deductions = ($components['tax'] ?? 0) +
+                     ($components['sss'] ?? 0) +
+                     ($components['philhealth'] ?? 0) +
+                     ($components['pagibig'] ?? 0) +
+                     ($components['cash_advance'] ?? 0) +
+                     ($components['company_loan'] ?? 0) +
+                     ($components['equipment_damage'] ?? 0) +
+                     ($components['missing_assets'] ?? 0) +
+                     ($components['late_deductions'] ?? 0) +
+                     ($components['absence_deductions'] ?? 0) +
                      ($components['outstanding_loans'] ?? 0) +
-                     ($components['other_deductions'] ?? 0);
+                     ($components['other_deductions'] ?? 0) +
+                     ($components['provident_fund'] ?? 0);
 
         return $earnings - $deductions;
     }

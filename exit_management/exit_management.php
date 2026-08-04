@@ -23,11 +23,17 @@ $settlementController = new SettlementController();
 $documentationController = new DocumentationController();
 $surveyController = new SurveyController();
 
-// Handle GET requests for document viewing
+// Handle GET requests for document viewing and print views
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
-    header('Content-Type: application/json');
-    
     $action = $_GET['ajax_action'];
+    
+    if ($action === 'print_settlement' && isset($_GET['settlement_id'])) {
+        header('Content-Type: text/html; charset=UTF-8');
+        echo $settlementController->renderSettlementPrintPage((int)$_GET['settlement_id']);
+        exit;
+    }
+
+    header('Content-Type: application/json');
     
     if ($action === 'view_document' && isset($_GET['document_id'])) {
         $response = $documentationController->viewDocument((int)$_GET['document_id']);
