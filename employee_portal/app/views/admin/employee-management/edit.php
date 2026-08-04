@@ -67,11 +67,15 @@
                                 <span class="input-group-text">
                                     EMP-
                                 </span>
-
                                 <input
                                     type="text"
                                     name="employee_code"
                                     class="form-control"
+                                    placeholder="00001"
+                                    maxlength="5"
+                                    inputmode="numeric"
+                                    pattern="\d{1,5}"
+                                    oninput="this.value = this.value.replace(/\D/g, '').slice(0, 5);"
                                     value="<?= htmlspecialchars(str_replace('EMP-', '', $employee['employee_code'] ?? '')); ?>">
 
                             </div>

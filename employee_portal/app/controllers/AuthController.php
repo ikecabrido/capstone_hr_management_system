@@ -42,6 +42,12 @@ class AuthController
             if (!password_verify($password, $user['password'])) {
                 throw new Exception("Invalid credentials.");
             }
+            // Check if account is active
+            if ((int)($user['is_active'] ?? 1) !== 1) {
+                throw new Exception(
+                    "Your account has been deactivated. </br> Please contact the HR Administrator."
+                );
+            }
 
             // Check if employee profile exists
             $employee = $this->employeeModel->findByUserId($user['id']);

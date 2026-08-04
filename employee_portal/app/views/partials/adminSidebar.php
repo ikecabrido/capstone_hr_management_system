@@ -17,12 +17,12 @@
                     alt="User Image" />
             </div>
 
-            <div class="info">
+            <div class="info text-white">
                 <span class="d-block fw-bold">
                     <?= htmlspecialchars(($employee['first_name'] ?? '') . ' ' . ($employee['last_name'] ?? 'Admin')) ?>
                 </span>
 
-                <small class="text-muted">
+                <small class="text-muted text-white opacity-60">
                     @<?= htmlspecialchars($_SESSION['username'] ?? 'admin') ?>
                 </small>
             </div>

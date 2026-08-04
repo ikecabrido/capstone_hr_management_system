@@ -30,6 +30,7 @@ class Users
             email,
             role,
             is_admin,
+            is_active,
             theme,
             created_at
         FROM {$this->table}
@@ -231,6 +232,19 @@ class Users
             ':id' => $id,
             ':username' => $username,
             ':email' => $email
+        ]);
+    }
+    public function updateActiveStatus(int $id, int $status)
+    {
+        $sql = "UPDATE users
+            SET is_active = :status
+            WHERE id = :id";
+
+        $stmt = $this->conn->prepare($sql);
+
+        return $stmt->execute([
+            ':status' => $status,
+            ':id'     => $id
         ]);
     }
 }

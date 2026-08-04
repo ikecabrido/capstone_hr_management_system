@@ -112,7 +112,8 @@
                 <thead class="table-light">
 
                     <tr>
-                        <th>Employee ID</th>
+                        <th>ID</th>
+                        <th>Code</th>
                         <th>Employee Name</th>
                         <th>Department</th>
                         <th>Position</th>
@@ -135,6 +136,9 @@
 
                                 <td>
                                     <?= htmlspecialchars($employee['employee_id'] ?? '-') ?>
+                                </td>
+                                <td style="font-size: 12px; width: 100px;">
+                                    <?= htmlspecialchars($employee['employee_code'] ?? '-') ?>
                                 </td>
 
                                 <td>

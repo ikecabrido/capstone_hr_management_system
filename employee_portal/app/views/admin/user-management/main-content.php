@@ -78,15 +78,6 @@
                                         <td>
 
                                             <div class="d-flex align-items-center">
-
-                                                <div
-                                                    class="rounded-circle bg-primary text-white fw-bold d-flex justify-content-center align-items-center me-3"
-                                                    style="width:42px;height:42px;">
-
-                                                    <?= strtoupper(substr($user['username'], 0, 1)); ?>
-
-                                                </div>
-
                                                 <div>
 
                                                     <div class="fw-semibold">
@@ -158,7 +149,31 @@
 
                                             </form>
 
+                                            <!-- Activate / Deactivate -->
+                                            <?php $isActive = ((int)$user['is_active'] === 1); ?>
 
+                                            <form
+                                                action="index.php?url=admin-toggle-active-status"
+                                                method="POST"
+                                                class="d-inline">
+
+                                                <input
+                                                    type="hidden"
+                                                    name="id"
+                                                    value="<?= $user['id']; ?>">
+
+                                                <button
+                                                    type="submit"
+                                                    class="btn btn-sm <?= $isActive ? 'btn-outline-danger' : 'btn-outline-success'; ?>"
+                                                    onclick="return confirm('Are you sure you want to <?= $isActive ? 'deactivate' : 'activate'; ?> this account?');">
+
+                                                    <i class="fas <?= $isActive ? 'fa-user-slash' : 'fa-user-check'; ?>"></i>
+
+                                                    <?= $isActive ? 'Deactivate' : 'Activate'; ?>
+
+                                                </button>
+
+                                            </form>
                                             <!-- Employee Profile -->
                                             <?php if (empty($user['employee_id'])): ?>
 

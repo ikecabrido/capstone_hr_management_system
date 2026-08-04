@@ -444,6 +444,10 @@ switch ($url) {
         (new ManageUserController)->toggleAdmin();
         break;
 
+    case 'admin-toggle-active-status':
+        (new ManageUserController)->toggleUserStatus();
+        break;
+
     // Create Employee Profile
     case 'employee-create':
         (new ManageEmployeeController)->createProfile();

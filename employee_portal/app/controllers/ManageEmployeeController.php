@@ -310,7 +310,7 @@ class ManageEmployeeController
             'unit_load'           => !empty($_POST['unit_load']) ? (int) $_POST['unit_load'] : null,
             'faculty_notes'       => !empty($_POST['faculty_notes']) ? trim($_POST['faculty_notes']) : null,
         ];
-
+        
         if (empty($data['employee_id'])) {
             $_SESSION['error'] = 'Invalid employee.';
             Helper::redirect('index.php?url=employee-management');

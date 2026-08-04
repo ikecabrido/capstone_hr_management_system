@@ -45,7 +45,7 @@ class ManageUserController
             ];
 
             $userId = $this->userModel->create($data);
-            
+
             if (!$userId) {
                 throw new Exception("Failed to create user.");
             }
@@ -117,5 +117,33 @@ class ManageUserController
 
         header("Location: index.php?url=admin-manage-user");
         exit;
+    }
+    public function toggleUserStatus()
+    {
+        $id = (int) ($_POST['id'] ?? 0);
+
+        if (!$id) {
+            $_SESSION['error'] = 'Invalid user.';
+            Helper::redirect('index.php?url=admin-manage-user');
+            exit;
+        }
+
+        $user = $this->userModel->findById($id);
+
+        if (!$user) {
+            $_SESSION['error'] = 'User not found.';
+            Helper::redirect('index.php?url=admin-manage-user');
+            exit;
+        }
+
+        $newStatus = $user['is_active'] ? 0 : 1;
+
+        $this->userModel->updateActiveStatus($id, $newStatus);
+
+        $_SESSION['success'] = $newStatus
+            ? 'User activated successfully.'
+            : 'User deactivated successfully.';
+
+        Helper::redirect('index.php?url=admin-manage-user');
     }
 }

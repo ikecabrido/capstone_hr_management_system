@@ -331,7 +331,7 @@ class Employee
         $sql = "
         UPDATE {$this->table}
         SET
-            employee_code = COALESCE(employee_code, :employee_code),
+            employee_code = :employee_code,
             department_id = COALESCE(department_id, :department_id),
             position_id = COALESCE(position_id, :position_id),
             position_title_enum = COALESCE(position_title_enum, :position_title_enum),

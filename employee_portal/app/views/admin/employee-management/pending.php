@@ -40,7 +40,10 @@
                         <!-- Employee Code -->
                         <label class="form-label">
                             Employee Code
+                            <span class="text-red font-bold">*</span>
+
                         </label>
+
                         <?php if (!empty($employee['employee_code'])): ?>
 
                             <input
@@ -61,7 +64,12 @@
                                     type="text"
                                     name="employee_code"
                                     class="form-control"
-                                    placeholder="000001">
+                                    placeholder="00001"
+                                    maxlength="5"
+                                    inputmode="numeric"
+                                    pattern="\d{1,5}"
+                                    oninput="this.value = this.value.replace(/\D/g, '').slice(0, 5);"
+                                    required>
 
                             </div>
 
@@ -101,9 +109,10 @@
 
                         <!-- Position -->
                         <div class="col-md-6 mb-3">
-
                             <label class="form-label">
                                 Position
+                                <span class="text-red font-bold">*</span>
+
                             </label>
 
                             <?php if (!empty($employee['position_title_enum'])): ?>
@@ -118,7 +127,7 @@
 
                                 <select
                                     name="position_title_enum"
-                                    class="form-select">
+                                    class="form-select" required>
 
                                     <option value="">Select Position</option>
 
