@@ -131,8 +131,8 @@ switch ($url) {
         (new GrievanceController)->index();
         break;
 
-    case 'employee-grievance-create':
-        (new GrievanceController)->create();
+    case 'employee-grievance-store':
+        (new GrievanceController)->store();
         break;
 
     /*

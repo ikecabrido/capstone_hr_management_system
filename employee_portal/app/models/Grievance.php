@@ -18,24 +18,77 @@ class Grievance
         $query = "SELECT * FROM {$this->table} ORDER BY created_at DESC";
         return $this->conn->query($query)->fetchAll(PDO::FETCH_ASSOC);
     }
+    public function getByEmployee($employeeId)
+    {
+        $sql = "SELECT *
+            FROM eer_grievances
+            WHERE employee_id = :employee_id
+            ORDER BY created_at DESC";
 
+        $stmt = $this->conn->prepare($sql);
+
+        $stmt->bindValue(':employee_id', $employeeId);
+
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
     public function create($data)
     {
-        $query = "INSERT INTO " . $this->table . " 
-              (employee_id, subject, description, assigned_to, status, category, anonymous, attachment_path)
-              VALUES (:employee_id, :subject, :description, :assigned_to, :status, :category, :anonymous, :attachment_path)";
+        $sql = "INSERT INTO eer_grievances (
 
-        $stmt = $this->conn->prepare($query);
+                employee_id,
+                subject,
+                description,
+                status,
+                resolution_of_complaint,
+                priority,
+                category,
+                anonymous,
+                attachment_path,
+                confidential,
+                action_taken,
+                satisfaction_rating,
+                satisfaction_comment,
+                resolved_at,
+                escalation_level,
+                escalation_reason,
+                created_by_user_id,
+                payslip_id,
+                gross_pay,
+                total_deductions,
+                net_pay,
+                payslip_information
 
-        return $stmt->execute([
-            ':employee_id' => $data['employee_id'],
-            ':subject' => $data['subject'],
-            ':description' => $data['description'],
-            ':assigned_to' => $data['assigned_to'] ?? null,
-            ':status' => $data['status'] ?? 'pending',
-            ':category' => $data['category'] ?? 'Workplace Conflict',
-            ':anonymous' => $data['anonymous'] ?? 0,
-            ':attachment_path' => $data['attachment_path'] ?? null
-        ]) ? $this->conn->lastInsertId() : false;
+            ) VALUES (
+
+                :employee_id,
+                :subject,
+                :description,
+                :status,
+                :resolution_of_complaint,
+                :priority,
+                :category,
+                :anonymous,
+                :attachment_path,
+                :confidential,
+                :action_taken,
+                :satisfaction_rating,
+                :satisfaction_comment,
+                :resolved_at,
+                :escalation_level,
+                :escalation_reason,
+                :created_by_user_id,
+                :payslip_id,
+                :gross_pay,
+                :total_deductions,
+                :net_pay,
+                :payslip_information
+
+            )";
+
+        $stmt = $this->conn->prepare($sql);
+
+        return $stmt->execute($data);
     }
 }

@@ -15,78 +15,134 @@ class GrievanceController
     }
     public function index()
     {
-        $user_id = $_SESSION['user_id'] ?? null;
-        $employee = $this->employeeModel->findByUserId($user_id);
-        $employee_id = $employee['id'] ?? null;
+        $userId = $_SESSION['user_id'];
 
-        $content = __DIR__ . '/../views/engagement-relations/main-content.php';
-        require __DIR__ . '/../views/employee-portal/index.php';
-    }
-    public function create()
-    {
-        try {
-            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                header("Location: " . ($_SERVER['HTTP_REFERER'] ?? "index.php?url=employee-grievance"));
-                exit;
-            }
+        $employeeGrievance = $this->employeeModel->findByUserId($userId);
 
-            $employee_id  = $_POST['employee_id'] ?? null;
-            $subject  = trim($_POST['subject'] ?? '');
-            $description   = trim($_POST['description'] ?? '');
-            $status   = $_POST['status'] ?? null;
-            $anonymous   = $_POST['anonymous'] ?? null;
-            $attachment_path    = $_POST['attachment_path'] ?? null;
-
-            $attachmentPath = null;
-            $created_at = date('Y-m-d H:i:s');
-
-            if (!empty($_FILES['attachment_path']['name'])) {
-                $uploadDir = __DIR__ . "/../../public/uploads/";
-
-                if (!is_dir($uploadDir)) {
-                    mkdir($uploadDir, 0777, true);
-                }
-
-                $fileTmp  = $_FILES['attachment_path']['tmp_name'];
-                $fileName = $_FILES['attachment_path']['name'];
-                $fileExt  = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-                $allowed = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
-
-                if (!in_array($fileExt, $allowed)) {
-                    throw new Exception("Invalid file type.");
-                }
-
-                $newFileName = time() . "_" . bin2hex(random_bytes(4)) . "." . $fileExt;
-                $targetPath  = $uploadDir . $newFileName;
-
-                if (move_uploaded_file($fileTmp, $targetPath)) {
-                    $attachmentPath = "uploads/" . $newFileName;
-                } else {
-                    throw new Exception("Failed to upload file.");
-                }
-            }
-
-            $data = [
-                'employee_id' => $employee_id,
-                'subject' => $subject,
-                'description' => $description,
-                'assigned_to' => null,
-                'status' => 'pending',
-                'category' => $category ?? 'Workplace Conflict',
-                'anonymous' => $anonymous,
-                'attachment_path' => $attachmentPath
-            ];
-
-            $this->grievanceModel = new Grievance();
-            $this->grievanceModel->create($data);
-
-            $_SESSION['success'] = "Document submitted successfully.";
-        } catch (Exception $e) {
-            $_SESSION['error'] = $e->getMessage() ?: "Something went wrong while submitting.";
+        if (!$employeeGrievance) {
+            $_SESSION['error'] = "Employee record not found.";
+            Helper::redirect('index.php?url=dashboard');
+            exit;
         }
 
-        $redirectTo = $_SERVER['HTTP_REFERER'] ?? "index.php?url=employee-grievance";
-        header("Location: $redirectTo");
-        exit;
+        $grievances = $this->grievanceModel->getByEmployee($employeeGrievance['employee_id']);
+
+        // Statistics
+        $totalGrievances = count($grievances);
+
+        $pending = 0;
+        $resolved = 0;
+        $escalated = 0;
+        $closed = 0;
+
+        foreach ($grievances as $grievance) {
+
+            switch (strtolower($grievance['status'])) {
+
+                case 'pending':
+                    $pending++;
+                    break;
+
+                case 'resolved':
+                    $resolved++;
+                    break;
+
+                case 'escalated':
+                    $escalated++;
+                    break;
+
+                case 'closed':
+                    $closed++;
+                    break;
+            }
+        }
+
+        $title = "Employee Grievance";
+        $content = __DIR__ . '/../views/grievances/main-content.php';
+
+        require __DIR__ . '/../views/employee-portal/index.php';
+    }
+    public function store()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            Helper::redirect('index.php?url=employee-grievance');
+            exit;
+        }
+
+        $employeeId = (int) $_POST['employee_id'];
+        $userId     = $_SESSION['user_id'];
+
+        // Upload attachment
+        $attachmentPath = null;
+
+        if (
+            isset($_FILES['attachment_path']) &&
+            $_FILES['attachment_path']['error'] === UPLOAD_ERR_OK
+        ) {
+
+            $uploadDir = 'uploads/grievances/';
+
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+
+            $extension = pathinfo(
+                $_FILES['attachment_path']['name'],
+                PATHINFO_EXTENSION
+            );
+
+            $filename = uniqid('grievance_') . '.' . $extension;
+
+            move_uploaded_file(
+                $_FILES['attachment_path']['tmp_name'],
+                $uploadDir . $filename
+            );
+
+            $attachmentPath = $uploadDir . $filename;
+        }
+
+        $data = [
+
+            'employee_id'             => $employeeId,
+            'subject'                 => trim($_POST['subject']),
+            'description'             => trim($_POST['description']),
+
+            // Defaults
+            'status'                  => 'pending',
+            'resolution_of_complaint' => null,
+
+            'priority'                => $_POST['priority'],
+            'category'                => trim($_POST['category']),
+            'anonymous'               => (int) $_POST['anonymous'],
+            'attachment_path'         => $attachmentPath,
+            'confidential'            => (int) $_POST['confidential'],
+
+            // EER will update these later
+            'action_taken'            => null,
+            'satisfaction_rating'     => null,
+            'satisfaction_comment'    => null,
+            'resolved_at'             => null,
+            'escalation_level'        => null,
+            'escalation_reason'       => null,
+
+            'created_by_user_id'      => $userId,
+
+            // Payroll-related fields
+            'payslip_id'              => null,
+            'gross_pay'               => null,
+            'total_deductions'        => null,
+            'net_pay'                 => null,
+            'payslip_information'     => null,
+        ];
+
+        if ($this->grievanceModel->create($data)) {
+
+            $_SESSION['success'] = "Grievance submitted successfully.";
+        } else {
+
+            $_SESSION['error'] = "Unable to submit grievance.";
+        }
+
+        Helper::redirect('index.php?url=employee-grievance');
     }
 }
