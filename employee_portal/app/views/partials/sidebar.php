@@ -151,7 +151,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="index.php?url=" class="nav-link">
+                    <a href="index.php?url=employee-complaint-index" class="nav-link">
                         <i class="fas fa-comment-alt nav-icon"></i>
                         <p>Employee Complaint</p>
                     </a>

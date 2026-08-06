@@ -20,6 +20,7 @@ require 'app/controllers/AuthController.php';
 require 'app/controllers/ProfileController.php';
 require 'app/controllers/PayslipController.php';
 require 'app/controllers/GrievanceController.php';
+require 'app/controllers/ComplaintController.php';
 require 'app/controllers/DocumentsController.php';
 require 'app/controllers/CareerPathController.php';
 require 'app/controllers/ManageUserController.php';
@@ -523,6 +524,20 @@ switch ($url) {
     case 'resignation-request-cancel':
         (new ResignationRequestController)->cancel();
         break;
+    /*
+|--------------------------------------------------------------------------
+| Employee Complaint Request Routes
+|--------------------------------------------------------------------------
+|
+*/
+    case 'employee-complaint-index':
+        (new ComplaintController)->index();
+        break;
+
+    case 'employee-complaints-store':
+        (new ComplaintController)->store();
+        break;
+
     /*
 |--------------------------------------------------------------------------
 | Default

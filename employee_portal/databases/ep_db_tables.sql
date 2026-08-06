@@ -153,8 +153,14 @@ CREATE TABLE
 -- |
 -- */
 ALTER TABLE users
-ADD COLUMN password_reset_token VARCHAR(255),
+ADD COLUMN password_reset_token VARCHAR(255);
+
+ALTER TABLE users
 ADD COLUMN password_reset_expires DATETIME;
+
+ALTER TABLE users
+ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1
+AFTER is_admin;
 
 ALTER TABLE ep_employee_benefits ADD CONSTRAINT fk_employee_benefits_employee FOREIGN KEY (employee_id) REFERENCES employees (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
