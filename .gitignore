@@ -1,0 +1,12 @@
+node_modules/
+vendor/
+dist/
+.git/
+.kilo/
+*.log
+*.sql
+*.pdf
+test_*.php
+reset_password.php
+static_test_contract.pdf
+test_sub2/

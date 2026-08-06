@@ -53,4 +53,27 @@ class User
             'id' => $id
         ]);
     }
+
+    public function recordLastLogin($id)
+    {
+        $sql = "UPDATE users
+                   SET last_login = NOW(),
+                       failed_login_attempts = 0
+                  WHERE id = :id";
+
+        $stmt = $this->db->prepare($sql);
+
+        return $stmt->execute(['id' => $id]);
+    }
+
+    public function incrementFailedAttempts($id)
+    {
+        $sql = "UPDATE users
+                   SET failed_login_attempts = failed_login_attempts + 1
+                  WHERE id = :id";
+
+        $stmt = $this->db->prepare($sql);
+
+        return $stmt->execute(['id' => $id]);
+    }
 }

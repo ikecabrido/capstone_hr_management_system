@@ -1,0 +1,33 @@
+:root {
+  --lc-layout-footer-bg: transparent;
+}
+
+/* Shared stretch + footer positioning (AdminLTE-compatible) */
+.wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.content-wrapper {
+  flex: 1;
+  width: 100%;
+}
+
+.main-footer {
+  margin-top: auto;
+  position: relative;
+}
+
+/* Sidebar height should match the overall content height */
+.main-sidebar,
+.main-sidebar .sidebar,
+.main-sidebar .sidebar > * {
+  height: 100%;
+}
+
+/* Prevent sidebar internal layout from overflowing the full height */
+.main-sidebar .sidebar {
+  overflow-y: auto;
+}
+

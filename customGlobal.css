@@ -1,5 +1,6 @@
 html,
 body {
+
   width: 100%;
   height: 100%;
   margin: 0;
@@ -9,24 +10,260 @@ body {
   font-display: fallback;
 }
 
-/* REMOVE MODAL BACKDROP SHADOW - No gray overlay when modal opens */
-.modal-backdrop {
-    display: none !important;
+/* =========================================================
+   Remove unwanted space between header and content
+   Targets default margins, collapsing margins, and padding
+   on container elements that create gaps under the navbar.
+   ========================================================= */
+
+.content-header {
+  margin: 0;
+  padding: 0;
 }
+
+h1, h2, h3, h4, h5, h6, p, .content-header, .content-header > div {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
 .page-header {
   text-align: center;
   font-size: 32px;
   font-weight: 700;
-  color: #000000;
+  color: #433c3c;
   margin-bottom: 30px;
   letter-spacing: 1px;
 }
 .page-header h3,
-p {
+.page-header p {
   margin: 0;
 }
 
-/* Real fullscreen background */
+/* =========================================================
+   Sticky Header & Sidebar (AdminLTE fixed layout)
+   The body already uses layout-fixed + layout-navbar-fixed.
+   These rules supplement AdminLTE without overriding its
+   core fixed-positioning logic.
+   ========================================================= */
+
+/* Wrapper is a full-height flex column: the header and sidebar are
+   fixed (out of flow), the content area flexes to fill and scrolls
+   internally, and the footer is a static item pinned to the bottom.
+   The page itself never scrolls, so the scrollbar is contained
+   exclusively within the content area. */
+.layout-fixed .wrapper {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+body.layout-fixed {
+  overflow: hidden;
+}
+
+/* Only the content area scrolls; the scrollbar is contained here so the
+   header and footer are never affected by its scrolling. */
+body.layout-fixed .content-wrapper {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-top: var(--header-height, 57px);
+  scrollbar-gutter: stable;
+  box-sizing: border-box;
+}
+
+/* Ensure header stays above content and its scrollbar */
+body.layout-navbar-fixed .main-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 57px;
+  z-index: 1030;
+}
+
+/* Sidebar: ensure fixed positioning and blue background */
+body.layout-fixed .main-sidebar {
+  position: fixed;
+  z-index: 1020;
+}
+
+/* Push content to the right of fixed sidebar */
+body.layout-fixed .content-wrapper {
+  margin-left: 260px;
+}
+
+/* Responsive: collapse sidebar on mobile */
+@media (max-width: 991.98px) {
+  body.layout-fixed .main-sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  body.sidebar-open .main-sidebar {
+    transform: translateX(0);
+  }
+
+  body.layout-fixed .content-wrapper {
+    margin-left: 0;
+  }
+}
+
+/* Small mobile adjustments */
+@media (max-width: 575.98px) {
+  body.layout-fixed .content-wrapper {
+    padding: 1rem;
+  }
+}
+
+/* =========================================================
+   Theme overrides (AdminLTE layout)
+   - Light mode: blue header/sidebar/footer + white content
+   ========================================================= */
+
+:root {
+  --app-blue: #007bff;
+  --app-black: #000000;
+  --header-height: 57px;
+  --sidebar-width: 260px;
+}
+
+/* =========================================================
+   Blue Theme: Header, Sidebar, Footer
+   Force blue background + white text/icons on all
+   interactive and non-interactive elements inside these zones.
+   ========================================================= */
+
+/* Header: navbar + all children */
+.main-header,
+.main-header *,
+.main-header .navbar,
+.main-header .navbar * {
+  background-color: var(--app-blue) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+}
+
+/* Sidebar: all levels */
+.main-sidebar,
+.main-sidebar * {
+  background-color: var(--app-blue) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+}
+
+/* Footer: all levels */
+.main-footer,
+.main-footer * {
+  background-color: var(--app-blue) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+}
+
+/* Footer sits in normal document flow, AFTER all content.
+   Neutralize AdminLTE's layout-footer-fixed pinning so it never
+   overlaps or floats mid-page. It remains a static flex item. */
+body.layout-footer-fixed .main-footer {
+  position: static !important;
+  bottom: auto !important;
+  left: auto !important;
+  right: auto !important;
+  z-index: auto !important;
+}
+
+/* Align footer with the fixed sidebar on desktop; full width on mobile */
+body.layout-fixed .main-footer {
+  flex: 0 0 auto;
+  margin-left: var(--sidebar-width, 260px);
+}
+
+@media (max-width: 991.98px) {
+  body.layout-fixed .main-footer {
+    margin-left: 0;
+  }
+}
+
+/* Override any AdminLTE dark/light variant classes */
+.navbar-dark,
+.navbar-dark *,
+.sidebar-dark-primary,
+.sidebar-dark-primary * {
+  background-color: var(--app-blue) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+}
+
+/* Force links, buttons, inputs inside theme zones to white */
+.main-header a,
+.main-sidebar a,
+.main-footer a,
+.main-header button,
+.main-sidebar button,
+.main-footer button {
+  color: #ffffff !important;
+}
+
+.main-header a:hover,
+.main-sidebar a:hover,
+.main-footer a:hover {
+  color: #e6e6e6 !important;
+}
+
+/* Active nav-link styling for sidebar */
+.main-sidebar .nav-link.active {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+
+.main-sidebar .nav-link.active p,
+.main-sidebar .nav-link.active i {
+  color: #ffffff !important;
+}
+
+/* Hover states for sidebar nav items */
+.main-sidebar .nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+.main-sidebar .nav-link:hover p,
+.main-sidebar .nav-link:hover i {
+  color: #ffffff !important;
+}
+
+/* Ensure card headers in content area keep readable text */
+.content-wrapper .card-header.bg-primary,
+.content-wrapper .card-header.bg-info,
+.content-wrapper .card-header.bg-success,
+.content-wrapper .card-header.bg-warning,
+.content-wrapper .card-header.bg-danger,
+.content-wrapper .card-header.bg-secondary {
+  color: #ffffff !important;
+}
+
+/* Content area default text (light theme) */
+.content-wrapper,
+.content-wrapper * {
+  color: #333333;
+}
+
+/* Content area backgrounds */
+.content-wrapper,
+.content-wrapper .content-header,
+.content-wrapper .content,
+.content-wrapper section.content,
+.content-wrapper .card,
+.content-wrapper .card-body,
+.content-wrapper .info-box,
+.content-wrapper .info-box-content {
+  background-color: #ffffff !important;
+}
+
+
+/* REMOVE MODAL BACKDROP SHADOW - No gray overlay when modal opens */
 .bg {
   position: fixed;
   inset: 0;
@@ -122,6 +359,73 @@ p {
 
 .tile-grid a:last-child {
   grid-column: 3 / span 1;
+}
+
+/* =========================================================
+   PERMANENT LIGHT THEME
+   The app is locked to a light theme. AdminLTE ships built-in
+   .dark-mode styles; the rules below neutralize them so a dark
+   appearance can never be triggered. Header, sidebar and footer
+   stay blue; the main content area stays white in every state.
+   No dark-mode toggle/JS is wired up anywhere in the project.
+   ========================================================= */
+
+html {
+  color-scheme: light;
+}
+
+/* Re-assert light variable values even when .dark-mode is present */
+.dark-mode :root {
+  --lightblue: #007bff;
+  --blue: #007bff;
+  --primary: #007bff;
+  --secondary: #6c757d;
+  --success: #28a745;
+  --info: #17a2b8;
+  --warning: #ffc107;
+  --danger: #dc3545;
+  --light: #f8f9fa;
+  --dark: #343a40;
+}
+
+/* Keep the page background light */
+body,
+body.dark-mode,
+.dark-mode .wrapper {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+/* Keep the main content area white even inside .dark-mode */
+body.dark-mode .content-wrapper,
+.dark-mode .content-wrapper,
+.dark-mode .content-wrapper .content,
+.dark-mode .content-wrapper .content-header,
+.dark-mode .content-wrapper section.content,
+.dark-mode .content-wrapper .card,
+.dark-mode .content-wrapper .card-body,
+.dark-mode .content-wrapper .info-box,
+.dark-mode .content-wrapper .info-box-content {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+/* Header, sidebar and footer remain blue in every state.
+   (The blue !important rules earlier in this file already
+   cover these; this guard ensures any stray .dark-mode
+   override is also cancelled.) */
+body.dark-mode .main-header,
+body.dark-mode .main-sidebar,
+body.dark-mode .main-footer,
+.dark-mode .main-header,
+.dark-mode .main-sidebar,
+.dark-mode .main-footer,
+.dark-mode .main-header *,
+.dark-mode .main-sidebar *,
+.dark-mode .main-footer * {
+  background-color: var(--app-blue) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
 }
 
 /* For Login Page */

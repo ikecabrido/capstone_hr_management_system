@@ -50,14 +50,14 @@ class EmployeeAuth
     }
     
     /**
-     * Find employee by username (email or employee_number)
+     * Find employee by username (email or employee_code)
      */
     public function findByUsername($username)
     {
         try {
-            // Try to find by email first, then by employee_number
+            // Try to find by email first, then by employee_code
             $sql = "SELECT * FROM employees 
-                    WHERE email = ? OR employee_number = ? 
+                    WHERE email = ? OR employee_code = ? 
                     LIMIT 1";
             
             $stmt = $this->db->prepare($sql);
@@ -82,6 +82,44 @@ class EmployeeAuth
             
             if (!$employee) {
                 return false;
+            }
+            
+            // employees table does not have a password column; build user
+            // data from department mapping so login can succeed with the
+            // correct role and redirect page.
+            if (!isset($employee['password']) || $employee['password'] === null) {
+                $department = $employee['department'] ?? null;
+
+                if (empty($department)) {
+                    return ['error' => 'No department assigned. Please contact HR to assign your department.'];
+                }
+
+                if (!$this->isValidDepartment($department)) {
+                    return ['error' => 'Invalid department assignment. Please contact HR.'];
+                }
+
+                $systemRole = $this->getSystemRole($department);
+                $redirectPage = $this->getRedirectPage($department);
+
+                $userData = [
+                    'id' => $employee['id'] ?? $employee['employee_id'] ?? null,
+                    'employee_id' => $employee['employee_code'] ?? $employee['id'],
+                    'employee_no' => $employee['employee_code'] ?? '',
+                    'username' => $employee['email'] ?? $username,
+                    'name' => trim(($employee['first_name'] ?? '') . ' ' . ($employee['last_name'] ?? '')),
+                    'first_name' => $employee['first_name'] ?? '',
+                    'last_name' => $employee['last_name'] ?? '',
+                    'email' => $employee['email'] ?? '',
+                    'department' => $department,
+                    'position' => $employee['position'] ?? null,
+                    'role' => $systemRole,
+                    'redirect_page' => $redirectPage,
+                    'theme' => 'light',
+                    'is_employee_auth' => true,
+                    'department_access' => $this->getDepartmentAccess($department),
+                ];
+
+                return $userData;
             }
             
             // Check password - support both plain text and hashed passwords
@@ -128,7 +166,7 @@ class EmployeeAuth
             // Build user session data with department info - ENFORCE department access
             $userData = [
                 'id' => $employee['id'],
-                'employee_id' => $employee['employee_number'] ?? $employee['id'],
+                'employee_id' => $employee['employee_code'] ?? $employee['id'],
                 'username' => $employee['email'] ?? $username,
                 'name' => trim(($employee['first_name'] ?? '') . ' ' . ($employee['last_name'] ?? '')),
                 'first_name' => $employee['first_name'] ?? '',
@@ -345,13 +383,13 @@ class EmployeeAuth
     }
     
     /**
-     * Check if an employee exists by email or employee_number
+     * Check if an employee exists by email or employee_code
      */
     public function employeeExists($username)
     {
         try {
             $sql = "SELECT COUNT(*) as count FROM employees 
-                    WHERE email = ? OR employee_number = ?";
+                    WHERE email = ? OR employee_code = ?";
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$username, $username]);
@@ -385,7 +423,7 @@ class EmployeeAuth
     {
         if (!self::hasModuleAccess($moduleName)) {
             // No access - redirect to appropriate page
-            $redirectTo = $redirectTo ?? $_SESSION['user']['redirect_page'] ?? 'login_form.php';
+            $redirectTo = $redirectTo ?? $_SESSION['user']['redirect_page'] ?? '../login_form.php';
             header("Location: " . $redirectTo);
             exit;
         }

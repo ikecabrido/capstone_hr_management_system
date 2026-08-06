@@ -111,9 +111,18 @@ class DepartmentAccess
             return true;
         }
         
-        // Get user's department
+        // Get user's department. The `users` table stores access as `role`
+        // (e.g. 'compliance', 'recruitment'), not a `department` column, so
+        // fall back to the role when department is absent. This keeps
+        // hasAccess() working for the actual session shape.
         $department = $user['department'] ?? null;
-        
+        if (!$department) {
+            $role = $user['role'] ?? null;
+            if ($role) {
+                $department = self::departmentFromRole($role);
+            }
+        }
+
         if (!$department) {
             return false;
         }
@@ -133,7 +142,7 @@ class DepartmentAccess
     {
         if (!self::hasAccess($moduleName)) {
             // Get the user's allowed redirect page
-            $redirectTo = $redirectTo ?? $_SESSION['user']['redirect_page'] ?? 'login_form.php';
+            $redirectTo = $redirectTo ?? $_SESSION['user']['redirect_page'] ?? '../login_form.php';
             
             // Store message for display
             $_SESSION['access_denied'] = 'You do not have access to this module. Please contact your administrator.';
@@ -143,6 +152,39 @@ class DepartmentAccess
         }
     }
     
+    /**
+     * Derive a department name from the `users.role` enum value so that
+     * hasAccess() works even when no explicit `department` is stored in
+     * the session. Role values align with the access-rule departments.
+     * @param string $role
+     * @return string|null
+     */
+    private static function departmentFromRole($role)
+    {
+        $map = [
+            'compliance'             => 'Legal',
+            'recruitment'            => 'Human Resources',
+            'payroll'                => 'Finance',
+            'time'                   => 'Human Resources',
+            'workforce'              => 'Human Resources',
+            'learning'               => 'Human Resources',
+            'performance'            => 'Human Resources',
+            'engagement_relations'   => 'Human Resources',
+            'exit'                   => 'Human Resources',
+            'employee'               => 'Human Resources',
+            'employee_portal'        => 'Human Resources',
+            'clinic'                 => 'Clinic',
+        ];
+
+        $role = strtolower((string) $role);
+        if (isset($map[$role])) {
+            return $map[$role];
+        }
+
+        // Unknown role: try to reuse the role string as a department key.
+        return ucwords(str_replace('_', ' ', $role)) ?: null;
+    }
+
     /**
      * Get allowed modules for a department
      * @param string $department - Department name
@@ -247,7 +289,7 @@ class DepartmentAccess
     public static function requireHR($redirectTo = null)
     {
         if (!self::isHR()) {
-            $redirectTo = $redirectTo ?? $_SESSION['user']['redirect_page'] ?? 'login_form.php';
+            $redirectTo = $redirectTo ?? $_SESSION['user']['redirect_page'] ?? '../login_form.php';
             $_SESSION['access_denied'] = 'HR department access required.';
             header("Location: " . $redirectTo);
             exit;
@@ -260,7 +302,7 @@ class DepartmentAccess
     public static function requireFinance($redirectTo = null)
     {
         if (!self::isFinance()) {
-            $redirectTo = $redirectTo ?? $_SESSION['user']['redirect_page'] ?? 'login_form.php';
+            $redirectTo = $redirectTo ?? $_SESSION['user']['redirect_page'] ?? '../login_form.php';
             $_SESSION['access_denied'] = 'Finance department access required.';
             header("Location: " . $redirectTo);
             exit;

@@ -42,7 +42,7 @@ function saveUserThemePreference($userId, $theme) {
         
         // Use REPLACE INTO or INSERT...ON DUPLICATE KEY UPDATE
         $stmt = $pdo->prepare("
-            INSERT INTO users (id, theme) 
+            INSERT INTO users (user_id, theme) 
             VALUES (?, ?) 
             ON DUPLICATE KEY UPDATE theme = VALUES(theme)
         ");
@@ -77,7 +77,7 @@ function getUserThemePreference($userId) {
         $database = new Database();
         $pdo = $database->connect();
         
-        $stmt = $pdo->prepare("SELECT theme FROM users WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT theme FROM users WHERE user_id = ?");
         $stmt->execute([$userId]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -139,7 +139,7 @@ function saveUserPreferences($userId, $preferences) {
         
         $values[] = $userId;
         
-        $sql = "UPDATE users SET " . implode(', ', $sets) . " WHERE id = ?";
+        $sql = "UPDATE users SET " . implode(', ', $sets) . " WHERE user_id = ?";
         $stmt = $pdo->prepare($sql);
         $stmt->execute($values);
         

@@ -1,12 +1,13 @@
 <?php
 
+if (!class_exists('Database')) {
 class Database
 {
     private static $instance = null;
     private PDO $conn;
 
     private string $host = "localhost";
-    private string $db   = "sample_hr";
+    private string $db   = "hr-management";
     private string $user = "root";
     private string $pass = "";
 
@@ -39,4 +40,5 @@ class Database
     {
         return $this->conn;
     }
+}
 }
