@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../models/SettlementModel.php';
+require_once __DIR__ . '/../../payroll/controllers/payrollClearanceController.php';
 
 class SettlementController extends ExitManagementController
 {
@@ -12,28 +13,23 @@ class SettlementController extends ExitManagementController
         $this->settlementModel = new SettlementModel();
     }
 
-    /**
-     * Create settlement
-     */
     public function createSettlement(array $data): array
     {
         try {
-            // Validate required fields
-            $required = ['employee_id', 'basic_salary', 'net_payable', 'settlement_date'];
+            // Minimum required fields for a draft settlement: employee and settlement date
+            $required = ['employee_id', 'settlement_date'];
             foreach ($required as $field) {
                 if (!isset($data[$field])) {
                     return ['success' => false, 'message' => "Field '$field' is required"];
                 }
             }
 
-            // Calculate total if not provided
+            // If net_payable is not provided, compute a best-effort total from available components
             if (!isset($data['net_payable'])) {
                 $data['net_payable'] = $this->settlementModel->calculateTotalSettlement($data);
             }
 
-            // Add created_by from session
             $data['created_by'] = $_SESSION['user']['id'] ?? 0;
-
             $settlementId = $this->settlementModel->createSettlement($data);
 
             return [
@@ -46,15 +42,11 @@ class SettlementController extends ExitManagementController
         }
     }
 
-    /**
-     * Calculate settlement components
-     */
     public function calculateSettlement(array $data): array
     {
         try {
             $calculations = [];
 
-            // Calculate gratuity if years of service provided
             if (isset($data['basic_salary']) && isset($data['years_of_service'])) {
                 $calculations['gratuity'] = $this->settlementModel->calculateGratuity(
                     $data['basic_salary'],
@@ -62,7 +54,6 @@ class SettlementController extends ExitManagementController
                 );
             }
 
-            // Calculate PF
             if (isset($data['basic_salary'])) {
                 $da = $data['da'] ?? 0;
                 $calculations['provident_fund'] = $this->settlementModel->calculateProvidentFund(
@@ -71,7 +62,6 @@ class SettlementController extends ExitManagementController
                 );
             }
 
-            // Calculate notice pay
             if (isset($data['basic_salary']) && isset($data['notice_days'])) {
                 $calculations['notice_pay'] = $this->settlementModel->calculateNoticePay(
                     $data['basic_salary'],
@@ -79,7 +69,6 @@ class SettlementController extends ExitManagementController
                 );
             }
 
-            // Calculate total
             $total = $this->settlementModel->calculateTotalSettlement($data);
             $calculations['net_payable'] = $total;
 
@@ -92,9 +81,85 @@ class SettlementController extends ExitManagementController
         }
     }
 
-    /**
-     * Get settlement details
-     */
+    public function previewPayroll(int $settlementId, int $employeeId): array
+    {
+        try {
+            $settlement = $this->settlementModel->getSettlementById($settlementId);
+            if (!$settlement) {
+                return ['success' => false, 'message' => 'Settlement not found'];
+            }
+
+            $payrollController = new PayrollClearanceController();
+            $preview = $payrollController->calculateSettlementPreview($settlementId, $employeeId);
+            $adjustments = $this->settlementModel->getSettlementAdjustments($settlementId);
+
+            if (!empty($adjustments)) {
+                $preview['manual_adjustments'] = array_map(function (array $adjustment): array {
+                    return [
+                        'description' => $adjustment['description'],
+                        'amount' => (float)$adjustment['amount'],
+                        'adjustment_type' => $adjustment['adjustment_type'],
+                        'taxable' => (bool)$adjustment['taxable'],
+                        'notes' => $adjustment['notes']
+                    ];
+                }, $adjustments);
+            }
+
+            $this->settlementModel->savePayrollPreview($settlementId, $preview, $settlement['payroll_notes'] ?? '');
+
+            if (isset($preview['net_pay'])) {
+                $this->settlementModel->updatePayrollFinalAmount($settlementId, (float)$preview['net_pay']);
+            }
+
+            return [
+                'success' => true,
+                'message' => 'Payroll preview generated successfully',
+                'preview' => $preview
+            ];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function saveAdjustments(int $settlementId, array $adjustments, int $createdBy): array
+    {
+        try {
+            $count = $this->settlementModel->saveSettlementAdjustments($settlementId, $adjustments, $createdBy);
+            return [
+                'success' => true,
+                'message' => 'Settlement adjustments saved successfully',
+                'count' => $count
+            ];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function requestPayrollClearance(int $settlementId, int $requestedBy, ?string $notes = null): array
+    {
+        try {
+            $settlement = $this->settlementModel->getSettlementById($settlementId);
+            if (!$settlement) {
+                return ['success' => false, 'message' => 'Settlement not found'];
+            }
+
+            $payrollController = new PayrollClearanceController();
+            $result = $payrollController->createClearanceRequest($settlementId, $requestedBy);
+            if ($result['success']) {
+                $preview = $this->previewPayroll($settlementId, (int)$settlement['employee_id']);
+                if ($preview['success'] && isset($preview['preview']['net_pay'])) {
+                    $this->settlementModel->updatePayrollFinalAmount($settlementId, (float)$preview['preview']['net_pay']);
+                }
+                $this->settlementModel->updatePayrollClearanceStatus($settlementId, 'pending', $result['id'] ?? null, $notes);
+                return $result;
+            }
+
+            return $result;
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
     public function getSettlement(int $settlementId): array
     {
         $settlement = $this->settlementModel->getSettlementById($settlementId);
@@ -103,12 +168,19 @@ class SettlementController extends ExitManagementController
             return ['error' => 'Settlement not found'];
         }
 
+        $settlement['adjustments'] = $this->settlementModel->getSettlementAdjustments($settlementId);
+        $settlement['payroll_preview'] = [];
+
+        if (!empty($settlement['payroll_preview_data'])) {
+            $decoded = json_decode($settlement['payroll_preview_data'], true);
+            if (is_array($decoded)) {
+                $settlement['payroll_preview'] = $decoded;
+            }
+        }
+
         return $settlement;
     }
 
-    /**
-     * Approve settlement
-     */
     public function approveSettlement(int $settlementId, int $approvedBy): array
     {
         try {
@@ -127,38 +199,24 @@ class SettlementController extends ExitManagementController
         }
     }
 
-    /**
-     * Get pending settlements
-     */
     public function getPendingSettlements(): array
     {
         return $this->settlementModel->getPendingSettlements();
     }
 
-    /**
-     * Get all settlements
-     */
     public function getSettlements(): array
     {
         return $this->settlementModel->getAllSettlements();
     }
 
-    /**
-     * Print settlement (placeholder for PDF generation)
-     */
     public function printSettlement(int $settlementId): array
     {
-        // This would generate a PDF or redirect to print view
-        // For now, return success
         return [
             'success' => true,
             'message' => 'Settlement print functionality not yet implemented'
         ];
     }
 
-    /**
-     * Handle AJAX requests for settlements
-     */
     public function handleAjaxRequest(string $action, array $data = []): array
     {
         switch ($action) {
@@ -169,6 +227,23 @@ class SettlementController extends ExitManagementController
 
             case 'calculate_settlement':
                 return $this->calculateSettlement($data);
+
+            case 'preview_payroll':
+                return $this->previewPayroll((int)($data['settlement_id'] ?? 0), (int)($data['employee_id'] ?? 0));
+
+            case 'save_adjustments':
+                return $this->saveAdjustments(
+                    (int)($data['settlement_id'] ?? 0),
+                    json_decode((string)($data['adjustments'] ?? '[]'), true) ?: [],
+                    (int)($_SESSION['user']['id'] ?? 0)
+                );
+
+            case 'request_payroll_clearance':
+                return $this->requestPayrollClearance(
+                    (int)($data['settlement_id'] ?? 0),
+                    (int)($_SESSION['user']['id'] ?? 0),
+                    $data['notes'] ?? null
+                );
 
             case 'get_settlement':
                 return $this->getSettlement($data['settlement_id'] ?? 0);

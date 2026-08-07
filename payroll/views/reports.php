@@ -14,7 +14,7 @@ $periods = $data['periods'];
 $periodName = 'All Periods';
 
 foreach ($periods as $p) {
-    if ($p['id'] == $periodId) {
+    if ($p['period_id'] == $periodId) {
         $periodName = $p['period_name'];
         break;
     }
@@ -55,7 +55,7 @@ $payroll = $data['payroll'];
 </head>
 
 <body
-    class="hold-transition dark-mode sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed">
+    class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed <?= $theme === 'dark' ? 'dark-mode' : '' ?>">
     <div class="wrapper">
         <!-- Preloader -->
         <div
@@ -148,12 +148,6 @@ $payroll = $data['payroll'];
                         </li>
 
                         <li class="nav-item">
-                            <a href="salaryOverview.php" class="nav-link ">
-                                <i class="nav-icon fas fa-money-check-alt"></i>
-                                <p>Salary Overview</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
                             <a href="periodManager.php" class="nav-link">
                                 <i class="nav-icon fas fa-calendar-alt"></i>
                                 <p>Payroll Periods</p>
@@ -174,7 +168,7 @@ $payroll = $data['payroll'];
                         <li class="nav-item">
                             <a href="allowance.php" class="nav-link">
                                 <i class="nav-icon fas fa-file-invoice-dollar"></i>
-                                <p>Benefits & Deductions</p>
+                                <p>Deductions</p>
                             </a>
                         </li>
 
@@ -189,7 +183,7 @@ $payroll = $data['payroll'];
                         <li class="nav-item">
                             <a href="payrollClearance.php" class="nav-link">
                                 <i class="nav-icon fas fa-file-signature"></i>
-                                <p>Payroll Clearance</p>
+                                <p>Final Settlements</p>
                             </a>
                         </li>
                         <li class="nav-item">
@@ -430,14 +424,6 @@ $payroll = $data['payroll'];
         <!-- /.control-sidebar -->
 
         <!-- Main Footer -->
-        <footer class="main-footer">
-            <strong>Copyright &copy; 2026-2027 Bestlink College of the
-                Philippines.</strong>
-            All rights reserved.
-            <!-- <div class="float-right d-none d-sm-inline-block">
-          <b>Version</b> 3.2.0
-        </div> -->
-        </footer>
     </div>
     <!-- ./wrapper -->
 
@@ -465,7 +451,7 @@ $payroll = $data['payroll'];
     <!-- AdminLTE dashboard demo (This is only for demo purposes) -->
     <!-- <script src="assets/dist/js/pages/dashboard2.js"></script> -->
     <script src="../custom.js"></script>
-    <script src="../../assets/dist/js/theme.js"></script>
+
     <script src="../../assets/dist/js/time.js"></script>
     <script src="../../assets/dist/js/global_modal.js"></script>
     <script src="../../assets/dist/js/profile.js"></script>

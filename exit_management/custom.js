@@ -32,7 +32,9 @@ function initializeModals() {
         submitSettlementForm();
     });
 
-    $('#calculateNetPayable').on('click', calculateSettlement);
+    $('#previewPayrollBtn').on('click', previewPayrollSettlement);
+    $('#requestClearanceBtn').on('click', requestPayrollClearance);
+    $('#addAdjustmentBtn').on('click', addSettlementAdjustment);
 
     // Document Modal
     $('#documentForm').on('submit', function(e) {
@@ -67,6 +69,10 @@ function initializeModals() {
 
     $(document).on('click', '.remove-question', function() {
         $(this).closest('.question-item').remove();
+    });
+
+    $(document).on('click', '.remove-adjustment', function() {
+        $(this).closest('.adjustment-row').remove();
     });
 }
 
@@ -178,11 +184,14 @@ function showTransferModal(planId = null) {
 
 function showSettlementModal(settlementId = null) {
     loadResignations();
+    $('#adjustmentsContainer').empty();
+    $('#settlementNotes').val('');
+    $('#settlementPreviewSummary').html('<div class="settlement-preview-card p-3 text-muted"><i class="fas fa-hourglass-half mr-2"></i> Payroll preview will appear after you request a payroll review.</div>').hide();
     if (settlementId) {
-        $('#settlementModalTitle').text('Edit Settlement');
+        $('#settlementModalTitle').text('Review Settlement');
         loadSettlementData(settlementId);
     } else {
-        $('#settlementModalTitle').text('Calculate Final Settlement');
+        $('#settlementModalTitle').text('Request Payroll Settlement');
         $('#settlementForm')[0].reset();
         $('#settlementId').val('');
     }
@@ -324,32 +333,43 @@ function submitSettlementForm() {
     
     formData.append('ajax_action', settlementId ? 'update_settlement' : 'submit_settlement');
     formData.append('controller', 'settlement');
-
+ 
     $('#settlementSubmitBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
-
-    $.ajax({
+ 
+    return $.ajax({
         url: 'exit_management.php',
         type: 'POST',
         data: formData,
         processData: false,
         contentType: false,
-        success: function(response) {
+        dataType: 'json'
+    }).done(function(response) {
             if (response.success) {
-                $('#settlementModal').modal('hide');
-                showToast('success', response.message);
+                const savedSettlementId = response.settlement_id || $('#settlementId').val();
+                if (savedSettlementId) {
+                    $('#settlementId').val(savedSettlementId);
+                    saveSettlementAdjustments(savedSettlementId).done(function(adjustmentResponse) {
+                        if (!adjustmentResponse || adjustmentResponse.success) {
+                            showToast('success', response.message);
+                        } else {
+                            showToast('warning', adjustmentResponse.message || 'Settlement saved but adjustments could not be stored.');
+                        }
+                    }).fail(function() {
+                        showToast('warning', 'Settlement saved but adjustments could not be stored.');
+                    });
+                } else {
+                    showToast('success', response.message);
+                }
                 loadSettlementsTable();
                 loadDashboardData();
             } else {
                 showToast('error', response.message);
             }
-        },
-        error: function() {
+        }).fail(function() {
             showToast('error', 'An error occurred while saving the settlement.');
-        },
-        complete: function() {
+        }).always(function() {
             $('#settlementSubmitBtn').prop('disabled', false).html('Save Settlement');
-        }
-    });
+        });
 }
 
 function submitDocumentForm() {
@@ -534,26 +554,305 @@ function getSurveyQuestionTemplate(index) {
     `;
 }
 
-// Calculation functions
-function calculateSettlement() {
-    const basicSalary = parseFloat($('#basicSalary').val()) || 0;
-    const hra = parseFloat($('#hra').val()) || 0;
-    const conveyance = parseFloat($('#conveyance').val()) || 0;
-    const lta = parseFloat($('#lta').val()) || 0;
-    const medicalAllowance = parseFloat($('#medicalAllowance').val()) || 0;
-    const otherAllowances = parseFloat($('#otherAllowances').val()) || 0;
+function addSettlementAdjustment() {
+    const index = $('#adjustmentsContainer .adjustment-row').length;
+    $('#adjustmentsContainer').append(getSettlementAdjustmentTemplate(index));
+}
 
-    const providentFund = parseFloat($('#providentFund').val()) || 0;
-    const gratuity = parseFloat($('#gratuity').val()) || 0;
-    const noticePay = parseFloat($('#noticePay').val()) || 0;
-    const outstandingLoans = parseFloat($('#outstandingLoans').val()) || 0;
-    const otherDeductions = parseFloat($('#otherDeductions').val()) || 0;
+function getSettlementAdjustmentTemplate(index, adjustment = null) {
+    const adjustmentType = adjustment && adjustment.adjustment_type ? adjustment.adjustment_type : 'credit';
+    const description = adjustment ? adjustment.description || '' : '';
+    const amount = adjustment && adjustment.amount !== undefined ? adjustment.amount : 0;
+    const taxable = adjustment && adjustment.taxable ? '1' : '0';
+    const notes = adjustment ? adjustment.notes || '' : '';
 
-    const totalEarnings = basicSalary + hra + conveyance + lta + medicalAllowance + otherAllowances;
-    const totalDeductions = providentFund + gratuity + noticePay + outstandingLoans + otherDeductions;
-    const netPayable = totalEarnings - totalDeductions;
+    return `
+        <div class="adjustment-row settlement-adjustment-card p-3 mb-2">
+            <div class="row">
+                <div class="col-md-3">
+                    <label>Type</label>
+                    <select class="form-control" name="adjustments[${index}][adjustment_type]">
+                        <option value="credit" ${adjustmentType === 'credit' ? 'selected' : ''}>Credit</option>
+                        <option value="deduction" ${adjustmentType === 'deduction' ? 'selected' : ''}>Deduction</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label>Description</label>
+                    <input type="text" class="form-control" name="adjustments[${index}][description]" placeholder="e.g. Leave encashment" value="${escapeHtml(description)}">
+                </div>
+                <div class="col-md-2">
+                    <label>Amount</label>
+                    <input type="number" step="0.01" class="form-control" name="adjustments[${index}][amount]" value="${escapeHtml(amount.toString())}">
+                </div>
+                <div class="col-md-2">
+                    <label>Taxable</label>
+                    <select class="form-control" name="adjustments[${index}][taxable]">
+                        <option value="0" ${taxable === '0' ? 'selected' : ''}>No</option>
+                        <option value="1" ${taxable === '1' ? 'selected' : ''}>Yes</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <label>&nbsp;</label>
+                    <button type="button" class="btn btn-outline-danger btn-block remove-adjustment">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-12">
+                    <label>Notes</label>
+                    <textarea class="form-control" rows="2" name="adjustments[${index}][notes]" placeholder="Optional notes">${escapeHtml(notes)}</textarea>
+                </div>
+            </div>
+        </div>
+    `;
+}
 
-    $('#netPayable').val(netPayable.toFixed(2));
+function collectSettlementAdjustments() {
+    const adjustments = [];
+    $('#adjustmentsContainer .adjustment-row').each(function() {
+        const $row = $(this);
+        const description = $row.find('[name$="[description]"]').val().trim();
+        if (!description) {
+            return;
+        }
+
+        adjustments.push({
+            adjustment_type: $row.find('[name$="[adjustment_type]"]').val(),
+            description: description,
+            amount: parseFloat($row.find('[name$="[amount]"]').val()) || 0,
+            taxable: $row.find('[name$="[taxable]"]').val() === '1',
+            notes: $row.find('[name$="[notes]"]').val().trim()
+        });
+    });
+
+    return adjustments;
+}
+
+function saveSettlementAdjustments(settlementId) {
+    const adjustments = collectSettlementAdjustments();
+    if (!settlementId) {
+        return Promise.resolve({ success: true });
+    }
+
+    return $.post('exit_management.php', {
+        ajax_action: 'save_adjustments',
+        controller: 'settlement',
+        settlement_id: settlementId,
+        adjustments: JSON.stringify(adjustments)
+    });
+}
+
+function previewPayrollSettlement() {
+    let settlementId = $('#settlementId').val();
+    const employeeId = $('#settlementEmployeeSelect').val();
+
+    if (!employeeId) {
+        showToast('error', 'Please select an employee before previewing payroll.');
+        return;
+    }
+
+    const doPreview = function(sId) {
+        const $button = $('#previewPayrollBtn');
+        $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Previewing...');
+
+        saveSettlementAdjustments(sId).then(function() {
+            return $.post('exit_management.php', {
+                ajax_action: 'preview_payroll',
+                controller: 'settlement',
+                settlement_id: sId,
+                employee_id: employeeId
+            }, null, 'json');
+        }).done(function(response) {
+            if (response && response.success) {
+                const preview = response.preview || {};
+                if (preview.net_pay !== undefined) {
+                    $('#netPayable').val(parseFloat(preview.net_pay).toFixed(2));
+                }
+                renderSettlementPreview(preview, 'Preview ready');
+                showToast('success', response.message);
+                $('#settlementId').val(sId);
+            } else {
+                showToast('error', response ? response.message : 'Unable to generate payroll preview.');
+            }
+        }).fail(function() {
+            showToast('error', 'An error occurred while generating the payroll preview.');
+        }).always(function() {
+            $('#previewPayrollBtn').prop('disabled', false).html('<i class="fas fa-file-invoice-dollar"></i> Preview Payroll');
+        });
+    };
+
+    if (!settlementId) {
+        // Save a draft first then preview
+        submitSettlementForm().done(function(saveResp) {
+            if (saveResp && saveResp.success) {
+                const savedId = saveResp.settlement_id || $('#settlementId').val();
+                if (savedId) {
+                    $('#settlementId').val(savedId);
+                    doPreview(savedId);
+                } else {
+                    showToast('error', 'Unable to save settlement before previewing payroll.');
+                }
+            } else {
+                showToast('error', saveResp ? saveResp.message : 'Unable to save settlement before previewing payroll.');
+            }
+        }).fail(function() {
+            showToast('error', 'Unable to save settlement before previewing payroll.');
+        });
+        return;
+    }
+
+    doPreview(settlementId);
+}
+
+function renderSettlementPreview(preview, statusLabel = '') {
+    const earnings = preview.earnings || [];
+    const deductions = preview.deductions || [];
+    const manualAdjustments = preview.manual_adjustments || [];
+    const statusMarkup = statusLabel ? `<span class="badge badge-info">${escapeHtml(statusLabel)}</span>` : '';
+
+    const earningsMarkup = earnings.length > 0
+        ? earnings.map(item => `<li><strong>${escapeHtml(item.description || 'Earning')}</strong>: ₱${parseFloat(item.amount || 0).toFixed(2)}</li>`).join('')
+        : '<li>No earnings listed.</li>';
+
+    const deductionsMarkup = deductions.length > 0
+        ? deductions.map(item => `<li><strong>${escapeHtml(item.description || 'Deduction')}</strong>: ₱${parseFloat(item.amount || 0).toFixed(2)}</li>`).join('')
+        : '<li>No deductions listed.</li>';
+
+    const adjustmentsMarkup = manualAdjustments.length > 0
+        ? manualAdjustments.map(item => `<li><strong>${escapeHtml(item.description || 'Adjustment')}</strong>: ₱${parseFloat(item.amount || 0).toFixed(2)} (${item.adjustment_type || 'credit'})</li>`).join('')
+        : '<li>No manual adjustments added.</li>';
+
+    const content = `
+        <div class="settlement-preview-card p-3">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                <div>
+                    <h6 class="mb-1 font-weight-bold text-danger"><i class="fas fa-file-invoice-dollar mr-2"></i>Payroll review</h6>
+                    <p class="mb-0 small text-muted">Payroll values are shown here so Exit Management can review the settlement before final payout.</p>
+                </div>
+                ${statusMarkup}
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-4 mb-2">
+                    <div class="preview-pill">
+                        <span>Gross</span>
+                        <strong>₱${parseFloat(preview.gross_pay || 0).toFixed(2)}</strong>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <div class="preview-pill">
+                        <span>Net</span>
+                        <strong>₱${parseFloat(preview.net_pay || 0).toFixed(2)}</strong>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <div class="preview-pill">
+                        <span>Deductions</span>
+                        <strong>₱${parseFloat(preview.total_deductions || 0).toFixed(2)}</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-4">
+                    <h6 class="font-weight-bold">Earnings</h6>
+                    <ul class="pl-3 mb-0">${earningsMarkup}</ul>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="font-weight-bold">Deductions</h6>
+                    <ul class="pl-3 mb-0">${deductionsMarkup}</ul>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="font-weight-bold">Adjustments</h6>
+                    <ul class="pl-3 mb-0">${adjustmentsMarkup}</ul>
+                </div>
+            </div>
+        </div>
+    `;
+
+    $('#settlementPreviewSummary').html(content).show();
+}
+
+function renderSettlementDecisionSummary(response) {
+    const clearanceStatus = (response && response.payroll_clearance_status) ? response.payroll_clearance_status.toLowerCase() : 'pending';
+    const finalAmount = response && response.payroll_final_amount !== undefined && response.payroll_final_amount !== null
+        ? parseFloat(response.payroll_final_amount)
+        : null;
+    const notes = response && response.payroll_notes ? response.payroll_notes : '';
+
+    let icon = 'fas fa-hourglass-half';
+    let title = 'Payroll review is pending';
+    let body = 'Payroll has not approved or rejected the settlement yet. The request remains waiting for review.';
+    let cssClass = 'text-muted';
+
+    if (clearanceStatus === 'approved') {
+        icon = 'fas fa-check-circle';
+        title = 'Payroll approved the final settlement';
+        body = finalAmount !== null
+            ? `Exit Management should use ₱${finalAmount.toFixed(2)} as the official payout amount.`
+            : 'Exit Management should use the reviewed amount as the official payout amount.';
+        cssClass = 'text-success';
+    } else if (clearanceStatus === 'rejected') {
+        icon = 'fas fa-times-circle';
+        title = 'Payroll rejected the settlement request';
+        body = notes
+            ? `Payroll left this note: ${notes}`
+            : 'Payroll returned the request for correction or resubmission.';
+        cssClass = 'text-danger';
+    }
+
+    $('#settlementPreviewSummary').html(`
+        <div class="settlement-preview-card p-3 ${cssClass}">
+            <h6 class="mb-1 font-weight-bold"><i class="${icon} mr-2"></i>${escapeHtml(title)}</h6>
+            <p class="mb-0 small">${escapeHtml(body)}</p>
+        </div>
+    `).show();
+}
+
+function requestPayrollClearance() {
+    const settlementId = $('#settlementId').val();
+    const employeeId = $('#settlementEmployeeSelect').val();
+
+    if (!settlementId) {
+        showToast('error', 'Please save the settlement before requesting payroll clearance.');
+        return;
+    }
+
+    if (!employeeId) {
+        showToast('error', 'Please select an employee before requesting payroll clearance.');
+        return;
+    }
+
+    const $button = $('#requestClearanceBtn');
+    $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Sending...');
+
+    saveSettlementAdjustments(settlementId).then(function() {
+        return $.post('exit_management.php', {
+            ajax_action: 'request_payroll_clearance',
+            controller: 'settlement',
+            settlement_id: settlementId,
+            notes: $('#settlementNotes').val() || ''
+        });
+    }).done(function(response) {
+        if (response && response.success) {
+            showToast('success', response.message);
+            $('#settlementPreviewSummary').html('<div class="settlement-preview-card p-3"><h6 class="mb-1 font-weight-bold text-success"><i class="fas fa-check-circle mr-2"></i>Payroll clearance requested</h6><p class="mb-0 small text-muted">Payroll will review the request and confirm the final settlement payout.</p></div>').show();
+        } else {
+            showToast('error', response ? response.message : 'Unable to request payroll clearance.');
+        }
+    }).fail(function() {
+        showToast('error', 'An error occurred while requesting payroll clearance.');
+    }).always(function() {
+        $button.prop('disabled', false).html('<i class="fas fa-check-circle"></i> Request Payroll Clearance');
+    });
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 // Data loading functions (stubs - need to be implemented based on controller methods)
@@ -593,7 +892,55 @@ function loadTransferData(id) {
 }
 
 function loadSettlementData(id) {
-    // Load settlement data for editing
+    $.post('exit_management.php', {
+        ajax_action: 'get_settlement',
+        controller: 'settlement',
+        settlement_id: id
+    }, function(response) {
+        if (response && !response.error) {
+            $('#settlementForm')[0].reset();
+            $('#settlementId').val(response.id || '');
+            $('#settlementPreviewSummary').html('<div class="settlement-preview-card p-3 text-muted"><i class="fas fa-hourglass-half mr-2"></i> Review the payroll preview and clearance state below.</div>').show();
+
+            Object.keys(response).forEach(function(key) {
+                const $field = $(`#${key}`);
+                if ($field.length) {
+                    $field.val(response[key] ?? '');
+                }
+            });
+
+            $('#settlementEmployeeSelect').val(response.employee_id || '');
+            $('#settlementResignationSelect').val(response.resignation_id || '');
+            $('#settlementDate').val(response.settlement_date || '');
+            $('#paymentDate').val(response.payment_date || '');
+            $('#netPayable').val(response.net_payable || '');
+
+            $('#adjustmentsContainer').empty();
+            if (Array.isArray(response.adjustments) && response.adjustments.length > 0) {
+                response.adjustments.forEach(function(adjustment, index) {
+                    $('#adjustmentsContainer').append(getSettlementAdjustmentTemplate(index, adjustment));
+                });
+            } else {
+                addSettlementAdjustment();
+            }
+
+            if (response.payroll_preview && Object.keys(response.payroll_preview).length > 0) {
+                renderSettlementPreview(response.payroll_preview, response.payroll_clearance_status ? `Clearance: ${response.payroll_clearance_status}` : 'Preview ready');
+            }
+
+            if (response.payroll_clearance_status) {
+                renderSettlementDecisionSummary(response);
+            } else if (response.payroll_preview && Object.keys(response.payroll_preview).length > 0) {
+                $('#settlementPreviewSummary').html('<div class="settlement-preview-card p-3 text-muted"><i class="fas fa-hourglass-half mr-2"></i> Payroll preview is ready for review.</div>').show();
+            }
+
+            if (response.notes) {
+                $('#settlementNotes').val(response.notes);
+            }
+        }
+    }, 'json').fail(function() {
+        showToast('error', 'Unable to load the settlement details.');
+    });
 }
 
 function loadDocumentData(id) {
@@ -736,7 +1083,13 @@ function loadSettlementsTable() {
 
         if (response && response.length > 0) {
             response.forEach(function(settlement) {
-                const statusBadge = getStatusBadge(settlement.status);
+                const reviewStatus = settlement.payroll_clearance_status && settlement.payroll_clearance_status !== 'not_requested'
+                    ? settlement.payroll_clearance_status
+                    : settlement.status;
+                const statusBadge = getStatusBadge(reviewStatus);
+                const finalAmount = settlement.payroll_final_amount !== null && settlement.payroll_final_amount !== undefined
+                    ? `<div class="small text-muted">Final payout: ₱${parseFloat(settlement.payroll_final_amount).toFixed(2)}</div>`
+                    : '';
                 const actions = `
                     <button class="btn btn-sm btn-info" onclick="showSettlementModal(${settlement.id})">
                         <i class="fas fa-edit"></i>
@@ -751,7 +1104,10 @@ function loadSettlementsTable() {
                         <td>${settlement.employee_name}</td>
                         <td>${settlement.settlement_date}</td>
                         <td>$${parseFloat(settlement.net_payable).toFixed(2)}</td>
-                        <td>${statusBadge}</td>
+                        <td>
+                            ${statusBadge}
+                            ${finalAmount}
+                        </td>
                         <td>${actions}</td>
                     </tr>
                 `);
@@ -867,11 +1223,16 @@ function getStatusBadge(status) {
         'active': 'badge badge-primary',
         'inactive': 'badge badge-secondary',
         'scheduled': 'badge badge-info',
-        'draft': 'badge badge-light'
+        'draft': 'badge badge-light',
+        'not_requested': 'badge badge-secondary'
     };
 
-    const cssClass = statusClasses[status] || 'badge badge-secondary';
-    return `<span class="${cssClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
+    const normalizedStatus = typeof status === 'string' ? status.toLowerCase() : '';
+    const cssClass = statusClasses[normalizedStatus] || 'badge badge-secondary';
+    const label = normalizedStatus
+        ? normalizedStatus.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+        : 'Unknown';
+    return `<span class="${cssClass}">${escapeHtml(label)}</span>`;
 }
 
 // Toast notification function

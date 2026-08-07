@@ -43,7 +43,7 @@
 
 <body>
 
-    <h2>Company Payroll Report</h2>
+    <h2>BestLink College of the Philippines Payroll Report</h2>
 
     <div class="sub">
         Period: <?= htmlspecialchars($period['period_name']) ?><br>

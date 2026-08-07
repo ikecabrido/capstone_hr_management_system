@@ -56,7 +56,7 @@ $employmentTypes = $payrollModel->getEmploymentTypes();
 </head>
 
 <body
-    class="hold-transition dark-mode sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed">
+    class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed <?= $theme === 'dark' ? 'dark-mode' : '' ?>">
     <div class="wrapper">
         <!-- Preloader -->
         <div
@@ -176,7 +176,7 @@ $employmentTypes = $payrollModel->getEmploymentTypes();
                         <li class="nav-item">
                             <a href="allowance.php" class="nav-link">
                                 <i class="nav-icon fas fa-file-invoice-dollar"></i>
-                                <p>Benefits & Deductions</p>
+                                <p>Deductions</p>
                             </a>
                         </li>
 
@@ -278,7 +278,6 @@ $employmentTypes = $payrollModel->getEmploymentTypes();
                                 <tr>
                                     <th>Employee</th>
                                     <th>Position</th>
-                                    <th>Employment Type</th>
                                     <th>Period</th>
                                     <th>Gross Pay</th>
                                     <th>Deductions</th>
@@ -292,11 +291,6 @@ $employmentTypes = $payrollModel->getEmploymentTypes();
                                         <tr>
                                             <td><?= htmlspecialchars($row['employee_name']) ?></td>
                                             <td><?= htmlspecialchars($row['position']) ?></td>
-                                            <td>
-                                                <span class="badge badge-info">
-                                                    <?= htmlspecialchars($row['employment_type']) ?>
-                                                </span>
-                                            </td>
                                             <td><?= htmlspecialchars($row['period_name']) ?></td>
 
                                             <td>₱<?= number_format($row['gross_pay'], 2) ?></td>
@@ -314,7 +308,7 @@ $employmentTypes = $payrollModel->getEmploymentTypes();
                                     <?php endforeach; ?>
                                 <?php else: ?>
                                     <tr>
-                                        <td colspan="8" class="text-center text-muted">
+                                        <td colspan="7" class="text-center text-muted">
                                             No payroll records found
                                         </td>
                                     </tr>
@@ -382,7 +376,7 @@ $employmentTypes = $payrollModel->getEmploymentTypes();
     <script src="../../assets/plugins/datatables-buttons/js/buttons.print.min.js"></script>
     <script src="../../assets/plugins/datatables-buttons/js/buttons.colVis.min.js"></script>
     <script src="../custom.js"></script>
-    <script src="../../assets/dist/js/theme.js"></script>
+
     <script src="../../assets/dist/js/time.js"></script>
     <script src="../../assets/dist/js/global_modal.js"></script>
     <script src="../../assets/dist/js/profile.js"></script>

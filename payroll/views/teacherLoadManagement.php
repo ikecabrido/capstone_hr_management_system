@@ -10,21 +10,23 @@ $payrollModel = new PayrollModel(Database::getInstance()->getConnection());
 // Get only teaching-related employees for the dropdown
 $employees = $payrollModel->getTeacherEmployees();
 
-// Get existing teacher loads
+// Get existing teacher loads with qualification from rao_jobs
 $db = Database::getInstance()->getConnection();
 $stmt = $db->query("
     SELECT 
         tl.id,
         e.full_name,
         e.employee_id,
+        COALESCE(rj.qualifications, 'ProfEd') AS teacher_qualification,
         tl.academic_year,
         tl.semester,
-        tl.qualification,
         tl.total_units,
         tl.created_by,
         tl.approved_by
     FROM pr_teacher_loads tl
     JOIN employees e ON tl.employee_id = e.employee_id
+    LEFT JOIN rao_hired_applicants rha ON e.employee_id = rha.employee_id
+    LEFT JOIN rao_jobs rj ON rha.job_id = rj.id
     ORDER BY tl.academic_year DESC, tl.semester DESC
 ");
 $teacherLoads = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -32,6 +34,7 @@ $teacherLoads = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -42,7 +45,8 @@ $teacherLoads = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <link rel="stylesheet" href="../custom.css" />
     <link rel="stylesheet" href="../../assets/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
 </head>
-<body class="hold-transition dark-mode sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed">
+
+<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed <?= $theme === 'dark' ? 'dark-mode' : '' ?>">
     <div class="wrapper">
         <!-- Preloader -->
         <div class="preloader flex-column justify-content-center align-items-center">
@@ -144,7 +148,7 @@ $teacherLoads = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 </div>
 
                                 <div class="row">
-                                    <div class="col-md-4">
+                                    <div class="col-md-6">
                                         <div class="form-group">
                                             <label>Semester <span class="text-danger">*</span></label>
                                             <select name="semester" class="form-control" required>
@@ -155,18 +159,7 @@ $teacherLoads = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label>Teacher Qualification <span class="text-danger">*</span></label>
-                                            <select name="qualification" class="form-control" required>
-                                                <option value="">-- Select Qualification --</option>
-                                                <option value="ProfEd">ProfEd (₱128/unit)</option>
-                                                <option value="LPT">LPT (₱130/unit)</option>
-                                                <option value="Masteral">Masteral (₱250/unit)</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-6">
                                         <div class="form-group">
                                             <label>Total Units <span class="text-danger">*</span></label>
                                             <input type="number" name="total_units" class="form-control" step="0.5" placeholder="e.g., 30" required>
@@ -214,7 +207,7 @@ $teacherLoads = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <?php foreach ($teacherLoads as $load): ?>
                                         <?php
                                         $qualRates = ['ProfEd' => 128, 'LPT' => 130, 'Masteral' => 250];
-                                        $payPerUnit = $qualRates[$load['qualification']] ?? 128;
+                                        $payPerUnit = $qualRates[$load['teacher_qualification']] ?? 128;
                                         $payrollAmount = ($load['total_units'] * $payPerUnit) / 2;
                                         ?>
                                         <tr>
@@ -224,51 +217,69 @@ $teacherLoads = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                                 <span class="badge badge-info"><?= htmlspecialchars($load['semester']) ?></span>
                                             </td>
                                             <td>
-                                                <span class="badge badge-success"><?= htmlspecialchars($load['qualification']) ?></span>
+                                                <span class="badge badge-success"><?= htmlspecialchars($load['teacher_qualification'] ?? 'N/A') ?></span>
                                             </td>
                                             <td><?= number_format($load['total_units'], 2) ?></td>
                                             <td>₱<?= number_format($payrollAmount, 2) ?></td>
                                             <td><?= htmlspecialchars($load['created_by'] ?? '-') ?></td>
                                             <td>
-                                                <?= $load['approved_by'] ? 
-                                                    '<span class="badge badge-success">✓ ' . htmlspecialchars($load['approved_by']) . '</span>' : 
-                                                    '<span class="badge badge-warning">Pending</span>' 
+                                                <?= $load['approved_by'] ?
+                                                    '<span class="badge badge-success">✓ ' . htmlspecialchars($load['approved_by']) . '</span>' :
+                                                    '<span class="badge badge-warning">Pending</span>'
                                                 ?>
                                             </td>
                                             <td>
-                                                <form method="POST" action="teacherLoadHandler.php" style="display:inline;">
-                                                    <input type="hidden" name="action" value="delete_load">
-                                                    <input type="hidden" name="load_id" value="<?= $load['id'] ?>">
-                                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this assignment?')">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </form>
+                                                <div class="btn-group" role="group">
+                                                    <?php if (!$load['approved_by']): ?>
+                                                        <form method="POST" action="teacherLoadHandler.php" style="display:inline;">
+                                                            <input type="hidden" name="action" value="approve_load">
+                                                            <input type="hidden" name="load_id" value="<?= $load['id'] ?>">
+                                                            <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Approve this load assignment?')" title="Approve Assignment">
+                                                                <i class="fas fa-check"></i> Approve
+                                                            </button>
+                                                        </form>
+                                                        <form method="POST" action="teacherLoadHandler.php" style="display:inline;">
+                                                            <input type="hidden" name="action" value="delete_load">
+                                                            <input type="hidden" name="load_id" value="<?= $load['id'] ?>">
+                                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this assignment?')" title="Delete Assignment">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    <?php else: ?>
+                                                        <button class="btn btn-sm btn-outline-success" disabled title="Already Approved">
+                                                            <i class="fas fa-check-circle"></i> Approved
+                                                        </button>
+                                                    <?php endif; ?>
+                                                </div>
                                             </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                            <?php if (empty($teacherLoads)): ?>
-                                <div class="text-center p-4">
-                                    <p class="text-muted">No teacher load assignments yet.</p>
-                                </div>
-                            <?php endif; ?>
                         </div>
-                    </div>
-
-                    <!-- Info Card -->
-                    <div class="alert alert-info">
-                        <h5><i class="fas fa-info-circle"></i> How Teacher Payroll Works</h5>
-                        <ul>
-                            <li>Each semester, assign teaching units and qualifications to teachers</li>
-                            <li>Payroll uses these assignments to calculate monthly pay</li>
-                            <li>Formula: <strong>(Units × Rate per Unit) ÷ 2</strong> = Semi-monthly amount</li>
-                            <li>Rates: ProfEd ₱128/unit | LPT ₱130/unit | Masteral ₱250/unit</li>
-                        </ul>
+                        </td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                    </table>
+                    <?php if (empty($teacherLoads)): ?>
+                        <div class="text-center p-4">
+                            <p class="text-muted">No teacher load assignments yet.</p>
+                        </div>
+                    <?php endif; ?>
                     </div>
                 </div>
-            </section>
+
+                <!-- Info Card -->
+                <div class="alert alert-info">
+                    <h5><i class="fas fa-info-circle"></i> How Teacher Payroll Works</h5>
+                    <ul>
+                        <li>Each semester, assign teaching units to teachers</li>
+                        <li>Teacher qualifications are sourced from the employee master data</li>
+                        <li>Payroll uses these assignments to calculate monthly pay</li>
+                        <li>Formula: <strong>(Units × Rate per Unit) ÷ 2</strong> = Semi-monthly amount</li>
+                        <li>Rates: ProfEd ₱128/unit | LPT ₱130/unit | Masteral ₱250/unit</li>
+                    </ul>
+                </div>
         </div>
+        </section>
+    </div>
     </div>
 
     <!-- Scripts -->
@@ -284,11 +295,12 @@ $teacherLoads = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <?php if (isset($_GET['success'])): ?>
                 alert('✓ Teacher load assignment <?= htmlspecialchars($_GET['success']) ?>');
             <?php endif; ?>
-            
+
             <?php if (isset($_GET['error'])): ?>
                 alert('✗ Error: <?= htmlspecialchars($_GET['error']) ?>');
             <?php endif; ?>
         });
     </script>
 </body>
+
 </html>

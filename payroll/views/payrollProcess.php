@@ -16,6 +16,9 @@ $controller = new PayrollController();
 // Get periods
 $periods = $controller->getPeriods();
 
+// Get all active employees for search functionality
+$allEmployees = $controller->getEmployees();
+
 // Get selected period
 $selectedPeriodId = $_POST['period_id'] ?? '';
 
@@ -89,7 +92,7 @@ if (isset($_GET['error'])) {
 </head>
 
 <body
-    class="hold-transition dark-mode sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed">
+    class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed <?= $theme === 'dark' ? 'dark-mode' : '' ?>">
     <div class="wrapper">
         <!-- Preloader -->
         <div
@@ -182,12 +185,7 @@ if (isset($_GET['error'])) {
                             </a>
                         </li>
 
-                        <li class="nav-item">
-                            <a href="salaryOverview.php" class="nav-link">
-                                <i class="nav-icon fas fa-money-check-alt"></i>
-                                <p>Salary Overview</p>
-                            </a>
-                        </li>
+
                         <li class="nav-item">
                             <a href="periodManager.php" class="nav-link">
                                 <i class="nav-icon fas fa-calendar-alt"></i>
@@ -209,7 +207,7 @@ if (isset($_GET['error'])) {
                         <li class="nav-item">
                             <a href="allowance.php" class="nav-link">
                                 <i class="nav-icon fas fa-file-invoice-dollar"></i>
-                                <p>Benefits & Deductions</p>
+                                <p>Deductions</p>
                             </a>
                         </li>
 
@@ -224,7 +222,7 @@ if (isset($_GET['error'])) {
                         <li class="nav-item">
                             <a href="payrollClearance.php" class="nav-link">
                                 <i class="nav-icon fas fa-file-signature"></i>
-                                <p>Payroll Clearance</p>
+                                <p>Final Settlements</p>
                             </a>
                         </li>
                         <li class="nav-item">
@@ -307,15 +305,15 @@ if (isset($_GET['error'])) {
                                                 id="employeeSearchInput"
                                                 class="form-control"
                                                 placeholder="Start typing to search employees..."
-                                                <?= empty($previewData) ? 'disabled' : '' ?>>
+                                                autocomplete="off">
                                             <div class="input-group-append">
-                                                <button class="btn btn-primary" type="button" id="searchBtn" onclick="triggerSearch()" <?= empty($previewData) ? 'disabled' : '' ?>>
-                                                    <i class="fas fa-search"></i>
+                                                <button class="btn btn-primary" type="button" id="searchBtn" onclick="clearSearch()">
+                                                    <i class="fas fa-times"></i>
                                                 </button>
                                             </div>
                                         </div>
                                         <small class="form-text text-muted d-block mt-2">
-                                            <?= empty($previewData) ? '⚠️ Select a period first.' : '✓ Search by name, ID, position, or department. Results appear as you type.' ?>
+                                            Search by name, ID, position, or department. Select an employee to view their payroll details.
                                         </small>
                                     </div>
 
@@ -471,7 +469,7 @@ if (isset($_GET['error'])) {
                                             </thead>
                                             <tbody id="deductionsTable">
                                                 <tr>
-                                                    <td colspan="2" class="text-muted text-center py-3">-</td>
+                                                    <td colspan="2" class="text-muted text-center py-3">No Deductions</td>
                                                 </tr>
                                             </tbody>
                                             <tfoot class="bg-light font-weight-bold">
@@ -645,14 +643,6 @@ if (isset($_GET['error'])) {
     <script src="../../assets/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
     <!-- AdminLTE App -->
     <script src="../../assets/dist/js/adminlte.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            <?php if ($toastMessage): ?>
-                $('#adminlteToast').toast('show');
-            <?php endif; ?>
-        });
-    </script>
-
 
     <!-- PAGE PLUGINS -->
     <!-- jQuery Mapael -->
@@ -668,67 +658,132 @@ if (isset($_GET['error'])) {
     <!-- AdminLTE dashboard demo (This is only for demo purposes) -->
     <!-- <script src="assets/dist/js/pages/dashboard2.js"></script> -->
     <script src="../custom.js"></script>
-    <script src="../../assets/dist/js/theme.js"></script>
     <script src="../../assets/dist/js/time.js"></script>
     <script src="../../assets/dist/js/global_modal.js"></script>
     <script src="../../assets/dist/js/profile.js"></script>
     <script>
+        // Initialize all AdminLTE widgets and features
+        $(document).ready(function() {
+            console.log("[AdminLTE Init] Starting AdminLTE initialization...");
+
+            // Check if AdminLTE loaded properly
+            if (typeof window.adminlte === 'undefined') {
+                console.error("[AdminLTE Init] ERROR: AdminLTE not loaded!");
+            } else {
+                console.log("[AdminLTE Init] AdminLTE loaded successfully");
+
+                // Initialize Layout component
+                if (window.adminlte.Layout && $.fn.Layout) {
+                    $('body').Layout();
+                    console.log("[AdminLTE Init] Layout component initialized via jQuery");
+                } else if (window.adminlte.Layout) {
+                    // Fallback: manually initialize
+                    new window.adminlte.Layout(document.body);
+                    console.log("[AdminLTE Init] Layout component initialized manually");
+                }
+
+                // Initialize PushMenu component
+                if ($.fn.PushMenu) {
+                    $('[data-widget="pushmenu"]').PushMenu();
+                    console.log("[AdminLTE Init] PushMenu component initialized via jQuery");
+                } else if (window.adminlte.PushMenu) {
+                    // Fallback: manually initialize
+                    $('[data-widget="pushmenu"]').each(function() {
+                        new window.adminlte.PushMenu(this);
+                    });
+                    console.log("[AdminLTE Init] PushMenu component initialized manually");
+                }
+
+                // Initialize Fullscreen component
+                if ($.fn.Fullscreen) {
+                    $('[data-widget="fullscreen"]').Fullscreen();
+                    console.log("[AdminLTE Init] Fullscreen component initialized via jQuery");
+                } else if (window.adminlte.Fullscreen) {
+                    // Fallback: manually initialize
+                    $('[data-widget="fullscreen"]').each(function() {
+                        new window.adminlte.Fullscreen(this);
+                    });
+                    console.log("[AdminLTE Init] Fullscreen component initialized manually");
+                }
+
+                // Initialize Treeview component
+                if ($.fn.Treeview) {
+                    $('[data-widget="treeview"]').Treeview();
+                    console.log("[AdminLTE Init] Treeview component initialized via jQuery");
+                } else if (window.adminlte.Treeview) {
+                    // Fallback: manually initialize
+                    $('[data-widget="treeview"]').each(function() {
+                        new window.adminlte.Treeview(this);
+                    });
+                    console.log("[AdminLTE Init] Treeview component initialized manually");
+                }
+
+                console.log("[AdminLTE Init] AdminLTE initialization completed");
+            }
+
+            <?php if ($toastMessage): ?>
+                $('#adminlteToast').toast('show');
+            <?php endif; ?>
+        });
+    </script>
+    <script>
         // Store payroll data for JavaScript access
         const payrollData = <?php echo json_encode($previewData); ?>;
+        const allEmployees = <?php echo json_encode($allEmployees); ?>;
         const periodData = <?php echo json_encode($periods); ?>;
         const selectedPeriodId = <?php echo $selectedPeriodId ?? 'null'; ?>;
         let currentSelectedIndex = -1;
 
         // Debug logging
         console.log('Payroll Data Count:', payrollData ? payrollData.length : 0);
+        console.log('All Employees Count:', allEmployees ? allEmployees.length : 0);
         console.log('Selected Period ID:', selectedPeriodId);
         if (payrollData && payrollData.length > 0) {
             console.log('First Employee Data:', payrollData[0]);
         }
 
-        // Trigger Search Function
-        function triggerSearch() {
+        // Clear Search Function
+        function clearSearch() {
             const searchInput = document.getElementById('employeeSearchInput');
-            const query = searchInput.value.trim().toLowerCase();
+            const searchResults = document.getElementById('employeeSearchResults');
+            const selectedCard = document.getElementById('selectedEmployeeCard');
+            const salaryContainer = document.getElementById('salaryDetailsContainer');
+            const initialMessage = document.getElementById('initialMessage');
 
-            if (query.length === 0) {
-                showAllEmployees();
+            searchInput.value = '';
+            searchResults.style.display = 'none';
+            selectedCard.style.display = 'none';
+            salaryContainer.style.display = 'none';
+            initialMessage.style.display = 'block';
+            currentSelectedIndex = -1;
+        }
+
+        // Show All Employees (limited for performance)
+        function showAllEmployees() {
+            if (!allEmployees || allEmployees.length === 0) {
+                document.getElementById('employeeSearchResults').style.display = 'none';
                 return;
             }
 
-            // Filter employees
-            const filtered = payrollData.filter(emp => {
-                const name = (emp.name || '').toLowerCase();
-                const position = (emp.position || '').toLowerCase();
-                const empId = (emp.employee_id || '').toLowerCase();
-                const department = (emp.department || '').toLowerCase();
-                return name.includes(query) || position.includes(query) || empId.includes(query) || department.includes(query);
-            });
-
-            displaySearchResults(filtered);
-        }
-
-        // Show All Employees
-        function showAllEmployees() {
-            if (!payrollData || payrollData.length === 0) return;
-
             const resultsList = document.getElementById('employeeResultsList');
-            resultsList.innerHTML = payrollData.map((emp, idx) => {
-                return `
-                    <button type="button" 
-                        class="list-group-item list-group-item-action text-left"
-                        onclick="selectEmployee(${idx}, '${emp.name.replace(/'/g, "\\'")}')">
-                        <div class="d-flex justify-content-between">
-                            <strong>${emp.name}</strong>
-                            <small class="text-muted">${emp.employee_id || 'N/A'}</small>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <small class="text-muted">${emp.position || 'Position not specified'}</small>
-                            <small class="text-muted">${emp.department || 'No department'}</small>
-                        </div>
-                    </button>
-                `;
-            }).join('');
+            const displayEmployees = allEmployees.slice(0, 10); // Show first 10
+
+            resultsList.innerHTML = displayEmployees.map((emp, idx) => `
+                <button type="button"
+                    class="list-group-item list-group-item-action text-left search-result-item"
+                    data-employee-id="${emp.id}"
+                    data-employee-name="${emp.name}"
+                    onclick="selectEmployee('${emp.id}', '${emp.name.replace(/'/g, "\\'")}')">
+                    <div class="d-flex justify-content-between">
+                        <strong>${emp.name}</strong>
+                        <small class="text-muted">ID: ${emp.id}</small>
+                    </div>
+                </button>
+            `).join('');
+
+            if (allEmployees.length > 10) {
+                resultsList.innerHTML += '<div class="p-2 text-center text-muted"><small>Showing first 10 employees. Type to search.</small></div>';
+            }
 
             document.getElementById('employeeSearchResults').style.display = 'block';
         }
@@ -736,115 +791,121 @@ if (isset($_GET['error'])) {
         // Display Search Results
         function displaySearchResults(filtered) {
             const resultsList = document.getElementById('employeeResultsList');
+            const searchResults = document.getElementById('employeeSearchResults');
 
             if (filtered.length > 0) {
-                resultsList.innerHTML = filtered.map((emp) => {
-                    const empIdx = payrollData.findIndex(e =>
-                        e.employee_id === emp.employee_id && e.name === emp.name
-                    );
-                    return `
-                        <button type="button" 
-                            class="list-group-item list-group-item-action text-left"
-                            onclick="selectEmployee(${empIdx}, '${emp.name.replace(/'/g, "\\'")}')">
-                            <div class="d-flex justify-content-between">
-                                <strong>${emp.name}</strong>
-                                <small class="text-muted">${emp.employee_id || 'N/A'}</small>
-                            </div>
-                            <div class="d-flex justify-content-between">
-                                <small class="text-muted">${emp.position || 'Position not specified'}</small>
-                                <small class="text-muted">${emp.department || 'No department'}</small>
-                            </div>
-                        </button>
-                    `;
-                }).join('');
+                resultsList.innerHTML = filtered.slice(0, 10).map((emp) => `
+                    <button type="button"
+                        class="list-group-item list-group-item-action text-left search-result-item"
+                        data-employee-id="${emp.id}"
+                        data-employee-name="${emp.name}"
+                        onclick="selectEmployee('${emp.id}', '${emp.name.replace(/'/g, "\\'")}')">
+                        <div class="d-flex justify-content-between">
+                            <strong>${emp.name}</strong>
+                            <small class="text-muted">ID: ${emp.id}</small>
+                        </div>
+                    </button>
+                `).join('');
+
+                if (filtered.length > 10) {
+                    resultsList.innerHTML += '<div class="p-2 text-center text-muted"><small>Showing first 10 matches</small></div>';
+                }
             } else {
-                resultsList.innerHTML = '<div class="p-3 text-center text-muted"><small><i class="fas fa-search"></i> No employees found matching your search</small></div>';
+                resultsList.innerHTML = '<div class="p-3 text-center text-muted"><small><i class="fas fa-search"></i> No employees found</small></div>';
             }
 
-            document.getElementById('employeeSearchResults').style.display = 'block';
+            searchResults.style.display = 'block';
         }
 
-        // Employee Search Functionality
+        // Employee Search Functionality with Autocomplete
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('employeeSearchInput');
             const searchResults = document.getElementById('employeeSearchResults');
             const resultsList = document.getElementById('employeeResultsList');
+            let selectedIndex = -1;
 
             if (searchInput) {
-                // Live search as user types
                 searchInput.addEventListener('input', function() {
                     const query = this.value.trim().toLowerCase();
+                    selectedIndex = -1;
 
                     if (query.length === 0) {
-                        // Show all employees when input is empty
-                        if (payrollData && payrollData.length > 0) {
+                        if (allEmployees && allEmployees.length > 0) {
                             showAllEmployees();
                         } else {
                             searchResults.style.display = 'none';
                         }
-                    } else {
-                        // Filter and show results as user types
-                        const filtered = payrollData.filter(emp => {
-                            const name = (emp.name || '').toLowerCase();
-                            const position = (emp.position || '').toLowerCase();
-                            const empId = (emp.employee_id || '').toLowerCase();
-                            const department = (emp.department || '').toLowerCase();
-                            return name.includes(query) ||
-                                position.includes(query) ||
-                                empId.includes(query) ||
-                                department.includes(query);
+                        return;
+                    }
+
+                    const filtered = allEmployees.filter(emp => {
+                        const name = (emp.name || '').toLowerCase();
+                        const empId = (emp.id || '').toString().toLowerCase();
+                        return name.includes(query) || empId.includes(query);
+                    });
+                    displaySearchResults(filtered);
+                });
+
+                searchInput.addEventListener('keydown', function(e) {
+                    const items = resultsList.querySelectorAll('.search-result-item');
+                    if (items.length === 0) return;
+
+                    items.forEach(item => item.classList.remove('active'));
+
+                    switch (e.key) {
+                        case 'ArrowDown':
+                            e.preventDefault();
+                            selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                            break;
+                        case 'ArrowUp':
+                            e.preventDefault();
+                            selectedIndex = Math.max(selectedIndex - 1, 0);
+                            break;
+                        case 'Enter':
+                            e.preventDefault();
+                            if (selectedIndex >= 0 && items[selectedIndex]) {
+                                const selectedItem = items[selectedIndex];
+                                selectEmployee(selectedItem.getAttribute('data-employee-id'), selectedItem.getAttribute('data-employee-name'));
+                            } else if (items[0]) {
+                                selectEmployee(items[0].getAttribute('data-employee-id'), items[0].getAttribute('data-employee-name'));
+                            }
+                            return;
+                        case 'Escape':
+                            searchResults.style.display = 'none';
+                            selectedIndex = -1;
+                            return;
+                    }
+
+                    if (selectedIndex >= 0 && items[selectedIndex]) {
+                        items[selectedIndex].classList.add('active');
+                        items[selectedIndex].scrollIntoView({
+                            block: 'nearest'
                         });
-                        displaySearchResults(filtered);
                     }
                 });
 
-                // Trigger search when pressing Enter (for backward compatibility)
-                searchInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const query = this.value.trim().toLowerCase();
-                        if (query.length > 0) {
-                            const filtered = payrollData.filter(emp => {
-                                const name = (emp.name || '').toLowerCase();
-                                const position = (emp.position || '').toLowerCase();
-                                const empId = (emp.employee_id || '').toLowerCase();
-                                const department = (emp.department || '').toLowerCase();
-                                return name.includes(query) ||
-                                    position.includes(query) ||
-                                    empId.includes(query) ||
-                                    department.includes(query);
-                            });
-                            displaySearchResults(filtered);
-                        }
-                    }
-                });
-
-                // Show all results on focus if input is empty
                 searchInput.addEventListener('focus', function() {
-                    if (this.value.trim().length === 0 && payrollData && payrollData.length > 0) {
+                    if (this.value.trim().length === 0 && allEmployees && allEmployees.length > 0) {
                         showAllEmployees();
                     }
                 });
 
-                // Close results when clicking outside
                 document.addEventListener('click', function(e) {
                     if (searchInput && !searchInput.contains(e.target) && !searchResults.contains(e.target)) {
                         searchResults.style.display = 'none';
+                        selectedIndex = -1;
                     }
                 });
             }
         });
 
-        function selectEmployee(index, name) {
-            if (!payrollData || payrollData.length === 0) {
-                console.error('No payroll data available');
-                showErrorMessage('No calculation data found. Please run the payroll diagnostics.');
-                return;
-            }
+        function selectEmployee(employeeId, name) {
+            // Find employee in payroll data
+            const employee = payrollData ? payrollData.find(emp => emp.employee_id == employeeId) : null;
 
-            const employee = payrollData[index];
             if (!employee) {
-                console.error('Invalid employee index:', index);
+                // Employee exists but no payroll data - show message
+                showErrorMessage(`Employee ${name} exists but has no payroll data for the selected period. Please ensure the employee has proper payroll configuration.`);
                 return;
             }
 
@@ -855,7 +916,7 @@ if (isset($_GET['error'])) {
                 return;
             }
 
-            currentSelectedIndex = index;
+            currentSelectedIndex = employeeId;
 
             // Update search input with selected employee
             const searchInput = document.getElementById('employeeSearchInput');
@@ -942,14 +1003,105 @@ if (isset($_GET['error'])) {
             }
         }
 
-        // Auto-select first employee if payroll data exists
+        // Employee Search Functionality with Autocomplete
         document.addEventListener('DOMContentLoaded', function() {
-            if (payrollData && payrollData.length > 0 && selectedPeriodId) {
-                selectEmployee(0, payrollData[0].name);
-            } else if (!payrollData || payrollData.length === 0) {
-                if (selectedPeriodId) {
-                    showErrorMessage('No employees with payroll configuration found for this period.');
-                }
+            const searchInput = document.getElementById('employeeSearchInput');
+            const searchResults = document.getElementById('employeeSearchResults');
+            const resultsList = document.getElementById('employeeResultsList');
+            let selectedIndex = -1;
+
+            if (searchInput) {
+                // Live search as user types
+                searchInput.addEventListener('input', function() {
+                    const query = this.value.trim().toLowerCase();
+                    selectedIndex = -1; // Reset selection
+
+                    if (query.length === 0) {
+                        // Show all employees when input is empty
+                        if (allEmployees && allEmployees.length > 0) {
+                            showAllEmployees();
+                        } else {
+                            searchResults.style.display = 'none';
+                        }
+                    } else {
+                        // Filter and show results as user types
+                        const filtered = allEmployees.filter(emp => {
+                            const name = (emp.name || '').toLowerCase();
+                            const empId = (emp.id || '').toString().toLowerCase();
+                            return name.includes(query) || empId.includes(query);
+                        });
+                        displaySearchResults(filtered);
+                    }
+                });
+
+                // Keyboard navigation
+                searchInput.addEventListener('keydown', function(e) {
+                    const items = resultsList.querySelectorAll('.search-result-item');
+
+                    if (items.length === 0) return;
+
+                    // Remove previous selection
+                    items.forEach(item => item.classList.remove('active'));
+
+                    switch (e.key) {
+                        case 'ArrowDown':
+                            e.preventDefault();
+                            selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                            if (selectedIndex >= 0) {
+                                items[selectedIndex].classList.add('active');
+                                items[selectedIndex].scrollIntoView({
+                                    block: 'nearest'
+                                });
+                            }
+                            break;
+
+                        case 'ArrowUp':
+                            e.preventDefault();
+                            selectedIndex = Math.max(selectedIndex - 1, -1);
+                            if (selectedIndex >= 0) {
+                                items[selectedIndex].classList.add('active');
+                            }
+                            break;
+
+                        case 'Enter':
+                            e.preventDefault();
+                            if (selectedIndex >= 0 && items[selectedIndex]) {
+                                const selectedItem = items[selectedIndex];
+                                const employeeId = selectedItem.getAttribute('data-employee-id');
+                                const employeeName = selectedItem.getAttribute('data-employee-name');
+                                selectEmployee(employeeId, employeeName);
+                            } else if (searchResults.style.display === 'block') {
+                                // If no item selected but results are showing, select first item
+                                const firstItem = items[0];
+                                if (firstItem) {
+                                    const employeeId = firstItem.getAttribute('data-employee-id');
+                                    const employeeName = firstItem.getAttribute('data-employee-name');
+                                    selectEmployee(employeeId, employeeName);
+                                }
+                            }
+                            break;
+
+                        case 'Escape':
+                            searchResults.style.display = 'none';
+                            selectedIndex = -1;
+                            break;
+                    }
+                });
+
+                // Show all results on focus if input is empty
+                searchInput.addEventListener('focus', function() {
+                    if (this.value.trim().length === 0 && allEmployees && allEmployees.length > 0) {
+                        showAllEmployees();
+                    }
+                });
+
+                // Close results when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (searchInput && !searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                        searchResults.style.display = 'none';
+                        selectedIndex = -1;
+                    }
+                });
             }
         });
     </script>

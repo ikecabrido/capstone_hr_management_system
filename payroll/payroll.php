@@ -40,7 +40,7 @@ $stats = $controller->getStats();
 </head>
 
 <body
-  class="hold-transition dark-mode sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed">
+  class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed <?= $theme === 'dark' ? 'dark-mode' : '' ?>">
   <div class="wrapper">
     <!-- Preloader -->
     <div
@@ -132,11 +132,7 @@ $stats = $controller->getStats();
                 <p>Dashboard</p>
               </a>
             </li>
-            <li class="nav-item">
-              <a href="views/salaryOverview.php" class="nav-link">
-                <i class="nav-icon fas fa-money-check-alt"></i>
-                <p>Salary Overview</p>
-              </a>
+
             <li class="nav-item">
               <a href="views/periodManager.php" class="nav-link">
                 <i class="nav-icon fas fa-calendar-alt"></i>
@@ -166,7 +162,7 @@ $stats = $controller->getStats();
             <li class="nav-item">
               <a href="views/payrollClearance.php" class="nav-link">
                 <i class="nav-icon fas fa-file-signature"></i>
-                <p>Payroll Clearance</p>
+                <p>Final Settlements</p>
               </a>
             </li>
 
@@ -215,131 +211,76 @@ $stats = $controller->getStats();
         <div class="container-fluid">
           <!-- Info boxes -->
           <div class="row">
-            <div class="col-12 col-sm-6 col-md-3">
+            <div class="col-12 col-sm-6 col-md-4">
               <div class="info-box">
                 <span class="info-box-icon bg-primary elevation-1"><i class="fas fa-users"></i></span>
-
                 <div class="info-box-content">
                   <span class="info-box-text">Total Employees</span>
                   <span class="info-box-number">
                     <?= $stats['employees'] ?>
                   </span>
-
                 </div>
-                <!-- /.info-box-content -->
               </div>
-              <!-- /.info-box -->
             </div>
-            <!-- /.col -->
-            <div class="col-12 col-sm-6 col-md-3">
-              <div class="info-box mb-3">
-                <span class="info-box-icon bg-info elevation-1"><i class="nav-icon fas fa-calendar-day"></i></span>
 
+            <div class="col-12 col-sm-6 col-md-4">
+              <div class="info-box">
+                <span class="info-box-icon bg-info elevation-1"><i class="nav-icon fas fa-calendar-day"></i></span>
                 <div class="info-box-content">
                   <span class="info-box-text">Last Period</span>
                   <span class="info-box-number">
                     <?= $stats['period']['period_name'] ?? 'None' ?>
                   </span>
-
                 </div>
-                <!-- /.info-box-content -->
               </div>
-              <!-- /.info-box -->
             </div>
-            <!-- /.col -->
 
-            <!-- fix for small devices only -->
-            <div class="clearfix hidden-md-up"></div>
-
-            <div class="col-12 col-sm-6 col-md-3">
-              <div class="info-box mb-3">
+            <div class="col-12 col-sm-6 col-md-4">
+              <div class="info-box">
                 <span class="info-box-icon bg-success elevation-1"><i class="nav-icon fas fa-money-bill-wave"></i></span>
-
                 <div class="info-box-content">
                   <span class="info-box-text">Total Payroll</span>
                   <span class="info-box-number">
                     ₱<?= number_format($stats['total_payroll'], 2) ?>
                   </span>
-
                 </div>
-                <!-- /.info-box-content -->
               </div>
-              <!-- /.info-box -->
             </div>
-            <!-- /.col -->
           </div>
           <!-- /.row -->
 
-          <!-- Additional Analytics Row -->
+          <!-- Second row of metrics -->
           <div class="row">
-            <div class="col-12 col-sm-6 col-md-3">
+            <div class="col-12 col-sm-6 col-md-4">
               <div class="info-box">
-                <span class="info-box-icon bg-info elevation-1"><i class="fas fa-calculator"></i></span>
-
-                <div class="info-box-content">
-                  <span class="info-box-text">Average Salary</span>
-                  <span class="info-box-number">
-                    ₱<?= number_format($stats['average_salary'], 2) ?>
-                  </span>
-
-                </div>
-                <!-- /.info-box-content -->
-              </div>
-              <!-- /.info-box -->
-            </div>
-            <!-- /.col -->
-            <div class="col-12 col-sm-6 col-md-3">
-              <div class="info-box mb-3">
-                <span class="info-box-icon bg-success elevation-1"><i class="fas fa-plus-circle"></i></span>
-
-                <div class="info-box-content">
-                  <span class="info-box-text">Total Benefits</span>
-                  <span class="info-box-number">
-                    ₱<?= number_format($stats['total_allowances'], 2) ?>
-                  </span>
-
-                </div>
-                <!-- /.info-box-content -->
-              </div>
-              <!-- /.info-box -->
-            </div>
-            <!-- /.col -->
-
-            <!-- fix for small devices only -->
-            <div class="clearfix hidden-md-up"></div>
-
-            <div class="col-12 col-sm-6 col-md-3">
-              <div class="info-box mb-3">
-                <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-minus-circle"></i></span>
-
-                <div class="info-box-content">
-                  <span class="info-box-text">Total Deductions</span>
-                  <span class="info-box-number">
-                    ₱<?= number_format($stats['total_deductions'], 2) ?>
-                  </span>
-
-                </div>
-                <!-- /.info-box-content -->
-              </div>
-              <!-- /.info-box -->
-            </div>
-            <!-- /.col -->
-            <div class="col-12 col-sm-6 col-md-3">
-              <div class="info-box mb-3">
                 <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-chart-line"></i></span>
-
                 <div class="info-box-content">
                   <span class="info-box-text">Net Payroll</span>
                   <span class="info-box-number">
                     ₱<?= number_format($stats['total_payroll'] - $stats['total_deductions'] + $stats['total_allowances'], 2) ?>
                   </span>
-
                 </div>
-                <!-- /.info-box-content -->
               </div>
-              <!-- /.info-box -->
             </div>
-            <!-- /.col -->
+
+            <div class="col-12 col-sm-6 col-md-4">
+              <div class="info-box">
+                <span class="info-box-icon bg-info elevation-1"><i class="fas fa-sync-alt"></i></span>
+                <div class="info-box-content">
+                  <span class="info-box-text">Period Status --- <small><?= $stats['period_run_status']['period_name'] ?? '' ?></small></span>
+                  <span class="info-box-number" style="font-size: 0.9rem;">
+                    <?php
+                    $status = $stats['period_run_status']['period_status'] ?? 'N/A';
+                    $statusColor = $status === 'open' ? 'text-success' : ($status === 'closed' ? 'text-danger' : 'text-warning');
+                    ?>
+                    <span class="<?= $statusColor ?>">
+                      <?= ucfirst($status) ?>
+                    </span>
+                    <br>
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
           <!-- /.row -->
 
@@ -434,6 +375,70 @@ $stats = $controller->getStats();
             <!-- /.col -->
           </div>
           <!-- Main row -->
+
+          <!-- NEW CHARTS ROW -->
+          <div class="row">
+            <!-- Deductions Trend Chart -->
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-header">
+                  <h5 class="card-title">Deductions Trend (12 Months)</h5>
+                  <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <div class="chart">
+                    <canvas id="deductionsChart" height="250" style="height: 250px"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Gross vs Net Payroll Chart -->
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-header">
+                  <h5 class="card-title">Gross vs Net Payroll (12 Months)</h5>
+                  <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <div class="chart">
+                    <canvas id="grossVsNetChart" height="250" style="height: 250px"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Processing Status Chart -->
+          <div class="row">
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-header">
+                  <h5 class="card-title">Payroll Processing Status</h5>
+                  <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="card-body d-flex justify-content-center">
+                  <div style="width: 250px; height: 250px;">
+                    <canvas id="processingStatusChart"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- /.row -->
+
           <!-- Quick Actions -->
           <div class="row">
             <div class="col-md-12">
@@ -496,6 +501,54 @@ $stats = $controller->getStats();
   <script src="../assets/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
   <!-- AdminLTE App -->
   <script src="../assets/dist/js/adminlte.js"></script>
+  <script>
+    // Initialize all AdminLTE widgets and features
+    $(document).ready(function() {
+      console.log("[AdminLTE Init] Document ready");
+
+      // Initialize AdminLTE components
+      $.AdminLTE.layout.fix();
+      $.AdminLTE.pushMenu.activate();
+
+      // Initialize fullscreen widget with better event handling
+      var fullscreenBtn = $('[data-widget="fullscreen"]');
+      console.log("[Fullscreen] Button elements found:", fullscreenBtn.length);
+
+      fullscreenBtn.on('click', function(e) {
+        console.log("[Fullscreen] Button clicked!");
+        e.preventDefault();
+        e.stopPropagation();
+
+        const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
+        console.log("[Fullscreen] Current state - fullscreen:", isFullscreen);
+
+        if (isFullscreen) {
+          // Exit fullscreen
+          if (document.exitFullscreen) {
+            document.exitFullscreen().catch(err => console.error("[Fullscreen] Exit error:", err));
+          } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+          }
+          console.log("[Fullscreen] Exiting fullscreen");
+        } else {
+          // Enter fullscreen
+          const elem = document.documentElement;
+          if (elem.requestFullscreen) {
+            elem.requestFullscreen().catch(err => console.error("[Fullscreen] Request error:", err));
+          } else if (elem.webkitRequestFullscreen) {
+            elem.webkitRequestFullscreen();
+          }
+          console.log("[Fullscreen] Requesting fullscreen");
+        }
+      });
+
+      // Ensure fullscreen button is interactive
+      fullscreenBtn.css({
+        'cursor': 'pointer',
+        'pointer-events': 'auto'
+      });
+    });
+  </script>
 
   <!-- PAGE PLUGINS -->
   <!-- jQuery Mapael -->
@@ -511,29 +564,31 @@ $stats = $controller->getStats();
   <!-- AdminLTE dashboard demo (This is only for demo purposes) -->
   <!-- <script src="assets/dist/js/pages/dashboard2.js"></script> -->
 
-  <script src="../assets/dist/js/theme.js"></script>
   <script src="../assets/dist/js/time.js"></script>
   <script src="../assets/dist/js/global_modal.js"></script>
   <script src="../assets/dist/js/profile.js"></script>
-  <!-- <script src="custom.js"></script> -->
+  <script src="custom.js"></script>
 
   <script>
     const chartData = <?= json_encode($stats['chart']) ?>;
+    const payrollTrendLabels = chartData.map(row => row.month);
+    const payrollTrendValues = chartData.map(row => parseFloat(row.total));
 
-    const labels = chartData.map(row => row.month);
-    const totals = chartData.map(row => parseFloat(row.total));
-
-    const ctx = document.getElementById('salesChart').getContext('2d');
-
-    new Chart(ctx, {
+    const salesCtx = document.getElementById('salesChart').getContext('2d');
+    new Chart(salesCtx, {
       type: 'line',
       data: {
-        labels: labels,
+        labels: payrollTrendLabels,
         datasets: [{
-          label: 'Monthly Payroll',
-          data: totals,
+          label: 'Total Payroll Cost',
+          data: payrollTrendValues,
           fill: true,
-          borderWidth: 2
+          backgroundColor: 'rgba(54, 162, 235, 0.2)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+          pointBorderColor: '#fff',
+          borderWidth: 2,
+          pointRadius: 3
         }]
       },
       options: {
@@ -545,6 +600,110 @@ $stats = $controller->getStats();
               beginAtZero: true
             }
           }]
+        }
+      }
+    });
+
+    const deductionsData = <?= json_encode($stats['deductions_chart']) ?>;
+    const deductionsLabels = deductionsData.map(row => row.month);
+    const deductionsTotals = deductionsData.map(row => parseFloat(row.total_deductions));
+
+    const deductionsCtx = document.getElementById('deductionsChart').getContext('2d');
+    new Chart(deductionsCtx, {
+      type: 'bar',
+      data: {
+        labels: deductionsLabels,
+        datasets: [{
+          label: 'Total Deductions',
+          data: deductionsTotals,
+          backgroundColor: 'rgba(220, 53, 69, 0.5)',
+          borderColor: 'rgba(220, 53, 69, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          yAxes: [{
+            ticks: {
+              beginAtZero: true
+            }
+          }]
+        }
+      }
+    });
+
+    const grossVsNetData = <?= json_encode($stats['gross_vs_net_chart']) ?>;
+    const grossVsNetLabels = grossVsNetData.map(row => row.month);
+    const grossPayData = grossVsNetData.map(row => parseFloat(row.gross_pay));
+    const netPayData = grossVsNetData.map(row => parseFloat(row.net_pay));
+
+    const grossVsNetCtx = document.getElementById('grossVsNetChart').getContext('2d');
+    new Chart(grossVsNetCtx, {
+      type: 'bar',
+      data: {
+        labels: grossVsNetLabels,
+        datasets: [{
+            label: 'Gross Pay',
+            data: grossPayData,
+            backgroundColor: 'rgba(40, 167, 69, 0.5)',
+            borderColor: 'rgba(40, 167, 69, 1)',
+            borderWidth: 1
+          },
+          {
+            label: 'Net Pay',
+            data: netPayData,
+            backgroundColor: 'rgba(23, 162, 184, 0.5)',
+            borderColor: 'rgba(23, 162, 184, 1)',
+            borderWidth: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          xAxes: [{
+            stacked: false
+          }],
+          yAxes: [{
+            stacked: false,
+            ticks: {
+              beginAtZero: true
+            }
+          }]
+        }
+      }
+    });
+
+    const processingData = <?= json_encode($stats['processing_status']) ?>;
+    const processedCount = parseInt(processingData.processed || 0);
+    const pendingCount = parseInt(processingData.pending || 0);
+
+    const processingCtx = document.getElementById('processingStatusChart').getContext('2d');
+    new Chart(processingCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Processed', 'Pending'],
+        datasets: [{
+          data: [processedCount, pendingCount],
+          backgroundColor: [
+            'rgba(40, 167, 69, 0.7)',
+            'rgba(255, 193, 7, 0.7)'
+          ],
+          borderColor: [
+            'rgba(40, 167, 69, 1)',
+            'rgba(255, 193, 7, 1)'
+          ],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        legend: {
+          position: 'bottom'
         }
       }
     });

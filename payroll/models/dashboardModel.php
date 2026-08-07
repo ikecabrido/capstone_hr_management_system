@@ -119,8 +119,8 @@ class DashboardModel
                 DATE_FORMAT(pp.start_date,'%Y-%m') AS month,
                 SUM(ps.net_pay) AS total
             FROM pr_periods pp
-            JOIN pr_runs pr ON pr.payroll_period_id = pp.id
-            JOIN pr_payslips ps ON ps.payroll_run_id = pr.id
+            JOIN pr_runs pr ON pr.payroll_period_id = pp.period_id
+            JOIN pr_payslips ps ON ps.payroll_run_id = pr.run_id
             WHERE pr.status != 'draft'
             GROUP BY month
             ORDER BY month ASC
@@ -170,7 +170,7 @@ class DashboardModel
         FROM pr_runs
         WHERE payroll_period_id = ?
         AND status IN ('draft','finalized')
-        ORDER BY id DESC
+        ORDER BY run_id DESC
         LIMIT 1
     ";
 
@@ -241,6 +241,7 @@ class DashboardModel
         $sql = "
             SELECT
                 pr.run_id,
+                pp.period_id,
                 pp.period_name,
                 pp.start_date,
                 pp.end_date,
@@ -259,7 +260,7 @@ class DashboardModel
                 ORDER BY run_id DESC
                 LIMIT 1
             )
-            GROUP BY pr.run_id, pp.period_name, pp.start_date, pp.end_date
+            GROUP BY pr.run_id, pp.period_id, pp.period_name, pp.start_date, pp.end_date
         ";
 
         $result = $this->safeQuery($sql);
@@ -277,7 +278,7 @@ class DashboardModel
         $sql = "
             SELECT AVG(net_pay)
             FROM pr_payslips p
-            JOIN pr_runs r ON p.payroll_run_id = r.id
+            JOIN pr_runs r ON p.payroll_run_id = r.run_id
             WHERE r.status = 'finalized'
         ";
 
@@ -312,22 +313,167 @@ class DashboardModel
 
     public function getTotalDeductions($periodId = null)
     {
+        // Get deductions from payslips for the period (includes attendance deductions + manual adjustments)
         $sql = "
-            SELECT SUM(amount)
-            FROM pr_employee_adjustments
-            WHERE type = 'deduction'
+            SELECT IFNULL(SUM(ps.total_deductions), 0) as total_deductions
+            FROM pr_payslips ps
+            JOIN pr_runs pr ON ps.payroll_run_id = pr.run_id
         ";
 
-        $params = [];
-
         if ($periodId) {
-            $sql .= " AND payroll_period_id = ?";
-            $params[] = $periodId;
+            $sql .= " WHERE pr.payroll_period_id = ?";
+            $params = [$periodId];
+        } else {
+            $sql .= " WHERE pr.status != 'draft'";
+            $params = [];
         }
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
 
-        return $stmt->fetchColumn() ?? 0;
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (float)($result['total_deductions'] ?? 0);
+    }
+
+    /* ================= NEW CHARTS ================= */
+
+    public function getTotalGrossPay($periodId = null)
+    {
+        $sql = "
+            SELECT IFNULL(SUM(ps.gross_pay), 0) as total_gross
+            FROM pr_payslips ps
+            JOIN pr_runs pr ON ps.payroll_run_id = pr.run_id
+        ";
+
+        if ($periodId) {
+            $sql .= " WHERE pr.payroll_period_id = ?";
+            $params = [$periodId];
+        } else {
+            $sql .= " WHERE pr.status != 'draft'";
+            $params = [];
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (float)($result['total_gross'] ?? 0);
+    }
+
+    public function getPendingClearancesCount()
+    {
+        $sql = "
+            SELECT COUNT(*) as pending_count
+            FROM payroll_clearances
+            WHERE status = 'pending'
+        ";
+
+        $result = $this->safeQuery($sql);
+        if ($result === false) {
+            return 0;
+        }
+
+        $row = $result->fetch(PDO::FETCH_ASSOC);
+        return (int)($row['pending_count'] ?? 0);
+    }
+
+    public function getPeriodRunStatus()
+    {
+        $sql = "
+            SELECT 
+                pp.period_id,
+                pp.period_name,
+                pp.status as period_status,
+                pp.start_date,
+                pp.end_date,
+                pr.run_id,
+                pr.status as run_status,
+                pr.processed_at,
+                COUNT(ps.payslip_id) as total_payslips,
+                SUM(CASE WHEN ps.net_pay > 0 THEN 1 ELSE 0 END) as processed_payslips
+            FROM pr_periods pp
+            LEFT JOIN pr_runs pr ON pr.payroll_period_id = pp.period_id
+            LEFT JOIN pr_payslips ps ON ps.payroll_run_id = pr.run_id
+            WHERE pp.period_id = (
+                SELECT period_id FROM pr_periods ORDER BY start_date DESC LIMIT 1
+            )
+            GROUP BY pp.period_id, pr.run_id
+        ";
+
+        $result = $this->safeQuery($sql);
+        if ($result === false) {
+            return null;
+        }
+
+        return $result->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /* ================= NEW CHARTS ================= */
+
+    public function getMonthlyDeductions()
+    {
+        $sql = "
+            SELECT 
+                DATE_FORMAT(pp.start_date,'%Y-%m') AS month,
+                SUM(ps.total_deductions) AS total_deductions
+            FROM pr_periods pp
+            JOIN pr_runs pr ON pr.payroll_period_id = pp.period_id
+            JOIN pr_payslips ps ON ps.payroll_run_id = pr.run_id
+            WHERE pr.status != 'draft'
+            GROUP BY month
+            ORDER BY month ASC
+            LIMIT 12
+        ";
+
+        $result = $this->safeQuery($sql);
+        if ($result === false) {
+            return [];
+        }
+
+        return $result->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getMonthlyGrossVsNet()
+    {
+        $sql = "
+            SELECT 
+                DATE_FORMAT(pp.start_date,'%Y-%m') AS month,
+                SUM(ps.gross_pay) AS gross_pay,
+                SUM(ps.net_pay) AS net_pay
+            FROM pr_periods pp
+            JOIN pr_runs pr ON pr.payroll_period_id = pp.period_id
+            JOIN pr_payslips ps ON ps.payroll_run_id = pr.run_id
+            WHERE pr.status != 'draft'
+            GROUP BY month
+            ORDER BY month ASC
+            LIMIT 12
+        ";
+
+        $result = $this->safeQuery($sql);
+        if ($result === false) {
+            return [];
+        }
+
+        return $result->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getPayrollProcessingStatus()
+    {
+        $sql = "
+            SELECT
+                SUM(CASE WHEN ps.net_pay > 0 THEN 1 ELSE 0 END) AS processed,
+                SUM(CASE WHEN ps.net_pay = 0 THEN 1 ELSE 0 END) AS pending,
+                COUNT(*) AS total
+            FROM pr_payslips ps
+            JOIN pr_runs pr ON ps.payroll_run_id = pr.run_id
+            WHERE pr.status IN ('draft', 'finalized')
+        ";
+
+        $result = $this->safeQuery($sql);
+        if ($result === false) {
+            return ['processed' => 0, 'pending' => 0, 'total' => 0];
+        }
+
+        return $result->fetch(PDO::FETCH_ASSOC) ?? ['processed' => 0, 'pending' => 0, 'total' => 0];
     }
 }

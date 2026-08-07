@@ -104,7 +104,7 @@ $qrToken = isset($_GET['qr_token']) ? trim($_GET['qr_token']) : '';
             autocomplete="current-password" />
         </div>
         <button type="submit" name="login" id="loginBtn">Login</button>
-        <p class="para mt-3 d-flex justify-content-center">Looking for Portal?<span><a class="link" href="index.php"> Click Here!</a></span></p>
+        <div id="loginMessage" class="login-message" aria-live="polite" style="margin-top: 1rem; color: #b02a37; font-weight: 600;"></div>
       </form>
 
     </div>
@@ -117,6 +117,83 @@ $qrToken = isset($_GET['qr_token']) ? trim($_GET['qr_token']) : '';
     document.addEventListener('DOMContentLoaded', function() {
       const loginForm = document.querySelector('form');
       const loginBtn = document.getElementById('loginBtn');
+      const loginMessage = document.getElementById('loginMessage');
+      let blockTimer = null;
+      let debounceTimer = null;
+
+      const formatTime = seconds => {
+        const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+        const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
+        return `${mins}:${secs}`;
+      };
+
+      const startBlockCountdown = seconds => {
+        if (blockTimer) {
+          clearInterval(blockTimer);
+        }
+
+        let remaining = seconds;
+        loginBtn.disabled = true;
+        loginBtn.textContent = `Locked (${formatTime(remaining)})`;
+
+        if (loginMessage) {
+          loginMessage.textContent = `Too many attempts. Try again in ${formatTime(remaining)}.`;
+        }
+
+        blockTimer = setInterval(() => {
+          remaining -= 1;
+          if (remaining <= 0) {
+            clearInterval(blockTimer);
+            blockTimer = null;
+            loginBtn.disabled = false;
+            loginBtn.textContent = 'Login';
+            if (loginMessage) {
+              loginMessage.textContent = 'You can try logging in again.';
+            }
+            return;
+          }
+
+          loginBtn.textContent = `Locked (${formatTime(remaining)})`;
+          if (loginMessage) {
+            loginMessage.textContent = `Too many attempts. Try again in ${formatTime(remaining)}.`;
+          }
+        }, 1000);
+      };
+
+      // Query block status from server for persistence across refreshes
+      const queryBlockStatus = async (username = '') => {
+        try {
+          const url = new URL('auth/block_status.php', window.location.origin);
+          if (username) url.searchParams.set('username', username);
+          const res = await fetch(url.toString(), { cache: 'no-store' });
+          if (!res.ok) return null;
+          const data = await res.json();
+          if (data && typeof data.blocked_seconds === 'number' && data.blocked_seconds > 0) {
+            startBlockCountdown(data.blocked_seconds);
+          }
+          return data;
+        } catch (e) {
+          console.error('[Login] block status fetch error', e);
+          return null;
+        }
+      };
+
+      // On load, check for IP-based (or username-less) block
+      queryBlockStatus('');
+
+      // Also check when username field changes (debounced) to handle username-specific blocks
+      const usernameInput = document.getElementById('username');
+      if (usernameInput) {
+        usernameInput.addEventListener('input', () => {
+          if (debounceTimer) clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            const val = usernameInput.value.trim();
+            if (val.length > 0) {
+              queryBlockStatus(val);
+            }
+          }, 500);
+        });
+      }
 
       loginForm.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -171,19 +248,32 @@ $qrToken = isset($_GET['qr_token']) ? trim($_GET['qr_token']) : '';
               window.location.href = data.redirect;
             }, 500);
           } else {
-            console.error('[Login] Login failed:', data.message);
+            const isBlocked = response.status === 429;
+            const message = data.message || 'Login failed';
+            console.error('[Login] Login failed:', message);
             // Show error message
+            if (loginMessage) {
+              loginMessage.textContent = message;
+            }
             if (typeof toastr !== 'undefined') {
-              toastr.error(data.message || 'Login failed', 'Error', {
-                timeOut: 3000,
+              toastr.error(message, isBlocked ? 'Login Blocked' : 'Error', {
+                timeOut: 5000,
                 positionClass: 'toast-top-center'
               });
-            } else {
-              alert(data.message || 'Login failed');
             }
-            // Re-enable button
-            loginBtn.disabled = false;
-            loginBtn.textContent = 'Login';
+            // If the login is blocked, show countdown timer
+            if (isBlocked) {
+              const blockedSeconds = typeof data.blocked_seconds === 'number' ? data.blocked_seconds : null;
+              if (blockedSeconds !== null && blockedSeconds > 0) {
+                startBlockCountdown(blockedSeconds);
+              } else {
+                loginBtn.disabled = true;
+                loginBtn.textContent = 'Locked';
+              }
+            } else {
+              loginBtn.disabled = false;
+              loginBtn.textContent = 'Login';
+            }
           }
         } catch (error) {
           console.error('[Login] Network/parsing error:', error);

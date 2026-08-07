@@ -45,7 +45,17 @@ class PayrollClearanceController
 
     public function approveClearance(int $clearanceId, int $approvedBy, ?string $comments = null): array
     {
-        if ($this->model->updatePayrollClearanceStatus($clearanceId, 'approved', $approvedBy, $comments)) {
+        $clearance = $this->model->getPayrollClearanceById($clearanceId);
+        $finalAmount = null;
+
+        if ($clearance) {
+            $settlement = $this->getSettlementDetails((int)$clearance['settlement_id']);
+            if ($settlement) {
+                $finalAmount = (float)($settlement['payroll_final_amount'] ?? $settlement['net_payable'] ?? 0);
+            }
+        }
+
+        if ($this->model->updatePayrollClearanceStatus($clearanceId, 'approved', $approvedBy, $comments, $finalAmount)) {
             return ['success' => true, 'message' => 'Payroll clearance approved successfully.'];
         }
 
@@ -64,5 +74,68 @@ class PayrollClearanceController
     public function getClearanceDetails(int $clearanceId): ?array
     {
         return $this->model->getPayrollClearanceById($clearanceId);
+    }
+
+    public function getSettlementDetails(int $settlementId): ?array
+    {
+        $stmt = $this->db->prepare("
+            SELECT 
+                es.id AS settlement_id,
+                es.employee_id,
+                e.full_name,
+                e.position,
+                e.department,
+                er.last_working_date,
+                es.net_payable,
+                es.settlement_date,
+                es.gratuity,
+                es.notice_pay,
+                es.outstanding_loans,
+                es.other_deductions,
+                es.status,
+                es.payroll_preview_data,
+                es.payroll_clearance_status,
+                es.payroll_notes,
+                es.payroll_final_amount
+            FROM exit_employee_settlements es
+            LEFT JOIN exit_resignations er ON es.resignation_id = er.id
+            JOIN employees e ON es.employee_id = e.employee_id
+            WHERE es.id = :settlement_id
+        ");
+        $stmt->execute([':settlement_id' => $settlementId]);
+        $settlement = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$settlement) {
+            return null;
+        }
+
+        $settlement['adjustments'] = $this->getSettlementAdjustments($settlementId);
+
+        if (!empty($settlement['payroll_preview_data'])) {
+            $decodedPreview = json_decode($settlement['payroll_preview_data'], true);
+            if (is_array($decodedPreview)) {
+                $settlement['payroll_preview'] = $decodedPreview;
+            }
+        }
+
+        return $settlement;
+    }
+
+    private function getSettlementAdjustments(int $settlementId): array
+    {
+        $stmt = $this->db->prepare("SELECT * FROM exit_settlement_adjustments WHERE settlement_id = :settlement_id ORDER BY id ASC");
+        $stmt->execute([':settlement_id' => $settlementId]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function calculateSettlementPreview(int $settlementId, int $employeeId): array
+    {
+        return $this->calculateFinalSettlement($settlementId, $employeeId);
+    }
+
+    public function calculateFinalSettlement(int $settlementId, int $employeeId): array
+    {
+        return $this->model->calculateExitPayslip($employeeId, $settlementId);
     }
 }

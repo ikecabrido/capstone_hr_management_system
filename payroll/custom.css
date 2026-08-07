@@ -48,6 +48,30 @@ body:not(.dark-mode) .content-wrapper {
 .main-footer {
   background-color: #1976d2;
   color: #d6d3d3;
+
+  /* AUTOCOMPLETE SEARCH STYLING */
+  .search-result-item {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  .search-result-item:hover,
+  .search-result-item.active {
+    background-color: #007bff !important;
+    color: white !important;
+  }
+
+  .search-result-item.active {
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  }
+
+  /* Search results dropdown */
+  #employeeSearchResults {
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+  }
 }
 body.dark-mode .main-footer {
   background-color: #0d47a1 !important;
@@ -63,4 +87,27 @@ body.dark-mode .main-footer {
 #themeIcon.animate {
   transform: rotate(180deg) scale(0.5);
   opacity: 0;
+}
+
+/* Ensure navbar buttons are clickable */
+.navbar .nav-link {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  user-select: none !important;
+}
+
+.navbar .nav-link:hover {
+  opacity: 0.8;
+}
+
+/* Fullscreen button styling */
+[data-widget="fullscreen"] {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+/* Theme toggle styling */
+#darkToggle {
+  cursor: pointer !important;
+  pointer-events: auto !important;
 }

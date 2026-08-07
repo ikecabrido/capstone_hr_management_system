@@ -11,7 +11,7 @@ class ResignationModel extends ExitManagementModel
     {
         try {
             $stmt = $this->db->prepare("
-                INSERT INTO resignations (employee_id, resignation_type, reason, notice_date,
+                INSERT INTO exit_resignations (employee_id, resignation_type, reason, notice_date,
                                         last_working_date, comments, submitted_by, status, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
             ");
@@ -44,7 +44,7 @@ class ResignationModel extends ExitManagementModel
         $stmt = $this->db->prepare("
             SELECT r.*, e.full_name, e.employee_id as emp_id,
                    e.email, e.department
-            FROM resignations r
+            FROM exit_resignations r
             JOIN employees e ON r.employee_id = e.employee_id
             WHERE r.id = ?
         ");
@@ -72,7 +72,7 @@ class ResignationModel extends ExitManagementModel
                 e.full_name as employee_name,
                 e.email,
                 e.department
-            FROM resignations r
+            FROM exit_resignations r
             LEFT JOIN employees e ON r.employee_id = e.employee_id
         ";
 
@@ -93,7 +93,7 @@ class ResignationModel extends ExitManagementModel
     public function updateResignation(int $resignationId, array $data): bool
     {
         $stmt = $this->db->prepare("
-            UPDATE resignations
+            UPDATE exit_resignations
             SET employee_id = ?, resignation_type = ?, reason = ?, notice_date = ?,
                 last_working_date = ?, comments = ?, updated_at = NOW()
             WHERE id = ?
@@ -115,7 +115,7 @@ class ResignationModel extends ExitManagementModel
     public function updateResignationStatus(int $resignationId, string $status, string $approvedBy = null): bool
     {
         $stmt = $this->db->prepare("
-            UPDATE resignations
+            UPDATE exit_resignations
             SET status = ?, approved_by = ?, approved_at = NOW()
             WHERE id = ?
         ");
@@ -128,7 +128,7 @@ class ResignationModel extends ExitManagementModel
     public function getResignationsByEmployee(int $employeeId): array
     {
         $stmt = $this->db->prepare("
-            SELECT * FROM resignations
+            SELECT * FROM exit_resignations
             WHERE employee_id = ?
             ORDER BY created_at DESC
         ");
@@ -149,7 +149,7 @@ class ResignationModel extends ExitManagementModel
      */
     public function deleteResignation(int $resignationId): bool
     {
-        $stmt = $this->db->prepare("DELETE FROM resignations WHERE id = ?");
+        $stmt = $this->db->prepare("DELETE FROM exit_resignations WHERE id = ?");
         return $stmt->execute([$resignationId]);
     }
 }

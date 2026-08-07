@@ -282,7 +282,7 @@
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
             <div class="modal-header bg-danger">
-                <h5 class="modal-title" id="settlementModalTitle">Calculate Final Settlement</h5>
+                <h5 class="modal-title" id="settlementModalTitle">Request Payroll Settlement</h5>
                 <button type="button" class="close" data-dismiss="modal">
                     <span>&times;</span>
                 </button>
@@ -291,6 +291,26 @@
                 <div class="modal-body">
                     <input type="hidden" id="settlementId" name="settlement_id">
 
+                    <div class="settlement-workspace-banner card mb-3">
+                        <div class="card-body py-3">
+                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+                                <div>
+                                    <h6 class="mb-1 font-weight-bold text-danger">
+                                        <i class="fas fa-balance-scale-right mr-2"></i>Settlement workspace
+                                    </h6>
+                                    <p class="mb-0 text-muted">
+                                        Build the exit settlement here, flag manual adjustments, and pass the package to Payroll for final review.
+                                    </p>
+                                </div>
+                                <div class="settlement-step-badges">
+                                    <span class="badge badge-info">1. Draft</span>
+                                    <span class="badge badge-warning">2. Review</span>
+                                    <span class="badge badge-success">3. Clear</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+ 
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
@@ -325,123 +345,66 @@
                         </div>
                     </div>
 
-                    <!-- Salary Components -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h6 class="card-title">Salary Components</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="basicSalary">Basic Salary *</label>
-                                        <input type="number" step="0.01" class="form-control" id="basicSalary" name="basic_salary" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="hra">HRA</label>
-                                        <input type="number" step="0.01" class="form-control" id="hra" name="hra" value="0">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="conveyance">Conveyance</label>
-                                        <input type="number" step="0.01" class="form-control" id="conveyance" name="conveyance" value="0">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="lta">LTA</label>
-                                        <input type="number" step="0.01" class="form-control" id="lta" name="lta" value="0">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="medicalAllowance">Medical Allowance</label>
-                                        <input type="number" step="0.01" class="form-control" id="medicalAllowance" name="medical_allowance" value="0">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="otherAllowances">Other Allowances</label>
-                                        <input type="number" step="0.01" class="form-control" id="otherAllowances" name="other_allowances" value="0">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Deductions -->
                     <div class="card mt-3">
                         <div class="card-header">
-                            <h6 class="card-title">Deductions</h6>
+                            <h6 class="card-title">Payroll Settlement Data</h6>
                         </div>
                         <div class="card-body">
+                            <p class="text-muted mb-3">Use Payroll Preview to fetch current payroll settlement values for this employee. If payroll data is unavailable, add manual adjustments below.</p>
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <label for="providentFund">Provident Fund</label>
-                                        <input type="number" step="0.01" class="form-control" id="providentFund" name="provident_fund" value="0">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="gratuity">Gratuity</label>
-                                        <input type="number" step="0.01" class="form-control" id="gratuity" name="gratuity" value="0">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="noticePay">Notice Pay</label>
-                                        <input type="number" step="0.01" class="form-control" id="noticePay" name="notice_pay" value="0">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="outstandingLoans">Outstanding Loans</label>
-                                        <input type="number" step="0.01" class="form-control" id="outstandingLoans" name="outstanding_loans" value="0">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="otherDeductions">Other Deductions</label>
-                                <input type="number" step="0.01" class="form-control" id="otherDeductions" name="other_deductions" value="0">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Net Payable -->
-                    <div class="card mt-3">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="netPayable">Net Payable Amount *</label>
-                                        <input type="number" step="0.01" class="form-control" id="netPayable" name="net_payable" readonly>
+                                        <label for="netPayable">Net Payable Amount</label>
+                                        <input type="number" step="0.01" class="form-control" id="netPayable" name="net_payable" readonly placeholder="Will be populated after payroll preview">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label>&nbsp;</label>
-                                        <button type="button" class="btn btn-info btn-block" id="calculateNetPayable">
-                                            <i class="fas fa-calculator"></i> Calculate
+                                        <button type="button" class="btn btn-outline-primary btn-block" id="previewPayrollBtn">
+                                            <i class="fas fa-file-invoice-dollar"></i> Preview Payroll
                                         </button>
                                     </div>
                                 </div>
                             </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <button type="button" class="btn btn-outline-success btn-block" id="requestClearanceBtn">
+                                        <i class="fas fa-check-circle"></i> Request Payroll Clearance
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="settlementPreviewSummary" class="alert alert-light mt-3 mb-0" style="display:none;">
+                                Payroll preview will appear here after you generate it.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="card-title mb-0">Manual Adjustments</h6>
+                            <button type="button" class="btn btn-sm btn-outline-danger" id="addAdjustmentBtn">
+                                <i class="fas fa-plus"></i> Add Adjustment
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="adjustmentsContainer"></div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">Payroll Notes</h6>
+                        </div>
+                        <div class="card-body">
+                            <textarea class="form-control" id="settlementNotes" name="notes" rows="3" placeholder="Add notes for Payroll or record important context for the clearance review"></textarea>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger" id="settlementSubmitBtn">Save Settlement</button>
+                    <button type="submit" class="btn btn-danger" id="settlementSubmitBtn">Save Settlement Request</button>
                 </div>
             </form>
         </div>

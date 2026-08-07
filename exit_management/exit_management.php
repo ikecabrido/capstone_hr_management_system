@@ -397,11 +397,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                 <h3 class="card-title">Final Settlements</h3>
                 <div class="card-tools">
                   <button type="button" class="btn btn-danger" onclick="showSettlementModal()">
-                    <i class="fas fa-plus"></i> Calculate Settlement
+                    <i class="fas fa-plus"></i> New Settlement Request
                   </button>
                 </div>
               </div>
               <div class="card-body">
+                <div class="settlement-workspace-banner card mb-3">
+                  <div class="card-body py-3">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+                      <div>
+                        <h6 class="mb-1 font-weight-bold text-danger">
+                          <i class="fas fa-balance-scale-right mr-2"></i>Settlement workspace
+                        </h6>
+                        <p class="mb-0 text-muted">
+                          Draft the settlement request in Exit Management, add manual adjustments only when needed, and send it to Payroll for review and clearance.
+                        </p>
+                      </div>
+                      <div class="settlement-step-badges">
+                        <span class="badge badge-info">1. Draft</span>
+                        <span class="badge badge-warning">2. Review</span>
+                        <span class="badge badge-success">3. Clear</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <table id="settlements-table" class="table table-bordered table-striped">
                   <thead>
                     <tr>

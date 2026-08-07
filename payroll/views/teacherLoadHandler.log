@@ -1,0 +1,42 @@
+[2026-04-05 11:00:27] === REQUEST STARTED ===
+[2026-04-05 11:00:27] Method: POST
+[2026-04-05 11:00:27] POST: {"action":"add_load","employee_id":"4","academic_year":"2025-2026","semester":"1st","total_units":"30","notes":"dfsdfsdfsdfsd"}
+[2026-04-05 11:00:27] SESSION: []
+[2026-04-05 11:00:27] Auth files loaded
+[2026-04-05 11:00:27] Database connected
+[2026-04-05 11:00:27] Action: add_load
+[2026-04-05 11:00:27] Processing ADD_LOAD
+[2026-04-05 11:00:27] Parsed: empId=4, year=2025-2026, sem=1st, units=30
+[2026-04-05 11:00:27] Validation passed
+[2026-04-05 11:00:27] Statement prepared, executing...
+[2026-04-05 11:00:27] Execute returned: TRUE
+[2026-04-05 11:00:27] Rows affected: 2
+[2026-04-05 11:00:27] PDO errorInfo: ["00000",null,null]
+[2026-04-05 11:00:27] SUCCESS - Redirecting to success page
+[2026-04-05 11:03:57] === REQUEST STARTED ===
+[2026-04-05 11:03:57] Method: POST
+[2026-04-05 11:03:57] POST: {"action":"add_load","employee_id":"5","academic_year":"2025-2026","semester":"Summer","total_units":"30","notes":""}
+[2026-04-05 11:03:57] SESSION: []
+[2026-04-05 11:03:58] Auth files loaded
+[2026-04-05 11:03:58] Database connected
+[2026-04-05 11:03:58] Action: add_load
+[2026-04-05 11:03:58] Processing ADD_LOAD
+[2026-04-05 11:03:58] Parsed: empId=5, year=2025-2026, sem=Summer, units=30
+[2026-04-05 11:03:58] Checking for duplicate combination...
+[2026-04-05 11:03:58] DUPLICATE FOUND - Cannot add same employee/year/semester combination
+[2026-04-05 11:05:14] === REQUEST STARTED ===
+[2026-04-05 11:05:14] Method: POST
+[2026-04-05 11:05:14] POST: {"action":"add_load","employee_id":"5","academic_year":"2026-2027","semester":"1st","total_units":"30","notes":""}
+[2026-04-05 11:05:14] SESSION: []
+[2026-04-05 11:05:14] Auth files loaded
+[2026-04-05 11:05:14] Database connected
+[2026-04-05 11:05:14] Action: add_load
+[2026-04-05 11:05:14] Processing ADD_LOAD
+[2026-04-05 11:05:14] Parsed: empId=5, year=2026-2027, sem=1st, units=30
+[2026-04-05 11:05:14] Checking for duplicate combination...
+[2026-04-05 11:05:14] No duplicate - proceeding with INSERT
+[2026-04-05 11:05:14] Statement prepared, executing...
+[2026-04-05 11:05:14] Execute returned: TRUE
+[2026-04-05 11:05:14] Rows affected: 1
+[2026-04-05 11:05:14] PDO errorInfo: ["00000",null,null]
+[2026-04-05 11:05:14] SUCCESS - Redirecting to success page

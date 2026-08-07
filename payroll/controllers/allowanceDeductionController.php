@@ -60,10 +60,10 @@ class AllowanceDeductionController
     private function add()
     {
         $employeeId = (int) $_POST['employee_id'];
-        $type       = $_POST['type'];
-        $desc       = trim($_POST['description']);
-        $amount     = (float) $_POST['amount'];
-        $periodId   = (int) $_POST['period_id'];
+        $deductionSubtype = $_POST['deduction_subtype'];
+        $desc = trim($_POST['description']);
+        $amount = (float) $_POST['amount'];
+        $periodId = (int) $_POST['period_id'];
 
         // Prevent edit if closed
         if ($this->payrollController->isClosed($periodId)) {
@@ -71,15 +71,18 @@ class AllowanceDeductionController
             $this->redirect();
         }
 
+        $filePath = null;
+
         $this->model->addAdjustment(
             $employeeId,
-            $type,
+            $deductionSubtype,
             $desc,
             $amount,
-            $periodId
+            $periodId,
+            $filePath
         );
 
-        $_SESSION['success'] = "Adjustment added.";
+        $_SESSION['success'] = "Deduction added successfully.";
 
         $this->redirect();
     }

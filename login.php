@@ -8,7 +8,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
 // Create a simple response function
-function sendResponse($success, $message, $statusCode = 200, $redirect = null)
+function sendResponse($success, $message, $statusCode = 200, $redirect = null, $extra = [])
 {
     http_response_code($statusCode);
     $response = [
@@ -17,6 +17,9 @@ function sendResponse($success, $message, $statusCode = 200, $redirect = null)
     ];
     if ($redirect) {
         $response['redirect'] = $redirect;
+    }
+    foreach ($extra as $key => $value) {
+        $response[$key] = $value;
     }
     echo json_encode($response);
     exit;
@@ -41,6 +44,14 @@ try {
     // Initialize Auth - this might throw an exception
     $auth = new Auth();
 
+    // Check for active login block first
+    $ipAddress = $auth->getClientIp();
+    $blockMessage = $auth->getLoginBlockMessage($username, $ipAddress);
+    if ($blockMessage !== null) {
+        $blockedSeconds = $auth->getActiveBlockRemainingSeconds($username, $ipAddress);
+        sendResponse(false, $blockMessage, 429, null, ['blocked_seconds' => $blockedSeconds]);
+    }
+
     // Try to login
     $loginResult = $auth->login($username, $password);
 
@@ -56,6 +67,11 @@ try {
             sendResponse(true, 'Login successful', 200, 'router.php');
         }
     } else {
+        $lastBlockedSeconds = $auth->getLastBlockedSeconds();
+        if ($lastBlockedSeconds !== null) {
+            sendResponse(false, 'Too many failed login attempts. Please try again later.', 429, null, ['blocked_seconds' => $lastBlockedSeconds]);
+        }
+
         sendResponse(false, 'Invalid username or password', 401);
     }
 } catch (Exception $e) {

@@ -1,11 +1,11 @@
-<?php
+﻿<?php
 session_start();
 require_once __DIR__ . "/../../auth/database.php";
 require_once __DIR__ . "/../../auth/auth.php";
 require_once __DIR__ . "/../../auth/auth_check.php";
 require_once __DIR__ . "/../controllers/payrollEmployeeConfigController.php";
 
-// $theme = $_SESSION['user']['theme'] ?? 'light';
+$theme = $_SESSION['user']['theme'] ?? 'light';
 $db = Database::getInstance()->getConnection();
 $controller = new PayrollEmployeeConfigController();
 
@@ -30,7 +30,7 @@ $summary = $referenceData['summary'];
     <link rel="stylesheet" href="../layout/toast.css" />
 </head>
 
-<body class="hold-transition dark-mode sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed">
+<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed <?= $theme === 'dark' ? 'dark-mode' : '' ?>">
     <div class="wrapper">
         <!-- Preloader -->
         <div class="preloader flex-column justify-content-center align-items-center">
@@ -147,11 +147,11 @@ $summary = $referenceData['summary'];
                                             <strong>Department:</strong> <?= htmlspecialchars($emp['department']) ?>
                                         </div>
                                         <div class="employee-meta" style="margin-top: 8px;">
-                                            <strong>Salary:</strong> ₱<?= number_format($emp['base_salary'], 2) ?> |
+                                            <strong>Salary:</strong> â‚±<?= number_format($emp['base_salary'], 2) ?> |
                                             <strong>Trio:</strong>
-                                            <span class="status-indicator <?= $emp['has_sss'] ? 'status-active' : 'status-inactive' ?>;">SSS <?= $emp['has_sss'] ? '✓' : '✗' ?></span>
-                                            <span class="status-indicator <?= $emp['has_philhealth'] ? 'status-active' : 'status-inactive' ?>;">PhilHealth <?= $emp['has_philhealth'] ? '✓' : '✗' ?></span>
-                                            <span class="status-indicator <?= $emp['has_pagibig'] ? 'status-active' : 'status-inactive' ?>;">Pag-IBIG <?= $emp['has_pagibig'] ? '✓' : '✗' ?></span>
+                                            <span class="status-indicator <?= $emp['has_sss'] ? 'status-active' : 'status-inactive' ?>;">SSS <?= $emp['has_sss'] ? 'âœ“' : 'âœ—' ?></span>
+                                            <span class="status-indicator <?= $emp['has_philhealth'] ? 'status-active' : 'status-inactive' ?>;">PhilHealth <?= $emp['has_philhealth'] ? 'âœ“' : 'âœ—' ?></span>
+                                            <span class="status-indicator <?= $emp['has_pagibig'] ? 'status-active' : 'status-inactive' ?>;">Pag-IBIG <?= $emp['has_pagibig'] ? 'âœ“' : 'âœ—' ?></span>
                                         </div>
                                         <?php if ($emp['position_type'] === 'Teacher'): ?>
                                             <div class="employee-meta teacher-detail">
@@ -225,35 +225,9 @@ $summary = $referenceData['summary'];
                                     <label for="base_salary">Base Salary (Monthly) *</label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text">₱</span>
+                                            <span class="input-group-text">â‚±</span>
                                         </div>
                                         <input type="number" class="form-control" id="base_salary" name="base_salary" step="0.01" min="0" required />
-                                    </div>
-                                </div>
-                                <div class="form-group col-md-6">
-                                    <label for="position_type">Position Type *</label>
-                                    <select class="form-control" id="position_type" name="position_type" required onchange="updatePositionType()">
-                                        <option value="Admin">Admin Staff</option>
-                                        <option value="Teacher">Teacher/Professor/Instructor</option>
-                                        <option value="Other">Other</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- Teacher Info (Hidden by default) -->
-                            <div id="teacherSection" class="teacher-info">
-                                <div class="form-row">
-                                    <div class="form-group col-md-6">
-                                        <label for="teacher_qualification">Qualification *</label>
-                                        <select class="form-control" id="teacher_qualification" name="teacher_qualification">
-                                            <option value="ProfEd">ProfEd/Normal Teacher (₱128/unit)</option>
-                                            <option value="LPT">Licensed Professional Teacher (₱130/unit)</option>
-                                            <option value="Masteral">Masteral (₱250/unit)</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group col-md-6">
-                                        <label for="teaching_units">Teaching Units *</label>
-                                        <input type="number" class="form-control" id="teaching_units" name="teaching_units" step="0.5" min="0" placeholder="e.g., 30" />
                                     </div>
                                 </div>
                             </div>
@@ -294,12 +268,12 @@ $summary = $referenceData['summary'];
                             <p>Based on position type</p>
                             <div class="alert alert-info" id="deductionInfo">
                                 <strong>Admin Staff:</strong><br />
-                                &nbsp;&nbsp;• Absence: ₱1,020 per day<br />
-                                &nbsp;&nbsp;• Late: ₱2/minute or ₱120/hour<br />
+                                &nbsp;&nbsp;â€¢ Absence: â‚±1,020 per day<br />
+                                &nbsp;&nbsp;â€¢ Late: â‚±2/minute or â‚±120/hour<br />
                                 <hr>
                                 <strong>Teacher:</strong><br />
-                                &nbsp;&nbsp;• Absence: ₱1,536 per day<br />
-                                &nbsp;&nbsp;• Late: ₱2/minute or ₱120/hour
+                                &nbsp;&nbsp;â€¢ Absence: â‚±1,536 per day<br />
+                                &nbsp;&nbsp;â€¢ Late: â‚±2/minute or â‚±120/hour
                             </div>
                         </div>
                     </form>
@@ -336,29 +310,13 @@ $summary = $referenceData['summary'];
                     $('#emp_position_display').val(emp.position);
                     $('#emp_dept_display').val(emp.department);
                     $('#base_salary').val(emp.base_salary);
-                    $('#position_type').val(emp.position_type);
-                    $('#teacher_qualification').val(emp.teacher_qualification);
-                    $('#teaching_units').val(emp.teaching_units);
                     $('#has_sss').prop('checked', emp.has_sss == 1);
                     $('#has_philhealth').prop('checked', emp.has_philhealth == 1);
                     $('#has_pagibig').prop('checked', emp.has_pagibig == 1);
 
-                    updatePositionType();
                     $('#editModal').modal('show');
                 }
             });
-        }
-
-        function updatePositionType() {
-            const type = $('#position_type').val();
-            if (type === 'Teacher') {
-                $('#teacherSection').addClass('show');
-                $('#base_salary').prop('disabled', true);
-                $('#base_salary').attr('title', 'For teachers, salary is calculated from units × rate per unit ÷ 2');
-            } else {
-                $('#teacherSection').removeClass('show');
-                $('#base_salary').prop('disabled', false);
-            }
         }
 
         function saveEmployee() {

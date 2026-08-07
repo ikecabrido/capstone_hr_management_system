@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Direct Handler Test</title>
+</head>
+<body>
+    <h1>Direct POST Test to teacherLoadHandler.php</h1>
+    
+    <form method="POST" action="/capstone_hr_management_system/payroll/views/teacherLoadHandler.php" id="testForm">
+        <input type="hidden" name="action" value="add_load">
+        <input type="hidden" name="employee_id" value="5">
+        <input type="hidden" name="academic_year" value="2026-2027">
+        <input type="hidden" name="semester" value="Summer">
+        <input type="hidden" name="total_units" value="25">
+        <button type="submit">Submit Direct Test</button>
+    </form>
+    
+    <script>
+        // Auto-submit on page load
+        document.getElementById('testForm').submit();
+    </script>
+</body>
+</html>

@@ -63,3 +63,66 @@ body.dark-mode .main-footer {
   transform: rotate(180deg) scale(0.5);
   opacity: 0;
 }
+
+.settlement-workspace-banner {
+  background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);
+  border-left: 4px solid #dc3545;
+}
+
+body.dark-mode .settlement-workspace-banner {
+  background: linear-gradient(135deg, #2f1f1f 0%, #1f2430 100%);
+  border-left-color: #ff7b7b;
+}
+
+.settlement-step-badges .badge {
+  margin-right: 0.35rem;
+  padding: 0.4rem 0.6rem;
+}
+
+.settlement-preview-card {
+  border: 1px solid #e9ecef;
+  border-radius: 0.75rem;
+  background: #f8f9fa;
+}
+
+body.dark-mode .settlement-preview-card {
+  background: #2b2f36;
+  border-color: #495057;
+}
+
+.settlement-preview-card .preview-pill {
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 0.6rem;
+  padding: 0.65rem 0.8rem;
+}
+
+body.dark-mode .settlement-preview-card .preview-pill {
+  background: #1f2329;
+  border-color: #495057;
+}
+
+.settlement-preview-card .preview-pill span {
+  display: block;
+  font-size: 0.75rem;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.settlement-preview-card .preview-pill strong {
+  display: block;
+  font-size: 1.05rem;
+  margin-top: 0.15rem;
+}
+
+.settlement-adjustment-card {
+  border: 1px solid #e9ecef;
+  border-radius: 0.65rem;
+  background: #fff;
+}
+
+body.dark-mode .settlement-adjustment-card {
+  background: #1f2329;
+  border-color: #495057;
+}

@@ -1,0 +1,9 @@
+2026-04-05 11:00:27 - Handler called
+GET:[]
+POST: {"action":"add_load","employee_id":"4","academic_year":"2025-2026","semester":"1st","total_units":"30","notes":"dfsdfsdfsdfsd"}
+2026-04-05 11:03:57 - Handler called
+GET:[]
+POST: {"action":"add_load","employee_id":"5","academic_year":"2025-2026","semester":"Summer","total_units":"30","notes":""}
+2026-04-05 11:05:14 - Handler called
+GET:[]
+POST: {"action":"add_load","employee_id":"5","academic_year":"2026-2027","semester":"1st","total_units":"30","notes":""}

@@ -2,6 +2,12 @@ const toggleBtn = document.getElementById("darkToggle");
 const icon = document.getElementById("themeIcon");
 
 function setTheme(mode) {
+  if (icon) {
+    icon.classList.remove("animate");
+    void icon.offsetWidth;
+    icon.classList.add("animate");
+  }
+
   if (mode === "dark") {
     document.body.classList.add("dark-mode");
     icon.classList.replace("fa-moon", "fa-sun");
@@ -9,6 +15,12 @@ function setTheme(mode) {
     document.body.classList.remove("dark-mode");
     icon.classList.replace("fa-sun", "fa-moon");
   }
+
+  setTimeout(() => {
+    if (icon) {
+      icon.classList.remove("animate");
+    }
+  }, 250);
 
   // save locally
   localStorage.setItem("theme", mode);

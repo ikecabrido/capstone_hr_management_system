@@ -53,7 +53,7 @@ $controller->handleRequest();
 </head>
 
 <body
-    class="hold-transition dark-mode sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed">
+    class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed <?= $theme === 'dark' ? 'dark-mode' : '' ?>">
     <div class="wrapper">
         <!-- Preloader -->
         <div
@@ -145,13 +145,6 @@ $controller->handleRequest();
                                 <p>Dashboard</p>
                             </a>
                         </li>
-
-                        <li class="nav-item">
-                            <a href="salaryOverview.php" class="nav-link">
-                                <i class="nav-icon fas fa-money-check-alt"></i>
-                                <p>Salary Overview</p>
-                            </a>
-                        </li>
                         <li class="nav-item">
                             <a href="periodManager.php" class="nav-link">
                                 <i class="nav-icon fas fa-calendar-alt"></i>
@@ -173,7 +166,7 @@ $controller->handleRequest();
                         <li class="nav-item">
                             <a href="allowance.php" class="nav-link active">
                                 <i class="nav-icon fas fa-file-invoice-dollar"></i>
-                                <p>Benefits & Deductions</p>
+                                <p>Deductions</p>
                             </a>
                         </li>
 
@@ -188,7 +181,7 @@ $controller->handleRequest();
                         <li class="nav-item">
                             <a href="payrollClearance.php" class="nav-link">
                                 <i class="nav-icon fas fa-file-signature"></i>
-                                <p>Payroll Clearance</p>
+                                <p>Final Settlements</p>
                             </a>
                         </li>
                         <li class="nav-item">
@@ -211,7 +204,7 @@ $controller->handleRequest();
                 <div class="container-fluid">
                     <div class="row mb-2">
                         <div class="col-sm-6">
-                            <h1 class="m-0">Benefits and Deductions</h1>
+                            <h1 class="m-0">Deductions</h1>
                         </div>
                         <!-- /.col -->
 
@@ -265,16 +258,7 @@ $controller->handleRequest();
 
                     <!-- Totals -->
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="info-box bg-success">
-                                <span class="info-box-icon"><i class="fas fa-plus"></i></span>
-                                <div class="info-box-content">
-                                    <span class="info-box-text">Total Benefits</span>
-                                    <span class="info-box-number">₱<?= number_format($totals['total_allowance'], 2) ?></span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <div class="info-box bg-danger">
                                 <span class="info-box-icon"><i class="fas fa-minus"></i></span>
                                 <div class="info-box-content">
@@ -288,9 +272,9 @@ $controller->handleRequest();
                     <!-- Table -->
                     <div class="card mt-3">
                         <div class="card-header bg-info">
-                            <h3 class="card-title"><i class="fas fa-list"></i> Records</h3>
+                            <h3 class="card-title"><i class="fas fa-list"></i> Deductions</h3>
                             <button class="btn btn-sm btn-success float-right" data-toggle="modal" data-target="#addModal">
-                                <i class="fas fa-plus"></i> Add
+                                <i class="fas fa-plus"></i> Add Deduction
                             </button>
                         </div>
                         <div class="card-body">
@@ -298,10 +282,11 @@ $controller->handleRequest();
                                 <thead>
                                     <tr>
                                         <th>Employee</th>
-                                        <th>Type</th>
+                                        <th>Deduction Type</th>
                                         <th>Description</th>
                                         <th>Amount</th>
                                         <th>Payroll Period</th>
+                                        <th>Proof</th>
                                         <th>Date Created</th>
                                         <th>Actions</th>
                                     </tr>
@@ -309,16 +294,25 @@ $controller->handleRequest();
                                 <tbody>
                                     <?php if (empty($records)): ?>
                                         <tr>
-                                            <td colspan="7" class="text-center text-muted">No records found</td>
+                                            <td colspan="8" class="text-center text-muted">No records found</td>
                                         </tr>
                                     <?php else: ?>
                                         <?php foreach ($records as $r): ?>
                                             <tr>
                                                 <td><?= htmlspecialchars($r['employee_name']) ?></td>
-                                                <td><?= ucfirst(htmlspecialchars($r['display_type'] ?? $r['type'])) ?></td>
+                                                <td><?= htmlspecialchars($r['display_type']) ?></td>
                                                 <td><?= htmlspecialchars($r['description']) ?></td>
                                                 <td>₱<?= number_format($r['amount'], 2) ?></td>
                                                 <td><?= htmlspecialchars($r['period_name']) ?></td>
+                                                <td>
+                                                    <?php if ($r['file_path']): ?>
+                                                        <a href="../../<?= htmlspecialchars($r['file_path']) ?>" target="_blank" class="btn btn-sm btn-info">
+                                                            <i class="fas fa-file"></i> View
+                                                        </a>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">-</span>
+                                                    <?php endif; ?>
+                                                </td>
                                                 <td><?= date('M d, Y', strtotime($r['created_at'])) ?></td>
                                                 <td>
 
@@ -391,10 +385,10 @@ $controller->handleRequest();
 
             <div class="modal fade" id="addModal">
                 <div class="modal-dialog">
-                    <form method="POST" action="allowance.php">
+                    <form method="POST" action="allowance.php" enctype="multipart/form-data">
                         <div class="modal-content">
                             <div class="modal-header bg-success">
-                                <h5 class="modal-title">Add Benefit / Deduction</h5>
+                                <h5 class="modal-title">Add Deduction</h5>
                                 <button type="button" class="close" data-dismiss="modal">&times;</button>
                             </div>
                             <div class="modal-body">
@@ -408,10 +402,9 @@ $controller->handleRequest();
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label>Type</label>
-                                    <select name="type" class="form-control" required>
-                                        <option value="benefit">Benefit</option>
-                                        <option value="deduction">Deduction</option>
+                                    <label>Deduction Type</label>
+                                    <select name="deduction_subtype" id="deductionSubtype" class="form-control" required>
+                                        <option value="other">Other Deductions</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
@@ -427,7 +420,7 @@ $controller->handleRequest();
                                     <select name="period_id" class="form-control" required>
                                         <option value="">Select Period</option>
                                         <?php foreach ($periods as $p): ?>
-                                            <option value="<?= $p['id'] ?>"
+                                            <option value="<?= $p['period_id'] ?>"
                                                 <?= $p['status'] === 'closed' ? 'disabled' : '' ?>>
                                                 <?= htmlspecialchars($p['period_name']) ?>
                                                 <?= $p['status'] === 'closed' ? '(Closed)' : '' ?>
@@ -495,14 +488,6 @@ $controller->handleRequest();
         <!-- /.control-sidebar -->
 
         <!-- Main Footer -->
-        <footer class="main-footer">
-            <strong>Copyright &copy; 2026-2027 Bestlink College of the
-                Philippines.</strong>
-            All rights reserved.
-            <!-- <div class="float-right d-none d-sm-inline-block">
-          <b>Version</b> 3.2.0
-        </div> -->
-        </footer>
     </div>
     <!-- ./wrapper -->
 
@@ -530,7 +515,7 @@ $controller->handleRequest();
     <!-- AdminLTE dashboard demo (This is only for demo purposes) -->
     <!-- <script src="assets/dist/js/pages/dashboard2.js"></script> -->
     <script src="../custom.js"></script>
-    <script src="../../assets/dist/js/theme.js"></script>
+
     <script src="../../assets/dist/js/time.js"></script>
     <script src="../../assets/dist/js/global_modal.js"></script>
     <script src="../../assets/dist/js/profile.js"></script>

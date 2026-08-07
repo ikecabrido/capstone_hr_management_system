@@ -1,7 +1,10 @@
 <?php
+require_once __DIR__ . '/ExitSettlementCalculator.php';
+
 class PayrollModel
 {
     private PDO $db;
+    private string $lastResolvedSalarySource = 'none';
 
     // Position Configuration - Defines payroll rules by position category
     private const POSITION_CONFIG = [
@@ -38,20 +41,170 @@ class PayrollModel
     public function __construct(PDO $db)
     {
         $this->db = $db;
+        // Ensure payroll clearance schema exists so Exit Management can create requests even
+        // if the migration hasn't been applied.
+        $this->ensurePayrollClearancesSchema();
     }
 
     /**
-     * Get position category configuration by position type
+     * Create payroll_clearances table if it does not exist (defensive migration)
      */
-    private function getPositionCategory(string $positionType): ?array
+    private function ensurePayrollClearancesSchema(): void
     {
-        foreach (self::POSITION_CONFIG as $category => $config) {
-            if (in_array($positionType, $config['positions'], true)) {
-                return $config;
-            }
+        try {
+            $this->db->exec("
+                CREATE TABLE IF NOT EXISTS `payroll_clearances` (
+                  `id` int(11) NOT NULL AUTO_INCREMENT,
+                  `settlement_id` int(11) NOT NULL,
+                  `requested_by` int(11) DEFAULT NULL,
+                  `requested_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                  `status` enum('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+                  `approved_by` int(11) DEFAULT NULL,
+                  `approved_at` datetime DEFAULT NULL,
+                  `comments` text DEFAULT NULL,
+                  `last_updated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                  PRIMARY KEY (`id`),
+                  KEY `idx_settlement_id` (`settlement_id`),
+                  KEY `idx_status` (`status`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ");
+        } catch (Exception $e) {
+            error_log('Failed to ensure payroll_clearances schema: ' . $e->getMessage());
         }
-        // Default to 'admin' if position not found
-        return self::POSITION_CONFIG['admin'];
+    }
+
+    /**
+     * Get TRAIN Law contribution rate for a given contribution type and salary
+     * Handles salary brackets for Pag-IBIG (1% vs 2%)
+     * @param string $contributionType - 'sss', 'philhealth', 'pagibig'
+     * @param float $monthlySalary - Monthly salary for bracket matching
+     * @return array|null - ['employee_rate' => float, 'is_percentage' => bool]
+     */
+    private function getContributionRate(string $contributionType, float $monthlySalary = 0): ?array
+    {
+        try {
+            $sql = "
+                SELECT employee_rate, is_percentage 
+                FROM pr_contribution_rates 
+                WHERE contribution_type = :type 
+                  AND is_active = 1
+                  AND :salary >= min_salary 
+                  AND :salary <= max_salary
+                LIMIT 1
+            ";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':type' => strtolower($contributionType),
+                ':salary' => $monthlySalary
+            ]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            // Fallback to 2026 TRAIN Law rates if table doesn't exist
+            error_log('Contribution rates table error: ' . $e->getMessage());
+            $defaults = [
+                'sss' => 5.00,
+                'philhealth' => 2.50,
+                'pagibig' => ($monthlySalary <= 1500) ? 1.00 : 2.00
+            ];
+            return [
+                'employee_rate' => $defaults[strtolower($contributionType)] ?? 0,
+                'is_percentage' => 1
+            ];
+        }
+    }
+
+    /**
+     * Calculate contribution amount based on 2026 TRAIN Law
+     * Handles salary brackets for Pag-IBIG
+     * @param string $contributionType - 'sss', 'philhealth', 'pagibig'
+     * @param float $monthlySalary - Monthly gross salary
+     * @param bool $isSemiMonthly - If true, calculate for semi-monthly period
+     * @return float - Contribution amount
+     */
+    private function calculateContribution(string $contributionType, float $monthlySalary, bool $isSemiMonthly = true): float
+    {
+        $rate = $this->getContributionRate($contributionType, $monthlySalary);
+        
+        if (!$rate) {
+            // Fallback 2026 TRAIN Law defaults
+            if (strtolower($contributionType) === 'pagibig') {
+                $ratePercent = ($monthlySalary <= 1500) ? 1.00 : 2.00;
+            } else {
+                $defaults = [
+                    'sss' => 5.00,
+                    'philhealth' => 2.50
+                ];
+                $ratePercent = $defaults[strtolower($contributionType)] ?? 0;
+            }
+        } else {
+            $ratePercent = (float)$rate['employee_rate'];
+        }
+
+        // Calculate contribution as percentage of salary
+        $monthlyContribution = $monthlySalary * ($ratePercent / 100);
+
+        // Divide by 2 for semi-monthly payment
+        return $isSemiMonthly ? $monthlyContribution / 2 : $monthlyContribution;
+    }
+
+    /**
+     * Map position name from employees table to payroll category
+     * @param string $position - Position name from employees table
+     * @return string Category key (teacher, admin, support, professional)
+     */
+    private function mapPositionToCategory(string $position): string
+    {
+        $positionMap = [
+            // Teaching Positions
+            'Teacher' => 'teacher',
+            'Assistant Teacher' => 'teacher',
+            'Instructor' => 'teacher',
+            'Professor' => 'teacher',
+            'Associate Professor' => 'teacher',
+
+            // Admin/Management Positions
+            'Principal' => 'admin',
+            'Vice Principal' => 'admin',
+            'HR Manager' => 'admin',
+            'Accountant' => 'admin',
+            'Finance Officer' => 'admin',
+            'Admin' => 'admin',
+            'System Administrator' => 'admin',
+            'Administrative Officer' => 'admin',
+            'Registrar' => 'admin',
+            'Academic Coordinator' => 'admin',
+
+            // Professional Positions
+            'Software Engineer' => 'professional',
+            'Junior Developer' => 'professional',
+            'IT Support' => 'professional',
+            'Librarian' => 'professional',
+            'Counselor' => 'professional',
+            'School Nurse' => 'professional',
+            'HR Specialist' => 'professional',
+            'Financial Analyst' => 'professional',
+            'Staff Coordinator' => 'professional',
+            'Operations Manager' => 'professional',
+
+            // Support Positions
+            'Janitor' => 'support',
+            'Maintenance Worker' => 'support',
+            'Security Guard' => 'support',
+            'Driver' => 'support',
+            'Canteen Staff' => 'support',
+            'Gardener' => 'support',
+            'Groundskeeper' => 'support'
+        ];
+
+        return $positionMap[$position] ?? 'admin'; // Default to admin
+    }
+
+    /**
+     * Get position category configuration by category key
+     */
+    private function getPositionCategory(string $categoryKey): ?array
+    {
+        return self::POSITION_CONFIG[$categoryKey] ?? self::POSITION_CONFIG['admin'];
     }
 
     // Get TA metrics for a period
@@ -64,7 +217,7 @@ class PayrollModel
                 SUM(late_minutes) AS total_late_minutes,
                 SUM(early_out_minutes) AS total_early_out_minutes,
                 SUM(total_hours_worked) AS total_hours_worked,
-                COUNT(CASE WHEN status='PRESENT' THEN 1 END) AS present_days,
+                COUNT(CASE WHEN status IN ('PRESENT', 'LATE') THEN 1 END) AS present_days,
                 COUNT(CASE WHEN status='ABSENT' THEN 1 END) AS total_absent_days,
                 COUNT(CASE WHEN status='LATE' THEN 1 END) AS late_days,
                 -- Count unexcused absences only (exclude approved leaves)
@@ -73,7 +226,7 @@ class PayrollModel
                         SELECT attendance_id FROM ta_absence_late_records 
                         WHERE employee_id = :eid 
                           AND type='ABSENT'
-                          AND (is_excused = TRUE OR excuse_status IN ('APPROVED', 'AWAITING_DOCUMENTS'))
+                          AND excuse_status IN ('APPROVED', 'AWAITING_DOCUMENTS')
                     ) 
                     THEN 1 
                     ELSE 0 
@@ -267,84 +420,136 @@ class PayrollModel
         $end   = $period['end_date'];
 
         /* ==============================
-       Get Payroll Employee Configuration
-       (Base Salary, Position Type)
-       If not found in pr_employee_details, use defaults from employees table
+       Get Employee Data from employees table
+       (Position) and Teacher Qualification from rao_jobs
     ============================== */
-        $stmtConfig = $this->db->prepare("
-        SELECT 
-            pd.base_salary,
-            pd.position_type
-        FROM pr_employee_details pd
-        WHERE pd.employee_id = :eid
-    ");
-        $stmtConfig->execute([':eid' => $employeeId]);
-        $config = $stmtConfig->fetch(PDO::FETCH_ASSOC);
+        $stmtEmployee = $this->db->prepare("
+            SELECT 
+                e.position,
+                COALESCE(rj.qualifications, 'ProfEd') AS teacher_qualification
+            FROM employees e
+            LEFT JOIN rao_hired_applicants rha ON e.employee_id = rha.employee_id
+            LEFT JOIN rao_jobs rj ON rha.job_id = rj.id
+            WHERE e.employee_id = :eid
+        ");
+        $stmtEmployee->execute([':eid' => $employeeId]);
+        $employee = $stmtEmployee->fetch(PDO::FETCH_ASSOC);
 
-        // If no config found, get position from employees table and use default salary
-        if (!$config) {
-            $stmtEmployee = $this->db->prepare("
-                SELECT position
-                FROM employees
-                WHERE employee_id = :eid
-            ");
-            $stmtEmployee->execute([':eid' => $employeeId]);
-            $employee = $stmtEmployee->fetch(PDO::FETCH_ASSOC);
-
-            if (!$employee) {
-                return []; // Employee not found
-            }
-
-            // Map position to default salary and category
-            $positionMapping = [
-                'Professor' => ['salary' => 40000, 'category' => 'Teacher'],
-                'Associate Professor' => ['salary' => 35000, 'category' => 'Teacher'],
-                'Instructor' => ['salary' => 28000, 'category' => 'Teacher'],
-                'Software Developer' => ['salary' => 35000, 'category' => 'Admin'],
-                'HR Manager' => ['salary' => 30000, 'category' => 'Admin'],
-                'Accountant' => ['salary' => 28000, 'category' => 'Admin'],
-                'Administrative Officer' => ['salary' => 22000, 'category' => 'Admin'],
-            ];
-
-            $position = $employee['position'];
-            $defaultConfig = $positionMapping[$position] ?? ['salary' => 20000, 'category' => 'Admin'];
-
-            $config = [
-                'base_salary' => $defaultConfig['salary'],
-                'position_type' => $defaultConfig['category']
-            ];
+        if (!$employee) {
+            return []; // Employee not found
         }
 
-        $baseSalaryMonthly = (float)($config['base_salary'] ?? 0);
-        $positionType = $config['position_type'] ?? 'Admin';
+        $position = $employee['position'];
+        $teacherQualification = $employee['teacher_qualification'] ?? 'ProfEd';
 
-        // Get position category configuration
-        $positionCategory = $this->getPositionCategory($positionType);
+        /* ==============================
+       Get Base Salary from rao_offer_salary
+       (where offer_status = 'accepted')
+       Join through rao_hired_applicants
+       With fallback to position-based default salary
+    ============================== */
+        $stmtSalary = $this->db->prepare("
+            SELECT ros.salary
+            FROM rao_offer_salary ros
+            JOIN rao_hired_applicants rha ON ros.application_id = rha.application_id
+            WHERE rha.employee_id = :eid
+              AND ros.offer_status = 'accepted'
+            ORDER BY ros.created_at DESC
+            LIMIT 1
+        ");
+        $stmtSalary->execute([':eid' => $employeeId]);
+        $salaryRecord = $stmtSalary->fetch(PDO::FETCH_ASSOC);
 
-        // For teachers: Get teaching load from College Coordinator's assignments
-        $teacherQualification = 'ProfEd';
+        $baseSalaryMonthly = (float)($salaryRecord['salary'] ?? 0);
+
+        // Fallback: If no accepted offer salary, use position-based default
+        if ($baseSalaryMonthly <= 0) {
+            // Position-based salary defaults when no record exists
+            $positionDefaults = [
+                'Staff Coordinator' => 22000,
+                'Teacher' => 30000,
+                'Administrative Officer' => 22000,
+                'HR Manager' => 30000,
+                'Finance Officer' => 28000,
+                'Accountant' => 28000,
+                'Financial Analyst' => 30000,
+                'Principal' => 45000,
+                'Vice Principal' => 40000,
+                'Registrar' => 32000,
+                'Academic Coordinator' => 28000,
+                'Librarian' => 24000,
+                'Counselor' => 26000,
+                'School Nurse' => 26000,
+                'IT Support' => 24000,
+                'Software Engineer' => 35000,
+                'Junior Developer' => 25000,
+                'Operations Manager' => 32000,
+                'Janitor' => 15000,
+                'Maintenance Worker' => 18000,
+                'Security Guard' => 16000,
+                'Driver' => 16000,
+                'Canteen Staff' => 14000,
+                'Gardener' => 14000,
+                'Groundskeeper' => 14000,
+                'Assistant Teacher' => 26000,
+                'Instructor' => 28000,
+                'Professor' => 40000,
+                'Associate Professor' => 35000,
+            ];
+            $baseSalaryMonthly = (float)($positionDefaults[$position] ?? 20000);
+        }
+
+        /* ==============================
+       Map position to category and get configuration
+    ============================== */
+        $categoryKey = $this->mapPositionToCategory($position);
+        $positionCategory = $this->getPositionCategory($categoryKey);
+
+        // For teachers: derive teaching units from cc_schedule table (use semester + school_year match)
         $teachingUnits = 0;
 
         if ($positionCategory['pay_type'] === 'unit_based') {
-            // Get current teacher load from pr_teacher_loads table
-            // Find the load that covers the payroll period
-            $stmtTeacherLoad = $this->db->prepare("
-                SELECT qualification, total_units
-                FROM pr_teacher_loads
-                WHERE employee_id = :eid
-                  AND :pstart >= DATE_FORMAT(NOW(), '%Y-01-01')
-                LIMIT 1
-            ");
-            $stmtTeacherLoad->execute([
-                ':eid' => $employeeId,
-                ':pstart' => $start
-            ]);
-            $teacherLoad = $stmtTeacherLoad->fetch(PDO::FETCH_ASSOC);
+            // Heuristic: map payroll period start date to academic semester and school_year
+            $periodStartMonth = (int)date('n', strtotime($start));
+            $startYear = (int)date('Y', strtotime($start));
 
-            if ($teacherLoad) {
-                $teacherQualification = $teacherLoad['qualification'] ?? 'ProfEd';
-                $teachingUnits = (float)($teacherLoad['total_units'] ?? 0);
+            if (in_array($periodStartMonth, [6,7,8,9,10])) {
+                // Typical 1st semester (June/July - Oct/Nov)
+                $semesterKey = '1st Sem';
+                $schoolYear = $startYear . '-' . ($startYear + 1);
+            } elseif (in_array($periodStartMonth, [11,12,1,2,3])) {
+                // Typical 2nd semester (Nov - Mar)
+                $semesterKey = '2nd Sem';
+                // For months Jan-Mar, the academic year started previous year
+                if ($periodStartMonth >= 1 && $periodStartMonth <= 5) {
+                    $schoolYear = ($startYear - 1) . '-' . $startYear;
+                } else {
+                    $schoolYear = $startYear . '-' . ($startYear + 1);
+                }
+            } else {
+                // Fallback to Summer (Apr-May)
+                $semesterKey = 'Summer';
+                if ($periodStartMonth >= 1 && $periodStartMonth <= 5) {
+                    $schoolYear = ($startYear - 1) . '-' . $startYear;
+                } else {
+                    $schoolYear = $startYear . '-' . ($startYear + 1);
+                }
             }
+
+            // Default units per subject (configurable)
+            $unitsPerSubject = 3.0;
+
+            // Count schedule rows for the faculty matching semester and school_year
+            $stmtSchedule = $this->db->prepare("\n                SELECT COUNT(*) as cnt\n                FROM cc_schedule\n                WHERE faculty_id = :eid\n                  AND school_year = :sy\n                  AND semester = :sem\n            ");
+            $stmtSchedule->execute([
+                ':eid' => $employeeId,
+                ':sy' => $schoolYear,
+                ':sem' => $semesterKey
+            ]);
+            $count = (int)$stmtSchedule->fetchColumn();
+
+            // Each schedule row is treated as one subject assignment; multiply by units per subject
+            $teachingUnits = $count * $unitsPerSubject;
         }
 
         /* ==============================
@@ -353,7 +558,7 @@ class PayrollModel
     ============================== */
         $stmtContributions = $this->db->prepare("
         SELECT contribution_type, status
-        FROM employee_contributions
+        FROM lc_employee_contributions
         WHERE employee_id = :eid
     ");
         $stmtContributions->execute([':eid' => $employeeId]);
@@ -376,7 +581,7 @@ class PayrollModel
         FROM pr_position_deduction_rates
         WHERE position_type = :ptype AND is_active = 1
     ");
-        $stmtRates->execute([':ptype' => $positionType]);
+        $stmtRates->execute([':ptype' => $categoryKey]);
         $rates = $stmtRates->fetch(PDO::FETCH_ASSOC);
 
         // Use config-based absence deduction, or override from database if available
@@ -419,13 +624,13 @@ class PayrollModel
 
             $payPerUnit = (float)($teacherRate['pay_per_unit'] ?? 128);
             $basicSalary = ($teachingUnits * $payPerUnit) / 2;
-            $salarybasis = "{$positionType} ({$teachingUnits} units × ₱{$payPerUnit}/unit)";
+            $salarybasis = "{$position} ({$teachingUnits} units × ₱{$payPerUnit}/unit)";
         } else {
             // All other positions (Admin, Support, Professional): base_salary ÷ 2 ÷ 15 × days_worked
             $semiMonthly = $baseSalaryMonthly / 2;
             $dailyRate = $semiMonthly / 15;
             $basicSalary = $dailyRate * $daysWorked;
-            $salarybasis = "{$positionType} (₱{$baseSalaryMonthly} ÷ 2 ÷ 15 × {$daysWorked} days)";
+            $salarybasis = "{$position} (₱{$baseSalaryMonthly} ÷ 2 ÷ 15 × {$daysWorked} days)";
         }
 
         /* ==============================
@@ -512,31 +717,36 @@ class PayrollModel
         $totalDeductions = 0;
 
         /* ==============================
-       1. TRIO DEDUCTIONS (₱200 each - fixed amount)
+       1. TRIO DEDUCTIONS (2026 TRAIN Law - Percentage Based)
+       SSS: 5%, PhilHealth: 2.5%, Pag-IBIG: 1% (≤₱1500) or 2% (>₱1500)
        Only applied if employee has submitted contribution
     ============================== */
         if (!empty($submittedContributions['sss'])) {
+            $sssAmount = $this->calculateContribution('sss', $baseSalaryMonthly, true);
             $deductions[] = [
-                'description' => 'SSS',
-                'amount' => 200.00
+                'description' => 'SSS (5%)',
+                'amount' => $sssAmount
             ];
-            $totalDeductions += 200.00;
+            $totalDeductions += $sssAmount;
         }
 
         if (!empty($submittedContributions['philhealth'])) {
+            $philhealthAmount = $this->calculateContribution('philhealth', $baseSalaryMonthly, true);
             $deductions[] = [
-                'description' => 'PhilHealth',
-                'amount' => 200.00
+                'description' => 'PhilHealth (2.5%)',
+                'amount' => $philhealthAmount
             ];
-            $totalDeductions += 200.00;
+            $totalDeductions += $philhealthAmount;
         }
 
         if (!empty($submittedContributions['pagibig'])) {
+            $pagibigAmount = $this->calculateContribution('pagibig', $baseSalaryMonthly, true);
+            $pagibigRate = ($baseSalaryMonthly <= 1500) ? '1%' : '2%';
             $deductions[] = [
-                'description' => 'Pag-IBIG',
-                'amount' => 200.00
+                'description' => "Pag-IBIG ({$pagibigRate})",
+                'amount' => $pagibigAmount
             ];
-            $totalDeductions += 200.00;
+            $totalDeductions += $pagibigAmount;
         }
 
         /* ==============================
@@ -582,7 +792,7 @@ class PayrollModel
         /* ==============================
        NET PAY CALCULATION
     ============================== */
-        $netPay = $grossPay - $totalDeductions;
+        $netPay = max(0, $grossPay - $totalDeductions);
 
         return [
             'gross_pay' => $grossPay,
@@ -598,8 +808,7 @@ class PayrollModel
             'late_minutes' => $lateMinutes,
             'overtime_hours' => $overtimeHours,
             'overtime_pay' => $overtimePay,
-            'overtime_multiplier' => $overtimeMultiplier,
-            'position_type' => $positionType
+            'overtime_multiplier' => $overtimeMultiplier
         ];
     }
 
@@ -699,223 +908,73 @@ class PayrollModel
      */
     public function calculateExitPayslip(int $employeeId, int $settlementId): array
     {
-        /* ==============================
-           Get Settlement & Resignation Data
-        ============================== */
-        $stmtSettlement = $this->db->prepare("
-            SELECT 
-                es.*,
-                er.last_working_date,
-                er.resignation_type
-            FROM exit_employee_settlements es
-            LEFT JOIN exit_resignations er ON es.resignation_id = er.id
-            WHERE es.id = :sid AND es.employee_id = :eid
-        ");
-        $stmtSettlement->execute([
-            ':sid' => $settlementId,
-            ':eid' => $employeeId
-        ]);
-        $settlement = $stmtSettlement->fetch(PDO::FETCH_ASSOC);
+        $calculator = new ExitSettlementCalculator($this->db);
+        return $calculator->calculate($employeeId, $settlementId);
+    }
 
-        if (!$settlement) {
-            return [];
+    /**
+     * Resolve the most reliable monthly base salary for exit settlement calculations.
+     */
+    private function resolveExitSettlementBaseSalary(int $employeeId, array $settlement): float
+    {
+        $this->lastResolvedSalarySource = 'none';
+
+        try {
+           $stmtSalary = $this->db->prepare("
+               SELECT ros.salary
+               FROM rao_offer_salary ros
+               JOIN rao_hired_applicants rha ON ros.application_id = rha.application_id
+               WHERE rha.employee_id = :eid
+                 AND ros.offer_status = 'accepted'
+               ORDER BY ros.created_at DESC
+               LIMIT 1
+           ");
+           $stmtSalary->execute([':eid' => $employeeId]);
+           $salaryRecord = $stmtSalary->fetch(PDO::FETCH_ASSOC);
+           $salary = (float)($salaryRecord['salary'] ?? 0);
+           if ($salary > 0) {
+               $this->lastResolvedSalarySource = 'accepted_offer';
+               return $salary;
+           }
+        } catch (Exception $e) {
+           error_log('Failed to resolve accepted offer salary: ' . $e->getMessage());
         }
 
-        $lastWorkingDate = $settlement['last_working_date'];
-
-        /* ==============================
-           Get Employee Configuration
-        ============================== */
-        $stmtConfig = $this->db->prepare("
-            SELECT 
-                pd.base_salary,
-                pd.position_type
-            FROM pr_employee_details pd
-            WHERE pd.employee_id = :eid
-        ");
-        $stmtConfig->execute([':eid' => $employeeId]);
-        $config = $stmtConfig->fetch(PDO::FETCH_ASSOC);
-
-        if (!$config) {
-            return [];
+        try {
+           $stmtSalary = $this->db->prepare("
+               SELECT les.rate, lss.basic_salary
+               FROM lc_employee_salary les
+               LEFT JOIN lc_salary_structures lss ON les.salary_structure_id = lss.id
+               WHERE les.employee_id = :eid
+               ORDER BY les.effective_date DESC, les.id DESC
+               LIMIT 1
+           ");
+           $stmtSalary->execute([':eid' => $employeeId]);
+           $salaryRecord = $stmtSalary->fetch(PDO::FETCH_ASSOC);
+           $salary = (float)($salaryRecord['rate'] ?? 0);
+           if ($salary <= 0) {
+               $salary = (float)($salaryRecord['basic_salary'] ?? 0);
+           }
+           if ($salary > 0) {
+               $this->lastResolvedSalarySource = 'salary_structure';
+               return $salary;
+           }
+        } catch (Exception $e) {
+           error_log('Failed to resolve legacy salary structure: ' . $e->getMessage());
         }
 
-        $baseSalaryMonthly = (float)($config['base_salary'] ?? 0);
-        $positionType = $config['position_type'] ?? 'Admin';
-
-        // Get position category configuration
-        $positionCategory = $this->getPositionCategory($positionType);
-
-        /* ==============================
-           Get Time & Attendance (up to last_working_date)
-        ============================== */
-        // Assuming payroll period starts from beginning of month
-        $periodStart = date('Y-m-01');
-        $periodEnd = $lastWorkingDate;
-
-        $attendance = $this->getTimeAttendanceMetrics($employeeId, $periodStart, $periodEnd);
-        $daysWorked = 0;
-        $unapprovedAbsentDays = 0;
-        $lateMinutes = 0;
-
-        if ($attendance) {
-            $daysWorked = (int)($attendance['present_days'] ?? 0);
-            $unapprovedAbsentDays = (int)($attendance['unexcused_absent_days'] ?? 0);
-            $lateMinutes = (int)($attendance['total_late_minutes'] ?? 0);
+        $settlementSalary = (float)($settlement['basic_salary'] ?? 0);
+        if ($settlementSalary > 0) {
+           $this->lastResolvedSalarySource = 'settlement_basic_salary';
+           return $settlementSalary;
         }
 
-        /* ==============================
-           Get Deduction Rates
-           Uses position category defaults, with database overrides if available
-        ============================== */
-        $stmtRates = $this->db->prepare("
-            SELECT absence_deduction_amount, late_per_minute_rate
-            FROM pr_position_deduction_rates
-            WHERE position_type = :ptype AND is_active = 1
-        ");
-        $stmtRates->execute([':ptype' => $positionType]);
-        $rates = $stmtRates->fetch(PDO::FETCH_ASSOC);
+        return 0.0;
+    }
 
-        // Use config-based absence deduction, or override from database if available
-        $absenceDeductionAmount = (float)($rates['absence_deduction_amount'] ?? $positionCategory['absence_deduction'] ?? 1020);
-        $latePerMinute = (float)($rates['late_per_minute_rate'] ?? 2.00);
-
-        /* ==============================
-           Calculate Pro-rata Basic Salary
-        ============================== */
-        $semiMonthly = $baseSalaryMonthly / 2;
-        $dailyRate = $semiMonthly / 15;
-        $basicSalary = $dailyRate * $daysWorked;
-        $salarybasis = "Pro-rata Salary ({$daysWorked} days × ₱" . number_format($dailyRate, 2) . "/day)";
-
-        /* ==============================
-           Build Earnings
-        ============================== */
-        $earnings = [
-            [
-                'description' => $salarybasis,
-                'amount' => $basicSalary
-            ]
-        ];
-
-        // Add gratuity from settlement
-        if ($settlement['gratuity'] > 0) {
-            $earnings[] = [
-                'description' => 'Gratuity',
-                'amount' => (float)$settlement['gratuity']
-            ];
-        }
-
-        // Add notice pay from settlement
-        if ($settlement['notice_pay'] > 0) {
-            $earnings[] = [
-                'description' => 'Notice Pay',
-                'amount' => (float)$settlement['notice_pay']
-            ];
-        }
-
-        $grossPay = $basicSalary + ((float)$settlement['gratuity'] ?? 0) + ((float)$settlement['notice_pay'] ?? 0);
-
-        /* ==============================
-           Build Deductions
-        ============================== */
-        $deductions = [];
-        $totalDeductions = 0;
-
-        // Get contributions status
-        $stmtContributions = $this->db->prepare("
-            SELECT contribution_type, status
-            FROM employee_contributions
-            WHERE employee_id = :eid
-        ");
-        $stmtContributions->execute([':eid' => $employeeId]);
-        $contributions = $stmtContributions->fetchAll(PDO::FETCH_ASSOC);
-
-        $submittedContributions = [];
-        foreach ($contributions as $contrib) {
-            if ($contrib['status'] === 'submitted') {
-                $submittedContributions[$contrib['contribution_type']] = true;
-            }
-        }
-
-        // 1. TRIO DEDUCTIONS
-        if (!empty($submittedContributions['sss'])) {
-            $deductions[] = [
-                'description' => 'SSS',
-                'amount' => 200.00
-            ];
-            $totalDeductions += 200.00;
-        }
-
-        if (!empty($submittedContributions['philhealth'])) {
-            $deductions[] = [
-                'description' => 'PhilHealth',
-                'amount' => 200.00
-            ];
-            $totalDeductions += 200.00;
-        }
-
-        if (!empty($submittedContributions['pagibig'])) {
-            $deductions[] = [
-                'description' => 'Pag-IBIG',
-                'amount' => 200.00
-            ];
-            $totalDeductions += 200.00;
-        }
-
-        // 2. ABSENCE DEDUCTION (only for worked period)
-        if ($unapprovedAbsentDays > 0) {
-            $absenceDeduction = $unapprovedAbsentDays * $absenceDeductionAmount;
-            $deductions[] = [
-                'description' => "Unexcused Absence ({$unapprovedAbsentDays} day(s) × ₱" . number_format($absenceDeductionAmount, 2) . ")",
-                'amount' => $absenceDeduction
-            ];
-            $totalDeductions += $absenceDeduction;
-        }
-
-        // 3. LATE CHARGES
-        if ($lateMinutes > 0) {
-            $lateDeduction = $lateMinutes * $latePerMinute;
-            $deductions[] = [
-                'description' => "Late ({$lateMinutes} minutes × ₱{$latePerMinute}/min)",
-                'amount' => $lateDeduction
-            ];
-            $totalDeductions += $lateDeduction;
-        }
-
-        // 4. OUTSTANDING LOANS (from settlement)
-        if ($settlement['outstanding_loans'] > 0) {
-            $deductions[] = [
-                'description' => 'Outstanding Loans',
-                'amount' => (float)$settlement['outstanding_loans']
-            ];
-            $totalDeductions += (float)$settlement['outstanding_loans'];
-        }
-
-        // 5. OTHER DEDUCTIONS (from settlement)
-        if ($settlement['other_deductions'] > 0) {
-            $deductions[] = [
-                'description' => 'Other Deductions',
-                'amount' => (float)$settlement['other_deductions']
-            ];
-            $totalDeductions += (float)$settlement['other_deductions'];
-        }
-
-        /* ==============================
-           Calculate Net Pay
-        ============================== */
-        $netPay = $grossPay - $totalDeductions;
-
-        return [
-            'gross_pay' => $grossPay,
-            'net_pay' => $netPay,
-            'total_deductions' => $totalDeductions,
-            'earnings' => $earnings,
-            'deductions' => $deductions,
-            'is_exit_settlement' => true,
-            'position_type' => $positionType,
-            'last_working_date' => $lastWorkingDate
-        ];
+    private function getLastResolvedSalarySource(): string
+    {
+        return $this->lastResolvedSalarySource ?? 'none';
     }
 
     /**
@@ -1013,18 +1072,14 @@ class PayrollModel
                 e.department,
                 er.last_working_date,
                 es.net_payable,
+                es.payroll_final_amount,
+                es.payroll_clearance_status,
                 es.settlement_date
             FROM exit_employee_settlements es
-            JOIN exit_resignations er ON es.resignation_id = er.id
+            LEFT JOIN exit_resignations er ON es.resignation_id = er.id
             JOIN employees e ON es.employee_id = e.employee_id
-            WHERE es.status = 'approved'
-            AND NOT EXISTS (
-                SELECT 1
-                FROM payroll_clearances pc
-                WHERE pc.settlement_id = es.id
-                AND pc.status IN ('pending', 'approved')
-            )
-            ORDER BY es.settlement_date DESC
+            WHERE es.payroll_clearance_status = 'pending'
+            ORDER BY es.settlement_date DESC, es.id DESC
         ");
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -1032,17 +1087,37 @@ class PayrollModel
 
     public function createPayrollClearanceRequest(int $settlementId, int $requestedBy): ?int
     {
-        $stmt = $this->db->prepare("
-            INSERT INTO payroll_clearances
-            (settlement_id, requested_by, requested_at, status)
-            VALUES (:settlement_id, :requested_by, NOW(), 'pending')
-        ");
-        $stmt->execute([
-            ':settlement_id' => $settlementId,
-            ':requested_by' => $requestedBy
-        ]);
+        try {
+            $this->db->beginTransaction();
 
-        return (int)$this->db->lastInsertId();
+            $stmt = $this->db->prepare("
+                INSERT INTO payroll_clearances
+                (settlement_id, requested_by, requested_at, status)
+                VALUES (:settlement_id, :requested_by, NOW(), 'pending')
+            ");
+            $stmt->execute([
+                ':settlement_id' => $settlementId,
+                ':requested_by' => $requestedBy
+            ]);
+
+            $requestId = (int)$this->db->lastInsertId();
+
+            // Ensure the exit_employee_settlements row is updated so Exit Management UI reflects the request
+            $stmtUpdate = $this->db->prepare(
+                "UPDATE exit_employee_settlements SET payroll_clearance_id = :pid, payroll_clearance_status = 'pending' WHERE id = :sid"
+            );
+            $stmtUpdate->execute([':pid' => $requestId, ':sid' => $settlementId]);
+
+            $this->db->commit();
+
+            return $requestId;
+        } catch (Exception $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            error_log('Failed to create payroll clearance request: ' . $e->getMessage());
+            return null;
+        }
     }
 
     public function getPayrollClearanceBySettlementId(int $settlementId): ?array
@@ -1104,23 +1179,91 @@ class PayrollModel
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    public function updatePayrollClearanceStatus(int $clearanceId, string $status, int $approvedBy, ?string $comments = null): bool
+    public function updatePayrollClearanceStatus(int $clearanceId, string $status, int $approvedBy, ?string $comments = null, ?float $finalAmount = null): bool
     {
-        $stmt = $this->db->prepare("
-            UPDATE payroll_clearances
-            SET status = :status,
-                approved_by = :approved_by,
-                approved_at = NOW(),
-                comments = :comments,
-                last_updated = NOW()
-            WHERE id = :id
-        ");
-        return $stmt->execute([
-            ':status' => $status,
-            ':approved_by' => $approvedBy,
-            ':comments' => $comments,
-            ':id' => $clearanceId
-        ]);
+        try {
+            $this->db->beginTransaction();
+
+            $clearanceStmt = $this->db->prepare("SELECT settlement_id FROM payroll_clearances WHERE id = :id LIMIT 1");
+            $clearanceStmt->execute([':id' => $clearanceId]);
+            $clearance = $clearanceStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$clearance) {
+                $this->db->rollBack();
+                return false;
+            }
+
+            $settlementId = (int)$clearance['settlement_id'];
+
+            $stmt = $this->db->prepare("
+                UPDATE payroll_clearances
+                SET status = :status,
+                    approved_by = :approved_by,
+                    approved_at = NOW(),
+                    comments = :comments,
+                    last_updated = NOW()
+                WHERE id = :id
+            ");
+            $stmt->execute([
+                ':status' => $status,
+                ':approved_by' => $approvedBy,
+                ':comments' => $comments,
+                ':id' => $clearanceId
+            ]);
+
+            $settlementStatus = $status === 'approved' ? 'approved' : 'rejected';
+
+            if ($status === 'approved') {
+                $settlementStmt = $this->db->prepare(" 
+                    UPDATE exit_employee_settlements
+                    SET payroll_clearance_status = :status,
+                        payroll_clearance_id = :clearance_id,
+                        payroll_notes = :comments,
+                        payroll_final_amount = COALESCE(:final_amount, payroll_final_amount),
+                        net_payable = COALESCE(:final_amount, net_payable),
+                        status = :settlement_status,
+                        approved_by = :approved_by,
+                        approved_at = NOW(),
+                        updated_at = NOW()
+                    WHERE id = :settlement_id
+                ");
+                $settlementStmt->execute([
+                    ':status' => $status,
+                    ':clearance_id' => $clearanceId,
+                    ':comments' => $comments,
+                    ':final_amount' => $finalAmount,
+                    ':settlement_status' => $settlementStatus,
+                    ':approved_by' => $approvedBy,
+                    ':settlement_id' => $settlementId
+                ]);
+            } else {
+                $settlementStmt = $this->db->prepare(" 
+                    UPDATE exit_employee_settlements
+                    SET payroll_clearance_status = :status,
+                        payroll_clearance_id = :clearance_id,
+                        payroll_notes = :comments,
+                        status = :settlement_status,
+                        updated_at = NOW()
+                    WHERE id = :settlement_id
+                ");
+                $settlementStmt->execute([
+                    ':status' => $status,
+                    ':clearance_id' => $clearanceId,
+                    ':comments' => $comments,
+                    ':settlement_status' => $settlementStatus,
+                    ':settlement_id' => $settlementId
+                ]);
+            }
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            error_log('Failed to update payroll clearance status: ' . $e->getMessage());
+            return false;
+        }
     }
 
     /**

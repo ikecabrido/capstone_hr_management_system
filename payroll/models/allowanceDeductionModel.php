@@ -26,12 +26,9 @@ class AllowanceDeductionModel
     public function getRecords($periodId = null, $employeeId = null): array
     {
         $sql = "
-            SELECT 
+            SELECT
                 ea.*,
-                CASE
-                    WHEN LOWER(ea.description) LIKE '%leave%' THEN 'benefit'
-                    ELSE ea.type
-                END AS display_type,
+                'Other Deductions' AS display_type,
                 e.full_name AS employee_name,
                 pp.period_name,
                 pp.status AS period_status
@@ -63,11 +60,10 @@ class AllowanceDeductionModel
     public function getTotals($periodId = null, $employeeId = null): array
     {
         $sql = "
-            SELECT 
-                SUM(CASE WHEN LOWER(description) LIKE '%leave%' OR type IN ('allowance','benefit') THEN amount ELSE 0 END) AS total_allowance,
-                SUM(CASE WHEN LOWER(description) NOT LIKE '%leave%' AND type='deduction' THEN amount ELSE 0 END) AS total_deduction
+            SELECT
+                SUM(amount) AS total_deduction
             FROM pr_employee_adjustments
-            WHERE 1=1
+            WHERE type = 'deduction'
         ";
 
         $params = [];
@@ -85,9 +81,11 @@ class AllowanceDeductionModel
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
 
-        return $stmt->fetch(PDO::FETCH_ASSOC) ?: [
-            'total_allowance' => 0,
-            'total_deduction' => 0
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return [
+            'total_allowance' => 0, // No longer used
+            'total_deduction' => $result['total_deduction'] ?? 0
         ];
     }
 
@@ -96,32 +94,36 @@ class AllowanceDeductionModel
     {
         $stmt = $this->db->prepare("
             INSERT INTO pr_employee_adjustments
-            (employee_id, payroll_period_id, type, description, amount)
-            VALUES (?,?,?,?,?)
+            (employee_id, payroll_period_id, type, deduction_subtype, description, amount, file_path)
+            VALUES (?,?,?,?,?,?,?)
         ");
 
         return $stmt->execute([
             $data['employee_id'],
             $data['period_id'],
-            $data['type'],
+            'deduction',
+            $data['deduction_subtype'],
             $data['description'],
-            $data['amount']
+            $data['amount'],
+            $data['file_path'] ?? null
         ]);
     }
-    public function addAdjustment($emp, $type, $desc, $amt, $period)
+    public function addAdjustment($emp, $deductionSubtype, $desc, $amt, $period, $filePath = null)
     {
         $stmt = $this->db->prepare("
         INSERT INTO pr_employee_adjustments
-        (employee_id,type,description,amount,payroll_period_id)
-        VALUES (?,?,?,?,?)
+        (employee_id, type, deduction_subtype, description, amount, payroll_period_id, file_path)
+        VALUES (?,?,?,?,?,?,?)
     ");
 
         return $stmt->execute([
             $emp,
-            $type,
+            'deduction',
+            $deductionSubtype,
             $desc,
             $amt,
-            $period
+            $period,
+            $filePath
         ]);
     }
     public function updateAdjustment($id, $desc, $amt)

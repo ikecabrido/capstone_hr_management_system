@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teacher Load Form Test</title>
+</head>
+<body>
+    <h1>Teacher Load Submission Test</h1>
+    
+    <form method="POST" action="http://localhost/capstone_hr_management_system/payroll/views/teacherLoadHandler.php">
+        <input type="hidden" name="action" value="add_load">
+        
+        <div>
+            <label>Employee ID:</label>
+            <input type="number" name="employee_id" value="7" required>
+        </div>
+        
+        <div>
+            <label>Academic Year:</label>
+            <input type="text" name="academic_year" value="2026-2027" required>
+        </div>
+        
+        <div>
+            <label>Semester:</label>
+            <select name="semester" required>
+                <option value="1st">1st</option>
+                <option value="2nd" selected>2nd</option>
+                <option value="Summer">Summer</option>
+            </select>
+        </div>
+        
+        <div>
+            <label>Total Units:</label>
+            <input type="number" step="0.5" name="total_units" value="20" required>
+        </div>
+        
+        <button type="submit">Submit Teacher Load</button>
+    </form>
+    
+    <p><strong>Note:</strong> This will submit to the teacherLoadHandler. Check the log file afterwards at: c:\xampp\htdocs\capstone_hr_management_system\teacherLoadHandler.debug.log</p>
+</body>
+</html>

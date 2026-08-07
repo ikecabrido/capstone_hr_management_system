@@ -16,7 +16,7 @@ class User
     {
         // Normalize input: trim and convert to lowercase for case-insensitive search
         $username = trim(strtolower($username));
-        
+
         $sql = "SELECT * FROM users WHERE LOWER(username) = :username LIMIT 1";
 
         $stmt = $this->db->prepare($sql);
