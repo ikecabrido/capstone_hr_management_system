@@ -2,7 +2,7 @@
 .main-sidebar {
   background-color: #0d47a1 !important;
 }
-
+    * { font-weight: bold !important; }
 /* Sidebar brand */
 .brand-link {
   background-color: #0b3c91 !important;
@@ -52,6 +52,7 @@ body:not(.dark-mode) .content-wrapper {
 body.dark-mode .main-footer {
   background-color: #0d47a1 !important;
 }
+/* Animate the Font Awesome icon */
 #themeIcon {
   display: inline-block;
   transition:
@@ -62,4 +63,14 @@ body.dark-mode .main-footer {
 #themeIcon.animate {
   transform: rotate(180deg) scale(0.5);
   opacity: 0;
+}
+
+/* Hide native scrollbars for grievance detail panel while keeping scrolling functional */
+.grievance-detail-content {
+  overflow: auto;
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.grievance-detail-content::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }

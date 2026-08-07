@@ -1,39 +1,28 @@
 <?php
+namespace App\Models;
 
-class Reward {
-    private $pdo;
-
-    public function __construct($pdo) {
-        $this->pdo = $pdo;
+class Reward extends BaseModel
+{
+    public function all()
+    {
+        return $this->execute('SELECT * FROM eer_rewards ORDER BY points_required')->fetchAll();
     }
 
-    public function create($name, $description, $points) {
-        $sql = "INSERT INTO rewards (name, description, points) VALUES (?, ?, ?)";
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute([$name, $description, $points]);
+    public function find($id)
+    {
+        return $this->execute('SELECT * FROM eer_rewards WHERE eer_reward_id = :id', ['id' => $id])->fetch();
     }
 
-    public function getAll() {
-        $stmt = $this->pdo->query('SELECT id, name, description, points FROM rewards ORDER BY name');
-        return $stmt->fetchAll();
-    }
-
-    public function getById($id) {
-        $stmt = $this->pdo->prepare('SELECT id, name, description, points FROM rewards WHERE id = ?');
-        $stmt->execute([$id]);
-        return $stmt->fetch();
-    }
-
-    public function update($id, $name, $description, $points) {
-        $sql = "UPDATE rewards SET name = ?, description = ?, points = ? WHERE id = ?";
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute([$name, $description, $points, $id]);
-    }
-
-    public function delete($id) {
-        $sql = "DELETE FROM rewards WHERE id = ?";
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute([$id]);
+    public function create($data)
+    {
+        $sql = 'INSERT INTO eer_rewards (name, description, points_required, created_at) 
+                VALUES (:name, :description, :points_required, NOW())';
+        $params = [
+            'name' => $data['name'] ?? '',
+            'description' => $data['description'] ?? '',
+            'points_required' => (int)($data['points_required'] ?? 0)
+        ];
+        $this->execute($sql, $params);
+        return $this->db->lastInsertId();
     }
 }
-?>

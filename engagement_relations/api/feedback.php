@@ -1,42 +1,26 @@
 <?php
-header('Content-Type: application/json');
-require_once __DIR__ . '/../config/db.php';
-require_once __DIR__ . '/../middleware/Auth.php';
-require_once __DIR__ . '/../controllers/FeedbackController.php';
+require_once __DIR__ . '/../autoload.php';
+require_once __DIR__ . '/utils.php';
 
-// Verify user is authenticated
-$user = Auth::requireAuth();
+use App\Controllers\FeedbackController;
 
-// Get request method
-$method = $_SERVER['REQUEST_METHOD'];
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+$action = $_GET['action'] ?? 'list';
+$ctrl = new FeedbackController();
+$data = inputData();
 
 try {
-    $controller = new FeedbackController($pdo, $user);
-    
-    // Route based on method and user role
-    if ($method === 'GET') {
-        // Admin and HR can view all, Employees see only their own
-        Auth::requirePermission('feedback', 'view');
-        $result = $controller->handleRequest();
-        if (is_array($result)) {
-            echo json_encode(['feedback' => $result]);
-        }
-    } 
-    elseif ($method === 'POST') {
-        // Only Employees can submit feedback
-        Auth::requirePermission('feedback', 'create');
-        $controller->handleRequest();
-    } 
-    elseif ($method === 'PUT') {
-        // Only HR and Employees can edit (HR respond, Employee edit own)
-        Auth::requirePermission('feedback', 'edit');
-        $controller->handleRequest();
-    } 
-    else {
-        http_response_code(405);
-        echo json_encode(['error' => 'Method not allowed']);
+    switch ($action) {
+        case 'list':
+            $feedback = $ctrl->index();
+            jsonResponse(['success' => true, 'data' => $feedback]);
+            break;
+        default:
+            jsonResponse(['error' => 'unknown action'], 400);
     }
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['error' => $e->getMessage()]);
+    jsonResponse(['error' => $e->getMessage()], 500);
 }

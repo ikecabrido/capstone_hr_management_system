@@ -12,11 +12,11 @@ $userId = $_SESSION['user']['id'];
 $theme = $_POST['theme'] ?? 'light';
 
 /* create database connection */
-$database = Database::getInstance();
-$pdo = $database->getConnection();
+$database = new Database();
+$pdo = $database->connect();
 
 /* update theme */
-$stmt = $pdo->prepare("UPDATE users SET theme = ? WHERE id = ?");
+$stmt = $pdo->prepare("UPDATE users SET theme = ? WHERE user_id = ?");
 $stmt->execute([$theme, $userId]);
 
 /* update session so refresh keeps theme */

@@ -1,0 +1,266 @@
+/* Dashboard CSS - Clean & Modern Design */
+
+:root {
+  --primary-color: #0d6efd;
+  --success-color: #198754;
+  --warning-color: #ffc107;
+  --danger-color: #dc3545;
+  --info-color: #0dcaf0;
+  --light-bg: #f8f9fa;
+  --border-color: #dee2e6;
+  --text-dark: #212529;
+  --text-light: #6c757d;
+  --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Overview Cards */
+.small-box {
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow-md);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  min-height: 90px;
+}
+
+.small-box .inner {
+  padding: 1rem;
+}
+.small-box .inner h3 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+  color: inherit;
+}
+.small-box .inner p {
+  margin: 0.25rem 0 0 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+  opacity: 0.95;
+}
+.small-box .icon {
+  position: absolute;
+  right: 0.75rem;
+  top: 0.75rem;
+  font-size: 2rem;
+  opacity: 0.18;
+}
+
+.small-box .inner p {
+  margin: 0.5rem 0 0 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+  opacity: 0.95;
+}
+
+.small-box .icon {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  font-size: 3rem;
+  opacity: 0.2;
+}
+
+/* Color Variants */
+.bg-info {
+  background: linear-gradient(135deg, #0dcaf0 0%, #0a9bc4 100%) !important;
+  color: white;
+}
+
+.bg-warning {
+  background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%) !important;
+  color: white;
+}
+
+.bg-success {
+  background: linear-gradient(135deg, #198754 0%, #146c43 100%) !important;
+  color: white;
+}
+
+.bg-danger {
+  background: linear-gradient(135deg, #dc3545 0%, #bb2d3b 100%) !important;
+  color: white;
+}
+
+/* Dashboard Content */
+.dashboard-header {
+  padding: 2rem 0;
+  border-bottom: 2px solid var(--border-color);
+  margin-bottom: 2rem;
+}
+
+.dashboard-header h2 {
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0;
+}
+
+.dashboard-header p {
+  color: var(--text-light);
+  margin: 0.5rem 0 0 0;
+  font-size: 0.95rem;
+}
+
+/* Cards */
+.card {
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  background: white;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.card-header {
+  background-color: var(--light-bg);
+  border-bottom: 1px solid var(--border-color);
+  padding: 1rem 1.25rem;
+}
+
+.card-header h3,
+.card-header .card-title {
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.card-body {
+  padding: 1.25rem;
+}
+
+.communication-summary-card .card-header,
+.feedback-summary-card .card-header,
+.survey-summary-card .card-header {
+  border-bottom-color: var(--border-color);
+}
+
+.communication-summary-card,
+.feedback-summary-card,
+.survey-summary-card {
+  border-top: none;
+}
+
+.card-body ul.list-group-flush {
+  margin: 0 -1.25rem;
+}
+
+.card-body .list-group-item {
+  border: none;
+  padding: 0.9rem 1.25rem;
+  border-radius: 0.45rem;
+  margin-bottom: 0.5rem;
+  background: #f8f9fa;
+}
+
+.card-body .list-group-item:last-child {
+  margin-bottom: 0;
+}
+
+.card-body .list-group-item small {
+  color: var(--text-light);
+}
+
+.badge-primary,
+.badge-success,
+.badge-warning,
+.badge-danger,
+.badge-info,
+.badge-secondary,
+.badge-indigo,
+.badge-teal,
+.badge-purple {
+  font-size: 0.8rem;
+  padding: 0.35rem 0.75rem;
+}
+
+.card-body p {
+  color: var(--text-dark);
+  line-height: 1.6;
+}
+
+.card-body label {
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 0.5rem;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.text-muted {
+  color: var(--text-light) !important;
+  font-size: 0.9rem;
+}
+
+/* Badges */
+.badge {
+  padding: 0.4rem 0.8rem;
+  font-weight: 600;
+  border-radius: 0.25rem;
+  font-size: 0.85rem;
+  text-transform: capitalize;
+}
+
+.badge-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.badge-success {
+  background-color: var(--success-color);
+  color: white;
+}
+
+.badge-warning {
+  background-color: var(--warning-color);
+  color: white;
+}
+
+.badge-danger {
+  background-color: var(--danger-color);
+  color: white;
+}
+
+.badge-info {
+  background-color: var(--info-color);
+  color: white;
+}
+
+/* List Items */
+.list-unstyled li {
+  margin-bottom: 0.75rem;
+  padding-left: 1.75rem;
+  position: relative;
+}
+
+.list-unstyled li:before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--success-color);
+  font-weight: bold;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .small-box .inner {
+    padding: 0.75rem;
+  }
+
+  .small-box .inner h3 {
+    font-size: 1.4rem;
+  }
+
+  .small-box .icon {
+    font-size: 1.6rem;
+  }
+}

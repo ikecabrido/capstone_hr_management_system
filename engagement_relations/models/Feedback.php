@@ -1,63 +1,50 @@
 <?php
+namespace App\Models;
 
-class Feedback {
-    private $pdo;
-
-    public function __construct($pdo) {
-        $this->pdo = $pdo;
-    }
-
-    // Create feedback
-    public function create($employee_id, $feedback_text, $is_anonymous = false, $status = 'new') {
-        $sql = "INSERT INTO feedback (employee_id, feedback_text, is_anonymous, status) VALUES (?, ?, ?, ?)";
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute([$employee_id, $feedback_text, $is_anonymous, $status]);
-    }
-
-    // Get all feedback (with role-based filtering)
-    public function getAll($userRole = null, $userId = null) {
-        if ($userRole === 'employee') {
-            // Employees only see their own feedback submissions
-            $stmt = $this->pdo->prepare('SELECT id, employee_id, feedback_text, is_anonymous, status FROM feedback WHERE employee_id = ? ORDER BY id DESC');
-            $stmt->execute([$userId]);
-            return $stmt->fetchAll();
+class Feedback extends BaseModel
+{
+    public function getFeedback($employee_id = null)
+    {
+        if ($employee_id !== null) {
+            $sql = "SELECT f.*, COALESCE(e.full_name, u.full_name, u.username) AS employee_name FROM eer_survey_feedback_id f 
+                LEFT JOIN employees e ON f.employee_id = e.employee_id 
+                LEFT JOIN users u ON e.user_id = u.id 
+                WHERE f.employee_id = :employee_id 
+                ORDER BY f.eer_survey_feedback_id_id DESC";
+            return $this->execute($sql, ['employee_id' => $employee_id])->fetchAll();
         }
-        // Admins and HR see all feedback
-        $stmt = $this->pdo->query('SELECT id, employee_id, feedback_text, is_anonymous, status FROM feedback ORDER BY id DESC');
-        return $stmt->fetchAll();
+
+        $sql = "SELECT f.*, COALESCE(e.full_name, u.full_name, u.username) AS employee_name FROM eer_survey_feedback_id f 
+            LEFT JOIN employees e ON f.employee_id = e.employee_id 
+            LEFT JOIN users u ON e.user_id = u.id 
+            ORDER BY f.eer_survey_feedback_id_id DESC";
+        return $this->execute($sql)->fetchAll();
     }
 
-    // Get feedback by ID (with role-based access control)
-    public function getById($id, $userRole = null, $userId = null) {
-        // Employees can only view their own feedback
-        if ($userRole === 'employee') {
-            $stmt = $this->pdo->prepare('SELECT id, employee_id, feedback_text, is_anonymous, status FROM feedback WHERE id = ? AND employee_id = ?');
-            $stmt->execute([$id, $userId]);
-        } else {
-            $stmt = $this->pdo->prepare('SELECT id, employee_id, feedback_text, is_anonymous, status FROM feedback WHERE id = ?');
-            $stmt->execute([$id]);
-        }
-        return $stmt->fetch();
-    }
+    public function createFeedback(
+        $employee_id,
+        $comment,
+        $rating = null,
+        $survey_id = null,
+        $category = 'Performance',
+        $is_anonymous = 0,
+        $evaluation_date = null,
+        $evaluator_type = 'Self'
+    ) {
+        $sql = 'INSERT INTO eer_survey_feedback_id (employee_id, comment, rating, survey_id, category, is_anonymous, evaluator_type, evaluation_date) VALUES (:employee_id, :comment, :rating, :survey_id, :category, :is_anonymous, :evaluator_type, :evaluation_date)';
+        $params = [
+            'employee_id' => $employee_id,
+            'rating' => $rating ?? 3,
+            'comment' => $comment,
+            'survey_id' => $survey_id,
+            'category' => $category,
+            'is_anonymous' => $is_anonymous,
+            'evaluator_type' => $evaluator_type,
+            'evaluation_date' => $evaluation_date ?? date('Y-m-d H:i:s'),
+        ];
 
-    // Update feedback status
-    public function updateStatus($id, $status) {
-        $sql = "UPDATE feedback SET status = ? WHERE id = ?";
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute([$status, $id]);
-    }
-
-    // Delete feedback
-    public function delete($id) {
-        $sql = "DELETE FROM feedback WHERE id = ?";
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute([$id]);
-    }
-
-    // Get feedback by employee
-    public function getByEmployee($employee_id) {
-        $stmt = $this->pdo->prepare('SELECT * FROM feedback WHERE employee_id = ?');
-        $stmt->execute([$employee_id]);
-        return $stmt->fetchAll();
+        $this->execute($sql, $params);
+        return $this->db->lastInsertId();
     }
 }
+    

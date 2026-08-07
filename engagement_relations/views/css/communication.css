@@ -1,0 +1,130 @@
+/* Communication Page Modern Smooth Theme */
+.communication-area {
+	background: #eef4fb;
+	padding: 20px 0 30px;
+}
+
+
+.communication-area .form-group {
+	margin-bottom: 1.1rem;
+	width: 100%;
+}
+.communication-area .form-control {
+	border: 1px solid #cdd9e8;
+	border-radius: 8px;
+	padding: .58rem .75rem;
+	box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+	transition: border-color 0.2s, box-shadow 0.2s;
+}
+.communication-area .form-control:focus {
+	border-color: #3c8dbc;
+	box-shadow: 0 0 0 .2rem rgba(60, 141, 188, 0.2);
+}
+.communication-area .btn {
+	border-radius: 999px;
+	padding: 0.75rem 1.45rem;
+	font-weight: 700;
+	transition: transform .2s, box-shadow .2s;
+}
+.communication-area .btn:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 7px 16px rgba(0,0,0,0.12);
+}
+.communication-area .announcement-list {
+	margin-top: 1.5rem;
+}
+.communication-area .announcement-item {
+	background: #f7fbff;
+	border: 1px solid #e5eff8 !important;
+	border-radius: 14px !important;
+	margin-bottom: 1rem;
+	padding: 1.25rem 1.5rem;
+	box-shadow: 0 2px 8px rgba(20, 41, 78, 0.04);
+	transition: box-shadow 0.2s, transform 0.2s;
+}
+.communication-area .announcement-item:hover {
+	box-shadow: 0 8px 24px rgba(11, 120, 208, 0.10);
+	transform: translateY(-2px);
+}
+.communication-area .announcement-title {
+	color: #1a4a8a;
+	font-weight: 700;
+	font-size: 1.08rem;
+	margin-bottom: 0.35rem;
+}
+.communication-area .announcement-meta {
+	color: #6c7a94;
+	font-size: 0.92rem;
+	margin-bottom: 0.5rem;
+}
+.communication-area .announcement-body {
+	color: #3a4a5a;
+	line-height: 1.6;
+	font-size: 0.97rem;
+}
+.communication-area .alert {
+	border-radius: 14px;
+}
+.communication-area .card.card-secondary .card-header {
+	background: linear-gradient(180deg, #f6f7fb 0%, #ffffff 100%) !important;
+}
+@media (max-width: 992px) {
+	.communication-area .card-body {
+		padding: 18px !important;
+	}
+}
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+.nav-tabs {
+  border-bottom: 2px solid #e7eef8 !important;
+  display: flex;
+  gap: 0;
+}
+
+.nav-tabs .nav-item {
+  margin: 0;
+}
+
+.nav-tabs .nav-link {
+  border: none !important;
+  border-bottom: 3px solid transparent;
+  margin-right: 0;
+  padding: 1rem 1.5rem !important;
+  font-weight: 600;
+  color: #666;
+  background: transparent;
+}
+
+.nav-tabs .nav-link.active {
+  border-bottom: 3px solid #0b78d0;
+  color: #0b78d0;
+}
+
+/* Inline styles moved to CSS */
+.communication-tabs-card {
+  border-radius: 24px;
+}
+
+.communication-tabs-card .card-header {
+  border-radius: 24px 24px 0 0;
+  background: linear-gradient(180deg, #eef7ff 0%, #fdfdff 100%) !important;
+  border-bottom: 1px solid rgba(30, 105, 176, 0.12) !important;
+}
+
+.communication-tabs-body {
+  padding: 32px 24px;
+}
+
+.card-title .h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #16407c;
+}

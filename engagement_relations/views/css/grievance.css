@@ -1,0 +1,295 @@
+/* Grievance Page Modern Smooth Theme */
+.grievance-area {
+	background: #eef4fb;
+	padding: 20px 0 30px;
+}
+.grievance-area .card {
+	border: none !important;
+	border-radius: 24px !important;
+	box-shadow: 0 18px 48px rgba(20, 41, 78, 0.08);
+	background: #fff;
+	transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.grievance-area .card:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 12px 38px rgba(20, 41, 78, 0.14);
+}
+.grievance-area .card-header {
+	background: linear-gradient(180deg, #eef7ff 0%, #fdfdff 100%) !important;
+	border-bottom: 1px solid rgba(30, 105, 176, 0.12) !important;
+	padding: 18px 24px !important;
+	border-radius: 24px 24px 0 0;
+}
+.grievance-area .card-title {
+	color: #16407c !important;
+	font-weight: 700 !important;
+	font-size: 1.1rem;
+	letter-spacing: 0.01em;
+}
+.grievance-area .card-body {
+	padding: 24px !important;
+}
+.grievance-area .form-group {
+	margin-bottom: 1.1rem;
+	width: 100%;
+}
+.grievance-area .form-control {
+	border: 1px solid #cdd9e8;
+	border-radius: 8px;
+	padding: .58rem .75rem;
+	box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+	transition: border-color 0.2s, box-shadow 0.2s;
+}
+.grievance-area .form-control:focus {
+	border-color: #3c8dbc;
+	box-shadow: 0 0 0 .2rem rgba(60, 141, 188, 0.2);
+}
+.grievance-area .btn {
+	border-radius: 999px;
+	padding: 0.75rem 1.45rem;
+	font-weight: 700;
+	transition: transform .2s, box-shadow .2s;
+}
+.grievance-area .btn:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 7px 16px rgba(0,0,0,0.12);
+}
+.grievance-area .grievance-list {
+	margin-top: 1.5rem;
+}
+.grievance-area .grievance-item {
+	background: #f7fbff;
+	border: 1px solid #e5eff8 !important;
+	border-radius: 14px !important;
+	margin-bottom: 1rem;
+	padding: 1.25rem 1.5rem;
+	box-shadow: 0 2px 8px rgba(20, 41, 78, 0.04);
+	transition: box-shadow 0.2s, transform 0.2s;
+}
+.grievance-area .grievance-item:hover {
+	box-shadow: 0 8px 24px rgba(11, 120, 208, 0.10);
+	transform: translateY(-2px);
+}
+.grievance-area .grievance-title {
+	color: #1a4a8a;
+	font-weight: 700;
+	font-size: 1.08rem;
+	margin-bottom: 0.35rem;
+}
+.grievance-area .grievance-meta {
+	color: #6c7a94;
+	font-size: 0.92rem;
+	margin-bottom: 0.5rem;
+}
+.grievance-area .grievance-body {
+	color: #3a4a5a;
+	line-height: 1.6;
+	font-size: 0.97rem;
+}
+.grievance-area .alert {
+	border-radius: 14px;
+}
+.grievance-area .card.card-secondary .card-header {
+	background: linear-gradient(180deg, #f6f7fb 0%, #ffffff 100%) !important;
+}
+@media (max-width: 992px) {
+	.grievance-area .card-body {
+		padding: 18px !important;
+	}
+}
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* Nav tabs styles */
+.grievance-nav-tabs {
+  border-bottom: 2px solid #e7eef8 !important;
+  display: flex;
+  gap: 0;
+}
+
+.grievance-nav-tabs .nav-item {
+  margin: 0;
+}
+
+.grievance-nav-tabs .nav-link {
+  border: none !important;
+  border-bottom: 3px solid transparent;
+  margin-right: 0;
+  padding: 1rem 1.5rem !important;
+  font-weight: 600;
+  color: #666;
+  background: transparent;
+}
+
+.grievance-nav-tabs .nav-link.active {
+  border-bottom: 3px solid #0b78d0;
+  color: #0b78d0;
+}
+
+/* Tabs body */
+.grievance-tabs-body {
+  padding: 32px 24px;
+}
+
+.hidden {
+  display: none;
+}
+
+/* Timeline Styles */
+.timeline {
+  position: relative;
+  margin: 0 0 30px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.timeline:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: #ddd;
+  left: 31px;
+  margin: 0;
+  border-radius: 2px;
+}
+
+.timeline > li {
+  position: relative;
+  margin-right: 10px;
+  margin-bottom: 15px;
+}
+
+.timeline > li:before,
+.timeline > li:after {
+  content: " ";
+  display: table;
+}
+
+.timeline > li:after {
+  clear: both;
+}
+
+.timeline > li > .timeline-item {
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+  margin-left: 60px;
+  margin-right: 15px;
+  margin-top: 0;
+  background: #fff;
+  color: #444;
+  margin-left: 60px;
+  margin-right: 15px;
+  padding: 0;
+  position: relative;
+}
+
+.timeline > li > .fas,
+.timeline > li > .far,
+.timeline > li > .fab {
+  width: 30px;
+  height: 30px;
+  font-size: 15px;
+  line-height: 30px;
+  position: absolute;
+  color: #666;
+  background: #d2d6de;
+  border-radius: 50%;
+  text-align: center;
+  left: 18px;
+  top: 0;
+}
+
+.timeline > .time-label > span {
+  font-weight: 600;
+  padding: 5px;
+  display: inline-block;
+  background-color: #fff;
+  border-radius: 4px;
+}
+
+.timeline-inverse > li > .timeline-item {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  box-shadow: none;
+}
+
+.timeline-inverse > li > .timeline-item > .timeline-header {
+  border-bottom-color: #dee2e6;
+}
+
+/* Grievance detail sticky header */
+.grievance-detail-content {
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+.grievance-detail-content .card.card-primary {
+  position: relative;
+}
+
+.grievance-detail-content .card.card-primary .card-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #0b78d0 !important;
+  border-bottom: 1px solid rgba(30, 105, 176, 0.12) !important;
+  color: #fff;
+}
+
+.grievance-detail-content .card.card-primary .card-body {
+  padding-top: 0 !important;
+}
+
+/* Print styles: hide non-essential UI and the status timeline */
+@media print {
+	/* Hide right column (status timeline & quick actions) */
+	.col-md-4 { display: none !important; }
+
+	/* Hide interactive controls, buttons and cards not needed in printed output */
+	.btn, .card.card-outline.card-secondary, .card.card-success, .card.card-warning, .card.card-danger, .progress { display: none !important; }
+
+	/* Make the main content take full width when printing */
+	.col-md-8 { width: 100% !important; float: none !important; }
+
+	/* Remove shadows and rounded edges for clean printing */
+	.grievance-area .card, .grievance-area .card .card-body { box-shadow: none !important; border-radius: 0 !important; }
+
+	/* Preserve background colors in supported printers */
+	body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+/* Further ensure overlay/backdrop behind modals doesn't print */
+@media print {
+	.modal-backdrop, .modal-backdrop.show, .backdrop, .overlay, .page-overlay, .content-overlay, .app-blur { display: none !important; }
+	html, body { background: none !important; }
+	.modal-open { overflow: visible !important; }
+}
+
+/* Print only the grievance modal content; hide everything else on the page */
+@media print {
+	html, body { background: none !important; }
+	body * { visibility: hidden !important; }
+	.grievance-detail-content, .grievance-detail-content * { visibility: visible !important; }
+	.grievance-detail-content { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; }
+	.grievance-detail-content .card { box-shadow: none !important; border-radius: 0 !important; }
+	/* Show link URLs in print */
+	a[href]:after { content: " (" attr(href) ")"; color: #000; }
+}
+
+/* Print header tweaks: show simplified heading in print */
+.print-only-grievance { display: none; font-weight: 700; }
+@media print {
+	.card-title-text { display: none !important; }
+	.print-only-grievance { display: inline !important; }
+}

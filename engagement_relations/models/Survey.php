@@ -1,86 +1,142 @@
 <?php
+namespace App\Models;
 
-class Survey {
-    private $pdo;
+class Survey extends BaseModel
+{
+    public function createSurvey($title, $created_by_user_id)
+    {
+        $sql = 'INSERT INTO eer_surveys (title, created_by_user_id) 
+                VALUES (:title, :created_by_user_id)';
 
-    public function __construct($pdo) {
-        $this->pdo = $pdo;
+        $params = [
+            'title' => $title,
+            'created_by_user_id' => $created_by_user_id,
+        ];
+
+        $this->execute($sql, $params);
+        return $this->db->lastInsertId();
     }
 
-    // Create a new survey
-    public function create($title, $description, $created_by) {
-        $sql = "INSERT INTO engagement_surveys (title, description, created_by) VALUES (?, ?, ?)";
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute([$title, $description, $created_by]);
+    public function createSurveyWithDetails($title, $created_by_user_id, $description = '', $survey_type = 'satisfaction', $is_anonymous = 0)
+    {
+        $sql = 'INSERT INTO eer_surveys (title, created_by_user_id, description, survey_type, is_anonymous, created_at)
+                VALUES (:title, :created_by_user_id, :description, :survey_type, :is_anonymous, NOW())';
+
+        $params = [
+            'title' => $title,
+            'created_by_user_id' => $created_by_user_id,
+            'description' => $description,
+            'survey_type' => $survey_type,
+            'is_anonymous' => $is_anonymous,
+        ];
+
+        $this->execute($sql, $params);
+        return $this->db->lastInsertId();
     }
 
-    // Get all surveys
-    public function getAll() {
-        $stmt = $this->pdo->query('SELECT * FROM engagement_surveys');
-        return $stmt->fetchAll();
+    public function addQuestion($survey_id, $question_text, $type = 'text')
+    {
+        $sql = 'INSERT INTO eer_survey_questions (survey_id, question_text, type) 
+                VALUES (:survey_id, :question_text, :type)';
+
+        $params = [
+            'survey_id' => $survey_id,
+            'question_text' => $question_text,
+            'type' => $type,
+        ];
+
+        $this->execute($sql, $params);
+        return $this->db->lastInsertId();
     }
 
-    // Get a survey by ID
-    public function getById($id) {
-        $stmt = $this->pdo->prepare('SELECT * FROM engagement_surveys WHERE id = ?');
-        $stmt->execute([$id]);
-        return $stmt->fetch();
+    public function getSurveys()
+    {
+        $sql = 'SELECT s.*, '
+             . 'COALESCE(e.full_name, u.full_name, u.username, s.created_by_user_id) AS created_by_name '
+             . 'FROM eer_surveys s '
+             . 'LEFT JOIN employees e ON s.created_by_user_id = e.user_id '
+             . 'LEFT JOIN users u ON s.created_by_user_id = u.id '
+             . 'ORDER BY s.eer_survey_id DESC';
+        return $this->execute($sql)->fetchAll();
     }
 
-    // Update a survey
-    public function update($id, $title, $description) {
-        $sql = "UPDATE engagement_surveys SET title = ?, description = ? WHERE id = ?";
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute([$title, $description, $id]);
+    // ✅ FIX: Added missing method
+    public function getWithQuestions($survey_id)
+    {
+        // Get survey details
+        $survey = $this->execute(
+            'SELECT * FROM eer_surveys WHERE eer_survey_id = :id',
+            ['id' => $survey_id]
+        )->fetch();
+
+        if (!$survey) {
+            return null;
+        }
+
+        // Get related questions
+        $questions = $this->execute(
+            'SELECT * FROM eer_survey_questions WHERE survey_id = :survey_id ORDER BY eer_survey_question_id ASC',
+            ['survey_id' => $survey_id]
+        )->fetchAll();
+
+        // Attach questions to survey
+        $survey['questions'] = $questions;
+
+        return $survey;
     }
 
-    // Delete a survey
-    public function delete($id) {
-        $sql = "DELETE FROM engagement_surveys WHERE id = ?";
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute([$id]);
+    public function getSurveyById($surveyId)
+    {
+        $sql = 'SELECT * FROM eer_surveys WHERE eer_survey_id = :survey_id';
+        $params = ['survey_id' => $surveyId];
+        return $this->execute($sql, $params)->fetch();
     }
 
-    // Get questions for a survey
-    public function getQuestions($survey_id) {
-        $stmt = $this->pdo->prepare('SELECT * FROM survey_questions WHERE survey_id = ?');
-        $stmt->execute([$survey_id]);
-        return $stmt->fetchAll();
+    public function submitResponse($survey_id, $employee_id, $answers)
+    {
+        $sql = 'INSERT INTO eer_survey_responses 
+                (survey_id, employee_id, answers, submitted_at) 
+                VALUES (:survey_id, :employee_id, :answers, NOW())';
+
+        $params = [
+            'survey_id' => $survey_id,
+            'employee_id' => $employee_id,
+            'answers' => is_array($answers) 
+                ? json_encode($answers, JSON_UNESCAPED_UNICODE) 
+                : $answers,
+        ];
+
+        $this->execute($sql, $params);
+        return $this->db->lastInsertId();
     }
 
-    // Add a question to a survey
-    public function addQuestion($survey_id, $question_text, $question_type) {
-        $sql = "INSERT INTO survey_questions (survey_id, question_text, question_type) VALUES (?, ?, ?)";
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute([$survey_id, $question_text, $question_type]);
+    public function generateResults($surveyId)
+    {
+        $responses = $this->execute(
+            'SELECT answers FROM eer_survey_responses WHERE survey_id = :survey_id',
+            ['survey_id' => $surveyId]
+        )->fetchAll();
+
+        $results = [];
+        foreach ($responses as $response) {
+            $answers = json_decode($response['answers'], true);
+            foreach ($answers as $question => $answer) {
+                if (!isset($results[$question])) {
+                    $results[$question] = [];
+                }
+                if (!isset($results[$question][$answer])) {
+                    $results[$question][$answer] = 0;
+                }
+                $results[$question][$answer]++;
+            }
+        }
+        return $results;
     }
 
-    // Get responses for a survey
-    public function getResponses($survey_id) {
-        $stmt = $this->pdo->prepare('SELECT * FROM survey_responses WHERE survey_id = ?');
-        $stmt->execute([$survey_id]);
-        return $stmt->fetchAll();
-    }
-
-    // Add a response to a survey
-    public function addResponse($survey_id, $employee_id) {
-        $sql = "INSERT INTO survey_responses (survey_id, employee_id) VALUES (?, ?)";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([$survey_id, $employee_id]);
-        return $this->pdo->lastInsertId();
-    }
-
-    // Add an answer to a survey response
-    public function addAnswer($response_id, $question_id, $answer) {
-        $sql = "INSERT INTO survey_answers (response_id, question_id, answer) VALUES (?, ?, ?)";
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute([$response_id, $question_id, $answer]);
-    }
-
-    // Get answers for a response
-    public function getAnswers($response_id) {
-        $stmt = $this->pdo->prepare('SELECT * FROM survey_answers WHERE response_id = ?');
-        $stmt->execute([$response_id]);
-        return $stmt->fetchAll();
+    public function getSurveyResponses($surveyId)
+    {
+        $sql = 'SELECT * FROM eer_survey_responses WHERE survey_id = :survey_id';
+        $params = ['survey_id' => $surveyId];
+        return $this->execute($sql, $params)->fetchAll();
     }
 }
