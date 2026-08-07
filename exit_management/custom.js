@@ -907,41 +907,33 @@ function loadSuccessors(callback) {
     });
 }
 
-// Load employees with resignations for settlement modal
-function loadEmployeesWithResignationsForSettlements(callback) {
+// Load approved exit cases for settlement modal
+function loadApprovedExitCasesForSettlements(callback) {
     $.post('exit_management.php', {
-        ajax_action: 'get_employees_with_resignations'
+        ajax_action: 'get_approved_exit_cases',
+        controller: 'exit_management'
     }, function(response) {
-        if (response && response.length > 0) {
-            const employeeOptions = '<option value="">Select Employee</option>' +
-                response.map(emp => `<option value="${emp.id}">${emp.full_name} (${emp.username})</option>`).join('');
+        const cases = Array.isArray(response) ? response : (response && Array.isArray(response.data) ? response.data : []);
 
-            $('#settlementEmployeeSelect').html(employeeOptions);
+        if (cases && cases.length > 0) {
+            const caseOptions = '<option value="">Select Approved Exit Case</option>' +
+                cases.map(emp => {
+                    const exitType = emp.exit_case_type ? emp.exit_case_type.charAt(0).toUpperCase() + emp.exit_case_type.slice(1) : '';
+                    const exitDate = emp.exit_date || emp.last_working_date || '';
+                    return `<option value="${emp.exit_case_type}:${emp.exit_case_id}" data-employee-id="${emp.employee_id}" data-exit-case-type="${emp.exit_case_type}" data-exit-case-id="${emp.exit_case_id}" data-resignation-id="${emp.exit_case_type === 'resignation' ? emp.exit_case_id : ''}">${emp.full_name} (${emp.username}) - ${exitType}${exitDate ? ' - ' + exitDate : ''}</option>`;
+                }).join('');
+
+            $('#settlementCaseSelect').html(caseOptions);
         } else {
-            $('#settlementEmployeeSelect').html('<option value="">No employees with resignations found</option>');
+            $('#settlementCaseSelect').html('<option value="">No approved exit cases found</option>');
         }
+
         if (typeof callback === 'function') callback();
-    }).fail(function(err) {
-        console.error('Error loading resigning employees for settlements:', err);
-        $('#settlementEmployeeSelect').html('<option value="">Error loading employees</option>');
+    }, 'json').fail(function(err) {
+        console.error('Error loading approved exit cases for settlements:', err);
+        $('#settlementCaseSelect').html('<option value="">Error loading exit cases</option>');
         if (typeof callback === 'function') callback();
     });
-}
-
-// Load resignations for settlement modal
-function loadResignations(callback) {
-    $.post('exit_management.php', {
-        ajax_action: 'get_resignations',
-        controller: 'resignation'
-    }, function(response) {
-        if (response && response.length > 0) {
-            const resignationOptions = '<option value="">Select Resignation</option>' +
-                response.map(res => `<option value="${res.id}">${res.employee_name} - ${res.resignation_type}</option>`).join('');
-
-            $('#settlementResignationSelect').html(resignationOptions);
-        }
-        if (typeof callback === 'function') callback();
-    }, 'json');
 }
 
 // Modal display functions
@@ -1043,34 +1035,74 @@ function showTransferModal(planId = null) {
     }
 }
 
-function showSettlementModal(settlementId = null) {
-    // Add event listener for employee selection to auto-populate salary components
-    $('#settlementEmployeeSelect').off('change').on('change', function() {
-        const employeeId = $(this).val();
-        if (employeeId) {
-            loadEmployeeSalaryComponents(employeeId);
+function setSettlementModalMode(viewOnly = false) {
+    const $formFields = $('#settlementForm').find('input:not([type=hidden]), textarea, select');
+    $formFields.prop('disabled', viewOnly);
+
+    $('#calculateNetPayable').hide();
+
+    if (viewOnly) {
+        $('#settlementSubmitBtn').hide();
+        $('#settlementEditBtn').show();
+        $('#settlementForm').find('.form-control').addClass('disabled');
+    } else {
+        $('#settlementSubmitBtn').show();
+        $('#settlementEditBtn').hide();
+        $('#settlementForm').find('.form-control').removeClass('disabled');
+
+        if ($('#settlementId').val()) {
+            $('#settlementSubmitBtn').text('Save Changes');
         } else {
+            $('#settlementSubmitBtn').text('Request Settlement');
+        }
+    }
+}
+
+function showSettlementModal(settlementId = null, viewOnly = false) {
+    $('#settlementCaseSelect').off('change').on('change', function() {
+        const selected = $(this).val();
+        if (selected) {
+            const [caseType, caseId] = selected.split(':');
+            const employeeId = $(this).find('option:selected').data('employee-id');
+            const resignationId = $(this).find('option:selected').data('resignation-id') || '';
+            $('#settlementEmployeeId').val(employeeId);
+            $('#settlementExitCaseType').val(caseType);
+            $('#settlementExitCaseId').val(caseId);
+            $('#settlementResignationId').val(resignationId);
+
+            if (employeeId) {
+                loadEmployeeSalaryComponents(employeeId);
+            } else {
+                clearSalaryFields();
+            }
+        } else {
+            $('#settlementEmployeeId').val('');
+            $('#settlementExitCaseType').val('');
+            $('#settlementExitCaseId').val('');
+            $('#settlementResignationId').val('');
             clearSalaryFields();
         }
     });
 
+    $('#settlementForm')[0].reset();
+    $('#settlementId').val('');
+    $('#settlementModalTitle').text(viewOnly ? 'View Settlement' : (settlementId ? 'Edit Settlement' : 'Request Final Settlement'));
+    setSettlementModalMode(viewOnly);
+
+    const loadSequence = function(callback) {
+        loadApprovedExitCasesForSettlements(callback);
+    };
+
     if (settlementId) {
-        $('#settlementModalTitle').text('Edit Settlement');
-        $('#settlementForm')[0].reset();
-        $('#settlementId').val('');
-        loadEmployeesWithResignationsForSettlements(function() {
-            loadResignations(function() {
-                loadSettlementData(settlementId);
-                $('#settlementModal').modal('show');
+        loadSequence(function() {
+            loadSettlementData(settlementId, viewOnly, function() {
+                $('#settlementModal').appendTo('body').modal('show');
             });
         });
     } else {
-        $('#settlementModalTitle').text('Calculate Final Settlement');
-        $('#settlementForm')[0].reset();
-        $('#settlementId').val('');
-        loadEmployeesWithResignationsForSettlements();
-        loadResignations();
-        $('#settlementModal').modal('show');
+        loadSequence(function() {
+            $('#settlementModal').appendTo('body').modal('show');
+        });
     }
 }
 
@@ -1279,7 +1311,8 @@ function submitSettlementForm() {
             showToast('error', 'An error occurred while saving the settlement.');
         },
         complete: function() {
-            $('#settlementSubmitBtn').prop('disabled', false).html('Save Settlement');
+            const buttonText = settlementId ? 'Save Changes' : 'Request Settlement';
+            $('#settlementSubmitBtn').prop('disabled', false).html(buttonText);
         }
     });
 }
@@ -1888,8 +1921,7 @@ function loadTransferData(id, viewOnly = false, callback = null) {
     });
 }
 
-function loadSettlementData(id) {
-    // Load settlement data for editing
+function loadSettlementData(id, viewOnly = false, callback = null) {
     console.log('Loading settlement data for ID:', id);
     $.post('exit_management.php', {
         ajax_action: 'get_settlement',
@@ -1899,11 +1931,20 @@ function loadSettlementData(id) {
         console.log('Settlement response:', response);
         if (response && !response.error) {
             $('#settlementId').val(response.id || id);
+            let selectedCaseValue = '';
+
             Object.keys(response).forEach(key => {
                 if (key === 'employee_id') {
-                    $('#settlementEmployeeSelect').val(response[key]);
-                    // Trigger salary load
+                    $('#settlementEmployeeId').val(response[key]);
                     loadEmployeeSalaryComponents(response[key]);
+                } else if (key === 'exit_case_type' || key === 'exit_case_id') {
+                    const fieldId = key === 'exit_case_type' ? '#settlementExitCaseType' : '#settlementExitCaseId';
+                    $(fieldId).val(response[key]);
+                    if (response.exit_case_type && response.exit_case_id) {
+                        selectedCaseValue = `${response.exit_case_type}:${response.exit_case_id}`;
+                    }
+                } else if (key === 'resignation_id') {
+                    $('#settlementResignationId').val(response[key] || '');
                 } else {
                     const $field = $(`#${key}`);
                     if ($field.length) {
@@ -1916,11 +1957,26 @@ function loadSettlementData(id) {
                     }
                 }
             });
+
+            if (selectedCaseValue) {
+                $('#settlementCaseSelect').val(selectedCaseValue);
+            }
+
+            populatePayrollSettlementSummary(response, viewOnly);
         } else {
             console.error('Error loading settlement:', response);
         }
+
+        setSettlementModalMode(viewOnly);
+        if (typeof callback === 'function') {
+            callback();
+        }
     }, 'json').fail(function(err) {
         console.error('AJAX error loading settlement:', err);
+        setSettlementModalMode(viewOnly);
+        if (typeof callback === 'function') {
+            callback();
+        }
     });
 }
 
@@ -2263,7 +2319,7 @@ function archiveTermination(id) {
             $('#archiveTerminationId').val(id);
             $('#archiveTerminationEmployeeId').val(response.data.employee_id);
             $('#archiveTerminationEmployeeName').val(response.data.employee_name);
-            $('#archiveTerminationReason').val('');
+            $('#archiveTerminationReason').val(getAutomatedArchiveReason());
             $('#archiveTerminationModal').appendTo('body').modal('show');
         } else {
             showToast('error', 'Failed to load termination details');
@@ -2771,50 +2827,58 @@ function loadSettlementsTable(status = 'all', page = 1, limit = 10, searchTerm =
     const tbody = $('#settlements-tbody');
     showTableLoading(tbody, 5);
 
-    $.post('exit_management.php', {
-        ajax_action: 'get_settlements',
-        controller: 'settlement',
-        status: status,
-        page: page,
-        limit: limit,
-        search: searchTerm
-    }, function(response) {
-        tbody.empty();
+    $.ajax({
+        url: 'exit_management.php',
+        method: 'POST',
+        dataType: 'json',
+        timeout: 30000,
+        data: {
+            ajax_action: 'get_settlements',
+            controller: 'settlement',
+            status: status,
+            page: page,
+            limit: limit,
+            search: searchTerm
+        },
+        success: function(response) {
+            tbody.empty();
 
-        if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
-            response.data.forEach(function(settlement) {
-                const statusBadge = getStatusBadge(settlement.status);
-                const actions = `
-                    <button class="btn btn-sm btn-info" onclick="showSettlementModal(${settlement.id})">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-sm btn-success" onclick="printSettlement(${settlement.id})">
-                        <i class="fas fa-print"></i>
-                    </button>
-                    <button class="btn btn-sm btn-warning" onclick="archiveSettlement(${settlement.id})" title="Archive Settlement">
-                        <i class="fas fa-archive"></i>
-                    </button>
-                `;
+            if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
+                response.data.forEach(function(settlement) {
+                    const statusBadge = getStatusBadge(settlement.status);
+                    const actions = `
+                        <button class="btn btn-sm btn-info" onclick="showSettlementModal(${settlement.id}, true)" title="View Settlement">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-success" onclick="printSettlement(${settlement.id})" title="Print Settlement">
+                            <i class="fas fa-print"></i>
+                        </button>
+                        <button class="btn btn-sm btn-warning" onclick="archiveSettlement(${settlement.id}, this)" data-employee-id="${settlement.employee_id || ''}" data-employee-name="${(settlement.employee_name || '').replace(/"/g, '&quot;')}" title="Archive Settlement">
+                            <i class="fas fa-archive"></i>
+                        </button>
+                    `;
 
-                tbody.append(`
-                    <tr>
-                        <td>${settlement.employee_name}</td>
-                        <td>${settlement.settlement_date}</td>
-                        <td>$${parseFloat(settlement.net_payable).toFixed(2)}</td>
-                        <td>${statusBadge}</td>
-                        <td>${actions}</td>
-                    </tr>
-                `);
-            });
-        } else {
-            tbody.append('<tr><td colspan="5" class="text-center">No settlements found</td></tr>');
+                    tbody.append(`
+                        <tr data-settlement-id="${settlement.id}">
+                            <td>${settlement.employee_name}</td>
+                            <td>${settlement.settlement_date}</td>
+                            <td>$${parseFloat(settlement.net_payable).toFixed(2)}</td>
+                            <td>${statusBadge}</td>
+                            <td>${actions}</td>
+                        </tr>
+                    `);
+                });
+            } else {
+                tbody.append('<tr><td colspan="5" class="text-center">No settlements found</td></tr>');
+            }
+
+            // Render pagination
+            renderPagination('settlements-pagination', response.total, page, limit, (newPage) => `loadSettlementsTable('${status}', ${newPage}, ${limit})`);
+        },
+        error: function(xhr, status, error) {
+            console.error('Error loading settlements:', status, error, xhr.responseText);
+            tbody.html('<tr><td colspan="5" class="text-center text-danger">Error loading settlements</td></tr>');
         }
-
-        // Render pagination
-        renderPagination('settlements-pagination', response.total, page, limit, (newPage) => `loadSettlementsTable('${status}', ${newPage}, ${limit})`);
-    }).fail(function(xhr, status, error) {
-        console.error('Error loading settlements:', status, error, xhr.responseText);
-        tbody.html('<tr><td colspan="5" class="text-center text-danger">Error loading settlements</td></tr>');
     });
 }
 
@@ -3080,17 +3144,27 @@ let lastPayrollApprovalCount = 0;
 
 // Load dashboard data
 function loadDashboardData() {
-    $.post('exit_management.php', {
-        ajax_action: 'get_dashboard_stats'
-    }, function(response) {
-        if (response) {
-            $('#pending-resignations').text(response.pending_resignations || 0);
-            $('#scheduled-interviews').text(response.scheduled_interviews || 0);
-            $('#active-transfers').text(response.active_transfers || 0);
-            $('#pending-settlements').text(response.pending_settlements || 0);
+    $.ajax({
+        url: 'exit_management.php',
+        method: 'POST',
+        dataType: 'json',
+        timeout: 30000,
+        data: {
+            ajax_action: 'get_dashboard_stats'
+        },
+        success: function(response) {
+            if (response && typeof response === 'object') {
+                $('#pending-resignations').text(response.pending_resignations || 0);
+                $('#scheduled-interviews').text(response.scheduled_interviews || 0);
+                $('#active-transfers').text(response.active_transfers || 0);
+                $('#pending-settlements').text(response.pending_settlements || 0);
+            } else {
+                console.error('Invalid dashboard stats response:', response);
+            }
+        },
+        error: function(xhr, status, errorThrown) {
+            console.error('Error loading dashboard stats:', status, errorThrown, xhr.status, xhr.statusText, xhr.responseText);
         }
-    }).fail(function(xhr, status, errorThrown) {
-        console.error('Error loading dashboard stats:', status, errorThrown, xhr.status, xhr.statusText, xhr.responseText);
     });
 
     loadPayrollApprovalNotifications();
@@ -3214,6 +3288,10 @@ function onSurveyStatusFilterChange() {
     loadSurveysTable(selectedStatus === 'active' ? 'all' : selectedStatus, 1);
 }
 
+function getAutomatedArchiveReason() {
+    return 'Process completed; archived.';
+}
+
 // Action functions
 function archiveResignation(id) {
     // Get resignation data first
@@ -3227,7 +3305,7 @@ function archiveResignation(id) {
             $('#archiveResignationId').val(id);
             $('#archiveEmployeeId').val(response.data.employee_id);
             $('#archiveEmployeeName').val(response.data.employee_name);
-            $('#archiveReason').val('');
+            $('#archiveReason').val(getAutomatedArchiveReason());
             $('#archiveNotes').val('');
 
             // Show modal
@@ -3279,7 +3357,7 @@ $(document).ready(function() {
         e.preventDefault();
 
         const resignationId = $('#archiveResignationId').val();
-        const archiveReason = $('#archiveReason').val();
+        const archiveReason = getAutomatedArchiveReason();
 
         $.post('exit_management.php', {
             ajax_action: 'archive_resignation',
@@ -3316,7 +3394,7 @@ $(document).ready(function() {
         e.preventDefault();
 
         const settlementId = $('#archiveSettlementId').val();
-        const archiveReason = $('#archiveSettlementReason').val();
+        const archiveReason = getAutomatedArchiveReason();
 
         $.post('exit_management.php', {
             ajax_action: 'archive_settlement',
@@ -3336,6 +3414,11 @@ $(document).ready(function() {
             showToast('error', 'Failed to archive settlement');
         });
     });
+
+    $('#settlementEditBtn').off('click').on('click', function() {
+        $('#settlementModalTitle').text('Edit Settlement');
+        setSettlementModalMode(false);
+    });
 });
 
 // Archive interview form handler
@@ -3344,7 +3427,7 @@ $(document).ready(function() {
         e.preventDefault();
 
         const interviewId = $('#archiveInterviewId').val();
-        const archiveReason = $('#archiveInterviewReason').val();
+        const archiveReason = getAutomatedArchiveReason();
 
         $.post('exit_management.php', {
             ajax_action: 'archive_interview',
@@ -3374,7 +3457,7 @@ $(document).ready(function() {
         e.preventDefault();
 
         const documentId = $('#archiveDocumentId').val();
-        const archiveReason = $('#archiveDocumentReason').val();
+        const archiveReason = getAutomatedArchiveReason();
 
         $.post('exit_management.php', {
             ajax_action: 'archive_document',
@@ -3402,7 +3485,7 @@ $(document).ready(function() {
         e.preventDefault();
 
         const surveyId = $('#archiveSurveyId').val();
-        const archiveReason = $('#archiveSurveyReason').val();
+        const archiveReason = getAutomatedArchiveReason();
 
         $.post('exit_management.php', {
             ajax_action: 'archive_survey',
@@ -3430,7 +3513,7 @@ $(document).ready(function() {
         e.preventDefault();
 
         const planId = $('#archiveTransferPlanId').val();
-        const archiveReason = $('#archiveTransferPlanReason').val();
+        const archiveReason = getAutomatedArchiveReason();
 
         $.post('exit_management.php', {
             ajax_action: 'archive_transfer_plan',
@@ -3460,7 +3543,7 @@ $(document).ready(function() {
         e.preventDefault();
 
         const itemId = $('#archiveTransferItemId').val();
-        const archiveReason = $('#archiveTransferItemReason').val();
+        const archiveReason = getAutomatedArchiveReason();
 
         $.post('exit_management.php', {
             ajax_action: 'archive_transfer_item',
@@ -4394,11 +4477,48 @@ function getStatusBadgeClass(status) {
 function formatDate(dateStr) {
     if (!dateStr) return 'N/A';
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
     });
+}
+
+function formatCurrency(value) {
+    const number = Number(value);
+    if (Number.isNaN(number)) {
+        return '0.00';
+    }
+    return number.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function populatePayrollSettlementSummary(data, viewOnly = false) {
+    const keys = [
+        'net_payable', 'basic_salary', 'remaining_salary', 'unused_leave_conversion', 'overtime_pay',
+        'holiday_pay', 'bonuses', 'commission', 'hra', 'conveyance', 'lta', 'medical_allowance',
+        'other_allowances', 'separation_pay', 'tax', 'sss', 'philhealth', 'pagibig', 'cash_advance',
+        'company_loan', 'equipment_damage', 'missing_assets', 'late_deductions', 'absence_deductions',
+        'provident_fund', 'gratuity', 'notice_pay', 'outstanding_loans', 'other_deductions'
+    ];
+
+    let hasData = false;
+    keys.forEach(key => {
+        const value = data[key] !== undefined && data[key] !== null ? data[key] : 0;
+        const formatted = formatCurrency(value);
+        $(`#payrollSettlementSummary_${key}`).text(formatted);
+        if (Number(value) !== 0) {
+            hasData = true;
+        }
+    });
+
+    if (viewOnly) {
+        $('#payrollSettlementSummaryCard').removeClass('d-none');
+    } else {
+        $('#payrollSettlementSummaryCard').toggleClass('d-none', !hasData);
+    }
 }
 
 // Load employee salary components from payroll database
@@ -4485,18 +4605,28 @@ function clearSalaryFields() {
 
 // Load dashboard metrics
 function loadDashboardMetrics() {
-    $.post('exit_management.php', {
-        ajax_action: 'get_dashboard_metrics'
-    }, function(response) {
-        console.log('loadDashboardMetrics response:', response);
-        if (response) {
-            $('#total-exited').text(response.total_exited || 0);
-            $('#avg-notice').text(response.avg_notice || 0);
-            $('#top-reason').text((response.top_reason || 'N/A').substring(0, 20));
-            $('#avg-interviews').text(response.interview_rate + '%' || '0%');
+    $.ajax({
+        url: 'exit_management.php',
+        method: 'POST',
+        dataType: 'json',
+        timeout: 30000,
+        data: {
+            ajax_action: 'get_dashboard_metrics'
+        },
+        success: function(response) {
+            if (response && typeof response === 'object') {
+                console.log('loadDashboardMetrics response:', response);
+                $('#total-exited').text(response.total_exited || 0);
+                $('#avg-notice').text(response.avg_notice || 0);
+                $('#top-reason').text((response.top_reason || 'N/A').substring(0, 20));
+                $('#avg-interviews').text((response.interview_rate || 0) + '%');
+            } else {
+                console.error('Invalid dashboard metrics response:', response);
+            }
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            console.error('loadDashboardMetrics AJAX error:', textStatus, errorThrown, jqXHR.status, jqXHR.statusText, jqXHR.responseText);
         }
-    }, 'json').fail(function(jqXHR, textStatus, errorThrown) {
-        console.error('loadDashboardMetrics AJAX error:', textStatus, errorThrown, jqXHR.status, jqXHR.statusText, jqXHR.responseText);
     });
 }
 
@@ -4554,7 +4684,109 @@ function onTransferSearchChange() {
 function onSettlementSearchChange() {
     const searchTerm = $('#settlement-search').val().toLowerCase();
     const status = $('#settlement-status-filter').val();
-    loadSettlementsTable(status, 1, searchTerm);
+    loadSettlementsTable(status, 1, 10, searchTerm);
+}
+
+function openArchivedSettlementsModal(page = 1) {
+    $('#modal-archived-settlements-tbody').html('<tr><td colspan="6" class="text-center text-muted">Loading archived settlements...</td></tr>');
+    $('#modal-archived-settlements-pagination').empty();
+    $('#archivedSettlementsModal').appendTo('body').modal('show');
+    loadArchivedSettlementsTable(page);
+}
+
+function loadArchivedSettlementsTable(page = 1) {
+    const tbody = $('#modal-archived-settlements-tbody');
+    const paginationId = 'modal-archived-settlements-pagination';
+    showTableLoading(tbody, 6);
+
+    $.post('exit_management.php', {
+        ajax_action: 'get_archived_settlements',
+        controller: 'settlement',
+        page: page,
+        limit: 10
+    }, function(response) {
+        tbody.empty();
+        if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
+            response.data.forEach(function(settlement) {
+                const actions = `
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-info" onclick='showArchivedSettlementDetails(${JSON.stringify(settlement)})' title="View Archived Settlement">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-success" onclick="unarchiveSettlement(${settlement.original_id || settlement.archive_id || settlement.id})" title="Restore Settlement">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </div>
+                `;
+
+                tbody.append(`
+                    <tr>
+                        <td>${settlement.employee_name || 'Unknown'}</td>
+                        <td>${settlement.settlement_date || '-'}</td>
+                        <td>${settlement.net_payable ? '$' + parseFloat(settlement.net_payable).toFixed(2) : '-'}</td>
+                        <td>${settlement.status || '-'}</td>
+                        <td>${settlement.archived_at || '-'}</td>
+                        <td>${actions}</td>
+                    </tr>
+                `);
+            });
+
+            renderPagination(paginationId, response.total, page, response.limit || 10, (newPage) => `loadArchivedSettlementsTable(${newPage})`);
+        } else {
+            tbody.append('<tr><td colspan="6" class="text-center">No archived settlements found</td></tr>');
+            $('#' + paginationId).empty();
+        }
+    }, 'json').fail(function(xhr, status, error) {
+        console.error('Error loading archived settlements:', status, error, xhr.responseText);
+        tbody.html('<tr><td colspan="6" class="text-center text-danger">Error loading archived settlements</td></tr>');
+        $('#' + paginationId).empty();
+    });
+}
+
+function showArchivedSettlementDetails(settlement) {
+    const body = $('#viewArchivedSettlementBody');
+    const netPayable = settlement.net_payable ? '$' + parseFloat(settlement.net_payable).toFixed(2) : '-';
+
+    body.html(`
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label>Employee</label>
+                    <input type="text" class="form-control" value="${(settlement.employee_name || 'Unknown').replace(/"/g, '&quot;')}" readonly>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label>Settlement Date</label>
+                    <input type="text" class="form-control" value="${(settlement.settlement_date || '-').replace(/"/g, '&quot;')}" readonly>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label>Status</label>
+                    <input type="text" class="form-control" value="${(settlement.status || '-').replace(/"/g, '&quot;')}" readonly>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label>Net Payable</label>
+                    <input type="text" class="form-control" value="${netPayable.replace(/"/g, '&quot;')}" readonly>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Archive Reason</label>
+            <textarea class="form-control" rows="3" readonly>${(settlement.archive_reason || 'No reason provided').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+        </div>
+        <div class="form-group">
+            <label>Archived At</label>
+            <input type="text" class="form-control" value="${(settlement.archived_at || '-').replace(/"/g, '&quot;')}" readonly>
+        </div>
+    `);
+
+    $('#viewArchivedSettlementModal').appendTo('body').modal('show');
 }
 
 function onDocumentSearchChange() {
@@ -4569,27 +4801,31 @@ function onSurveySearchChange() {
     loadSurveysTable(status, 1, searchTerm);
 }
 
-function archiveSettlement(id) {
-    // Get settlement data first
+function archiveSettlement(id, triggerElement = null) {
+    if (!id || Number(id) <= 0) {
+        showToast('error', 'Invalid settlement ID, cannot archive this record.');
+        return;
+    }
+
+    const employeeName = triggerElement ? (triggerElement.getAttribute('data-employee-name') || '') : '';
+
     $.post('exit_management.php', {
-        ajax_action: 'get_settlement_details',
+        ajax_action: 'check_settlement_archive_eligibility',
         controller: 'settlement',
         settlement_id: id
     }, function(response) {
-        if (response.success) {
-            // Populate modal with settlement data
+        if (response && response.success) {
+            $('#archiveSettlementForm')[0].reset();
             $('#archiveSettlementId').val(id);
-            $('#archiveSettlementEmployeeId').val(response.data.employee_id);
-            $('#archiveSettlementEmployeeName').val(response.data.employee_name);
-            $('#archiveSettlementReason').val('');
-            $('#archiveSettlementNotes').val('');
-
-            // Show modal
-            $('#archiveSettlementModal').modal('show');
+            $('#archiveSettlementEmployeeName').val(employeeName);
+            $('#archiveSettlementReason').val(getAutomatedArchiveReason());
+            $('#archiveSettlementModal').appendTo('body').modal('show');
         } else {
-            showToast('error', 'Failed to load settlement details');
+            showToast('error', response.message || 'This settlement cannot be archived yet.');
         }
-    }, 'json');
+    }, 'json').fail(function() {
+        showToast('error', 'Failed to verify archive eligibility for this settlement.');
+    });
 }
 
 function unarchiveSettlement(id) {
@@ -4603,6 +4839,9 @@ function unarchiveSettlement(id) {
                 showToast('success', response.message);
                 loadSettlementsTable();
                 loadDashboardData();
+                if (typeof loadArchivedSettlementsTable === 'function') {
+                    loadArchivedSettlementsTable(1);
+                }
             } else {
                 showToast('error', response.message);
             }
@@ -4630,7 +4869,7 @@ function archiveInterview(id) {
             $('#archiveInterviewId').val(id);
             $('#archiveInterviewEmployeeId').val(response.data.employee_id);
             $('#archiveInterviewEmployeeName').val(response.data.employee_name);
-            $('#archiveInterviewReason').val('');
+            $('#archiveInterviewReason').val(getAutomatedArchiveReason());
             $('#archiveInterviewNotes').val('');
 
             // Show modal
@@ -4678,7 +4917,7 @@ function archiveDocument(id) {
             $('#archiveDocumentId').val(id);
             $('#archiveDocumentEmployeeId').val(response.data.employee_id);
             $('#archiveDocumentEmployeeName').val(response.data.employee_name);
-            $('#archiveDocumentReason').val('');
+            $('#archiveDocumentReason').val(getAutomatedArchiveReason());
             $('#archiveDocumentNotes').val('');
 
             // Show modal
@@ -4722,7 +4961,7 @@ function archiveSurvey(id) {
             $('#archiveSurveyId').val(id);
             $('#archiveSurveyEmployeeId').val(response.data.employee_id);
             $('#archiveSurveyEmployeeName').val(response.data.employee_name);
-            $('#archiveSurveyReason').val('');
+            $('#archiveSurveyReason').val(getAutomatedArchiveReason());
             $('#archiveSurveyNotes').val('');
 
             // Show modal
@@ -4767,7 +5006,7 @@ function archiveTransferPlan(id) {
             $('#archiveTransferPlanId').val(id);
             $('#archiveTransferPlanEmployeeId').val(payload.employee_id);
             $('#archiveTransferPlanEmployeeName').val(payload.employee_name || '');
-            $('#archiveTransferPlanReason').val('');
+            $('#archiveTransferPlanReason').val(getAutomatedArchiveReason());
             $('#archiveTransferPlanNotes').val('');
 
             // Show modal
@@ -4813,7 +5052,7 @@ function archiveTransferItem(id) {
             $('#archiveTransferItemId').val(id);
             $('#archiveTransferItemEmployeeId').val(response.data.employee_id);
             $('#archiveTransferItemEmployeeName').val(response.data.employee_name);
-            $('#archiveTransferItemReason').val('');
+            $('#archiveTransferItemReason').val(getAutomatedArchiveReason());
             $('#archiveTransferItemNotes').val('');
 
             // Show modal
@@ -4847,14 +5086,22 @@ function unarchiveTransferItem(id) {
 
 // Load termination trend chart
 function loadTerminationTrendChart() {
-    $.post('exit_management.php', {
-        ajax_action: 'get_termination_trend'
-    }, function(response) {
-        if (response && response.labels && response.data) {
-            renderTerminationTrendChart(response.labels, response.data);
+    $.ajax({
+        url: 'exit_management.php',
+        method: 'POST',
+        dataType: 'json',
+        timeout: 30000,
+        data: {
+            ajax_action: 'get_termination_trend'
+        },
+        success: function(response) {
+            if (response && response.labels && response.data) {
+                renderTerminationTrendChart(response.labels, response.data);
+            }
+        },
+        error: function(xhr, status, errorThrown) {
+            console.error('Error loading termination trend:', status, errorThrown, xhr.status, xhr.statusText, xhr.responseText);
         }
-    }, 'json').fail(function(xhr, status, errorThrown) {
-        console.error('Error loading termination trend:', status, errorThrown, xhr.status, xhr.statusText, xhr.responseText);
     });
 }
 
@@ -4889,14 +5136,22 @@ function renderTerminationTrendChart(labels, data) {
 
 // Load termination status distribution
 function loadTerminationStatusChart() {
-    $.post('exit_management.php', {
-        ajax_action: 'get_termination_status'
-    }, function(response) {
-        if (response && response.labels && response.data) {
-            renderTerminationStatusChart(response.labels, response.data);
+    $.ajax({
+        url: 'exit_management.php',
+        method: 'POST',
+        dataType: 'json',
+        timeout: 30000,
+        data: {
+            ajax_action: 'get_termination_status'
+        },
+        success: function(response) {
+            if (response && response.labels && response.data) {
+                renderTerminationStatusChart(response.labels, response.data);
+            }
+        },
+        error: function(xhr, status, errorThrown) {
+            console.error('Error loading termination status:', status, errorThrown, xhr.status, xhr.statusText, xhr.responseText);
         }
-    }, 'json').fail(function(xhr, status, errorThrown) {
-        console.error('Error loading termination status:', status, errorThrown, xhr.status, xhr.statusText, xhr.responseText);
     });
 }
 
@@ -4930,12 +5185,7 @@ $(document).ready(function() {
         console.log('[ArchiveTermination] submit handler fired');
 
         const terminationId = $('#archiveTerminationId').val();
-        const archiveReason = ($('#archiveTerminationReason').val() || '').trim();
-
-        if (!archiveReason) {
-            showToast('warning', 'Please provide an archive reason');
-            return;
-        }
+        const archiveReason = getAutomatedArchiveReason();
 
         const $submitBtn = $(this).find('button[type="submit"]');
         $submitBtn.prop('disabled', true).append(' <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');

@@ -786,7 +786,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                   </select>
                 </div>
                 <div class="card-tools d-flex align-items-center">
-                  <button type="button" class="btn btn-warning btn-sm mr-2" onclick="archiveSettlements()">
+                  <button type="button" class="btn btn-warning btn-sm mr-2" onclick="openArchivedSettlementsModal()">
                     <i class="fas fa-archive"></i> Archive
                   </button>
                   <button type="button" class="btn btn-danger btn-sm" onclick="showSettlementModal()">

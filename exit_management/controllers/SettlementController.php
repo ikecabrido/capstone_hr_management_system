@@ -1,47 +1,122 @@
 <?php
 
 require_once __DIR__ . '/../models/SettlementModel.php';
+require_once __DIR__ . '/../models/ResignationModel.php';
 
 class SettlementController extends ExitManagementController
 {
     private SettlementModel $settlementModel;
+    private ResignationModel $resignationModel;
 
     public function __construct()
     {
         parent::__construct();
         $this->settlementModel = new SettlementModel();
+        $this->resignationModel = new ResignationModel();
+    }
+
+    /**
+     * Normalize settlement request data for HR request workflow
+     */
+    private function sanitizeSettlementRequestData(array $data, ?array $existingSettlement = null): array
+    {
+        return [
+            'employee_id' => $data['employee_id'] ?? '',
+            'exit_case_type' => $data['exit_case_type'] ?? null,
+            'exit_case_id' => !empty($data['exit_case_id']) ? (int)$data['exit_case_id'] : null,
+            'resignation_id' => !empty($data['resignation_id']) ? (int)$data['resignation_id'] : null,
+            'basic_salary' => 0,
+            'remaining_salary' => 0,
+            'unused_leave_conversion' => 0,
+            'overtime_pay' => 0,
+            'holiday_pay' => 0,
+            'bonuses' => 0,
+            'commission' => 0,
+            'hra' => 0,
+            'conveyance' => 0,
+            'lta' => 0,
+            'medical_allowance' => 0,
+            'other_allowances' => 0,
+            'separation_pay' => 0,
+            'tax' => 0,
+            'sss' => 0,
+            'philhealth' => 0,
+            'pagibig' => 0,
+            'cash_advance' => 0,
+            'company_loan' => 0,
+            'equipment_damage' => 0,
+            'missing_assets' => 0,
+            'late_deductions' => 0,
+            'absence_deductions' => 0,
+            'provident_fund' => 0,
+            'gratuity' => 0,
+            'notice_pay' => 0,
+            'outstanding_loans' => 0,
+            'other_deductions' => 0,
+            'net_payable' => 0,
+            'settlement_date' => $data['settlement_date'] ?? null,
+            'payment_date' => null,
+            'status' => $existingSettlement['status'] ?? 'pending_approval'
+        ];
     }
 
     /**
      * Create settlement
      */
+    private function validateApprovedExitCase(array $data): array
+    {
+        $exitCaseType = $data['exit_case_type'] ?? '';
+        $exitCaseId = !empty($data['exit_case_id']) ? (int)$data['exit_case_id'] : 0;
+
+        if (!in_array($exitCaseType, ['resignation', 'termination'], true) || $exitCaseId <= 0) {
+            return ['success' => false, 'message' => 'A valid approved exit case is required.'];
+        }
+
+        $exitCase = $this->model->getExitCaseDetails($exitCaseType, $exitCaseId);
+        if (!$exitCase) {
+            return ['success' => false, 'message' => 'The selected exit case does not exist or is not approved.'];
+        }
+
+        return ['success' => true, 'exit_case' => $exitCase];
+    }
+
     public function createSettlement(array $data): array
     {
         try {
             // Validate required fields
-            $required = ['employee_id', 'basic_salary', 'settlement_date'];
+            $required = ['settlement_date', 'exit_case_type', 'exit_case_id'];
             foreach ($required as $field) {
-                if (!isset($data[$field])) {
+                if (empty($data[$field])) {
                     return ['success' => false, 'message' => "Field '$field' is required"];
                 }
             }
 
-            if (!isset($data['net_payable']) || $data['net_payable'] === '') {
-                $data['net_payable'] = $this->settlementModel->calculateTotalSettlement($data);
+            $validation = $this->validateApprovedExitCase($data);
+            if (!$validation['success']) {
+                return $validation;
             }
 
-            if (!empty($data['resignation_id']) && $this->settlementModel->hasExistingSettlementForResignation((int)$data['resignation_id'])) {
-                return ['success' => false, 'message' => 'A settlement already exists for this resignation.'];
+            $exitCase = $validation['exit_case'];
+            $data['employee_id'] = $exitCase['employee_id'];
+            $data['exit_case_type'] = $exitCase['exit_case_type'];
+            $data['exit_case_id'] = $exitCase['exit_case_id'];
+            $data['resignation_id'] = $data['exit_case_type'] === 'resignation' ? $data['exit_case_id'] : null;
+
+            if ($this->settlementModel->hasExistingSettlementForExitCase($data['exit_case_type'], (int)$data['exit_case_id'])) {
+                return ['success' => false, 'message' => 'A settlement already exists for this approved exit case.'];
             }
 
+            $data = $this->sanitizeSettlementRequestData($data);
             $data['created_by'] = $_SESSION['user']['id'] ?? 0;
-            $data['status'] = $data['status'] ?? 'draft';
 
             $settlementId = $this->settlementModel->createSettlement($data);
+            if ($settlementId) {
+                $this->resignationModel->createPayrollClearanceRequest($settlementId, $_SESSION['user']['id'] ?? null, 'HR requested payroll settlement calculation');
+            }
 
             return [
                 'success' => true,
-                'message' => 'Settlement created successfully',
+                'message' => 'Settlement request created successfully',
                 'settlement_id' => $settlementId
             ];
         } catch (Exception $e) {
@@ -57,14 +132,27 @@ class SettlementController extends ExitManagementController
             }
 
             $settlementId = (int)$data['settlement_id'];
-            if (!isset($data['net_payable']) || $data['net_payable'] === '') {
-                $data['net_payable'] = $this->settlementModel->calculateTotalSettlement($data);
+            $existingSettlement = $this->settlementModel->getSettlementById($settlementId);
+            if (!$existingSettlement) {
+                return ['success' => false, 'message' => 'Settlement not found'];
             }
 
-            if (!empty($data['resignation_id']) && $this->settlementModel->hasExistingSettlementForResignation((int)$data['resignation_id'], $settlementId)) {
-                return ['success' => false, 'message' => 'A settlement already exists for this resignation'];
+            $validation = $this->validateApprovedExitCase($data);
+            if (!$validation['success']) {
+                return $validation;
             }
 
+            $exitCase = $validation['exit_case'];
+            $data['employee_id'] = $exitCase['employee_id'];
+            $data['exit_case_type'] = $exitCase['exit_case_type'];
+            $data['exit_case_id'] = $exitCase['exit_case_id'];
+            $data['resignation_id'] = $data['exit_case_type'] === 'resignation' ? $data['exit_case_id'] : null;
+
+            if ($this->settlementModel->hasExistingSettlementForExitCase($data['exit_case_type'], (int)$data['exit_case_id'], $settlementId)) {
+                return ['success' => false, 'message' => 'A settlement already exists for this approved exit case'];
+            }
+
+            $data = $this->sanitizeSettlementRequestData($data, $existingSettlement);
             $data['updated_by'] = $_SESSION['user']['id'] ?? 0;
             $success = $this->settlementModel->updateSettlement($settlementId, $data);
 
@@ -170,7 +258,7 @@ class SettlementController extends ExitManagementController
     /**
      * Get all settlements (with optional status filter)
      */
-    public function getSettlements(string $status = null): array
+    public function getSettlements(?string $status = null): array
     {
         return $this->settlementModel->getAllSettlements($status);
     }
@@ -285,11 +373,21 @@ class SettlementController extends ExitManagementController
                     $data['search'] ?? ''
                 );
 
+            case 'get_archived_settlements':
+                return $this->settlementModel->getArchivedSettlements(
+                    $data['page'] ?? 1,
+                    $data['limit'] ?? 10,
+                    $data['search'] ?? ''
+                );
+
             case 'print_settlement':
                 return $this->printSettlement($data['settlement_id'] ?? 0);
 
             case 'archive_settlement':
                 return $this->archiveSettlement($data['settlement_id'] ?? 0);
+
+            case 'check_settlement_archive_eligibility':
+                return $this->checkSettlementArchiveEligibility($data['settlement_id'] ?? 0);
 
             case 'unarchive_settlement':
                 return $this->unarchiveSettlement($data['settlement_id'] ?? 0);
@@ -305,9 +403,41 @@ class SettlementController extends ExitManagementController
     /**
      * Archive settlement
      */
+    public function checkSettlementArchiveEligibility(int $settlementId): array
+    {
+        try {
+            if (empty($settlementId)) {
+                return ['success' => false, 'message' => 'Settlement ID is required'];
+            }
+
+            $settlement = $this->settlementModel->getSettlementById($settlementId);
+            if (!$settlement) {
+                return ['success' => false, 'message' => 'Settlement not found'];
+            }
+
+            if ($this->settlementModel->isSettlementArchivable($settlementId)) {
+                return ['success' => true, 'message' => 'Settlement is eligible for archiving'];
+            }
+
+            return [
+                'success' => false,
+                'message' => 'Only approved, paid, or rejected settlements may be archived. Current status: ' . ($settlement['status'] ?? 'unknown')
+            ];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
     public function archiveSettlement(int $settlementId): array
     {
         try {
+            if (!$this->settlementModel->isSettlementArchivable($settlementId)) {
+                return [
+                    'success' => false,
+                    'message' => 'Settlement must be approved, paid, or rejected before it can be archived.'
+                ];
+            }
+
             $archiveReason = $_POST['archive_reason'] ?? 'Manual archive';
             $success = $this->settlementModel->archiveSettlement($settlementId, $archiveReason);
 

@@ -563,7 +563,7 @@
     <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header bg-danger">
-                <h5 class="modal-title" id="settlementModalTitle">Calculate Final Settlement</h5>
+                <h5 class="modal-title" id="settlementModalTitle">Request Settlement</h5>
                 <button type="button" class="close" data-dismiss="modal">
                     <span>&times;</span>
                 </button>
@@ -573,23 +573,19 @@
                     <input type="hidden" id="settlementId" name="settlement_id">
 
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <div class="form-group">
-                                <label for="settlementEmployeeSelect">Employee *</label>
-                                <select class="form-control" id="settlementEmployeeSelect" name="employee_id" required>
-                                    <option value="">Select Employee</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="settlementResignationSelect">Related Resignation</label>
-                                <select class="form-control" id="settlementResignationSelect" name="resignation_id">
-                                    <option value="">Select Resignation</option>
+                                <label for="settlementCaseSelect">Approved Exit Case *</label>
+                                <select class="form-control" id="settlementCaseSelect" required>
+                                    <option value="">Select Approved Exit Case</option>
                                 </select>
                             </div>
                         </div>
                     </div>
+                    <input type="hidden" id="settlementEmployeeId" name="employee_id" value="">
+                    <input type="hidden" id="settlementExitCaseType" name="exit_case_type" value="">
+                    <input type="hidden" id="settlementExitCaseId" name="exit_case_id" value="">
+                    <input type="hidden" id="settlementResignationId" name="resignation_id" value="">
 
                     <div class="row">
                         <div class="col-md-6">
@@ -598,268 +594,110 @@
                                 <input type="date" class="form-control" id="settlementDate" name="settlement_date" required>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="paymentDate">Payment Date</label>
-                                <input type="date" class="form-control" id="paymentDate" name="payment_date">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="settlementStatus">Settlement Status</label>
-                                <select class="form-control" id="settlementStatus" name="status">
-                                    <option value="draft">Draft</option>
-                                    <option value="pending_approval">Pending Approval</option>
-                                    <option value="approved">Approved</option>
-                                    <option value="paid">Paid</option>
-                                    <option value="rejected">Rejected</option>
-                                </select>
-                            </div>
-                        </div>
                     </div>
 
-                    <!-- Salary Components -->
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                This form submits a settlement request. Payroll will perform all financial calculations and determine the final net payable amount.
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="settlementStatus" name="status" value="pending_approval">
+                    <input type="hidden" id="netPayable" name="net_payable" value="0">
+                    <input type="hidden" id="basicSalary" name="basic_salary" value="0">
+                    <input type="hidden" id="remainingSalary" name="remaining_salary" value="0">
+                    <input type="hidden" id="unusedLeaveConversion" name="unused_leave_conversion" value="0">
+                    <input type="hidden" id="overtimePay" name="overtime_pay" value="0">
+                    <input type="hidden" id="holidayPay" name="holiday_pay" value="0">
+                    <input type="hidden" id="bonuses" name="bonuses" value="0">
+                    <input type="hidden" id="commission" name="commission" value="0">
+                    <input type="hidden" id="hra" name="hra" value="0">
+                    <input type="hidden" id="conveyance" name="conveyance" value="0">
+                    <input type="hidden" id="lta" name="lta" value="0">
+                    <input type="hidden" id="medicalAllowance" name="medical_allowance" value="0">
+                    <input type="hidden" id="otherAllowances" name="other_allowances" value="0">
+                    <input type="hidden" id="separationPay" name="separation_pay" value="0">
+                    <input type="hidden" id="tax" name="tax" value="0">
+                    <input type="hidden" id="sss" name="sss" value="0">
+                    <input type="hidden" id="philhealth" name="philhealth" value="0">
+                    <input type="hidden" id="pagibig" name="pagibig" value="0">
+                    <input type="hidden" id="cashAdvance" name="cash_advance" value="0">
+                    <input type="hidden" id="companyLoan" name="company_loan" value="0">
+                    <input type="hidden" id="equipmentDamage" name="equipment_damage" value="0">
+                    <input type="hidden" id="missingAssets" name="missing_assets" value="0">
+                    <input type="hidden" id="lateDeductions" name="late_deductions" value="0">
+                    <input type="hidden" id="absenceDeductions" name="absence_deductions" value="0">
+                    <input type="hidden" id="providentFund" name="provident_fund" value="0">
+                    <input type="hidden" id="gratuity" name="gratuity" value="0">
+                    <input type="hidden" id="noticePay" name="notice_pay" value="0">
+                    <input type="hidden" id="outstandingLoans" name="outstanding_loans" value="0">
+                    <input type="hidden" id="otherDeductions" name="other_deductions" value="0">
+
                     <div class="card">
                         <div class="card-header">
-                            <h6 class="card-title">Salary Components</h6>
+                            <h6 class="card-title">Request Details</h6>
                         </div>
                         <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="basicSalary">Basic Salary *</label>
-                                        <input type="number" step="0.01" class="form-control" id="basicSalary" name="basic_salary" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="remainingSalary">Remaining Salary</label>
-                                        <input type="number" step="0.01" class="form-control" id="remainingSalary" name="remaining_salary" value="0">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="unusedLeaveConversion">Unused Leave Conversion</label>
-                                        <input type="number" step="0.01" class="form-control" id="unusedLeaveConversion" name="unused_leave_conversion" value="0">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="overtimePay">Overtime Pay</label>
-                                        <input type="number" step="0.01" class="form-control" id="overtimePay" name="overtime_pay" value="0">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="holidayPay">Holiday Pay</label>
-                                        <input type="number" step="0.01" class="form-control" id="holidayPay" name="holiday_pay" value="0">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="bonuses">Bonuses</label>
-                                        <input type="number" step="0.01" class="form-control" id="bonuses" name="bonuses" value="0">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="commission">Commission</label>
-                                        <input type="number" step="0.01" class="form-control" id="commission" name="commission" value="0">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="hra">HRA</label>
-                                        <input type="number" step="0.01" class="form-control" id="hra" name="hra" value="0">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="conveyance">Conveyance</label>
-                                        <input type="number" step="0.01" class="form-control" id="conveyance" name="conveyance" value="0">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="lta">LTA</label>
-                                        <input type="number" step="0.01" class="form-control" id="lta" name="lta" value="0">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="medicalAllowance">Medical Allowance</label>
-                                        <input type="number" step="0.01" class="form-control" id="medicalAllowance" name="medical_allowance" value="0">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="otherAllowances">Other Allowances</label>
-                                        <input type="number" step="0.01" class="form-control" id="otherAllowances" name="other_allowances" value="0">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="separationPay">Separation Pay</label>
-                                        <input type="number" step="0.01" class="form-control" id="separationPay" name="separation_pay" value="0">
-                                    </div>
-                                </div>
-                            </div>
+                            <p class="mb-0">HR will only submit the employee, related resignation, and settlement date. Payroll will review the request, calculate the settlement components, and set the final net amount.</p>
                         </div>
                     </div>
 
-                    <!-- Deductions -->
-                    <div class="card mt-3">
+                    <div class="card mt-3 d-none" id="payrollSettlementSummaryCard">
                         <div class="card-header">
-                            <h6 class="card-title">Deductions</h6>
+                            <h6 class="card-title">Payroll Settlement Details</h6>
                         </div>
                         <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="tax">Tax</label>
-                                        <input type="number" step="0.01" class="form-control" id="tax" name="tax" value="0">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="sss">SSS</label>
-                                        <input type="number" step="0.01" class="form-control" id="sss" name="sss" value="0">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="philhealth">PhilHealth</label>
-                                        <input type="number" step="0.01" class="form-control" id="philhealth" name="philhealth" value="0">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="pagibig">Pag-IBIG</label>
-                                        <input type="number" step="0.01" class="form-control" id="pagibig" name="pagibig" value="0">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="providentFund">Provident Fund</label>
-                                        <input type="number" step="0.01" class="form-control" id="providentFund" name="provident_fund" value="0">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="cashAdvance">Cash Advance</label>
-                                        <input type="number" step="0.01" class="form-control" id="cashAdvance" name="cash_advance" value="0">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="companyLoan">Company Loan</label>
-                                        <input type="number" step="0.01" class="form-control" id="companyLoan" name="company_loan" value="0">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="equipmentDamage">Equipment Damage</label>
-                                        <input type="number" step="0.01" class="form-control" id="equipmentDamage" name="equipment_damage" value="0">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="missingAssets">Missing Assets</label>
-                                        <input type="number" step="0.01" class="form-control" id="missingAssets" name="missing_assets" value="0">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="lateDeductions">Late Deductions</label>
-                                        <input type="number" step="0.01" class="form-control" id="lateDeductions" name="late_deductions" value="0">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="absenceDeductions">Absence Deductions</label>
-                                        <input type="number" step="0.01" class="form-control" id="absenceDeductions" name="absence_deductions" value="0">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="outstandingLoans">Outstanding Loans</label>
-                                        <input type="number" step="0.01" class="form-control" id="outstandingLoans" name="outstanding_loans" value="0">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="otherDeductions">Other Deductions</label>
-                                        <input type="number" step="0.01" class="form-control" id="otherDeductions" name="other_deductions" value="0">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="gratuity">Gratuity</label>
-                                        <input type="number" step="0.01" class="form-control" id="gratuity" name="gratuity" value="0">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="noticePay">Notice Pay</label>
-                                        <input type="number" step="0.01" class="form-control" id="noticePay" name="notice_pay" value="0">
-                                    </div>
-                                </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered mb-0">
+                                    <tbody>
+                                        <tr><th>Net Payable</th><td id="payrollSettlementSummary_net_payable">0.00</td></tr>
+                                        <tr><th>Basic Salary</th><td id="payrollSettlementSummary_basic_salary">0.00</td></tr>
+                                        <tr><th>Remaining Salary</th><td id="payrollSettlementSummary_remaining_salary">0.00</td></tr>
+                                        <tr><th>Unused Leave Conversion</th><td id="payrollSettlementSummary_unused_leave_conversion">0.00</td></tr>
+                                        <tr><th>Overtime Pay</th><td id="payrollSettlementSummary_overtime_pay">0.00</td></tr>
+                                        <tr><th>Holiday Pay</th><td id="payrollSettlementSummary_holiday_pay">0.00</td></tr>
+                                        <tr><th>Bonuses</th><td id="payrollSettlementSummary_bonuses">0.00</td></tr>
+                                        <tr><th>Commission</th><td id="payrollSettlementSummary_commission">0.00</td></tr>
+                                        <tr><th>HRA</th><td id="payrollSettlementSummary_hra">0.00</td></tr>
+                                        <tr><th>Conveyance</th><td id="payrollSettlementSummary_conveyance">0.00</td></tr>
+                                        <tr><th>LTA</th><td id="payrollSettlementSummary_lta">0.00</td></tr>
+                                        <tr><th>Medical Allowance</th><td id="payrollSettlementSummary_medical_allowance">0.00</td></tr>
+                                        <tr><th>Other Allowances</th><td id="payrollSettlementSummary_other_allowances">0.00</td></tr>
+                                        <tr><th>Separation Pay</th><td id="payrollSettlementSummary_separation_pay">0.00</td></tr>
+                                        <tr><th>Tax</th><td id="payrollSettlementSummary_tax">0.00</td></tr>
+                                        <tr><th>SSS</th><td id="payrollSettlementSummary_sss">0.00</td></tr>
+                                        <tr><th>PhilHealth</th><td id="payrollSettlementSummary_philhealth">0.00</td></tr>
+                                        <tr><th>Pag-IBIG</th><td id="payrollSettlementSummary_pagibig">0.00</td></tr>
+                                        <tr><th>Cash Advance</th><td id="payrollSettlementSummary_cash_advance">0.00</td></tr>
+                                        <tr><th>Company Loan</th><td id="payrollSettlementSummary_company_loan">0.00</td></tr>
+                                        <tr><th>Equipment Damage</th><td id="payrollSettlementSummary_equipment_damage">0.00</td></tr>
+                                        <tr><th>Missing Assets</th><td id="payrollSettlementSummary_missing_assets">0.00</td></tr>
+                                        <tr><th>Late Deductions</th><td id="payrollSettlementSummary_late_deductions">0.00</td></tr>
+                                        <tr><th>Absence Deductions</th><td id="payrollSettlementSummary_absence_deductions">0.00</td></tr>
+                                        <tr><th>Provident Fund</th><td id="payrollSettlementSummary_provident_fund">0.00</td></tr>
+                                        <tr><th>Gratuity</th><td id="payrollSettlementSummary_gratuity">0.00</td></tr>
+                                        <tr><th>Notice Pay</th><td id="payrollSettlementSummary_notice_pay">0.00</td></tr>
+                                        <tr><th>Outstanding Loans</th><td id="payrollSettlementSummary_outstanding_loans">0.00</td></tr>
+                                        <tr><th>Other Deductions</th><td id="payrollSettlementSummary_other_deductions">0.00</td></tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Net Payable -->
                     <div class="card mt-3">
                         <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="netPayable">Net Payable Amount *</label>
-                                        <input type="number" step="0.01" class="form-control" id="netPayable" name="net_payable" readonly>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>&nbsp;</label>
-                                        <button type="button" class="btn btn-info btn-block" id="calculateNetPayable">
-                                            <i class="fas fa-calculator"></i> Calculate
-                                        </button>
-                                    </div>
-                                </div>
+                            <div class="alert alert-warning mb-0">
+                                <strong>Payroll owns settlement calculation:</strong> No payroll financial fields are editable in this form.
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-info" id="settlementEditBtn" style="display:none;">Edit Settlement</button>
                     <button type="submit" class="btn btn-danger" id="settlementSubmitBtn">Save Settlement</button>
                 </div>
             </form>
@@ -1283,10 +1121,11 @@
                         </div>
                     </div>
 
+                    <input type="hidden" id="archiveReason" name="archive_reason" value="Process completed; archived.">
                     <div class="form-group">
-                        <label for="archiveReason">Archive Reason *</label>
-                        <textarea class="form-control" id="archiveReason" name="archive_reason" rows="3" placeholder="Please provide a reason for archiving this resignation..." required></textarea>
-                        <small class="form-text text-muted">This reason will be stored with the archived record for future reference.</small>
+                        <label>Archive Reason</label>
+                        <div class="form-control-plaintext">Process completed; archived.</div>
+                        <small class="form-text text-muted">This reason is generated automatically when the process completes.</small>
                     </div>
 
                     <div class="form-group">
@@ -1301,6 +1140,61 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Archived Settlements Modal -->
+<div class="modal fade exit-modal" id="archivedSettlementsModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">Archived Settlements</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered table-striped table-sm">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Settlement Date</th>
+                            <th>Net Payable</th>
+                            <th>Status</th>
+                            <th>Archived At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modal-archived-settlements-tbody">
+                        <tr><td colspan="6" class="text-center text-muted">Loading archived settlements...</td></tr>
+                    </tbody>
+                </table>
+                <div id="modal-archived-settlements-pagination" class="mt-2 d-flex justify-content-end"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Archived Settlement Details Modal -->
+<div class="modal fade exit-modal" id="viewArchivedSettlementModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info">
+                <h5 class="modal-title">Archived Settlement Details</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="viewArchivedSettlementBody">
+                <p class="text-muted">Select an archived settlement to view its details.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
         </div>
     </div>
 </div>
@@ -1325,25 +1219,16 @@
                         The record will be completely removed from active settlements and stored in the exit_archive table.
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="archiveSettlementEmployeeId">Employee ID</label>
-                                <input type="text" class="form-control" id="archiveSettlementEmployeeId" readonly>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="archiveSettlementEmployeeName">Employee Name</label>
-                                <input type="text" class="form-control" id="archiveSettlementEmployeeName" readonly>
-                            </div>
-                        </div>
+                    <div class="form-group">
+                        <label for="archiveSettlementEmployeeName">Employee Name</label>
+                        <input type="text" class="form-control" id="archiveSettlementEmployeeName" readonly>
                     </div>
 
+                    <input type="hidden" id="archiveSettlementReason" name="archive_reason" value="Process completed; archived.">
                     <div class="form-group">
-                        <label for="archiveSettlementReason">Archive Reason *</label>
-                        <textarea class="form-control" id="archiveSettlementReason" name="archive_reason" rows="3" placeholder="Please provide a reason for archiving this settlement..." required></textarea>
-                        <small class="form-text text-muted">This reason will be stored with the archived record for future reference.</small>
+                        <label>Archive Reason</label>
+                        <div class="form-control-plaintext">Process completed; archived.</div>
+                        <small class="form-text text-muted">This reason is generated automatically when the process completes.</small>
                     </div>
 
                     <div class="form-group">
@@ -1397,10 +1282,11 @@
                         </div>
                     </div>
 
+                    <input type="hidden" id="archiveInterviewReason" name="archive_reason" value="Process completed; archived.">
                     <div class="form-group">
-                        <label for="archiveInterviewReason">Archive Reason *</label>
-                        <textarea class="form-control" id="archiveInterviewReason" name="archive_reason" rows="3" placeholder="Please provide a reason for archiving this interview..." required></textarea>
-                        <small class="form-text text-muted">This reason will be stored with the archived record for future reference.</small>
+                        <label>Archive Reason</label>
+                        <div class="form-control-plaintext">Process completed; archived.</div>
+                        <small class="form-text text-muted">This reason is generated automatically when the process completes.</small>
                     </div>
 
                     <div class="form-group">
@@ -1454,10 +1340,11 @@
                         </div>
                     </div>
 
+                    <input type="hidden" id="archiveTerminationReason" name="archive_reason" value="Process completed; archived.">
                     <div class="form-group">
-                        <label for="archiveTerminationReason">Archive Reason *</label>
-                        <textarea class="form-control" id="archiveTerminationReason" name="archive_reason" rows="3" placeholder="Please provide a reason for archiving this termination..." required></textarea>
-                        <small class="form-text text-muted">This reason will be stored with the archived record for future reference.</small>
+                        <label>Archive Reason</label>
+                        <div class="form-control-plaintext">Process completed; archived.</div>
+                        <small class="form-text text-muted">This reason is generated automatically when the process completes.</small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -1544,10 +1431,11 @@
                         </div>
                     </div>
 
+                    <input type="hidden" id="archiveDocumentReason" name="archive_reason" value="Process completed; archived.">
                     <div class="form-group">
-                        <label for="archiveDocumentReason">Archive Reason *</label>
-                        <textarea class="form-control" id="archiveDocumentReason" name="archive_reason" rows="3" placeholder="Please provide a reason for archiving this document..." required></textarea>
-                        <small class="form-text text-muted">This reason will be stored with the archived record for future reference.</small>
+                        <label>Archive Reason</label>
+                        <div class="form-control-plaintext">Process completed; archived.</div>
+                        <small class="form-text text-muted">This reason is generated automatically when the process completes.</small>
                     </div>
 
                     <div class="form-group">
@@ -1601,10 +1489,11 @@
                         </div>
                     </div>
 
+                    <input type="hidden" id="archiveSurveyReason" name="archive_reason" value="Process completed; archived.">
                     <div class="form-group">
-                        <label for="archiveSurveyReason">Archive Reason *</label>
-                        <textarea class="form-control" id="archiveSurveyReason" name="archive_reason" rows="3" placeholder="Please provide a reason for archiving this survey..." required></textarea>
-                        <small class="form-text text-muted">This reason will be stored with the archived record for future reference.</small>
+                        <label>Archive Reason</label>
+                        <div class="form-control-plaintext">Process completed; archived.</div>
+                        <small class="form-text text-muted">This reason is generated automatically when the process completes.</small>
                     </div>
 
                     <div class="form-group">
@@ -1658,10 +1547,11 @@
                         </div>
                     </div>
 
+                    <input type="hidden" id="archiveTransferPlanReason" name="archive_reason" value="Process completed; archived.">
                     <div class="form-group">
-                        <label for="archiveTransferPlanReason">Archive Reason *</label>
-                        <textarea class="form-control" id="archiveTransferPlanReason" name="archive_reason" rows="3" placeholder="Please provide a reason for archiving this transfer plan..." required></textarea>
-                        <small class="form-text text-muted">This reason will be stored with the archived record for future reference.</small>
+                        <label>Archive Reason</label>
+                        <div class="form-control-plaintext">Process completed; archived.</div>
+                        <small class="form-text text-muted">This reason is generated automatically when the process completes.</small>
                     </div>
 
                     <div class="form-group">
@@ -1715,10 +1605,11 @@
                         </div>
                     </div>
 
+                    <input type="hidden" id="archiveTransferItemReason" name="archive_reason" value="Process completed; archived.">
                     <div class="form-group">
-                        <label for="archiveTransferItemReason">Archive Reason *</label>
-                        <textarea class="form-control" id="archiveTransferItemReason" name="archive_reason" rows="3" placeholder="Please provide a reason for archiving this transfer item..." required></textarea>
-                        <small class="form-text text-muted">This reason will be stored with the archived record for future reference.</small>
+                        <label>Archive Reason</label>
+                        <div class="form-control-plaintext">Process completed; archived.</div>
+                        <small class="form-text text-muted">This reason is generated automatically when the process completes.</small>
                     </div>
 
                     <div class="form-group">

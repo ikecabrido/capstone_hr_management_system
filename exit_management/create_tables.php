@@ -157,9 +157,10 @@ CREATE TABLE `exit_employee_settlements` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `employee_id` varchar(50) NOT NULL,
   `resignation_id` int(11) DEFAULT NULL,
+  `exit_case_type` enum('resignation','termination') DEFAULT NULL,
+  `exit_case_id` int(11) DEFAULT NULL,
   `basic_salary` decimal(10,2) NOT NULL,
   `remaining_salary` decimal(10,2) DEFAULT 0.00,
-  `unused_leave_conversion` decimal(10,2) DEFAULT 0.00,
   `overtime_pay` decimal(10,2) DEFAULT 0.00,
   `holiday_pay` decimal(10,2) DEFAULT 0.00,
   `bonuses` decimal(10,2) DEFAULT 0.00,
@@ -197,6 +198,7 @@ CREATE TABLE `exit_employee_settlements` (
   PRIMARY KEY (`id`),
   KEY `fk_settlement_employee` (`employee_id`),
   KEY `fk_settlement_resignation` (`resignation_id`),
+  KEY `idx_settlement_exit_case` (`exit_case_type`, `exit_case_id`),
   KEY `fk_settlement_approved_by` (`approved_by`),
   KEY `fk_settlement_created_by` (`created_by`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
