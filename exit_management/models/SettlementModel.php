@@ -117,7 +117,7 @@ class SettlementModel extends ExitManagementModel
 
         $columns[] = 'status';
         $columns[] = 'created_by';
-        $values[] = $data['status'] ?? 'draft';
+        $values[] = $data['status'] ?? 'pending_approval';
         $values[] = $data['created_by'];
 
         $placeholderString = implode(', ', array_fill(0, count($columns), '?'));
@@ -202,7 +202,7 @@ class SettlementModel extends ExitManagementModel
         }
 
         $fields[] = 'status = ?';
-        $values[] = $data['status'] ?? 'draft';
+        $values[] = $data['status'] ?? 'pending_approval';
         $fields[] = 'updated_by = ?';
         $values[] = $data['updated_by'] ?? null;
         $fields[] = 'updated_at = NOW()';
@@ -371,7 +371,7 @@ class SettlementModel extends ExitManagementModel
             SELECT s.*, e.full_name, e.employee_id as emp_id
             FROM exit_employee_settlements s
             JOIN employees e ON s.employee_id = e.employee_id
-            WHERE s.status IN ('draft', 'pending_approval')
+            WHERE s.status = 'pending_approval'
             ORDER BY s.settlement_date ASC
         ");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -691,7 +691,7 @@ class SettlementModel extends ExitManagementModel
                 $settlementData['other_deductions'],
                 $settlementData['net_payable'],
                 $settlementData['settlement_date'],
-                $settlementData['status'] ?? 'draft',
+                $settlementData['status'] ?? 'pending_approval',
                 $settlementData['created_by'],
                 $settlementData['created_at'],
                 date('Y-m-d H:i:s')

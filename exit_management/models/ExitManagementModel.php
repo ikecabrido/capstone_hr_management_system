@@ -611,4 +611,42 @@ class ExitManagementModel
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    /**
+     * Get employees eligible for knowledge transfer after completed exit interviews
+     */
+    public function getEmployeesNeedingKnowledgeTransfer(): array
+    {
+        if (!$this->tableExists('exit_interview_hr_assessments')) {
+            return [];
+        }
+
+        $sql = "SELECT DISTINCT
+                e.employee_id AS id,
+                e.full_name,
+                COALESCE(u.username, e.employee_id) AS username,
+                e.email,
+                e.department,
+                e.position,
+                ei.exit_case_type,
+                ei.exit_case_id,
+                CASE WHEN ei.exit_case_type = 'resignation' THEN r.resignation_type ELSE NULL END AS resignation_type,
+                COALESCE(r.last_working_date, t.effective_date) AS last_working_date,
+                CASE WHEN ei.exit_case_type = 'resignation' THEN 'Resignation' ELSE 'Termination' END AS exit_type
+            FROM exit_interviews ei
+            JOIN exit_interview_hr_assessments hra ON hra.interview_id = ei.id AND hra.knowledge_transfer_required = 1
+            JOIN employees e ON ei.employee_id = e.employee_id
+            LEFT JOIN users u ON e.user_id = u.id
+            LEFT JOIN exit_resignations r ON ei.exit_case_type = 'resignation' AND ei.exit_case_id = r.id AND r.status = 'approved'
+            LEFT JOIN exit_terminations t ON ei.exit_case_type = 'termination' AND ei.exit_case_id = t.id AND t.status = 'approved'
+            LEFT JOIN exit_knowledge_transfer_plans ktp ON ktp.employee_id = e.employee_id AND ktp.status = 'active'
+            WHERE ei.status = 'completed'
+              AND ktp.id IS NULL
+              AND ((ei.exit_case_type = 'resignation' AND r.id IS NOT NULL)
+                   OR (ei.exit_case_type = 'termination' AND t.id IS NOT NULL))
+            ORDER BY e.full_name";
+
+        $stmt = $this->db->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

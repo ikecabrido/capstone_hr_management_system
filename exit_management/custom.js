@@ -858,39 +858,55 @@ function loadInterviewers(callback) {
     });
 }
 
-// Load employees with resignations for transfer modal (employee leaving)
-function loadEmployeesWithResignationsForTransfers(callback) {
-    $.post('exit_management.php', {
-        ajax_action: 'get_employees_with_resignations'
-    }, function(response) {
-        if (response && response.length > 0) {
+// Load employees eligible for knowledge transfer based on completed exit interviews
+function loadEmployeesNeedingKnowledgeTransfer(callback) {
+    $.ajax({
+        url: 'exit_management.php',
+        method: 'POST',
+        dataType: 'json',
+        data: {
+            ajax_action: 'get_employees_needing_knowledge_transfer',
+            controller: 'exit_management'
+        }
+    }).done(function(response) {
+        const employees = Array.isArray(response) ? response : (response && Array.isArray(response.data) ? response.data : []);
+
+        if (employees.length > 0) {
             const employeeOptions = '<option value="">Select Employee Leaving</option>' +
-                response.map(emp => {
-                    const resignationLabel = emp.resignation_type ? ` (${emp.resignation_type})` : '';
-                    const workingDateLabel = emp.last_working_date ? ` - LW: ${emp.last_working_date}` : '';
-                    return `<option value="${emp.id}">${emp.full_name} (${emp.username})${resignationLabel}${workingDateLabel}</option>`;
+                employees.map(emp => {
+                    const exitTypeLabel = emp.exit_type ? ` (${emp.exit_type})` : '';
+                    const workingDateLabel = emp.last_working_date ? ` - Exit: ${emp.last_working_date}` : '';
+                    return `<option value="${emp.id}">${emp.full_name} (${emp.username})${exitTypeLabel}${workingDateLabel}</option>`;
                 }).join('');
 
             $('#transferEmployeeSelect').html(employeeOptions);
         } else {
-            $('#transferEmployeeSelect').html('<option value="">No employees with resignations found</option>');
+            $('#transferEmployeeSelect').html('<option value="">No employees eligible for knowledge transfer found</option>');
         }
-        if (typeof callback === 'function') callback();
-    }).fail(function(err) {
-        console.error('Error loading resigning employees for transfers:', err);
+    }).fail(function(xhr, status, error) {
+        console.error('Error loading employees eligible for transfers:', status, error, xhr.responseText);
         $('#transferEmployeeSelect').html('<option value="">Error loading employees</option>');
+    }).always(function() {
         if (typeof callback === 'function') callback();
     });
 }
 
 // Load successors for transfer modal
 function loadSuccessors(callback) {
-    $.post('exit_management.php', {
-        ajax_action: 'get_eligible_employees'
-    }, function(response) {
-        if (response && response.length > 0) {
+    $.ajax({
+        url: 'exit_management.php',
+        method: 'POST',
+        dataType: 'json',
+        data: {
+            ajax_action: 'get_eligible_employees',
+            controller: 'exit_management'
+        }
+    }).done(function(response) {
+        const successors = Array.isArray(response) ? response : (response && Array.isArray(response.data) ? response.data : []);
+
+        if (successors.length > 0) {
             const successorOptions = '<option value="">Select Successor</option>' +
-                response.map(emp => {
+                successors.map(emp => {
                     const positionLabel = emp.position ? ` (${emp.position})` : ' (No position assigned)';
                     return `<option value="${emp.id}">${emp.full_name} (${emp.username})${positionLabel}</option>`;
                 }).join('');
@@ -899,10 +915,10 @@ function loadSuccessors(callback) {
         } else {
             $('#successorSelect').html('<option value="">No employees available</option>');
         }
-        if (typeof callback === 'function') callback();
-    }, 'json').fail(function(err) {
-        console.error('Error loading employees for successors:', err);
+    }).fail(function(xhr, status, error) {
+        console.error('Error loading employees for successors:', status, error, xhr.responseText);
         $('#successorSelect').html('<option value="">Error loading employees</option>');
+    }).always(function() {
         if (typeof callback === 'function') callback();
     });
 }
@@ -1013,7 +1029,7 @@ function showTransferModal(planId = null) {
         $('#transferItemsContainer').html(getTransferItemTemplate(0));
         setTransferModalMode(true);
 
-        loadEmployeesWithResignationsForTransfers(function() {
+        loadEmployeesNeedingKnowledgeTransfer(function() {
             loadSuccessors(function() {
                 loadTransferData(transferPlanId, true, function() {
                     console.log('Showing transfer modal after load for planId:', transferPlanId);
@@ -1029,7 +1045,7 @@ function showTransferModal(planId = null) {
         $('#transferPlanId').val('');
         $('#transferItemsContainer').html(getTransferItemTemplate(0));
         setTransferModalMode(false);
-        loadEmployeesWithResignationsForTransfers();
+        loadEmployeesNeedingKnowledgeTransfer();
         loadSuccessors();
         $('#transferModal').modal('show');
     }
@@ -3011,6 +3027,7 @@ function getStatusBadge(status) {
     const statusLabels = {
         'pending': 'Pending',
         'pending_review': 'Pending Review',
+        'pending_approval': 'Pending Approval',
         'pending_legal_review': 'Pending Legal Review',
         'approved': 'Approved',
         'rejected': 'Rejected',
@@ -3036,6 +3053,7 @@ function getStatusBadge(status) {
         'active': 'badge badge-primary',
         'inactive': 'badge badge-secondary',
         'scheduled': 'badge badge-info',
+        'pending_approval': 'badge badge-warning',
         'draft': 'badge badge-light',
         'archived': 'badge badge-dark'
     };

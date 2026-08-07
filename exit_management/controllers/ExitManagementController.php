@@ -33,7 +33,7 @@ class ExitManagementController
             $activeTransfers = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
             // Count pending settlements
-            $stmt = $db->query("SELECT COUNT(*) as count FROM exit_employee_settlements WHERE status = 'draft'");
+            $stmt = $db->query("SELECT COUNT(*) as count FROM exit_employee_settlements WHERE status = 'pending_approval'");
             $pendingSettlements = $stmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0;
 
             // Count total active employees
@@ -438,6 +438,9 @@ class ExitManagementController
 
                 case 'get_employees_with_resignations':
                     return $this->model->getEmployeesWithResignations();
+
+                case 'get_employees_needing_knowledge_transfer':
+                    return $this->model->getEmployeesNeedingKnowledgeTransfer();
 
                 case 'get_approved_exit_cases':
                     return $this->model->getApprovedExitCases();

@@ -23,6 +23,17 @@ class KnowledgeTransferController extends ExitManagementController
         return !empty($this->transferModel->getEmployeeById($employeeId));
     }
 
+    private function isEmployeeEligibleForKnowledgeTransfer($employeeId): bool
+    {
+        foreach ($this->transferModel->getEmployeesNeedingKnowledgeTransfer() as $employee) {
+            if ((string)($employee['id'] ?? '') === (string)$employeeId) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function validateTransferItem(array $item, int $index): array
     {
         $allowedTypes = ['document', 'process', 'contact', 'system', 'other'];
@@ -117,6 +128,10 @@ class KnowledgeTransferController extends ExitManagementController
 
         if (!$this->employeeExists($data['employee_id'])) {
             return ['success' => false, 'message' => 'Employee ID is invalid'];
+        }
+
+        if (!$this->isEmployeeEligibleForKnowledgeTransfer($data['employee_id'])) {
+            return ['success' => false, 'message' => 'Employee is not eligible for knowledge transfer.'];
         }
 
         if (!$this->employeeExists($data['successor_id'])) {

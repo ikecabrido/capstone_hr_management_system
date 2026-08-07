@@ -416,7 +416,7 @@ class TerminationModel extends ExitManagementModel
             return ['eligible' => false, 'reason' => 'Employee already has an active termination process.'];
         }
 
-        $stmt = $this->db->prepare("SELECT COUNT(*) FROM exit_employee_settlements WHERE employee_id = ? AND status IN ('draft', 'approved')");
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM exit_employee_settlements WHERE employee_id = ? AND status IN ('pending_approval', 'approved')");
         $stmt->execute([$employeeId]);
         $settlementCount = (int)$stmt->fetchColumn();
 

@@ -779,7 +779,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                   <!-- Filter -->
                   <select id="settlement-status-filter" class="form-control form-control-sm" onchange="onSettlementStatusFilterChange()" style="flex: 1; white-space: nowrap;">
                     <option value="all">All</option>
-                    <option value="draft">Draft</option>
                     <option value="pending_approval">Pending Approval</option>
                     <option value="approved">Approved</option>
                     <option value="rejected">Rejected</option>
