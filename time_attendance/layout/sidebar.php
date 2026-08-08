@@ -93,7 +93,7 @@ $roleLabel = $current_role === 'time' ? 'HR' : 'User';
         <li class="nav-item">
           <a href="leave_approvals.php" class="nav-link <?= $current_page === 'leave_approvals.php' ? 'active' : '' ?>">
             <i class="nav-icon fas fa-file-alt"></i>
-            <p>Approve Leave Requests</p>
+            <p>Leave Management</p>
           </a>
         </li>
         <?php else: ?>

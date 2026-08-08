@@ -52,19 +52,27 @@ class Employee
     }
 
     /**
-     * Get all active employees
+     * Get all active employees, with optional search.
      */
-    public function getAll($status = 'Active', $limit = 100, $offset = 0)
+    public function getAll($status = 'Active', $limit = 100, $offset = 0, $search = '')
     {
         $query = "SELECT e.*, u.username, u.role 
                   FROM " . $this->table . " e
                   LEFT JOIN users u ON e.user_id = u.id
-                  WHERE e.employment_status = :status
-                  ORDER BY e.full_name
-                  LIMIT :limit OFFSET :offset";
+                  WHERE e.employment_status = :status";
+
+        if ($search !== '') {
+            $query .= " AND (e.full_name LIKE :search OR e.employee_id LIKE :search OR e.email LIKE :search OR e.department LIKE :search)";
+        }
+
+        $query .= " ORDER BY e.full_name LIMIT :limit OFFSET :offset";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':status', $status);
+        if ($search !== '') {
+            $searchValue = '%' . $search . '%';
+            $stmt->bindParam(':search', $searchValue, PDO::PARAM_STR);
+        }
         $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -116,11 +124,20 @@ class Employee
     /**
      * Get employee count
      */
-    public function getTotalCount($status = 'Active')
+    public function getTotalCount($status = 'Active', $search = '')
     {
         $query = "SELECT COUNT(*) as count FROM " . $this->table . " WHERE employment_status = :status";
+
+        if ($search !== '') {
+            $query .= " AND (full_name LIKE :search OR employee_id LIKE :search OR email LIKE :search OR department LIKE :search)";
+        }
+
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':status', $status);
+        if ($search !== '') {
+            $searchValue = '%' . $search . '%';
+            $stmt->bindParam(':search', $searchValue, PDO::PARAM_STR);
+        }
         $stmt->execute();
 
         $result = $stmt->fetch(PDO::FETCH_ASSOC);

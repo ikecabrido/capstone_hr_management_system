@@ -12,6 +12,7 @@ header('Access-Control-Allow-Methods: POST');
 
 require_once __DIR__ . '/../core/Session.php';
 require_once __DIR__ . '/../controllers/LeaveController.php';
+require_once __DIR__ . '/../helpers/Helper.php';
 
 Session::start();
 
@@ -52,18 +53,10 @@ if (!empty($missing_fields)) {
 }
 
 // Validate dates
-$start_date = strtotime($data['start_date']);
-$end_date = strtotime($data['end_date']);
-
-if (!$start_date || !$end_date) {
+$dateValidation = Helper::validateLeaveRequestDates($data['start_date'], $data['end_date']);
+if (!$dateValidation['valid']) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Invalid date format']);
-    exit;
-}
-
-if ($start_date > $end_date) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'End date must be after start date']);
+    echo json_encode(['success' => false, 'message' => $dateValidation['message']]);
     exit;
 }
 
@@ -79,12 +72,8 @@ if ($request_employee_id != $session_user_id && $user_role !== 'HR_ADMIN') {
     exit;
 }
 
-// Calculate total days
-$start = new DateTime($data['start_date']);
-$end = new DateTime($data['end_date']);
-$end->modify('+1 day'); // Include end date
-$interval = $start->diff($end);
-$total_days = $interval->days;
+// Calculate total days using working-day rules
+$total_days = $dateValidation['total_days'];
 
 // Prepare data
 $request_data = [

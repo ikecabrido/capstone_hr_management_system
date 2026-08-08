@@ -17,24 +17,65 @@ class Leave
      */
     public function createRequest($data)
     {
+        if (empty($data['employee_id']) || empty($data['leave_type_id']) || empty($data['start_date']) || empty($data['end_date'])) {
+            return false;
+        }
+
         $query = "INSERT INTO `ta_leave_requests` 
                   (employee_id, leave_type_id, start_date, end_date, details, status)
-                  VALUES (:employee_id, :leave_type_id, :start_date, :end_date, :details, 'Pending')";
+                  VALUES (:employee_id, :leave_type_id, :start_date, :end_date, :details, 'PENDING')";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':employee_id', $data['employee_id'], PDO::PARAM_INT);
+        $stmt->bindParam(':employee_id', $data['employee_id'], PDO::PARAM_STR);
         $stmt->bindParam(':leave_type_id', $data['leave_type_id'], PDO::PARAM_INT);
         $stmt->bindParam(':start_date', $data['start_date']);
         $stmt->bindParam(':end_date', $data['end_date']);
-        $stmt->bindParam(':details', $data['details'] ?? $data['reason'] ?? '');
+
+        $details = $data['details'] ?? $data['reason'] ?? '';
+        $stmt->bindParam(':details', $details);
 
         return $stmt->execute();
     }
 
     /**
+     * Check if the employee already has an overlapping leave request in the same period.
+     */
+    public function hasOverlappingRequest($employee_id, $leave_type_id, $start_date, $end_date, $exclude_request_id = null)
+    {
+        $query = "SELECT id
+                  FROM ta_leave_requests
+                  WHERE employee_id = :employee_id
+                    AND leave_type_id = :leave_type_id
+                    AND status NOT IN ('REJECTED', 'CANCELLED', 'CANCELED')
+                    AND (
+                        (start_date BETWEEN :start_date AND :end_date)
+                        OR (end_date BETWEEN :start_date AND :end_date)
+                        OR (:start_date BETWEEN start_date AND end_date)
+                        OR (:end_date BETWEEN start_date AND end_date)
+                    )";
+
+        if ($exclude_request_id) {
+            $query .= " AND id != :exclude_request_id";
+        }
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':employee_id', $employee_id, PDO::PARAM_STR);
+        $stmt->bindParam(':leave_type_id', $leave_type_id, PDO::PARAM_INT);
+        $stmt->bindParam(':start_date', $start_date);
+        $stmt->bindParam(':end_date', $end_date);
+
+        if ($exclude_request_id) {
+            $stmt->bindParam(':exclude_request_id', $exclude_request_id, PDO::PARAM_INT);
+        }
+
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC) ? true : false;
+    }
+
+    /**
      * Get all pending requests for a department head
      */
-    public function getPendingByDepartmentHead($deptHeadUserId)
+    public function getPendingByDepartmentHead($deptHeadUserId, $limit = null, $offset = null)
     {
         $query = "SELECT lr.id, lr.employee_id, lr.leave_type_id, lr.start_date, lr.end_date, lr.details, lr.status, lr.date_submitted,
                          e.full_name, e.department, lt.leave_type_name,
@@ -43,20 +84,52 @@ class Leave
                   INNER JOIN employees e ON lr.employee_id = e.employee_id
                   INNER JOIN ta_leave_types lt ON lr.leave_type_id = lt.leave_type_id
                   INNER JOIN department_heads dh ON dh.department = e.department
-                  WHERE dh.user_id = :user_id AND lr.status = 'Pending'
+                  WHERE dh.user_id = :user_id AND lr.status IN ('Pending', 'PENDING')
                   ORDER BY lr.date_submitted DESC";
+
+        if ($limit !== null) {
+            $query .= " LIMIT :limit";
+            if ($offset !== null) {
+                $query .= " OFFSET :offset";
+            }
+        }
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':user_id', $deptHeadUserId, PDO::PARAM_INT);
+        if ($limit !== null) {
+            $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+            if ($offset !== null) {
+                $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+            }
+        }
         $stmt->execute();
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /**
+     * Count pending requests for a department head
+     */
+    public function countPendingByDepartmentHead($deptHeadUserId)
+    {
+        $query = "SELECT COUNT(*) AS total
+                  FROM ta_leave_requests lr
+                  INNER JOIN employees e ON lr.employee_id = e.employee_id
+                  INNER JOIN department_heads dh ON dh.department = e.department
+                  WHERE dh.user_id = :user_id AND lr.status IN ('Pending', 'PENDING')";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':user_id', $deptHeadUserId, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int)($result['total'] ?? 0);
+    }
+
+    /**
      * Get pending and head-approved requests for HR admin
      */
-    public function getForHRApproval()
+    public function getForHRApproval($limit = null, $offset = null)
     {
         $query = "SELECT lr.id,
                          lr.employee_id,
@@ -73,13 +146,42 @@ class Leave
                   FROM ta_leave_requests lr
                   INNER JOIN employees e ON lr.employee_id = e.employee_id
                   INNER JOIN ta_leave_types lt ON lr.leave_type_id = lt.leave_type_id
-                  WHERE lr.status = 'Pending'
+                  WHERE lr.status IN ('Pending', 'PENDING', 'APPROVED_BY_HEAD')
                   ORDER BY lr.date_submitted DESC";
+
+        if ($limit !== null) {
+            $query .= " LIMIT :limit";
+            if ($offset !== null) {
+                $query .= " OFFSET :offset";
+            }
+        }
+
+        $stmt = $this->conn->prepare($query);
+        if ($limit !== null) {
+            $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+            if ($offset !== null) {
+                $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+            }
+        }
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Count pending and head-approved requests for HR admin
+     */
+    public function countForHRApproval()
+    {
+        $query = "SELECT COUNT(*) AS total
+                  FROM ta_leave_requests lr
+                  WHERE lr.status IN ('Pending', 'PENDING', 'APPROVED_BY_HEAD')";
 
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int)($result['total'] ?? 0);
     }
 
     /**
@@ -108,7 +210,7 @@ class Leave
             error_log('Successfully updated ta_leave_requests. Status: ' . $status);
 
             // If approved, transfer to lc_leave_requests for Legal & Compliance
-            if ($status === 'Approved') {
+            if ($status === 'Approved' || $status === 'APPROVED_BY_HR') {
                 error_log('Preparing to transfer approved leave to lc_leave_requests for ID: ' . $leave_request_id);
                 
                 // Get the leave request details with leave type name
@@ -263,30 +365,33 @@ class Leave
      */
     public function checkLeaveBalance($employee_id, $leave_type_id, $requested_days)
     {
-        $query = "SELECT remaining_days FROM ta_leave_balances 
+        $query = "SELECT COALESCE(remaining_balance, remaining_days, 0) AS remaining_balance,
+                         COALESCE(opening_balance, 0) AS opening_balance
+                  FROM ta_leave_balances 
                   WHERE employee_id = :employee_id 
                   AND leave_type_id = :leave_type_id 
                   AND year = YEAR(CURDATE())";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':employee_id', $employee_id, PDO::PARAM_INT);
+        $stmt->bindParam(':employee_id', $employee_id, PDO::PARAM_STR);
         $stmt->bindParam(':leave_type_id', $leave_type_id, PDO::PARAM_INT);
         $stmt->execute();
 
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        
+
         if (!$result) {
             return ['status' => false, 'message' => 'Leave balance record not found'];
         }
 
-        if ($result['remaining_days'] < $requested_days) {
+        $remaining_balance = (float)($result['remaining_balance'] ?? 0);
+        if ($remaining_balance < (float)$requested_days) {
             return [
-                'status' => false, 
-                'message' => 'Insufficient leave balance. Available: ' . $result['remaining_days'] . ' days'
+                'status' => false,
+                'message' => 'Insufficient leave balance. Available: ' . number_format($remaining_balance, 2) . ' days'
             ];
         }
 
-        return ['status' => true, 'remaining_balance' => $result['remaining_days']];
+        return ['status' => true, 'remaining_balance' => $remaining_balance];
     }
 
     /**
@@ -295,17 +400,17 @@ class Leave
     public function deductLeaveBalance($employee_id, $leave_type_id, $days_to_deduct)
     {
         $query = "UPDATE ta_leave_balances 
-                  SET used_days = used_days + :days,
-                      remaining_days = remaining_days - :days,
+                  SET used_balance = COALESCE(used_balance, 0) + :days,
+                      remaining_balance = COALESCE(remaining_balance, opening_balance, 0) - :days,
                       updated_at = NOW()
                   WHERE employee_id = :employee_id 
                   AND leave_type_id = :leave_type_id 
                   AND year = YEAR(CURDATE())";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':employee_id', $employee_id, PDO::PARAM_INT);
+        $stmt->bindParam(':employee_id', $employee_id, PDO::PARAM_STR);
         $stmt->bindParam(':leave_type_id', $leave_type_id, PDO::PARAM_INT);
-        $stmt->bindParam(':days', $days_to_deduct, PDO::PARAM_INT);
+        $stmt->bindParam(':days', $days_to_deduct, PDO::PARAM_STR);
 
         return $stmt->execute();
     }
@@ -315,7 +420,10 @@ class Leave
      */
     public function getLeaveBalance($employee_id, $leave_type_id = null)
     {
-        $query = "SELECT lb.*, lt.leave_type_name, lt.days_per_year
+        $query = "SELECT lb.*, lt.leave_type_name, lt.days_per_year,
+                         COALESCE(lb.opening_balance, lt.days_per_year) AS total_days,
+                         COALESCE(lb.used_balance, 0) AS used_days,
+                         COALESCE(lb.remaining_balance, lt.days_per_year) AS remaining_days
                   FROM ta_leave_balances lb
                   JOIN ta_leave_types lt ON lb.leave_type_id = lt.leave_type_id
                   WHERE lb.employee_id = :employee_id 
@@ -328,12 +436,87 @@ class Leave
         $query .= " ORDER BY lt.leave_type_name";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':employee_id', $employee_id, PDO::PARAM_INT);
+        $stmt->bindParam(':employee_id', $employee_id, PDO::PARAM_STR);
         if ($leave_type_id) {
             $stmt->bindParam(':leave_type_id', $leave_type_id, PDO::PARAM_INT);
         }
         $stmt->execute();
 
         return $leave_type_id ? $stmt->fetch(PDO::FETCH_ASSOC) : $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Get all leave type definitions.
+     */
+    public function getLeaveTypes()
+    {
+        $query = "SELECT * FROM ta_leave_types ORDER BY leave_type_name";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Provision default leave balances for a single employee.
+     */
+    public function provisionLeaveBalancesForEmployee($employee_id, $year = null)
+    {
+        $year = (int)($year ?? date('Y'));
+
+        $leaveTypes = $this->getLeaveTypes();
+        if (empty($leaveTypes)) {
+            return false;
+        }
+
+        $insertQuery = "INSERT INTO ta_leave_balances
+                        (employee_id, leave_type_id, year, opening_balance, used_balance, remaining_balance, notes, created_at, updated_at)
+                        VALUES
+                        (:employee_id, :leave_type_id, :year, :opening_balance, 0, :remaining_balance, :notes, NOW(), NOW())
+                        ON DUPLICATE KEY UPDATE leave_balance_id = leave_balance_id";
+        $insertStmt = $this->conn->prepare($insertQuery);
+
+        foreach ($leaveTypes as $type) {
+            $leaveTypeName = trim($type['leave_type_name'] ?? '');
+            $openingBalance = (float)($type['days_per_year'] ?? 0);
+            $notes = trim($type['description'] ?: $leaveTypeName . ' allocation');
+
+            if ($openingBalance <= 0) {
+                continue;
+            }
+
+            $insertStmt->execute([
+                ':employee_id' => $employee_id,
+                ':leave_type_id' => $type['leave_type_id'],
+                ':year' => $year,
+                ':opening_balance' => $openingBalance,
+                ':remaining_balance' => $openingBalance,
+                ':notes' => $notes,
+            ]);
+        }
+
+        return true;
+    }
+
+    /**
+     * Provision default leave balances for all active employees.
+     */
+    public function provisionLeaveBalancesForActiveEmployees($year = null)
+    {
+        $year = (int)($year ?? date('Y'));
+
+        $query = "SELECT employee_id FROM employees WHERE employment_status = 'Active'";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $count = 0;
+        foreach ($employees as $employee) {
+            if (!empty($employee['employee_id']) && $this->provisionLeaveBalancesForEmployee($employee['employee_id'], $year)) {
+                $count++;
+            }
+        }
+
+        return $count;
     }
 }

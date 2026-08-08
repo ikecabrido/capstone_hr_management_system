@@ -165,7 +165,7 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
                     <li class="nav-item">
                         <a href="leave_approvals.php" class="nav-link <?php echo $current_page === 'leave_approvals.php' ? 'active' : ''; ?>">
                             <i class="nav-icon fas fa-file-alt animation__wobble"></i>
-                            <p>Approve Leave Requests</p>
+                            <p>Leave Management</p>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -185,7 +185,7 @@ $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'EMPLOYEE';
                         <li class="nav-item">
                             <a href="leave_approvals.php" class="nav-link <?php echo $current_page === 'leave_approvals.php' ? 'active' : ''; ?>">
                                 <i class="nav-icon fas fa-file-alt animation__wobble"></i>
-                                <p>Approve Requests</p>
+                                <p>Leave Management</p>
                             </a>
                         </li>
                     <?php endif; ?>

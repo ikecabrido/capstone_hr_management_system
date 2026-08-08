@@ -69,9 +69,9 @@ if (!$leaveRequest) {
 }
 
 // Verify leave is in correct status for HR approval
-if ($action === 'APPROVE' && $leaveRequest['status'] !== 'APPROVED_BY_HEAD') {
+if ($action === 'APPROVE' && !in_array(strtoupper($leaveRequest['status']), ['APPROVED_BY_HEAD', 'PENDING'], true)) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Leave request must be approved by department head first']);
+    echo json_encode(['success' => false, 'message' => 'Leave request must be pending or approved by department head first']);
     exit;
 }
 

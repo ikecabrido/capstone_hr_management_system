@@ -50,17 +50,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_POST['date_hired'],
             $_POST['employment_status']
         ]);
-        $_SESSION['success'] = "Employee added successfully!";
+
+        if ($stmt->rowCount() > 0) {
+            // Grant default leave balances for the newly created employee.
+            require_once __DIR__ . '/../../time_attendance/app/models/Leave.php';
+            $leaveModel = new Leave();
+            $leaveModel->provisionLeaveBalancesForEmployee($_POST['employee_id']);
+            $_SESSION['success'] = "Employee created successfully!";
+        } else {
+            $_SESSION['error'] = "Failed to create employee.";
+        }
+
         header("Location: " . basename(__FILE__));
         exit;
     }
-    
-    if ($action === 'update' && $id) {
-        $stmt = $db->prepare("
-            UPDATE employees 
-            SET full_name = ?, address = ?, contact_number = ?, email = ?, department = ?, position = ?, date_hired = ?, employment_status = ?
-            WHERE employee_id = ?
-        ");
+
+    if ($action === 'edit' && $id) {
+        $stmt = $db->prepare("UPDATE employees SET full_name = ?, address = ?, contact_number = ?, email = ?, department = ?, position = ?, date_hired = ?, employment_status = ? WHERE employee_id = ?");
         $stmt->execute([
             $_POST['full_name'],
             $_POST['address'],
@@ -72,7 +78,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_POST['employment_status'],
             $id
         ]);
-        $_SESSION['success'] = "Employee updated successfully!";
+
+        if ($stmt->rowCount() > 0) {
+            $_SESSION['success'] = "Employee updated successfully!";
+        } else {
+            $_SESSION['error'] = "No changes were saved or employee not found.";
+        }
+
         header("Location: " . basename(__FILE__));
         exit;
     }

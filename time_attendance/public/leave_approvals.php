@@ -1,12 +1,15 @@
 <?php
 /**
- * Leave Approvals Page
- * Department heads and HR can review and approve leave requests
+ * Leave Management Page
+ * Department heads and HR can review leave requests and view employee leave balances
  */
 
 require_once "../app/controllers/AuthController.php";
+require_once "../app/controllers/LeaveController.php";
 require_once "../app/models/Leave.php";
+require_once "../app/models/Employee.php";
 require_once "../app/helpers/Helper.php";
+require_once "../app/helpers/LeaveAbsenceHelper.php";
 require_once "../app/core/Session.php";
 
 Session::start();
@@ -34,61 +37,112 @@ if (!$authenticated) {
     exit;
 }
 
-// Only 'time' role can access this page
-if ($role !== 'time') {
+// Only the time module approver roles can access this page
+if (!in_array($role, ['time', 'HR_ADMIN', 'DEPARTMENT_HEAD'], true)) {
     header("Location: employee_dashboard.php");
     exit;
 }
 
 $leaveModel = new Leave();
+$employeeModel = new Employee();
+$leaveController = new LeaveController();
 
 $message = "";
 $messageType = "";
+if (isset($_SESSION['flash_message'])) {
+    $message = $_SESSION['flash_message'];
+    $messageType = $_SESSION['flash_type'] ?? 'success';
+    unset($_SESSION['flash_message'], $_SESSION['flash_type']);
+}
+
+// Pagination settings
+$recordsPerPage = max(5, min(50, (int)($_REQUEST['employee_page_size'] ?? 10)));
+$employeePage = max(1, (int)($_REQUEST['employee_page'] ?? 1));
+$leavePage = max(1, (int)($_REQUEST['leave_page'] ?? 1));
+$employeeSearch = trim($_REQUEST['employee_search'] ?? '');
+
+$employeeOffset = ($employeePage - 1) * $recordsPerPage;
+$leaveOffset = ($leavePage - 1) * $recordsPerPage;
+
+// Load employee list for the management table
+$employees = $employeeModel->getAll('Active', $recordsPerPage, $employeeOffset, $employeeSearch);
+$totalEmployees = $employeeModel->getTotalCount('Active', $employeeSearch);
+$totalEmployeePages = max(1, (int)ceil($totalEmployees / $recordsPerPage));
+
+// Get pending requests based on role
+// Determine which leave requests to display based on approver role
+if ($role === 'DEPARTMENT_HEAD') {
+    $pendingRequests = $leaveModel->getPendingByDepartmentHead($user_id, $recordsPerPage, $leaveOffset);
+    $totalLeaveRequests = $leaveModel->countPendingByDepartmentHead($user_id);
+} else {
+    $pendingRequests = $leaveModel->getForHRApproval($recordsPerPage, $leaveOffset);
+    $totalLeaveRequests = $leaveModel->countForHRApproval();
+}
+
+$totalLeavePages = max(1, (int)ceil($totalLeaveRequests / $recordsPerPage));
+
+// Load leave balances for pending request rows to display alongside approvals
+$leaveBalances = [];
+foreach ($pendingRequests as $request) {
+    $balanceKey = $request['employee_id'] . '_' . $request['leave_type_id'];
+    if (!isset($leaveBalances[$balanceKey])) {
+        $leaveBalances[$balanceKey] = $leaveModel->getLeaveBalance($request['employee_id'], $request['leave_type_id']);
+    }
+}
+
+// Load balance availability for current employees in the employee management table
+$employeeBalances = [];
+foreach ($employees as $emp) {
+    $employeeBalances[$emp['employee_id']] = !empty($leaveModel->getLeaveBalance($emp['employee_id']));
+}
 
 // Handle approval/rejection
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $action = trim($_POST['action'] ?? '');
     $leave_request_id = (int)($_POST['leave_request_id'] ?? 0);
     $remarks = Helper::sanitize($_POST['remarks'] ?? '');
-    $is_hr = ($role === 'time');
+    $is_hr = in_array($role, ['time', 'HR_ADMIN'], true);
+    $is_department_head = $role === 'DEPARTMENT_HEAD';
+    $submittedEmployeePageSize = max(5, min(50, (int)($_POST['employee_page_size'] ?? $recordsPerPage)));
+    $submittedEmployeeSearch = trim($_POST['employee_search'] ?? $employeeSearch);
 
     // Debug logging
-    error_log("DEBUG: POST received - Action: $action, LeaveID: $leave_request_id, User: $user_id");
+    error_log("DEBUG: POST received - Action: $action, LeaveID: $leave_request_id, User: $user_id, Role: $role");
 
-    if ($action === 'approve' && $leave_request_id) {
-        $new_status = 'Approved';
-        error_log("DEBUG: Attempting to approve leave request ID: $leave_request_id");
-        if ($leaveModel->updateStatus($leave_request_id, $new_status, $user_id, $remarks)) {
-            error_log("DEBUG: Approval successful for leave ID: $leave_request_id");
-            $message = "Leave request approved successfully!";
-            $messageType = "success";
-            // Optionally refresh the list
-            header("Location: " . $_SERVER['PHP_SELF']);
+    if ($leave_request_id && $action === 'approve') {
+        $result = $leaveController->approve($leave_request_id, $user_id, $is_hr, $remarks);
+        if ($result['success']) {
+            $_SESSION['flash_message'] = "Leave request approved successfully!";
+            $_SESSION['flash_type'] = "success";
+            header("Location: " . $_SERVER['PHP_SELF'] . "?employee_page={$employeePage}&leave_page={$leavePage}&employee_page_size={$submittedEmployeePageSize}&employee_search=" . urlencode($submittedEmployeeSearch));
             exit;
-        } else {
-            error_log("DEBUG: Approval FAILED for leave ID: $leave_request_id");
-            $message = "Failed to process approval.";
-            $messageType = "error";
         }
-    } elseif ($action === 'reject' && $leave_request_id) {
-        if ($leaveModel->updateStatus($leave_request_id, 'Rejected', $user_id, $remarks)) {
-            $message = "Leave request rejected.";
-            $messageType = "warning";
+
+        $message = $result['message'] ?? 'Failed to process approval.';
+        $messageType = "error";
+    } elseif ($leave_request_id && $action === 'reject') {
+        if (empty($remarks)) {
+            $message = "Rejection reason is required.";
+            $messageType = "error";
         } else {
-            $message = "Failed to process rejection.";
+            $result = $leaveController->reject($leave_request_id, $user_id, $remarks);
+            if ($result['success']) {
+                $_SESSION['flash_message'] = "Leave request rejected.";
+                $_SESSION['flash_type'] = "warning";
+                header("Location: " . $_SERVER['PHP_SELF'] . "?employee_page={$employeePage}&leave_page={$leavePage}&employee_page_size={$submittedEmployeePageSize}&employee_search=" . urlencode($submittedEmployeeSearch));
+                exit;
+            }
+            $message = $result['message'] ?? 'Failed to process rejection.';
             $messageType = "error";
         }
     }
 }
 
-// Get pending requests based on role
-// All 'time' role users see all pending and head-approved requests
-$pendingRequests = $leaveModel->getForHRApproval();
 
 $current_page = 'leave_approvals.php';
 $current_role = $_SESSION['user']['role'] ?? $_SESSION['role'] ?? 'time';
-$page_title = 'Leave Request Approvals';
-$page_subtitle = 'Review and approve leave requests from department heads and employees';
+$page_title = 'Leave Management';
+$page_subtitle = 'Review requests and view employee leave balances in one place';
 $page_icon = 'fa-file-signature';
 $page_head_extra = "<link rel=\"icon\" href=\"../Bestlink College of the Philippines.jpeg\" type=\"image/jpeg\">\n<link rel=\"stylesheet\" href=\"../../assets/dist/css/adminlte.min.css\">\n<link rel=\"stylesheet\" href=\"../../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css\">\n<link rel=\"stylesheet\" href=\"../assets/style.css\">\n<link rel=\"stylesheet\" href=\"../assets/dashboard.css\">\n<link rel=\"stylesheet\" href=\"../assets/adminlte-overrides.css\">\n<link rel=\"stylesheet\" href=\"../assets/hr-template.css\">\n<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback\">\n<script src=\"../assets/mobile-responsive.js\" defer></script>";
 ?>
@@ -193,12 +247,12 @@ $page_head_extra = "<link rel=\"icon\" href=\"../Bestlink College of the Philipp
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
         .btn-approve {
-            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            background: linear-gradient(135deg, #1e90ff 0%, #0066cc 100%);
             color: white;
-            border: 1px solid #229954;
+            border: 1px solid #005bb5;
         }
         .btn-approve:hover {
-            background: linear-gradient(135deg, #229954 0%, #1e8449 100%);
+            background: linear-gradient(135deg, #005bb5 0%, #004494 100%);
         }
         .btn-reject {
             background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
@@ -391,13 +445,83 @@ $page_head_extra = "<link rel=\"icon\" href=\"../Bestlink College of the Philipp
         <?php endif; ?>
 
         <div class="card-body">
+            <div class="section-header">
+                <h4>Employee Leave Balances</h4>
+                <p>Click an employee to view their remaining leave balances.</p>
+            </div>
+            <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap" style="gap: 10px;">
+                <form method="GET" class="d-flex flex-wrap" style="gap: 10px; align-items: center; margin: 0;">
+                    <input type="hidden" name="leave_page" value="<?php echo $leavePage; ?>">
+                    <input type="hidden" name="employee_page_size" value="<?php echo $recordsPerPage; ?>">
+                    <input type="text" name="employee_search" class="form-control" placeholder="Search employees..." value="<?php echo htmlspecialchars($employeeSearch); ?>" style="min-width:240px;">
+                    <button type="submit" class="action-btn btn-approve" style="padding: 10px 18px;">Search</button>
+                    <a href="leave_approvals.php?employee_page_size=<?php echo $recordsPerPage; ?>&leave_page=<?php echo $leavePage; ?>&employee_search=" class="action-btn" style="background: #ffffff; color: #0066cc; padding: 10px 18px; border: 1px solid #cce4ff;">Clear</a>
+                </form>
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap: wrap;">
+                    <label for="employeePageSize" style="margin:0; font-weight:600;">Page size:</label>
+                    <select id="employeePageSize" class="form-control" onchange="changeEmployeePageSize(this.value)" style="min-width:100px;">
+                        <?php foreach ([5, 10, 15, 20, 30] as $size): ?>
+                            <option value="<?php echo $size; ?>" <?php echo $recordsPerPage === $size ? 'selected' : ''; ?>><?php echo $size; ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <button class="action-btn btn-approve" type="button" onclick="provisionLeaveBalances()" style="padding: 10px 18px;">Provision Balances for All Active Employees</button>
+                </div>
+            </div>
+            <?php if (empty($employees)): ?>
+                <div class="alert alert-info mb-4">
+                    No employees found.
+                </div>
+            <?php else: ?>
+                <div class="table-responsive mb-4">
+                    <table class="approvals-table employee-table">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Department</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($employees as $emp): ?>
+                                <tr>
+                                    <td><?php echo htmlspecialchars($emp['full_name']); ?></td>
+                                    <td>
+                                    <?php echo htmlspecialchars($emp['department'] ?? 'N/A'); ?>
+                                    <?php if (empty($employeeBalances[$emp['employee_id']])): ?>
+                                        <span class="badge badge-warning" style="margin-left: 10px; font-size: 12px;">No balances yet</span>
+                                    <?php endif; ?>
+                                </td>
+                                    <td>
+                                        <button class="action-btn btn-approve balance-button" type="button" data-employee-id="<?php echo htmlspecialchars($emp['employee_id'], ENT_QUOTES, 'UTF-8'); ?>" data-full-name="<?php echo htmlspecialchars($emp['full_name'], ENT_QUOTES, 'UTF-8'); ?>">View Balance</button>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination mb-4">
+                    <?php if ($employeePage > 1): ?>
+                        <a href="?employee_page=<?php echo $employeePage - 1; ?>&leave_page=<?php echo $leavePage; ?>&employee_page_size=<?php echo $recordsPerPage; ?>&employee_search=<?php echo urlencode($employeeSearch); ?>">&laquo; Previous</a>
+                    <?php endif; ?>
+                    <span class="active">Employee Page <?php echo $employeePage; ?> of <?php echo $totalEmployeePages; ?></span>
+                    <?php if ($employeePage < $totalEmployeePages): ?>
+                        <a href="?employee_page=<?php echo $employeePage + 1; ?>&leave_page=<?php echo $leavePage; ?>&employee_page_size=<?php echo $recordsPerPage; ?>&employee_search=<?php echo urlencode($employeeSearch); ?>">Next &raquo;</a>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+
+            <div class="section-header">
+                <h4>Pending Leave Requests</h4>
+                <p>Review request approvals alongside employee leave balances.</p>
+            </div>
+
             <?php if (empty($pendingRequests)): ?>
                 <div class="alert alert-info mb-0">
                     No pending leave requests to review.
                 </div>
             <?php else: ?>
                 <div class="table-responsive">
-                    <table class="approvals-table">
+                    <table class="approvals-table" id="leaveApprovalTable">
                         <thead>
                             <tr>
                                 <th>Employee</th>
@@ -405,31 +529,53 @@ $page_head_extra = "<link rel=\"icon\" href=\"../Bestlink College of the Philipp
                                 <th>Start Date</th>
                                 <th>End Date</th>
                                 <th>Days</th>
+                                <th>Balance</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($pendingRequests as $req): ?>
+                                <?php $balanceKey = $req['employee_id'] . '_' . $req['leave_type_id'];
+                                      $balance = $leaveBalances[$balanceKey] ?? null;
+                                ?>
                                 <tr>
                                     <td><?php echo htmlspecialchars($req['full_name']); ?></td>
                                     <td><?php echo htmlspecialchars($req['leave_type_name']); ?></td>
                                     <td><?php echo Helper::formatDate($req['start_date']); ?></td>
                                     <td><?php echo Helper::formatDate($req['end_date']); ?></td>
-                                    <td><?php echo $req['total_days']; ?></td>
+                                    <td><?php echo rtrim(rtrim(number_format($req['total_days'], 2), '0'), '.'); ?></td>
                                     <td>
-                                        <span class="status-badge <?php echo $req['status'] === 'PENDING' ? 'badge-pending' : 'badge-approved'; ?>">
-                                            <?php echo $req['status']; ?>
-                                        </span>
+                                        <?php if ($balance): ?>
+                                            <span title="Used / Total">
+                                                <?php echo rtrim(rtrim(number_format($balance['remaining_days'], 2), '0'), '.'); ?> left of <?php echo rtrim(rtrim(number_format($balance['total_days'], 2), '0'), '.'); ?>
+                                            </span>
+                                            <br>
+                                            <small class="text-muted"><?php echo rtrim(rtrim(number_format($balance['used_days'], 2), '0'), '.'); ?> used</small>
+                                        <?php else: ?>
+                                            <span class="text-muted">No balance record</span>
+                                        <?php endif; ?>
                                     </td>
                                     <td>
-                                        <button class="action-btn btn-approve" onclick="openApproveModal(<?php echo intval($req['id']); ?>)">Approve</button>
-                                        <button class="action-btn btn-reject" onclick="openRejectModal(<?php echo intval($req['id']); ?>)">Reject</button>
+                                        <?php echo LeaveAbsenceHelper::getLeaveStatusBadge($req['status']); ?>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="action-btn btn-approve approve-request-btn" data-request-id="<?php echo intval($req['id']); ?>">Approve</button>
+                                        <button type="button" class="action-btn btn-reject reject-request-btn" data-request-id="<?php echo intval($req['id']); ?>">Reject</button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                </div>
+                <div class="pagination">
+                    <?php if ($leavePage > 1): ?>
+                        <a href="?leave_page=<?php echo $leavePage - 1; ?>&employee_page=<?php echo $employeePage; ?>&employee_page_size=<?php echo $recordsPerPage; ?>&employee_search=<?php echo urlencode($employeeSearch); ?>">&laquo; Previous</a>
+                    <?php endif; ?>
+                    <span class="active">Leave Page <?php echo $leavePage; ?> of <?php echo $totalLeavePages; ?></span>
+                    <?php if ($leavePage < $totalLeavePages): ?>
+                        <a href="?leave_page=<?php echo $leavePage + 1; ?>&employee_page=<?php echo $employeePage; ?>&employee_page_size=<?php echo $recordsPerPage; ?>&employee_search=<?php echo urlencode($employeeSearch); ?>">Next &raquo;</a>
+                    <?php endif; ?>
                 </div>
             <?php endif; ?>
         </div>
@@ -440,9 +586,13 @@ $page_head_extra = "<link rel=\"icon\" href=\"../Bestlink College of the Philipp
         <div class="modal-content">
             <span class="modal-close" onclick="closeModal('approveModal')">&times;</span>
             <h3>Approve Leave Request</h3>
-            <form method="POST">
+            <form id="approveForm" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8'); ?>" method="POST">
                 <input type="hidden" name="action" value="approve">
                 <input type="hidden" name="leave_request_id" id="approveRequestId">
+                <input type="hidden" name="employee_page" value="<?php echo $employeePage; ?>">
+                <input type="hidden" name="leave_page" value="<?php echo $leavePage; ?>">
+                <input type="hidden" name="employee_page_size" value="<?php echo $recordsPerPage; ?>">
+                <input type="hidden" name="employee_search" value="<?php echo htmlspecialchars($employeeSearch, ENT_QUOTES, 'UTF-8'); ?>">
                 <div style="margin: 15px 0;">
                     <label>Remarks (optional):</label>
                     <textarea name="remarks"></textarea>
@@ -458,9 +608,13 @@ $page_head_extra = "<link rel=\"icon\" href=\"../Bestlink College of the Philipp
         <div class="modal-content">
             <span class="modal-close" onclick="closeModal('rejectModal')">&times;</span>
             <h3>Reject Leave Request</h3>
-            <form method="POST">
+            <form id="rejectForm" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8'); ?>" method="POST">
                 <input type="hidden" name="action" value="reject">
                 <input type="hidden" name="leave_request_id" id="rejectRequestId">
+                <input type="hidden" name="employee_page" value="<?php echo $employeePage; ?>">
+                <input type="hidden" name="leave_page" value="<?php echo $leavePage; ?>">
+                <input type="hidden" name="employee_page_size" value="<?php echo $recordsPerPage; ?>">
+                <input type="hidden" name="employee_search" value="<?php echo htmlspecialchars($employeeSearch, ENT_QUOTES, 'UTF-8'); ?>">
                 <div style="margin: 15px 0;">
                     <label>Rejection Reason:</label>
                     <textarea name="remarks" required></textarea>
@@ -471,25 +625,216 @@ $page_head_extra = "<link rel=\"icon\" href=\"../Bestlink College of the Philipp
         </div>
     </div>
 
+    <!-- Employee Balance Modal -->
+    <div id="balanceModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal('balanceModal')">&times;</span>
+            <h3 id="balanceModalTitle">Employee Leave Balances</h3>
+            <div id="balanceModalBody">
+                <p>Loading leave balances...</p>
+            </div>
+            <div class="modal-button-group">
+                <button type="button" class="action-btn" onclick="closeModal('balanceModal')" style="background: #95a5a6;">Close</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        console.log('leave approvals script loaded');
         function openApproveModal(requestId) {
+            console.log('openApproveModal', requestId);
             document.getElementById('approveRequestId').value = requestId;
             document.getElementById('approveModal').classList.add('active');
         }
 
         function openRejectModal(requestId) {
+            console.log('openRejectModal', requestId);
             document.getElementById('rejectRequestId').value = requestId;
             document.getElementById('rejectModal').classList.add('active');
+        }
+
+        function formatLeaveDays(value) {
+            var num = parseFloat(value);
+            if (!Number.isFinite(num)) {
+                return '';
+            }
+            return num % 1 === 0 ? num.toString() : num.toFixed(2).replace(/\.0+$/, '');
+        }
+
+        function openBalanceModal(employeeId, fullName) {
+            const modal = document.getElementById('balanceModal');
+            const body = document.getElementById('balanceModalBody');
+            const title = document.getElementById('balanceModalTitle');
+
+            title.textContent = fullName + ' — Leave Balances';
+            body.innerHTML = '<p>Loading leave balances...</p>';
+            modal.classList.add('active');
+
+            var balanceApiUrl = '<?php echo dirname($_SERVER['SCRIPT_NAME']); ?>/../app/api/get_leave_balance.php';
+            fetch(balanceApiUrl + '?employee_id=' + encodeURIComponent(employeeId))
+                .then(function(response) {
+                    if (!response.ok) {
+                        return response.text().then(function(text) {
+                            body.innerHTML = '<p class="text-danger">Unable to load leave balances. Server returned ' + response.status + '.</p>';
+                            throw new Error('HTTP ' + response.status + ': ' + text);
+                        });
+                    }
+
+                    return response.json().then(function(data) {
+                        return { status: response.status, body: data };
+                    });
+                })
+                .then(function(result) {
+                    var data = result.body;
+                    if (!data.success) {
+                        body.innerHTML = '<p class="text-danger">' + (data.message || 'Unable to load leave balances.') + '</p>';
+                        return;
+                    }
+
+                    var balances = data.data;
+                    if (!balances || balances.length === 0) {
+                        body.innerHTML = '<p>No leave balances available for this employee.</p>';
+                        return;
+                    }
+
+                    var rows = balances.map(function(balance) {
+                        return '<tr>' +
+                               '<td>' + (balance.leave_type_name || '') + '</td>' +
+                               '<td>' + formatLeaveDays(balance.total_days) + '</td>' +
+                               '<td>' + formatLeaveDays(balance.used_days) + '</td>' +
+                               '<td>' + formatLeaveDays(balance.remaining_days) + '</td>' +
+                               '</tr>';
+                    }).join('');
+
+                    body.innerHTML = '<div class="table-responsive">' +
+                                     '<table class="approvals-table">' +
+                                     '<thead><tr>' +
+                                     '<th>Leave Type</th>' +
+                                     '<th>Total Days</th>' +
+                                     '<th>Used</th>' +
+                                     '<th>Remaining</th>' +
+                                     '</tr></thead>' +
+                                     '<tbody>' + rows + '</tbody>' +
+                                     '</table></div>';
+                })
+                .catch(function() {
+                    body.innerHTML = '<p class="text-danger">Unable to load leave balances at this time.</p>';
+                });
+        }
+
+        function debounce(fn, delay) {
+            var timer;
+            return function() {
+                var context = this, args = arguments;
+                clearTimeout(timer);
+                timer = setTimeout(function() {
+                    fn.apply(context, args);
+                }, delay);
+            };
+        }
+
+        function attachLiveSearch() {
+            var searchInput = document.querySelector('input[name="employee_search"]');
+            if (!searchInput) return;
+
+            searchInput.addEventListener('input', debounce(function() {
+                var form = this.closest('form');
+                if (!form) return;
+                var url = new URL(window.location.href);
+                url.searchParams.set('employee_search', this.value);
+                url.searchParams.set('employee_page', 1);
+                url.searchParams.set('leave_page', '<?php echo $leavePage; ?>');
+                url.searchParams.set('employee_page_size', '<?php echo $recordsPerPage; ?>');
+                window.location.href = url.toString();
+            }, 300));
         }
 
         function closeModal(modalId) {
             document.getElementById(modalId).classList.remove('active');
         }
 
+        document.addEventListener('DOMContentLoaded', function() {
+            var balanceButtons = document.querySelectorAll('.balance-button');
+            balanceButtons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    openBalanceModal(this.dataset.employeeId, this.dataset.fullName);
+                });
+            });
+            var approveButtons = document.querySelectorAll('.approve-request-btn');
+            approveButtons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    openApproveModal(this.dataset.requestId);
+                });
+            });
+            var rejectButtons = document.querySelectorAll('.reject-request-btn');
+            rejectButtons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    openRejectModal(this.dataset.requestId);
+                });
+            });
+            var approveForm = document.getElementById('approveForm');
+            if (approveForm) {
+                approveForm.addEventListener('submit', function() {
+                    console.log('approveForm submitted');
+                });
+            }
+            var rejectForm = document.getElementById('rejectForm');
+            if (rejectForm) {
+                rejectForm.addEventListener('submit', function() {
+                    console.log('rejectForm submitted');
+                });
+            }
+            attachLiveSearch();
+        });
+
         window.onclick = function(event) {
             if (event.target.classList.contains('modal')) {
                 event.target.classList.remove('active');
             }
+        }
+
+        function changeEmployeePageSize(pageSize) {
+            const searchValue = document.querySelector('input[name="employee_search"]').value;
+            const url = new URL(window.location.href);
+            url.searchParams.set('employee_page_size', pageSize);
+            url.searchParams.set('employee_page', 1);
+            url.searchParams.set('leave_page', '<?php echo $leavePage; ?>');
+            url.searchParams.set('employee_search', searchValue || '');
+            window.location.href = url.toString();
+        }
+
+        function provisionLeaveBalances() {
+            if (!confirm('Provision leave balances for all active employees now?')) {
+                return;
+            }
+
+            var provisionUrl = '<?php echo dirname($_SERVER['SCRIPT_NAME']); ?>/../app/api/provision_leave_balances.php';
+            fetch(provisionUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ year: new Date().getFullYear() })
+            })
+            .then(function(response) {
+                return response.json().then(function(data) {
+                    if (!response.ok) {
+                        throw new Error(data.message || 'Request failed');
+                    }
+                    return data;
+                });
+            })
+            .then(function(data) {
+                if (data.success) {
+                    alert('Leave balances provisioned for ' + data.employees_processed + ' active employees for ' + data.year + '.');
+                    window.location.reload();
+                } else {
+                    alert('Provisioning failed: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(function(error) {
+                alert('Unable to provision leave balances. ' + error.message);
+            });
         }
 
         // Load dark mode preference (default to light mode for time_attendance)

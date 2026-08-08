@@ -206,32 +206,87 @@ class Helper
     }
 
     /**
-     * Calculate leave days between two dates, excluding Sundays
-     * 
+     * Calculate leave days between two dates, excluding Sundays and optional holidays.
+     *
      * @param string $start_date YYYY-MM-DD
      * @param string $end_date YYYY-MM-DD
+     * @param array $holidays Optional array of holiday dates to check against
      * @return int Number of working days
      */
-    public static function calculateWorkingDays($start_date, $end_date)
+    public static function calculateWorkingDays($start_date, $end_date, $holidays = [])
     {
-        $start = strtotime($start_date);
-        $end = strtotime($end_date);
-        $working_days = 0;
+        if (empty($start_date) || empty($end_date)) {
+            return 0;
+        }
 
-        while ($start <= $end) {
-            // 0 = Sunday, skip it
-            if (date('w', $start) != 0) {
+        try {
+            $start = new DateTime($start_date);
+            $end = new DateTime($end_date);
+        } catch (Exception $e) {
+            error_log("calculateWorkingDays error: " . $e->getMessage());
+            return 0;
+        }
+
+        $start->setTime(0, 0, 0);
+        $end->setTime(0, 0, 0);
+
+        if ($start > $end) {
+            return 0;
+        }
+
+        $working_days = 0;
+        $normalizedHolidays = array_map(function ($holiday) {
+            return date('Y-m-d', strtotime($holiday));
+        }, $holidays);
+
+        $current = clone $start;
+        while ($current <= $end) {
+            $dateString = $current->format('Y-m-d');
+            if (!self::isNonWorkingDay($dateString, $normalizedHolidays)) {
                 $working_days++;
             }
-            $start = strtotime('+1 day', $start);
+            $current->modify('+1 day');
         }
 
         return $working_days;
     }
 
     /**
+     * Validate leave request dates and calculate the number of working days.
+     *
+     * @param string $start_date YYYY-MM-DD
+     * @param string $end_date YYYY-MM-DD
+     * @param array $holidays Optional array of holiday dates to check against
+     * @return array ['valid' => bool, 'message' => string, 'total_days' => int]
+     */
+    public static function validateLeaveRequestDates($start_date, $end_date, $holidays = [])
+    {
+        if (empty($start_date) || empty($end_date)) {
+            return ['valid' => false, 'message' => 'Start date and end date are required', 'total_days' => 0];
+        }
+
+        try {
+            $start = new DateTime($start_date);
+            $end = new DateTime($end_date);
+        } catch (Exception $e) {
+            return ['valid' => false, 'message' => 'Invalid date format', 'total_days' => 0];
+        }
+
+        if ($start > $end) {
+            return ['valid' => false, 'message' => 'End date must be on or after the start date', 'total_days' => 0];
+        }
+
+        $total_days = self::calculateWorkingDays($start_date, $end_date, $holidays);
+        if ($total_days < 1) {
+            return ['valid' => false, 'message' => 'Leave must cover at least one working day', 'total_days' => 0];
+        }
+
+        return ['valid' => true, 'message' => '', 'total_days' => $total_days];
+    }
+
+    /**
      * Check if a given date is a Sunday or holiday
-     * 
+     *
      * @param string $date YYYY-MM-DD
      * @param array $holidays Optional array of holiday dates to check against
      * @return bool True if date is Sunday or in holidays array
@@ -239,7 +294,7 @@ class Helper
     public static function isNonWorkingDay($date, $holidays = [])
     {
         $day_of_week = date('w', strtotime($date));
-        
+
         // 0 = Sunday
         if ($day_of_week == 0) {
             return true;
