@@ -3312,6 +3312,7 @@ function getAutomatedArchiveReason() {
 
 // Action functions
 function archiveResignation(id) {
+    console.log('[archiveResignation] clicked, id=', id);
     // Get resignation data first
     $.post('exit_management.php', {
         ajax_action: 'get_resignation_details',
@@ -3326,12 +3327,17 @@ function archiveResignation(id) {
             $('#archiveReason').val(getAutomatedArchiveReason());
             $('#archiveNotes').val('');
 
-            // Show modal
-            $('#archiveResignationModal').modal('show');
+            // Ensure modal is appended to body and show it
+            $('#archiveResignationModal').appendTo('body').modal('show');
+            console.log('[archiveResignation] modal shown for id=', id);
         } else {
             showToast('error', 'Failed to load resignation details');
+            console.error('[archiveResignation] failed to load details', response);
         }
-    }, 'json');
+    }, 'json').fail(function(xhr, status, err) {
+        showToast('error', 'Failed to load resignation details');
+        console.error('[archiveResignation] AJAX error', status, err, xhr.responseText);
+    });
 }
 
 // Open archived resignations in a modal (used by Archive header button)

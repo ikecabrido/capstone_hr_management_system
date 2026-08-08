@@ -211,7 +211,7 @@ class ResignationController extends ExitManagementController
                     'success' => true,
                     'data' => [
                         'id' => $resignation['id'],
-                        'employee_id' => $resignation['employee_id'],
+                        'employee_id' => $resignation['emp_id'],
                         'employee_name' => $resignation['employee_name'],
                         'resignation_type' => $resignation['resignation_type'],
                         'reason' => $resignation['reason']

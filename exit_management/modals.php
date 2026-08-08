@@ -1143,6 +1143,57 @@
         </div>
     </div>
 </div>
+ 
+<!-- Archived Resignations Modal -->
+<div class="modal fade exit-modal" id="archivedResignationsModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">Archived Resignations</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered table-striped table-sm">
+                    <colgroup>
+                        <col style="width: 15%;">
+                        <col style="width: 8%;">
+                        <col style="width: 14%;">
+                        <col style="width: 10%;">
+                        <col style="width: 11%;">
+                        <col style="width: 8%;">
+                        <col style="width: 10%;">
+                        <col style="width: 8%;">
+                        <col style="width: 10%;">
+                        <col style="width: 6%;">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Department</th>
+                            <th>Email</th>
+                            <th>Position</th>
+                            <th>Reason</th>
+                            <th>Notice Date</th>
+                            <th>Last Working Date</th>
+                            <th>Comments</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modal-archived-resignations-tbody">
+                        <tr><td colspan="10" class="text-center text-muted">Loading archived resignations...</td></tr>
+                    </tbody>
+                </table>
+                <div id="modal-archived-resignations-pagination" class="mt-2 d-flex justify-content-end"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Archived Settlements Modal -->
 <div class="modal fade exit-modal" id="archivedSettlementsModal" tabindex="-1" role="dialog">
