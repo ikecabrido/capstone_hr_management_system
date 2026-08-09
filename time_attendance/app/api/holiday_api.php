@@ -6,8 +6,7 @@ ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 
 session_start();
-require_once "../../../auth/auth_check.php";
-require_once "../../../auth/database.php";
+require_once __DIR__ . '/../config/Database.php';
 
 // Auto-load classes FIRST
 spl_autoload_register(function ($class) {
@@ -19,7 +18,6 @@ spl_autoload_register(function ($class) {
 });
 
 // Require controller directly
-require_once "../../../auth/database.php";
 require_once "../controllers/HolidayController.php";
 require_once "../models/Holiday.php";
 require_once "../services/NagerDateService.php";

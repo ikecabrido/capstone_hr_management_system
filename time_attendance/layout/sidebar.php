@@ -63,7 +63,7 @@ $roleLabel = $current_role === 'time' ? 'HR' : 'User';
         <li class="nav-item">
           <a href="shifts.php" class="nav-link <?= $current_page === 'shifts.php' ? 'active' : '' ?>">
             <i class="nav-icon fas fa-clock"></i>
-            <p>Manage Shifts</p>
+            <p>Shift Management</p>
           </a>
         </li>
         <li class="nav-item">

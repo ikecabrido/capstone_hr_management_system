@@ -7,11 +7,21 @@ class Database
     private $username = "root";
     private $password = "";
     private $conn;
+    private static $instance = null;
 
     public function __construct()
     {
         // Determine the correct host based on where the request came from
         $this->host = $this->getServerHost();
+    }
+
+    public static function getInstance()
+    {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+
+        return self::$instance;
     }
 
     private function getServerHost()

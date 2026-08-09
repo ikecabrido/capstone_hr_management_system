@@ -1,0 +1,535 @@
+2026-08-09 18:46:18 [DIAG] 1 First line of PHP execution
+2026-08-09 18:46:18 [DIAG] 2 After Session::start
+2026-08-09 18:46:18 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 18:46:18 [DIAG] 4 Before Database::getInstance
+2026-08-09 18:46:18 [DIAG] 5 After Database::getConnection
+2026-08-09 18:46:18 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 18:46:18 [DIAG] ShiftController::__construct start
+2026-08-09 18:46:18 [DIAG] ShiftController::__construct end
+2026-08-09 18:46:18 [DIAG] 7 After ShiftController->__construct
+2026-08-09 18:46:18 [DIAG] 8 Before getAllShifts()
+2026-08-09 18:46:18 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 18:46:18 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 18:46:18 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 18:46:18 [DIAG] 12 Before page_start.php
+2026-08-09 18:46:18 [DIAG] 13 After page_start.php
+2026-08-09 18:46:18 [DIAG] 14 Before main Shift Management HTML
+2026-08-09 18:46:18 [DIAG] 15 At end of page
+2026-08-09 18:46:18 [DIAG] 15a After content_footer.php
+2026-08-09 18:46:18 [DIAG] 15b After page_end.php
+2026-08-09 18:47:58 [DIAG] 1 First line of PHP execution
+2026-08-09 18:47:58 [DIAG] 2 After Session::start
+2026-08-09 18:47:58 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 18:47:58 [DIAG] 4 Before Database::getInstance
+2026-08-09 18:47:58 [DIAG] 5 After Database::getConnection
+2026-08-09 18:47:58 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 18:47:58 [DIAG] ShiftController::__construct start
+2026-08-09 18:47:58 [DIAG] ShiftController::__construct end
+2026-08-09 18:47:58 [DIAG] 7 After ShiftController->__construct
+2026-08-09 18:47:58 [DIAG] 8 Before getAllShifts()
+2026-08-09 18:47:58 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 18:47:58 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 18:47:58 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 18:47:58 [DIAG] 12 Before page_start.php
+2026-08-09 18:47:58 [DIAG] 13 After page_start.php
+2026-08-09 18:47:58 [DIAG] 14 Before main Shift Management HTML
+2026-08-09 18:47:58 [DIAG] 15 At end of page
+2026-08-09 18:47:58 [DIAG] 15a After content_footer.php
+2026-08-09 18:47:58 [DIAG] 15b After page_end.php
+2026-08-09 18:48:34 [DIAG] 1 First line of PHP execution
+2026-08-09 18:48:34 [DIAG] 2 After Session::start
+2026-08-09 18:48:34 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 18:48:34 [DIAG] 4 Before Database::getInstance
+2026-08-09 18:48:34 [DIAG] 5 After Database::getConnection
+2026-08-09 18:48:34 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 18:48:34 [DIAG] ShiftController::__construct start
+2026-08-09 18:48:34 [DIAG] ShiftController::__construct end
+2026-08-09 18:48:34 [DIAG] 7 After ShiftController->__construct
+2026-08-09 18:48:34 [DIAG] 8 Before getAllShifts()
+2026-08-09 18:48:34 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 18:48:34 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 18:48:34 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 18:48:34 [DIAG] 12 Before page_start.php
+2026-08-09 18:48:34 [DIAG] 13 After page_start.php
+2026-08-09 18:48:34 [DIAG] 14 Before main Shift Management HTML
+2026-08-09 18:48:34 [DIAG] 15 At end of page
+2026-08-09 18:48:34 [DIAG] 15a After content_footer.php
+2026-08-09 18:48:34 [DIAG] 15b After page_end.php
+2026-08-09 18:55:38 [DIAG] 1 First line of PHP execution
+2026-08-09 18:55:38 [DIAG] 2 After Session::start
+2026-08-09 18:55:38 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 18:55:38 [DIAG] 4 Before Database::getInstance
+2026-08-09 18:55:38 [DIAG] 5 After Database::getConnection
+2026-08-09 18:55:38 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 18:55:38 [DIAG] ShiftController::__construct start
+2026-08-09 18:55:38 [DIAG] ShiftController::__construct end
+2026-08-09 18:55:38 [DIAG] 7 After ShiftController->__construct
+2026-08-09 18:55:38 [DIAG] 8 Before getAllShifts()
+2026-08-09 18:55:38 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 18:55:38 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 18:55:38 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 18:55:38 [DIAG] 12 Before page_start.php
+2026-08-09 18:55:38 [DIAG] 13 After page_start.php
+2026-08-09 18:55:38 [DIAG] 14 Before main Shift Management HTML
+2026-08-09 18:55:38 [DIAG] 15 At end of page
+2026-08-09 18:55:38 [DIAG] 15a After content_footer.php
+2026-08-09 18:55:38 [DIAG] 15b After page_end.php
+2026-08-09 19:25:20 [DIAG] 1 First line of PHP execution
+2026-08-09 19:25:20 [DIAG] 2 After Session::start
+2026-08-09 19:25:20 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 19:25:20 [DIAG] 4 Before Database::getInstance
+2026-08-09 19:25:20 [DIAG] 5 After Database::getConnection
+2026-08-09 19:25:20 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 19:25:20 [DIAG] ShiftController::__construct start
+2026-08-09 19:25:20 [DIAG] ShiftController::__construct end
+2026-08-09 19:25:20 [DIAG] 7 After ShiftController->__construct
+2026-08-09 19:25:20 [DIAG] 8 Before getAllShifts()
+2026-08-09 19:25:20 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 19:25:20 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 19:25:20 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 19:25:20 [DIAG] 15 At end of page
+2026-08-09 19:25:20 [DIAG] 15a After content_footer.php
+2026-08-09 19:25:20 [DIAG] 15b After page_end.php
+2026-08-09 19:26:46 [DIAG] 1 First line of PHP execution
+2026-08-09 19:26:46 [DIAG] 2 After Session::start
+2026-08-09 19:26:46 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 19:26:46 [DIAG] 4 Before Database::getInstance
+2026-08-09 19:26:46 [DIAG] 5 After Database::getConnection
+2026-08-09 19:26:46 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 19:26:46 [DIAG] ShiftController::__construct start
+2026-08-09 19:26:46 [DIAG] ShiftController::__construct end
+2026-08-09 19:26:46 [DIAG] 7 After ShiftController->__construct
+2026-08-09 19:26:46 [DIAG] 8 Before getAllShifts()
+2026-08-09 19:26:46 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 19:26:46 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 19:26:46 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 19:26:46 [DIAG] 15 At end of page
+2026-08-09 19:26:46 [DIAG] 15a After content_footer.php
+2026-08-09 19:26:46 [DIAG] 15b After page_end.php
+2026-08-09 19:30:43 [DIAG] 1 First line of PHP execution
+2026-08-09 19:30:44 [DIAG] 2 After Session::start
+2026-08-09 19:30:44 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=0
+2026-08-09 19:30:44 [DIAG] 3a Not authenticated: redirecting to login
+2026-08-09 19:34:27 [DIAG] 1 First line of PHP execution
+2026-08-09 19:34:27 [DIAG] 2 After Session::start
+2026-08-09 19:34:27 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 19:34:27 [DIAG] 4 Before Database::getInstance
+2026-08-09 19:34:27 [DIAG] 5 After Database::getConnection
+2026-08-09 19:34:27 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 19:34:27 [DIAG] ShiftController::__construct start
+2026-08-09 19:34:27 [DIAG] ShiftController::__construct end
+2026-08-09 19:34:27 [DIAG] 7 After ShiftController->__construct
+2026-08-09 19:34:27 [DIAG] 8 Before getAllShifts()
+2026-08-09 19:34:27 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 19:34:27 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 19:34:27 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 19:34:27 [DIAG] 15 At end of page
+2026-08-09 19:34:27 [DIAG] 15a After content_footer.php
+2026-08-09 19:34:27 [DIAG] 15b After page_end.php
+2026-08-09 19:35:00 [DIAG] 1 First line of PHP execution
+2026-08-09 19:35:00 [DIAG] 2 After Session::start
+2026-08-09 19:35:00 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 19:35:00 [DIAG] 4 Before Database::getInstance
+2026-08-09 19:35:00 [DIAG] 5 After Database::getConnection
+2026-08-09 19:35:00 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 19:35:00 [DIAG] ShiftController::__construct start
+2026-08-09 19:35:00 [DIAG] ShiftController::__construct end
+2026-08-09 19:35:00 [DIAG] 7 After ShiftController->__construct
+2026-08-09 19:35:00 [DIAG] 8 Before getAllShifts()
+2026-08-09 19:35:00 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 19:35:00 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 19:35:00 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 19:35:00 [DIAG] 15 At end of page
+2026-08-09 19:35:00 [DIAG] 15a After content_footer.php
+2026-08-09 19:35:00 [DIAG] 15b After page_end.php
+2026-08-09 19:43:17 [DIAG] 1 First line of PHP execution
+2026-08-09 19:43:17 [DIAG] 2 After Session::start
+2026-08-09 19:43:17 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 19:43:17 [DIAG] 4 Before Database::getInstance
+2026-08-09 19:43:17 [DIAG] 5 After Database::getConnection
+2026-08-09 19:43:17 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 19:43:17 [DIAG] ShiftController::__construct start
+2026-08-09 19:43:17 [DIAG] ShiftController::__construct end
+2026-08-09 19:43:17 [DIAG] 7 After ShiftController->__construct
+2026-08-09 19:43:17 [DIAG] 8 Before getAllShifts()
+2026-08-09 19:43:17 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 19:43:17 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 19:43:17 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 19:43:17 [DIAG] 15 At end of page
+2026-08-09 19:43:17 [DIAG] 15a After content_footer.php
+2026-08-09 19:43:17 [DIAG] 15b After page_end.php
+2026-08-09 19:45:08 [DIAG] 1 First line of PHP execution
+2026-08-09 19:45:08 [DIAG] 2 After Session::start
+2026-08-09 19:45:08 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 19:45:08 [DIAG] 4 Before Database::getInstance
+2026-08-09 19:45:08 [DIAG] 5 After Database::getConnection
+2026-08-09 19:45:09 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 19:45:09 [DIAG] ShiftController::__construct start
+2026-08-09 19:45:09 [DIAG] ShiftController::__construct end
+2026-08-09 19:45:09 [DIAG] 7 After ShiftController->__construct
+2026-08-09 19:45:09 [DIAG] 8 Before getAllShifts()
+2026-08-09 19:45:09 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 19:45:09 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 19:45:09 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 19:45:09 [DIAG] 15 At end of page
+2026-08-09 19:45:09 [DIAG] 15a After content_footer.php
+2026-08-09 19:45:09 [DIAG] 15b After page_end.php
+2026-08-09 19:45:44 [DIAG] 1 First line of PHP execution
+2026-08-09 19:45:44 [DIAG] 2 After Session::start
+2026-08-09 19:45:44 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 19:45:44 [DIAG] 4 Before Database::getInstance
+2026-08-09 19:45:44 [DIAG] 5 After Database::getConnection
+2026-08-09 19:45:44 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 19:45:44 [DIAG] ShiftController::__construct start
+2026-08-09 19:45:44 [DIAG] ShiftController::__construct end
+2026-08-09 19:45:44 [DIAG] 7 After ShiftController->__construct
+2026-08-09 19:45:44 [DIAG] 8 Before getAllShifts()
+2026-08-09 19:45:44 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 19:45:44 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 19:45:44 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 19:45:44 [DIAG] 15 At end of page
+2026-08-09 19:45:44 [DIAG] 15a After content_footer.php
+2026-08-09 19:45:44 [DIAG] 15b After page_end.php
+2026-08-09 19:48:29 [DIAG] 1 First line of PHP execution
+2026-08-09 19:48:29 [DIAG] 2 After Session::start
+2026-08-09 19:48:29 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=0
+2026-08-09 19:48:29 [DIAG] 3a Not authenticated: redirecting to login
+2026-08-09 19:48:45 [DIAG] 1 First line of PHP execution
+2026-08-09 19:48:45 [DIAG] 2 After Session::start
+2026-08-09 19:48:45 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=0
+2026-08-09 19:48:45 [DIAG] 3a Not authenticated: redirecting to login
+2026-08-09 19:48:58 [DIAG] 1 First line of PHP execution
+2026-08-09 19:48:58 [DIAG] 2 After Session::start
+2026-08-09 19:48:58 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=0
+2026-08-09 19:48:58 [DIAG] 3a Not authenticated: redirecting to login
+2026-08-09 19:53:42 [DIAG] 1 First line of PHP execution
+2026-08-09 19:53:42 [DIAG] 2 After Session::start
+2026-08-09 19:53:42 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=0
+2026-08-09 19:53:42 [DIAG] 3a Not authenticated: redirecting to login
+2026-08-09 19:53:55 [DIAG] 1 First line of PHP execution
+2026-08-09 19:53:55 [DIAG] 2 After Session::start
+2026-08-09 19:53:55 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=0
+2026-08-09 19:53:55 [DIAG] 3a Not authenticated: redirecting to login
+2026-08-09 20:19:08 [DIAG] 1 First line of PHP execution
+2026-08-09 20:19:08 [DIAG] 2 After Session::start
+2026-08-09 20:19:08 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 20:19:08 [DIAG] 4 Before Database::getInstance
+2026-08-09 20:19:08 [DIAG] 5 After Database::getConnection
+2026-08-09 20:19:08 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 20:19:08 [DIAG] ShiftController::__construct start
+2026-08-09 20:19:08 [DIAG] ShiftController::__construct end
+2026-08-09 20:19:08 [DIAG] 7 After ShiftController->__construct
+2026-08-09 20:19:08 [DIAG] 8 Before getAllShifts()
+2026-08-09 20:19:08 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 20:19:08 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 20:19:08 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 20:19:08 [DIAG] 15 At end of page
+2026-08-09 20:19:08 [DIAG] 15a After content_footer.php
+2026-08-09 20:19:08 [DIAG] 15b After page_end.php
+2026-08-09 20:19:11 [DIAG] 1 First line of PHP execution
+2026-08-09 20:19:11 [DIAG] 2 After Session::start
+2026-08-09 20:19:11 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 20:19:11 [DIAG] 4 Before Database::getInstance
+2026-08-09 20:19:11 [DIAG] 5 After Database::getConnection
+2026-08-09 20:19:11 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 20:19:11 [DIAG] ShiftController::__construct start
+2026-08-09 20:19:11 [DIAG] ShiftController::__construct end
+2026-08-09 20:19:11 [DIAG] 7 After ShiftController->__construct
+2026-08-09 20:19:11 [DIAG] 8 Before getAllShifts()
+2026-08-09 20:19:11 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 20:19:11 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 20:19:11 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 20:19:11 [DIAG] 15 At end of page
+2026-08-09 20:19:11 [DIAG] 15a After content_footer.php
+2026-08-09 20:19:11 [DIAG] 15b After page_end.php
+2026-08-09 20:19:54 [DIAG] 1 First line of PHP execution
+2026-08-09 20:19:54 [DIAG] 2 After Session::start
+2026-08-09 20:19:54 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=0
+2026-08-09 20:19:54 [DIAG] 3a Not authenticated: redirecting to login
+2026-08-09 20:20:17 [DIAG] 1 First line of PHP execution
+2026-08-09 20:20:17 [DIAG] 2 After Session::start
+2026-08-09 20:20:17 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=0
+2026-08-09 20:20:17 [DIAG] 3a Not authenticated: redirecting to login
+2026-08-09 20:57:23 [DIAG] 1 First line of PHP execution
+2026-08-09 20:57:23 [DIAG] 2 After Session::start
+2026-08-09 20:57:23 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 20:57:23 [DIAG] 4 Before Database::getInstance
+2026-08-09 20:57:23 [DIAG] 5 After Database::getConnection
+2026-08-09 20:57:23 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 20:57:23 [DIAG] ShiftController::__construct start
+2026-08-09 20:57:23 [DIAG] ShiftController::__construct end
+2026-08-09 20:57:23 [DIAG] 7 After ShiftController->__construct
+2026-08-09 20:57:23 [DIAG] 8 Before getAllShifts()
+2026-08-09 20:57:23 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 20:57:23 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 20:57:23 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 20:57:23 [DIAG] 15 At end of page
+2026-08-09 20:57:23 [DIAG] 15a After content_footer.php
+2026-08-09 20:57:23 [DIAG] 15b After page_end.php
+2026-08-09 20:58:48 [DIAG] ShiftController::__construct start
+2026-08-09 20:58:48 [DIAG] ShiftController::__construct end
+2026-08-09 21:12:36 [DIAG] 1 First line of PHP execution
+2026-08-09 21:12:36 [DIAG] 2 After Session::start
+2026-08-09 21:12:36 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 21:12:36 [DIAG] 4 Before Database::getInstance
+2026-08-09 21:12:36 [DIAG] 5 After Database::getConnection
+2026-08-09 21:12:36 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 21:12:36 [DIAG] ShiftController::__construct start
+2026-08-09 21:12:36 [DIAG] ShiftController::__construct end
+2026-08-09 21:12:36 [DIAG] 7 After ShiftController->__construct
+2026-08-09 21:12:36 [DIAG] 8 Before getAllShifts()
+2026-08-09 21:12:36 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 21:12:36 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 21:12:36 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 21:12:36 [DIAG] 15 At end of page
+2026-08-09 21:12:36 [DIAG] 15a After content_footer.php
+2026-08-09 21:12:36 [DIAG] 15b After page_end.php
+2026-08-09 21:13:42 [DIAG] 1 First line of PHP execution
+2026-08-09 21:13:42 [DIAG] 2 After Session::start
+2026-08-09 21:13:42 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=0
+2026-08-09 21:13:42 [DIAG] 3a Not authenticated: redirecting to login
+2026-08-09 21:16:19 [DIAG] 1 First line of PHP execution
+2026-08-09 21:16:19 [DIAG] 2 After Session::start
+2026-08-09 21:16:19 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 21:16:19 [DIAG] 4 Before Database::getInstance
+2026-08-09 21:16:19 [DIAG] 5 After Database::getConnection
+2026-08-09 21:16:19 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 21:16:19 [DIAG] ShiftController::__construct start
+2026-08-09 21:16:19 [DIAG] ShiftController::__construct end
+2026-08-09 21:16:19 [DIAG] 7 After ShiftController->__construct
+2026-08-09 21:16:19 [DIAG] 8 Before getAllShifts()
+2026-08-09 21:16:19 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 21:16:19 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 21:16:19 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 21:16:19 [DIAG] 15 At end of page
+2026-08-09 21:16:19 [DIAG] 15a After content_footer.php
+2026-08-09 21:16:19 [DIAG] 15b After page_end.php
+2026-08-09 21:27:46 [DIAG] 1 First line of PHP execution
+2026-08-09 21:27:46 [DIAG] 2 After Session::start
+2026-08-09 21:27:46 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 21:27:46 [DIAG] 4 Before Database::getInstance
+2026-08-09 21:27:46 [DIAG] 5 After Database::getConnection
+2026-08-09 21:27:46 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 21:27:46 [DIAG] ShiftController::__construct start
+2026-08-09 21:27:46 [DIAG] ShiftController::__construct end
+2026-08-09 21:27:46 [DIAG] 7 After ShiftController->__construct
+2026-08-09 21:27:46 [DIAG] 8 Before getAllShifts()
+2026-08-09 21:27:46 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 21:27:46 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 21:27:46 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 21:27:46 [DIAG] 15 At end of page
+2026-08-09 21:27:46 [DIAG] 15a After content_footer.php
+2026-08-09 21:27:46 [DIAG] 15b After page_end.php
+2026-08-09 21:44:05 [DIAG] 1 First line of PHP execution
+2026-08-09 21:44:05 [DIAG] 2 After Session::start
+2026-08-09 21:44:05 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 21:44:05 [DIAG] 4 Before Database::getInstance
+2026-08-09 21:44:05 [DIAG] 5 After Database::getConnection
+2026-08-09 21:44:05 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 21:44:05 [DIAG] ShiftController::__construct start
+2026-08-09 21:44:05 [DIAG] ShiftController::__construct end
+2026-08-09 21:44:05 [DIAG] 7 After ShiftController->__construct
+2026-08-09 21:44:05 [DIAG] 8 Before getAllShifts()
+2026-08-09 21:44:05 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 21:44:05 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 21:44:05 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 21:44:05 [DIAG] 12 Before page_start.php
+2026-08-09 21:44:05 [DIAG] 13 After page_start.php
+2026-08-09 21:44:05 [DIAG] 14 Before main Shift Management HTML
+2026-08-09 21:44:05 [DIAG] 15 At end of page
+2026-08-09 21:44:05 [DIAG] 15a After content_footer.php
+2026-08-09 21:44:05 [DIAG] 15b After page_end.php
+2026-08-09 21:48:14 [DIAG] ShiftController::__construct start
+2026-08-09 21:48:14 [DIAG] ShiftController::__construct end
+2026-08-09 21:54:42 [DIAG] 1 First line of PHP execution
+2026-08-09 21:54:42 [DIAG] 2 After Session::start
+2026-08-09 21:54:42 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 21:54:42 [DIAG] 4 Before Database::getInstance
+2026-08-09 21:54:42 [DIAG] 5 After Database::getConnection
+2026-08-09 21:54:42 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 21:54:42 [DIAG] ShiftController::__construct start
+2026-08-09 21:54:42 [DIAG] ShiftController::__construct end
+2026-08-09 21:54:42 [DIAG] 7 After ShiftController->__construct
+2026-08-09 21:54:42 [DIAG] 8 Before getAllShifts()
+2026-08-09 21:54:42 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 21:54:42 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 21:54:42 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 21:54:42 [DIAG] 12 Before page_start.php
+2026-08-09 21:54:42 [DIAG] 13 After page_start.php
+2026-08-09 21:54:42 [DIAG] 14 Before main Shift Management HTML
+2026-08-09 21:54:42 [DIAG] 15 At end of page
+2026-08-09 21:54:42 [DIAG] 15a After content_footer.php
+2026-08-09 21:54:42 [DIAG] 15b After page_end.php
+2026-08-09 21:59:25 [DIAG] 1 First line of PHP execution
+2026-08-09 21:59:25 [DIAG] 2 After Session::start
+2026-08-09 21:59:25 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 21:59:25 [DIAG] 4 Before Database::getInstance
+2026-08-09 21:59:25 [DIAG] 5 After Database::getConnection
+2026-08-09 21:59:25 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 21:59:25 [DIAG] ShiftController::__construct start
+2026-08-09 21:59:25 [DIAG] ShiftController::__construct end
+2026-08-09 21:59:25 [DIAG] 7 After ShiftController->__construct
+2026-08-09 21:59:25 [DIAG] 8 Before getAllShifts()
+2026-08-09 21:59:25 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 21:59:25 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 21:59:25 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 21:59:25 [DIAG] 12 Before page_start.php
+2026-08-09 21:59:25 [DIAG] 13 After page_start.php
+2026-08-09 21:59:25 [DIAG] 14 Before main Shift Management HTML
+2026-08-09 21:59:25 [DIAG] 15 At end of page
+2026-08-09 21:59:25 [DIAG] 15a After content_footer.php
+2026-08-09 21:59:25 [DIAG] 15b After page_end.php
+2026-08-09 22:04:11 [DIAG] 1 First line of PHP execution
+2026-08-09 22:04:11 [DIAG] 2 After Session::start
+2026-08-09 22:04:11 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 22:04:11 [DIAG] 4 Before Database::getInstance
+2026-08-09 22:04:11 [DIAG] 5 After Database::getConnection
+2026-08-09 22:04:11 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 22:04:11 [DIAG] ShiftController::__construct start
+2026-08-09 22:04:11 [DIAG] ShiftController::__construct end
+2026-08-09 22:04:11 [DIAG] 7 After ShiftController->__construct
+2026-08-09 22:04:11 [DIAG] 8 Before getAllShifts()
+2026-08-09 22:04:11 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 22:04:11 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 22:04:11 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 22:04:11 [DIAG] 12 Before page_start.php
+2026-08-09 22:04:11 [DIAG] 13 After page_start.php
+2026-08-09 22:04:11 [DIAG] 14 Before main Shift Management HTML
+2026-08-09 22:04:11 [DIAG] 15 At end of page
+2026-08-09 22:04:11 [DIAG] 15a After content_footer.php
+2026-08-09 22:04:11 [DIAG] 15b After page_end.php
+2026-08-09 22:04:15 [DIAG] 1 First line of PHP execution
+2026-08-09 22:04:15 [DIAG] 2 After Session::start
+2026-08-09 22:04:15 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 22:04:15 [DIAG] 4 Before Database::getInstance
+2026-08-09 22:04:15 [DIAG] 5 After Database::getConnection
+2026-08-09 22:04:15 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 22:04:15 [DIAG] ShiftController::__construct start
+2026-08-09 22:04:15 [DIAG] ShiftController::__construct end
+2026-08-09 22:04:15 [DIAG] 7 After ShiftController->__construct
+2026-08-09 22:04:15 [DIAG] 8 Before getAllShifts()
+2026-08-09 22:04:15 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 22:04:15 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 22:04:15 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 22:04:15 [DIAG] 12 Before page_start.php
+2026-08-09 22:04:15 [DIAG] 13 After page_start.php
+2026-08-09 22:04:15 [DIAG] 14 Before main Shift Management HTML
+2026-08-09 22:04:15 [DIAG] 15 At end of page
+2026-08-09 22:04:15 [DIAG] 15a After content_footer.php
+2026-08-09 22:04:15 [DIAG] 15b After page_end.php
+2026-08-09 22:07:33 [DIAG] 1 First line of PHP execution
+2026-08-09 22:07:33 [DIAG] 2 After Session::start
+2026-08-09 22:07:33 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 22:07:33 [DIAG] 4 Before Database::getInstance
+2026-08-09 22:07:33 [DIAG] 5 After Database::getConnection
+2026-08-09 22:07:33 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 22:07:33 [DIAG] ShiftController::__construct start
+2026-08-09 22:07:33 [DIAG] ShiftController::__construct end
+2026-08-09 22:07:33 [DIAG] 7 After ShiftController->__construct
+2026-08-09 22:07:33 [DIAG] 8 Before getAllShifts()
+2026-08-09 22:07:33 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 22:07:33 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 22:07:33 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 22:07:33 [DIAG] 12 Before page_start.php
+2026-08-09 22:07:33 [DIAG] 13 After page_start.php
+2026-08-09 22:07:33 [DIAG] 14 Before main Shift Management HTML
+2026-08-09 22:07:33 [DIAG] 15 At end of page
+2026-08-09 22:07:33 [DIAG] 15a After content_footer.php
+2026-08-09 22:07:33 [DIAG] 15b After page_end.php
+2026-08-09 22:15:27 [DIAG] 1 First line of PHP execution
+2026-08-09 22:15:27 [DIAG] 2 After Session::start
+2026-08-09 22:15:27 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 22:15:27 [DIAG] 4 Before Database::getInstance
+2026-08-09 22:15:27 [DIAG] 5 After Database::getConnection
+2026-08-09 22:15:27 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 22:15:27 [DIAG] ShiftController::__construct start
+2026-08-09 22:15:27 [DIAG] ShiftController::__construct end
+2026-08-09 22:15:27 [DIAG] 7 After ShiftController->__construct
+2026-08-09 22:15:27 [DIAG] 8 Before getAllShifts()
+2026-08-09 22:15:27 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 22:15:27 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 22:15:27 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 22:15:27 [DIAG] 12 Before page_start.php
+2026-08-09 22:15:27 [DIAG] 13 After page_start.php
+2026-08-09 22:15:27 [DIAG] 14 Before main Shift Management HTML
+2026-08-09 22:15:27 [DIAG] 15 At end of page
+2026-08-09 22:15:27 [DIAG] 15a After content_footer.php
+2026-08-09 22:15:27 [DIAG] 15b After page_end.php
+2026-08-09 22:18:15 [DIAG] 1 First line of PHP execution
+2026-08-09 22:18:15 [DIAG] 2 After Session::start
+2026-08-09 22:18:15 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 22:18:15 [DIAG] 4 Before Database::getInstance
+2026-08-09 22:18:15 [DIAG] 5 After Database::getConnection
+2026-08-09 22:18:15 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 22:18:15 [DIAG] ShiftController::__construct start
+2026-08-09 22:18:15 [DIAG] ShiftController::__construct end
+2026-08-09 22:18:16 [DIAG] 7 After ShiftController->__construct
+2026-08-09 22:18:16 [DIAG] 8 Before getAllShifts()
+2026-08-09 22:18:16 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 22:18:16 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 22:18:16 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 22:18:16 [DIAG] 12 Before page_start.php
+2026-08-09 22:18:16 [DIAG] 13 After page_start.php
+2026-08-09 22:18:16 [DIAG] 14 Before main Shift Management HTML
+2026-08-09 22:18:16 [DIAG] 15 At end of page
+2026-08-09 22:18:16 [DIAG] 15a After content_footer.php
+2026-08-09 22:18:16 [DIAG] 15b After page_end.php
+2026-08-09 22:20:32 [DIAG] 1 First line of PHP execution
+2026-08-09 22:20:32 [DIAG] 2 After Session::start
+2026-08-09 22:20:32 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 22:20:32 [DIAG] 4 Before Database::getInstance
+2026-08-09 22:20:32 [DIAG] 5 After Database::getConnection
+2026-08-09 22:20:32 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 22:20:32 [DIAG] ShiftController::__construct start
+2026-08-09 22:20:32 [DIAG] ShiftController::__construct end
+2026-08-09 22:20:32 [DIAG] 7 After ShiftController->__construct
+2026-08-09 22:20:32 [DIAG] 8 Before getAllShifts()
+2026-08-09 22:20:32 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 22:20:32 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 22:20:32 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 22:20:32 [DIAG] 12 Before page_start.php
+2026-08-09 22:20:32 [DIAG] 13 After page_start.php
+2026-08-09 22:20:32 [DIAG] 14 Before main Shift Management HTML
+2026-08-09 22:20:32 [DIAG] 15 At end of page
+2026-08-09 22:20:32 [DIAG] 15a After content_footer.php
+2026-08-09 22:20:32 [DIAG] 15b After page_end.php
+2026-08-09 22:24:19 [DIAG] 1 First line of PHP execution
+2026-08-09 22:24:19 [DIAG] 2 After Session::start
+2026-08-09 22:24:19 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 22:24:19 [DIAG] 4 Before Database::getInstance
+2026-08-09 22:24:19 [DIAG] 5 After Database::getConnection
+2026-08-09 22:24:19 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 22:24:19 [DIAG] ShiftController::__construct start
+2026-08-09 22:24:19 [DIAG] ShiftController::__construct end
+2026-08-09 22:24:19 [DIAG] 7 After ShiftController->__construct
+2026-08-09 22:24:19 [DIAG] 8 Before getAllShifts()
+2026-08-09 22:24:19 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 22:24:19 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 22:24:19 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 22:24:19 [DIAG] 12 Before page_start.php
+2026-08-09 22:24:19 [DIAG] 13 After page_start.php
+2026-08-09 22:24:19 [DIAG] 14 Before main Shift Management HTML
+2026-08-09 22:24:19 [DIAG] 15 At end of page
+2026-08-09 22:24:19 [DIAG] 15a After content_footer.php
+2026-08-09 22:24:19 [DIAG] 15b After page_end.php
+2026-08-09 22:27:47 [DIAG] 1 First line of PHP execution
+2026-08-09 22:27:47 [DIAG] 2 After Session::start
+2026-08-09 22:27:47 [DIAG] 3 After AuthController::isAuthenticated isAuthenticated=1
+2026-08-09 22:27:47 [DIAG] 4 Before Database::getInstance
+2026-08-09 22:27:47 [DIAG] 5 After Database::getConnection
+2026-08-09 22:27:47 [DIAG] 6 Before ShiftController->__construct
+2026-08-09 22:27:47 [DIAG] ShiftController::__construct start
+2026-08-09 22:27:47 [DIAG] ShiftController::__construct end
+2026-08-09 22:27:47 [DIAG] 7 After ShiftController->__construct
+2026-08-09 22:27:47 [DIAG] 8 Before getAllShifts()
+2026-08-09 22:27:47 [DIAG] 9 After getAllShifts() returned count=2
+2026-08-09 22:27:47 [DIAG] 10 Before getEmployeesOnShift()
+2026-08-09 22:27:47 [DIAG] 11 After getEmployeesOnShift() returned count=10
+2026-08-09 22:27:47 [DIAG] 12 Before page_start.php
+2026-08-09 22:27:47 [DIAG] 13 After page_start.php
+2026-08-09 22:27:47 [DIAG] 14 Before main Shift Management HTML
+2026-08-09 22:27:47 [DIAG] 15 At end of page
+2026-08-09 22:27:47 [DIAG] 15a After content_footer.php
+2026-08-09 22:27:47 [DIAG] 15b After page_end.php
+2026-08-09 22:27:59 [DIAG] ShiftController::__construct start
+2026-08-09 22:27:59 [DIAG] ShiftController::__construct end

@@ -10,6 +10,8 @@
 require_once(__DIR__ . '/../models/Shift.php');
 require_once(__DIR__ . '/../models/EmployeeShift.php');
 require_once(__DIR__ . '/../helpers/AuditLog.php');
+// Debug helper (writes to time_attendance/debug_shifts.log)
+require_once __DIR__ . '/../../debug_helpers.php';
 
 class ShiftController {
     private $db;
@@ -19,9 +21,52 @@ class ShiftController {
 
     public function __construct($db) {
         $this->db = $db;
+        // Diagnostic checkpoint: constructor start
+        if (function_exists('shiftDebug')) shiftDebug('[DIAG] ShiftController::__construct start');
         $this->shift = new Shift($db);
         $this->employeeShift = new EmployeeShift($db);
         $this->auditLog = new AuditLog($db);
+        // Diagnostic checkpoints
+        if (function_exists('shiftDebug')) shiftDebug('[DIAG] ShiftController::__construct end');
+    }
+
+    /**
+     * Update an employee's current assignment. If no current active assignment exists, assign a new one.
+     * Returns an array with success/message and optionally employee_shift_id.
+     */
+    public function updateEmployeeAssignment($employee_id, $shift_id, $effective_from, $effective_to = null) {
+        if ($this->hasActiveFlexibleSchedule($employee_id)) {
+            return ['success' => false, 'message' => 'Employee has an active flexible schedule. Remove it before assigning a regular shift.'];
+        }
+
+        $current = $this->getCurrentShift($employee_id);
+
+        if (empty($current)) {
+            // No active assignment, fall back to assign
+            return $this->assignShiftToEmployee($employee_id, $shift_id, $effective_from, $effective_to);
+        }
+
+        // Update the existing active assignment
+        $this->employeeShift->employee_shift_id = $current['employee_shift_id'];
+        $this->employeeShift->shift_id = $shift_id;
+        $this->employeeShift->effective_from = $effective_from;
+        $this->employeeShift->effective_to = $effective_to;
+        $this->employeeShift->is_active = 1;
+
+        if ($this->employeeShift->update()) {
+            // Log action
+            $this->auditLog->log(
+                'ASSIGNMENT_UPDATED',
+                $_SESSION['user_id'] ?? null,
+                $employee_id,
+                null,
+                ['table' => 'employee_shifts', 'message' => 'Updated assignment for employee ID: ' . $employee_id]
+            );
+
+            return ['success' => true, 'message' => 'Assignment updated successfully', 'employee_shift_id' => $this->employeeShift->employee_shift_id];
+        }
+
+        return ['success' => false, 'message' => 'Failed to update assignment'];
     }
 
     /**
@@ -57,11 +102,11 @@ class ShiftController {
         if ($this->shift->create()) {
             // Log action
             $this->auditLog->log(
-                $_SESSION['user_id'] ?? null,
                 'SHIFT_CREATED',
-                'shifts',
-                $this->shift->shift_name,
-                'Created new shift: ' . $this->shift->shift_name
+                $_SESSION['user_id'] ?? null,
+                null,
+                null,
+                ['table' => 'shifts', 'shift_name' => $this->shift->shift_name, 'message' => 'Created new shift: ' . $this->shift->shift_name]
             );
 
             return ['success' => true, 'message' => 'Shift created successfully'];
@@ -90,11 +135,11 @@ class ShiftController {
         if ($this->shift->update()) {
             // Log action
             $this->auditLog->log(
-                $_SESSION['user_id'] ?? null,
                 'SHIFT_UPDATED',
-                'shifts',
-                $shift_id,
-                'Updated shift: ' . $this->shift->shift_name
+                $_SESSION['user_id'] ?? null,
+                null,
+                null,
+                ['table' => 'shifts', 'shift_id' => $shift_id, 'message' => 'Updated shift: ' . $this->shift->shift_name]
             );
 
             return ['success' => true, 'message' => 'Shift updated successfully'];
@@ -115,11 +160,11 @@ class ShiftController {
         if ($this->shift->delete($shift_id)) {
             // Log action
             $this->auditLog->log(
-                $_SESSION['user_id'] ?? null,
                 'SHIFT_DELETED',
-                'shifts',
-                $shift_id,
-                'Deleted shift: ' . $shift['shift_name']
+                $_SESSION['user_id'] ?? null,
+                null,
+                null,
+                ['table' => 'shifts', 'shift_id' => $shift_id, 'message' => 'Deleted shift: ' . $shift['shift_name']]
             );
 
             return ['success' => true, 'message' => 'Shift deleted successfully'];
@@ -132,6 +177,10 @@ class ShiftController {
      * Assign shift to employee
      */
     public function assignShiftToEmployee($employee_id, $shift_id, $effective_from, $effective_to = null) {
+        if ($this->hasActiveFlexibleSchedule($employee_id)) {
+            return ['success' => false, 'message' => 'Employee has an active flexible schedule. Remove it before assigning a regular shift.'];
+        }
+
         // Validate shift exists
         $shift = $this->shift->getById($shift_id);
         if (empty($shift)) {
@@ -147,11 +196,11 @@ class ShiftController {
         if ($this->employeeShift->assign()) {
             // Log action
             $this->auditLog->log(
-                $_SESSION['user_id'] ?? null,
                 'SHIFT_ASSIGNED',
-                'employee_shifts',
+                $_SESSION['user_id'] ?? null,
                 $employee_id,
-                'Assigned ' . $shift['shift_name'] . ' to employee ID: ' . $employee_id
+                null,
+                ['table' => 'employee_shifts', 'shift_name' => $shift['shift_name'], 'message' => 'Assigned ' . $shift['shift_name'] . ' to employee ID: ' . $employee_id]
             );
 
             return ['success' => true, 'message' => 'Shift assigned successfully'];
@@ -172,6 +221,13 @@ class ShiftController {
      */
     public function getCurrentShift($employee_id) {
         return $this->employeeShift->getCurrentShift($employee_id);
+    }
+
+    /**
+     * Check if employee has an active flexible schedule
+     */
+    public function hasActiveFlexibleSchedule($employee_id, $date = null) {
+        return $this->employeeShift->getActiveFlexibleSchedule($employee_id, $date);
     }
 
     /**

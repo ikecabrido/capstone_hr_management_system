@@ -84,18 +84,21 @@ class ShiftValidator
         try {
             $today = date('Y-m-d');
             
-            $query = "SELECT DISTINCT
+            $query = "SELECT
                         e.employee_id,
                         e.full_name,
                         e.department,
                         e.position,
                         e.employment_status
                       FROM {$this->employees_table} e
-                      LEFT JOIN {$this->shift_assignments_table} sa ON e.employee_id = sa.employee_id
-                        AND sa.effective_from <= :today
-                        AND (sa.effective_to IS NULL OR sa.effective_to >= :today)
                       WHERE e.employment_status = 'Active'
-                      AND sa.shift_id IS NULL
+                      AND NOT EXISTS (
+                          SELECT 1 FROM ta_employee_shifts es
+                          WHERE es.employee_id = e.employee_id
+                            AND es.is_active = 1
+                            AND es.effective_from <= :today
+                            AND (es.effective_to IS NULL OR es.effective_to >= :today)
+                      )
                       ORDER BY e.full_name";
 
             $stmt = $this->conn->prepare($query);

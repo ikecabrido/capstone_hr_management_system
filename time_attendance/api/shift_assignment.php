@@ -7,6 +7,7 @@ session_start();
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../app/models/ShiftValidator.php';
+require_once __DIR__ . '/../app/models/EmployeeShift.php';
 
 // Check authentication
 if (!isset($_SESSION['user_id'])) {
@@ -25,6 +26,9 @@ if (!$isHR && $_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $shiftValidator = new ShiftValidator();
+$database = Database::getInstance();
+$db = $database->getConnection();
+$employeeShiftModel = new EmployeeShift($db);
 
 $action = isset($_GET['action']) ? $_GET['action'] : (isset($_POST['action']) ? $_POST['action'] : '');
 
@@ -96,9 +100,9 @@ function handleGetUnassignedCount()
 
 function handleGetUnassignedEmployees()
 {
-    global $shiftValidator;
+    global $employeeShiftModel;
     
-    $employees = $shiftValidator->getEmployeesWithoutShift();
+    $employees = $employeeShiftModel->getEmployeesWithoutShift();
     echo json_encode([
         'success' => true,
         'data' => $employees,

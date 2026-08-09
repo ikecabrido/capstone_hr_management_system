@@ -1,401 +1,69 @@
 <?php
+// 15. Beginning of shifts.php end-of-file checkpoint will be logged at the end of the file
 /**
  * Shift Management Page
  * HR-only page for managing shifts and employee assignments
  */
 
 // Start session and check authentication
-session_start();
-require_once(__DIR__ . '/../../auth/database.php');
-require_once(__DIR__ . '/../app/core/Session.php');
-require_once(__DIR__ . '/../app/controllers/ShiftController.php');
-require_once(__DIR__ . '/../app/helpers/Helper.php');
+// Ensure required app bootstrap is available so runtime variables used
+// later (like $db, $shifts, $allAssignments) are defined.
+// Debug helper for writing diagnostics to time_attendance/debug_shifts.log
+require_once __DIR__ . '/../debug_helpers.php';
+require_once __DIR__ . '/../app/controllers/AuthController.php';
+require_once __DIR__ . '/../app/core/Session.php';
+require_once __DIR__ . '/../../auth/database.php';
+require_once __DIR__ . '/../app/controllers/ShiftController.php';
 
-// Verify user is logged in and is HR
-if (empty($_SESSION['user_id']) || !isset($_SESSION['role'])) {
+// 1. First line of PHP execution
+if (function_exists('shiftDebug')) shiftDebug('[DIAG] 1 First line of PHP execution');
+
+Session::start();
+// 2. After session start
+if (function_exists('shiftDebug')) shiftDebug('[DIAG] 2 After Session::start');
+
+// Redirect to login if not authenticated (same pattern as other public pages)
+// 3. Authentication check (log result for debugging)
+$authOk = AuthController::isAuthenticated();
+if (function_exists('shiftDebug')) shiftDebug('[DIAG] 3 After AuthController::isAuthenticated isAuthenticated=' . ($authOk ? '1' : '0'));
+if (!$authOk) {
+    if (function_exists('shiftDebug')) shiftDebug('[DIAG] 3a Not authenticated: redirecting to login');
     header('Location: ' . dirname(__DIR__) . '/../../login_form.php');
-    exit();
+    exit;
 }
 
-// Check if user has time & attendance permissions
-$user_role = $_SESSION['role'] ?? '';
-if ($user_role !== 'time' && $user_role !== 'HR_ADMIN' && $user_role !== 'payroll') {
-    header('Location: ' . dirname(__DIR__) . '/public/shifts.php');
-    exit();
-}
+// Initialize DB and controllers if not already present
+$database = $database ?? Database::getInstance();
+// 4. Before database initialization
+if (function_exists('shiftDebug')) shiftDebug('[DIAG] 4 Before Database::getInstance');
+$db = $db ?? $database->getConnection();
+// 5. After database initialization
+if (function_exists('shiftDebug')) shiftDebug('[DIAG] 5 After Database::getConnection');
 
-$database = Database::getInstance();
-$db = $database->getConnection();
-$shiftController = new ShiftController($db);
+// 6. Before ShiftController construction
+if (function_exists('shiftDebug')) shiftDebug('[DIAG] 6 Before ShiftController->__construct');
+$shiftController = $shiftController ?? new ShiftController($db);
+// 7. After ShiftController construction
+if (function_exists('shiftDebug')) shiftDebug('[DIAG] 7 After ShiftController->__construct');
 
-// Create ta_flexible_schedules table if it doesn't exist (do this once at startup)
-try {
-    $create_table_sql = "CREATE TABLE IF NOT EXISTS ta_flexible_schedules (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        employee_id VARCHAR(50) NOT NULL,
-        schedule_date DATE NOT NULL,
-        start_time TIME NOT NULL,
-        end_time TIME NOT NULL,
-        day_of_week INT,
-        repeat_until DATE,
-        contract_end_date DATE,
-        notes TEXT,
-        created_by INT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_employee (employee_id),
-        INDEX idx_date (schedule_date)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
-    
-    $db->exec($create_table_sql);
-    
-    // Add contract_end_date column if it doesn't exist
-    try {
-        $check_column = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-                        WHERE TABLE_NAME = 'ta_flexible_schedules' AND COLUMN_NAME = 'contract_end_date'";
-        $result = $db->query($check_column)->fetch();
-        if (!$result) {
-            $db->exec("ALTER TABLE ta_flexible_schedules ADD COLUMN contract_end_date DATE AFTER repeat_until");
-        }
-    } catch (Exception $e) {
-        // Column already exists
-    }
-    $check_constraint = "SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
-                       WHERE TABLE_NAME = 'ta_flexible_schedules' AND CONSTRAINT_NAME = 'unique_schedule'";
-    $result = $db->query($check_constraint)->fetch();
-    if (!$result) {
-        try {
-            $db->exec("ALTER TABLE ta_flexible_schedules ADD CONSTRAINT unique_schedule UNIQUE (employee_id, schedule_date, start_time)");
-        } catch (Exception $e) {
-            // Constraint might already exist
-        }
-    }
-    
-    // CRITICAL FIX: Ensure employee_id is VARCHAR(50), not INT
-    try {
-        $check_column = "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS 
-                        WHERE TABLE_NAME = 'ta_flexible_schedules' AND COLUMN_NAME = 'employee_id'";
-        $column_result = $db->query($check_column)->fetch(PDO::FETCH_ASSOC);
-        
-        if ($column_result && strpos($column_result['COLUMN_TYPE'], 'INT') !== false) {
-            // Column is INT, need to change it to VARCHAR(50)
-            error_log("FIXING: Changing ta_flexible_schedules.employee_id from INT to VARCHAR(50)");
-            $db->exec("ALTER TABLE ta_flexible_schedules MODIFY employee_id VARCHAR(50) NOT NULL");
-            error_log("SUCCESS: employee_id column changed to VARCHAR(50)");
-        }
-    } catch (Exception $e) {
-        error_log("Note: Could not modify employee_id column: " . $e->getMessage());
-    }
-} catch (Exception $e) {
-    // Table already exists or other error - ignore
-}
+// Ensure variables used later are defined to avoid runtime fatal errors
+$action = $action ?? $_GET['action'] ?? $_POST['action'] ?? null;
+// 8. Before getAllShifts()
+if (function_exists('shiftDebug')) shiftDebug('[DIAG] 8 Before getAllShifts()');
+$shifts = $shifts ?? $shiftController->getAllShifts();
+// 9. After getAllShifts()
+if (function_exists('shiftDebug')) shiftDebug('[DIAG] 9 After getAllShifts() returned count=' . count($shifts));
+// 10. Before getEmployeesOnShift()
+if (function_exists('shiftDebug')) shiftDebug('[DIAG] 10 Before getEmployeesOnShift()');
+$allAssignments = $allAssignments ?? $shiftController->getEmployeesOnShift(null);
+// 11. After getEmployeesOnShift()
+if (function_exists('shiftDebug')) shiftDebug('[DIAG] 11 After getEmployeesOnShift() returned count=' . count($allAssignments));
+$message = $message ?? null;
+$error = $error ?? null;
 
-$action = $_GET['action'] ?? 'list';
-$message = '';
-$error = '';
-
-// Handle form submissions
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['create_shift'])) {
-        $result = $shiftController->createShift([
-            'shift_name' => $_POST['shift_name'],
-            'start_time' => $_POST['start_time'],
-            'end_time' => $_POST['end_time'],
-            'break_duration' => $_POST['break_duration'] ?? 60,
-            'description' => $_POST['description'] ?? null,
-            'is_active' => isset($_POST['is_active']) ? 1 : 0
-        ]);
-        
-        if ($result['success']) {
-            $message = $result['message'];
-            $action = 'list';
-        } else {
-            $error = $result['message'];
-        }
-    }
-
-    if (isset($_POST['update_shift'])) {
-        $result = $shiftController->updateShift($_POST['shift_id'], [
-            'shift_name' => $_POST['shift_name'],
-            'start_time' => $_POST['start_time'],
-            'end_time' => $_POST['end_time'],
-            'break_duration' => $_POST['break_duration'] ?? 60,
-            'description' => $_POST['description'] ?? null,
-            'is_active' => isset($_POST['is_active']) ? 1 : 0
-        ]);
-        
-        if ($result['success']) {
-            $message = $result['message'];
-            $action = 'list';
-        } else {
-            $error = $result['message'];
-        }
-    }
-
-    if (isset($_POST['delete_shift'])) {
-        $result = $shiftController->deleteShift($_POST['shift_id']);
-        
-        if ($result['success']) {
-            $message = $result['message'];
-            $action = 'list';
-        } else {
-            $error = $result['message'];
-        }
-    }
-
-    if (isset($_POST['assign_shift'])) {
-        $result = $shiftController->assignShiftToEmployee(
-            $_POST['employee_id'],
-            $_POST['shift_id'],
-            $_POST['effective_from'],
-            $_POST['effective_to'] ?? null
-        );
-        
-        if ($result['success']) {
-            $message = $result['message'];
-            $action = 'assignments';
-        } else {
-            $error = $result['message'];
-        }
-    }
-
-    if (isset($_POST['create_flexible'])) {
-        // Handle flexible schedule creation
-        $employee_id = $_POST['flex_employee_id'] ?? '';
-        $date = $_POST['flex_date'] ?? '';
-        $start_time = $_POST['flex_start_time'] ?? '';
-        $end_time = $_POST['flex_end_time'] ?? '';
-        $notes = $_POST['flex_notes'] ?? '';
-        $repeat_days = $_POST['flex_days'] ?? [];
-        $repeat_until = !empty($_POST['flex_repeat_end_date']) ? $_POST['flex_repeat_end_date'] : null;
-        $contract_end_date = !empty($_POST['flex_contract_end_date']) ? $_POST['flex_contract_end_date'] : null;
-
-        // DEBUG: Log entire POST data to identify what's being sent
-        error_log("=== FLEXIBLE SCHEDULE SUBMISSION DEBUG ===");
-        error_log("Full POST data: " . json_encode($_POST));
-        error_log("flex_employee_id value: '" . var_export($employee_id, true) . "' (type: " . gettype($employee_id) . ")");
-        error_log("flex_employee_id isset: " . (isset($_POST['flex_employee_id']) ? 'YES' : 'NO'));
-        error_log("All POST keys: " . implode(', ', array_keys($_POST)));
-        
-        // Also write to a debug log file
-        file_put_contents(__DIR__ . '/../flexible_debug.txt', 
-            date('Y-m-d H:i:s') . " | POST data: " . json_encode($_POST) . "\n", 
-            FILE_APPEND);
-
-        try {
-            // CRITICAL VALIDATION: Check if employee_id is empty BEFORE validation
-            if (empty($employee_id) || $employee_id === '0' || $employee_id === 0) {
-                throw new Exception("ERROR: No employee selected! Please select an employee from the dropdown. (Value received: '$employee_id')");
-            }
-            // Validation: Check required fields
-            if (empty($employee_id)) {
-                throw new Exception("Please select an employee from the dropdown.");
-            }
-            if (empty($date)) {
-                throw new Exception("Date is required.");
-            }
-            if (empty($start_time)) {
-                throw new Exception("Start time is required.");
-            }
-            if (empty($end_time)) {
-                throw new Exception("End time is required.");
-            }
-            
-            // Verify employee exists (handle both string and numeric IDs)
-            $emp_check = $db->prepare("SELECT employee_id FROM employees WHERE employee_id = ? OR employee_id LIKE ?");
-            $emp_check->execute([$employee_id, $employee_id]);
-            if ($emp_check->rowCount() === 0) {
-                throw new Exception("Selected employee does not exist in the system.");
-            }
-            
-            // Insert the flexible schedule
-            if (!empty($repeat_days)) {
-                // Create weekly recurring schedules - one entry per day
-                $baseDate = new DateTime($date);
-                foreach ($repeat_days as $day) {
-                    // Calculate the first occurrence of this day of week
-                    $targetDate = clone $baseDate;
-                    $currentDayOfWeek = (int)$targetDate->format('w');
-                    $targetDay = (int)$day;
-                    
-                    // Adjust date to the target day of week
-                    $daysUntilTarget = ($targetDay - $currentDayOfWeek + 7) % 7;
-                    if ($daysUntilTarget == 0 && $targetDate < new DateTime()) {
-                        $daysUntilTarget = 7;
-                    }
-                    $targetDate->modify("+{$daysUntilTarget} days");
-                    
-                    // Check if this schedule already exists
-                    $check_sql = "SELECT id FROM ta_flexible_schedules WHERE employee_id = ? AND schedule_date = ? AND start_time = ? LIMIT 1";
-                    $check_stmt = $db->prepare($check_sql);
-                    $check_stmt->execute([$employee_id, $targetDate->format('Y-m-d'), $start_time]);
-                    
-                    if ($check_stmt->rowCount() === 0) {
-                        $insert_sql = "INSERT INTO ta_flexible_schedules (employee_id, schedule_date, start_time, end_time, day_of_week, repeat_until, contract_end_date, notes, created_by)
-                                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-                        $stmt = $db->prepare($insert_sql);
-                        $stmt->execute([$employee_id, $targetDate->format('Y-m-d'), $start_time, $end_time, $day, $repeat_until, $contract_end_date, $notes, $_SESSION['user_id'] ?? null]);
-                        error_log("DEBUG: Inserted for Employee: $employee_id, Date: " . $targetDate->format('Y-m-d') . ", Day: $day");
-                    } else {
-                        error_log("DEBUG: Schedule already exists for Employee: $employee_id, Date: " . $targetDate->format('Y-m-d'));
-                    }
-                }
-            } else {
-                // Single date schedule - check if it already exists
-                $check_sql = "SELECT id FROM ta_flexible_schedules WHERE employee_id = ? AND schedule_date = ? AND start_time = ? LIMIT 1";
-                $check_stmt = $db->prepare($check_sql);
-                $check_stmt->execute([$employee_id, $date, $start_time]);
-                
-                if ($check_stmt->rowCount() === 0) {
-                    $insert_sql = "INSERT INTO ta_flexible_schedules (employee_id, schedule_date, start_time, end_time, contract_end_date, notes, created_by)
-                                   VALUES (?, ?, ?, ?, ?, ?, ?)";
-                    $stmt = $db->prepare($insert_sql);
-                    $stmt->execute([$employee_id, $date, $start_time, $end_time, $contract_end_date, $notes, $_SESSION['user_id'] ?? null]);
-                } else {
-                    throw new Exception("This schedule already exists for the selected employee on this date and time.");
-                }
-            }
-
-            $message = 'Flexible schedule created successfully!';
-            $action = 'overview';
-            
-            // Redirect to refresh the page and show updated data
-            header('Location: ' . $_SERVER['PHP_SELF'] . '?action=overview&created=1');
-            exit();
-        } catch (Exception $e) {
-            $error = 'Error creating flexible schedule: ' . $e->getMessage();
-        }
-    }
-
-    if (isset($_POST['delete_flexible'])) {
-        try {
-            $delete_id_raw = trim((string)($_POST['delete_flex_id'] ?? ''));
-            $delete_id = filter_var($delete_id_raw, FILTER_VALIDATE_INT);
-            $lookup_employee_id = trim((string)($_POST['delete_flex_employee_id'] ?? ''));
-            $lookup_schedule_date = trim((string)($_POST['delete_flex_schedule_date'] ?? ''));
-            $lookup_start_time = trim((string)($_POST['delete_flex_start_time'] ?? ''));
-            $lookup_end_time = trim((string)($_POST['delete_flex_end_time'] ?? ''));
-
-            if ($delete_id === false || $delete_id <= 0) {
-                if ($lookup_employee_id === '' || $lookup_schedule_date === '' || $lookup_start_time === '' || $lookup_end_time === '') {
-                    throw new Exception("Invalid schedule ID. Cannot delete without a valid ID.");
-                }
-
-                $fallback_sql = "SELECT id FROM ta_flexible_schedules
-                                 WHERE employee_id = ?
-                                   AND schedule_date = ?
-                                   AND start_time = ?
-                                   AND end_time = ?
-                                 LIMIT 1";
-                $fallback_stmt = $db->prepare($fallback_sql);
-                $fallback_stmt->execute([$lookup_employee_id, $lookup_schedule_date, $lookup_start_time, $lookup_end_time]);
-                $fallback_row = $fallback_stmt->fetch(PDO::FETCH_ASSOC);
-
-                if (!$fallback_row || !isset($fallback_row['id'])) {
-                    throw new Exception("Invalid schedule ID. The selected flexible schedule could not be found.");
-                }
-
-                $delete_id = (int)$fallback_row['id'];
-            }
-
-            $exists_sql = "SELECT id FROM ta_flexible_schedules WHERE id = ? LIMIT 1";
-            $exists_stmt = $db->prepare($exists_sql);
-            $exists_stmt->execute([$delete_id]);
-
-            if ($exists_stmt->rowCount() === 0) {
-                throw new Exception("Invalid schedule ID. The selected flexible schedule could not be found.");
-            }
-
-            $delete_sql = "DELETE FROM ta_flexible_schedules WHERE id = ?";
-            $stmt = $db->prepare($delete_sql);
-            $stmt->execute([$delete_id]);
-
-            if ($stmt->rowCount() !== 1) {
-                throw new Exception("Safety check failed: The schedule could not be deleted reliably. Please contact support.");
-            }
-
-            $message = 'Flexible schedule deleted successfully!';
-            $action = 'overview';
-
-            header('Location: ' . $_SERVER['PHP_SELF'] . '?action=overview&deleted=1');
-            exit();
-        } catch (Exception $e) {
-            $error = 'Error deleting flexible schedule: ' . $e->getMessage();
-        }
-    }
-
-    if (isset($_POST['update_flexible'])) {
-        // Handle flexible schedule update
-        $flex_id = (int)($_POST['edit_flex_id'] ?? 0);
-        $employee_id = $_POST['edit_flex_employee_id'] ?? '';
-        $date = $_POST['edit_flex_date'] ?? '';
-        $start_time = $_POST['edit_flex_start_time'] ?? '';
-        $end_time = $_POST['edit_flex_end_time'] ?? '';
-        $notes = $_POST['edit_flex_notes'] ?? '';
-        $repeat_days = $_POST['edit_flex_days'] ?? [];
-        $repeat_until = !empty($_POST['edit_flex_repeat_end_date']) ? $_POST['edit_flex_repeat_end_date'] : null;
-        $contract_end_date = !empty($_POST['edit_flex_contract_end_date']) ? $_POST['edit_flex_contract_end_date'] : null;
-
-        try {
-            // CRITICAL VALIDATION: Check if employee_id is empty BEFORE validation
-            if (empty($employee_id) || $employee_id === '0' || $employee_id === 0) {
-                throw new Exception("ERROR: No employee selected! Please select an employee from the dropdown. (Value received: '$employee_id')");
-            }
-            // Validation: Check required fields
-            if ($flex_id <= 0) {
-                throw new Exception("Invalid schedule ID. Please try again.");
-            }
-            if (empty($employee_id)) {
-                throw new Exception("Please select an employee from the dropdown.");
-            }
-            if (empty($date)) {
-                throw new Exception("Date is required.");
-            }
-            if (empty($start_time)) {
-                throw new Exception("Start time is required.");
-            }
-            if (empty($end_time)) {
-                throw new Exception("End time is required.");
-            }
-            
-            // Verify employee exists (handle both string and numeric IDs)
-            $emp_check = $db->prepare("SELECT employee_id FROM employees WHERE employee_id = ? OR employee_id LIKE ?");
-            $emp_check->execute([$employee_id, $employee_id]);
-            if ($emp_check->rowCount() === 0) {
-                throw new Exception("Selected employee does not exist in the system.");
-            }
-            
-            // Get the current schedule to check what needs updating
-            $current_sql = "SELECT * FROM ta_flexible_schedules WHERE id = ? LIMIT 1";
-            $current_stmt = $db->prepare($current_sql);
-            $current_stmt->execute([$flex_id]);
-            $current = $current_stmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$current) {
-                throw new Exception("Schedule not found.");
-            }
-
-            // Update the flexible schedule
-            $update_sql = "UPDATE ta_flexible_schedules SET employee_id = ?, schedule_date = ?, start_time = ?, end_time = ?, repeat_until = ?, contract_end_date = ?, notes = ? WHERE id = ?";
-            $stmt = $db->prepare($update_sql);
-            $stmt->execute([$employee_id, $date, $start_time, $end_time, $repeat_until, $contract_end_date, $notes, $flex_id]);
-
-            $message = 'Flexible schedule updated successfully!';
-            $action = 'overview';
-            
-            // Redirect to refresh the page and show updated data
-            header('Location: ' . $_SERVER['PHP_SELF'] . '?action=overview&updated=1');
-            exit();
-        } catch (Exception $e) {
-            $error = 'Error updating flexible schedule: ' . $e->getMessage();
-        }
-    }
-}
-
-
+?>
+    <?php
 // Get data based on action
-$shifts = $shiftController->getAllShifts();
-$stats = $shiftController->getShiftStatistics();
-$allAssignments = $shiftController->getEmployeesOnShift(null);
 
 // For edit action, get specific shift
 $editShift = null;
@@ -408,7 +76,7 @@ if ($action === 'edit' && isset($_GET['shift_id'])) {
 $current_page = 'shifts.php';
 $current_role = $_SESSION['role'] ?? $_SESSION['user']['role'] ?? 'time';
 $page_title = 'Shift Management';
-$page_subtitle = 'Manage shifts and assignments';
+$page_subtitle = 'Shift management and assignments';
 $page_head_extra = <<<HTML
 <link rel="stylesheet" href="../../assets/dist/css/adminlte.min.css">
 <link rel="stylesheet" href="../../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
@@ -1169,9 +837,15 @@ $page_head_extra = <<<HTML
 HTML;
 ?>
 <?php
+// 12. Before page_start.php
+if (function_exists('shiftDebug')) shiftDebug('[DIAG] 12 Before page_start.php');
 require_once __DIR__ . '/../layout/page_start.php';
 require_once __DIR__ . '/../layout/sidebar.php';
-$page_title = 'Manage Shifts';
+// 13. After page_start.php
+if (function_exists('shiftDebug')) shiftDebug('[DIAG] 13 After page_start.php');
+// Before the main Shift Management HTML
+if (function_exists('shiftDebug')) shiftDebug('[DIAG] 14 Before main Shift Management HTML');
+$page_title = 'Shift Management';
 $page_subtitle = 'Create, edit, and assign employee shifts';
 $page_icon = 'fa-clock';
 require_once __DIR__ . '/../layout/content_header.php';
@@ -1191,21 +865,287 @@ require_once __DIR__ . '/../layout/content_header.php';
                 <span><?php echo htmlspecialchars($error); ?></span>
             </div>
         <?php endif; ?>
-        <!-- Action Buttons for Modals -->
+        <!-- Action Button for Assign Shift -->
         <div class="shift-action-buttons">
-            <button class="btn btn-primary" onclick="openCreateShiftModal();">
-                <i class="fas fa-plus-circle"></i>
-                Create Shift
-            </button>
-            <button class="btn btn-primary" onclick="openModal('assignmentModal');">
-                <i class="fas fa-user-check"></i>
-                Assign Employee
-            </button>
-            <button class="btn btn-primary" onclick="openModal('flexibleModal');">
-                <i class="fas fa-calendar-day"></i>
-                Flexible Schedule
+            <button class="btn btn-primary" onclick="openModal('generateFixedModal');">
+                <i class="fas fa-calendar-plus"></i>
+                Assign Shift
             </button>
         </div>
+
+        <script>
+            // Shared helpers available early in the page.
+            if (typeof window.safeLower !== 'function') {
+                window.safeLower = function(value) {
+                    return String(value || '').toLowerCase();
+                };
+            }
+            if (typeof window.escapeHtml !== 'function') {
+                window.escapeHtml = function(value) {
+                    return String(value || '').replace(/[&<>"']/g, function(match) {
+                        return {
+                            '&': '&amp;',
+                            '<': '&lt;',
+                            '>': '&gt;',
+                            '"': '&quot;',
+                            "'": '&#039;'
+                        }[match] || match;
+                    });
+                };
+            }
+
+            // Defensive minimal modal handlers: ensure buttons work even if later scripts error.
+            if (typeof openModal !== 'function') {
+                window.openModal = function(modalId) {
+                    try {
+                        const modal = document.getElementById(modalId);
+                        if (modal) {
+                            modal.style.display = 'flex';
+                            document.body.classList.add('modal-open');
+                        }
+                    } catch (e) { console.error('openModal (defensive) error', e); }
+                };
+            }
+
+            // ===== Minimal Generate Fixed Schedule Modal logic =====
+            function closeModal(modalId) {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                }
+            }
+
+            let fixedScheduleEmployees = [];
+            let filteredFixedScheduleEmployees = [];
+
+            function submitGenerateFixed() {
+                const employeeId = document.getElementById('gf_employee_id').value;
+                if (!employeeId) { alert('Please choose an employee before generating the schedule'); return; }
+                const startDate = document.getElementById('gf_start_date').value;
+                const endDate = document.getElementById('gf_end_date').value;
+
+                if (!startDate || !endDate) { alert('Please provide start and end dates'); return; }
+
+                const days = {};
+                ['1','2','3','4','5','6'].forEach(function(d) {
+                    const enabledEl = document.getElementById('gf_day_' + d + '_enabled');
+                    const enabled = enabledEl ? enabledEl.checked : false;
+                    if (!enabled) return;
+                    const sEl = document.getElementById('gf_day_' + d + '_start');
+                    const eEl = document.getElementById('gf_day_' + d + '_end');
+                    if (!sEl || !eEl) return;
+                    const s = sEl.value;
+                    const e = eEl.value;
+                    const bsEl = document.getElementById('gf_day_' + d + '_break_start');
+                    const beEl = document.getElementById('gf_day_' + d + '_break_end');
+                    const bs = bsEl ? bsEl.value : null;
+                    const be = beEl ? beEl.value : null;
+                    if (!s || !e) { alert('Please enter start/end for selected days'); throw 'validation'; }
+                    days[d] = { start: s, end: e };
+                    if (bs || be) { days[d].break_start = bs; days[d].break_end = be; }
+                });
+
+                const payload = { employee_id: employeeId, start_date: startDate, end_date: endDate, days: days };
+
+                fetch('../app/api/schedules/generate_fixed_schedule.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).then(r => r.json()).then(res => {
+                    if (res.success) {
+                        alert('Generated: ' + res.inserted + ' entries');
+                        closeModal('generateFixedModal');
+                        location.reload();
+                    } else {
+                        alert('Error: ' + (res.error || 'Unknown'));
+                    }
+                }).catch(err => { alert('Network error'); console.error(err); });
+            }
+
+            function copySelectedFlexToGenerate() {
+                const srcId = document.getElementById('flex_employee_id');
+                const srcName = document.getElementById('flex_employee_name');
+                const display = document.getElementById('gf_selected_employee_display');
+                const hid = document.getElementById('gf_employee_id');
+                const searchInput = document.getElementById('gf_employee_search');
+                if (srcId && srcId.value) {
+                    hid.value = srcId.value;
+                    display.textContent = (srcName && srcName.value) ? srcName.value : srcId.value;
+                    if (searchInput) searchInput.value = (srcName && srcName.value) ? srcName.value : srcId.value;
+                    closeModal('flexibleModal');
+                } else {
+                    alert('No employee selected in the flexible schedule modal');
+                }
+            }
+
+            function loadFixedScheduleEmployees() {
+                fetch('../app/api/get_employees.php')
+                    .then(response => response.text())
+                    .then(text => {
+                        let data;
+                        try { data = JSON.parse(text); } catch (err) { console.error('get_employees returned non-JSON:', text); throw err; }
+                        if (data.success) {
+                            fixedScheduleEmployees = data.employees || [];
+                            filteredFixedScheduleEmployees = [...fixedScheduleEmployees];
+                        } else {
+                            console.error('Error loading employees:', data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            }
+
+            function renderFixedEmployeeSuggestions(employees) {
+                const suggestions = document.getElementById('gf_employee_suggestions');
+                const searchInput = document.getElementById('gf_employee_search');
+                if (!suggestions || !searchInput) return;
+
+                if (!employees || employees.length === 0) {
+                    suggestions.innerHTML = '<div style="padding: 12px; color: #666;">No employees found</div>';
+                    suggestions.style.display = 'block';
+                    return;
+                }
+
+                suggestions.innerHTML = employees.map(emp => {
+                    const label = emp.full_name || emp.employee || emp.name || emp.employee_id;
+                    const id = emp.employee_id ?? emp.id ?? emp.employeeId;
+                    return `<div class="employee-suggestion-item" data-id="${escapeHtml(id)}" data-name="${escapeHtml(label)}" style="padding: 12px 14px; cursor: pointer; border-bottom: 1px solid #eee;">${escapeHtml(label)}<span style="float:right; color:#999;">${escapeHtml(id)}</span></div>`;
+                }).join('');
+                suggestions.style.display = 'block';
+            }
+
+            function filterFixedEmployeeSuggestions(searchTerm) {
+                const term = safeLower(searchTerm || '').trim();
+                const suggestions = document.getElementById('gf_employee_suggestions');
+                if (!suggestions) return;
+
+                if (term.length === 0) {
+                    suggestions.style.display = 'none';
+                    return;
+                }
+
+                filteredFixedScheduleEmployees = fixedScheduleEmployees.filter(emp => {
+                    const fullName = safeLower(emp.full_name || emp.employee || emp.name || '');
+                    const employeeId = safeLower(String(emp.employee_id || emp.id || ''));
+                    return fullName.includes(term) || employeeId.includes(term);
+                });
+
+                renderFixedEmployeeSuggestions(filteredFixedScheduleEmployees);
+            }
+
+            function searchFixedEmployees() {
+                const searchTerm = document.getElementById('gf_employee_search').value;
+                if (!searchTerm || String(searchTerm).trim().length === 0) {
+                    alert('Enter an employee name or ID to search');
+                    return;
+                }
+                filterFixedEmployeeSuggestions(searchTerm);
+            }
+
+            function toggleGfUnassignedEmployees() {
+                const list = document.getElementById('gf_unassigned_employees');
+                const button = document.getElementById('gf_show_unassigned_button');
+                const suggestions = document.getElementById('gf_employee_suggestions');
+                if (!list || !button) return;
+
+                if (list.style.display === 'block') {
+                    list.style.display = 'none';
+                    button.textContent = 'Show unassigned employees';
+                    return;
+                }
+
+                if (suggestions) suggestions.style.display = 'none';
+                button.textContent = 'Loading unassigned...';
+                fetch('../api/shift_assignment.php?action=get_unassigned_employees')
+                    .then(response => response.text())
+                    .then(text => {
+                        let data;
+                        try { data = JSON.parse(text); } catch (err) { console.error('get_unassigned_employees returned non-JSON:', text); throw err; }
+                        if (data.success && Array.isArray(data.data)) {
+                            renderUnassignedEmployeeList(data.data);
+                            list.style.display = 'block';
+                            button.textContent = 'Hide unassigned employees';
+                        } else {
+                            list.innerHTML = '<div style="padding:12px; color:#666;">No unassigned employees found.</div>';
+                            list.style.display = 'block';
+                            button.textContent = 'Hide unassigned employees';
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        list.innerHTML = '<div style="padding:12px; color:#c00;">Unable to load unassigned employees.</div>';
+                        list.style.display = 'block';
+                        button.textContent = 'Hide unassigned employees';
+                    });
+            }
+
+            function renderUnassignedEmployeeList(employees) {
+                const list = document.getElementById('gf_unassigned_employees');
+                if (!list) return;
+                if (!employees || employees.length === 0) {
+                    list.innerHTML = '<div style="padding:12px; color:#666;">No unassigned employees found.</div>';
+                    return;
+                }
+                list.innerHTML = employees.map(emp => {
+                    const label = emp.full_name || emp.employee || emp.name || emp.employee_id || emp.id || 'Unknown';
+                    const id = emp.employee_id ?? emp.id ?? emp.employeeId ?? '';
+                    return `<div class="employee-suggestion-item" data-id="${escapeHtml(id)}" data-name="${escapeHtml(label)}" style="padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #eee;">${escapeHtml(label)}<span style="float:right; color:#999;">${escapeHtml(id)}</span></div>`;
+                }).join('');
+            }
+
+            function selectFixedEmployee(employeeId, employeeName) {
+                const display = document.getElementById('gf_selected_employee_display');
+                const hid = document.getElementById('gf_employee_id');
+                const searchInput = document.getElementById('gf_employee_search');
+                const suggestions = document.getElementById('gf_employee_suggestions');
+                if (hid) hid.value = employeeId;
+                if (display) display.textContent = employeeName || employeeId;
+                if (searchInput) searchInput.value = employeeName || employeeId;
+                if (suggestions) suggestions.style.display = 'none';
+            }
+
+            function toggleGfDayRow(dayIndex) {
+                const controls = document.getElementById('gf_day_' + dayIndex + '_controls');
+                const checkbox = document.getElementById('gf_day_' + dayIndex + '_enabled');
+                if (!controls || !checkbox) return;
+                controls.style.display = checkbox.checked ? 'grid' : 'none';
+            }
+
+            document.addEventListener('click', function(event) {
+                const suggestions = document.getElementById('gf_employee_suggestions');
+                const searchInput = document.getElementById('gf_employee_search');
+                if (!suggestions || !searchInput) return;
+                const target = event.target;
+                if (target.closest && (target.closest('#gf_employee_suggestions') || target.closest('#gf_unassigned_employees'))) {
+                    const item = target.closest('.employee-suggestion-item');
+                    if (item) {
+                        selectFixedEmployee(item.dataset.id, item.dataset.name);
+                    }
+                    return;
+                }
+                if (target === searchInput) return;
+                suggestions.style.display = 'none';
+            });
+
+            if (typeof closeModal !== 'function') {
+                window.closeModal = function(modalId) {
+                    try {
+                        const modal = document.getElementById(modalId);
+                        if (modal) {
+                            modal.style.display = 'none';
+                            document.body.classList.remove('modal-open');
+                        }
+                    } catch (e) { console.error('closeModal (defensive) error', e); }
+                };
+            }
+
+            // Make sure the Create Shift button always opens a modal
+            if (typeof openCreateShiftModal !== 'function') {
+                window.openCreateShiftModal = function() { openModal('createShiftModal'); };
+            }
+        </script>
 
     <div id="overview" class="tab-content glass-panel" style="display: block;">
         <h2 style="margin-bottom: 30px; font-size: 24px; font-weight: 700; color: #2c3e50;">
@@ -1221,7 +1161,17 @@ require_once __DIR__ . '/../layout/content_header.php';
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-                    <div class="stat-number"><?php echo count(array_filter($shifts, fn($s) => $s['is_active'])); ?></div>
+                    <div class="stat-number">
+                        <?php
+                        $activeShiftCount = 0;
+                        foreach ($shifts as $shift) {
+                            if (!empty($shift['is_active'])) {
+                                $activeShiftCount++;
+                            }
+                        }
+                        echo $activeShiftCount;
+                        ?>
+                    </div>
                     <div class="stat-label">Active Shifts</div>
                 </div>
                 <div class="stat-card">
@@ -1246,56 +1196,7 @@ require_once __DIR__ . '/../layout/content_header.php';
             </div>
         </div>
 
-        <h3 style="margin-top: 50px; font-size: 22px; font-weight: 700; color: #2c3e50;">
-            <i class="fas fa-chart-bar"></i> Shift Breakdown
-        </h3>
-        <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th><i class="fas fa-briefcase"></i> Shift Name</th>
-                            <th><i class="fas fa-clock"></i> Time</th>
-                            <th><i class="fas fa-hourglass-half"></i> Break</th>
-                            <th><i class="fas fa-info-circle"></i> Status</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($shifts as $shift): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($shift['shift_name']); ?></td>
-                                <td><?php echo date('g:i A', strtotime($shift['start_time'])); ?> - <?php echo date('g:i A', strtotime($shift['end_time'])); ?></td>
-                                <td><?php echo $shift['break_duration']; ?> minutes</td>
-                                <td>
-                                    <span class="shift-status <?php echo $shift['is_active'] ? '' : 'inactive'; ?>">
-                                        <?php echo $shift['is_active'] ? 'Active' : 'Inactive'; ?>
-                                    </span>
-                                </td>
-                                <td style="display: flex; gap: 8px;">
-                                    <button type="button" class="btn btn-sm btn-primary" data-shift-edit="<?php echo htmlspecialchars(json_encode([
-                                        $shift['shift_id'],
-                                        $shift['shift_name'],
-                                        $shift['start_time'],
-                                        $shift['end_time'],
-                                        (int)($shift['break_duration'] ?? 0),
-                                        $shift['description'] ?? '',
-                                        (bool)$shift['is_active'],
-                                        !empty($shift['exclude_saturday'])
-                                    ], JSON_HEX_TAG | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_HEX_APOS), ENT_QUOTES, 'UTF-8'); ?>" onclick="openEditShiftModalFromButton(this);">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </button>
-                                    <form method="POST" style="display: inline;">
-                                        <input type="hidden" name="shift_id" value="<?php echo $shift['shift_id']; ?>">
-                                        <button type="submit" name="delete_shift" class="btn btn-sm btn-danger" onclick="return confirm('Delete this shift?');">
-                                            <i class="fas fa-trash"></i> Delete
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
+        <!-- Shift Breakdown removed: condensed into Shift Overview -->
 
         <h3 style="margin-top: 50px; font-size: 22px; font-weight: 700; color: #2c3e50;">
             <i class="fas fa-user-check"></i> Shift Assignments
@@ -1304,14 +1205,14 @@ require_once __DIR__ . '/../layout/content_header.php';
         <!-- Search and Controls -->
         <div style="margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
             <div style="flex: 1; min-width: 200px; position: relative;">
-                <input type="text" id="assignmentSearch" placeholder="Search by employee or shift name..." style="width: 100%; padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;" autocomplete="off">
+                <input type="text" id="assignmentSearch" placeholder="Search by employee, department, or shift..." style="width: 100%; padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;" autocomplete="off">
                 <div id="assignmentSuggestions" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 2px solid #e0e0e0; border-top: none; border-radius: 0 0 6px 6px; max-height: 200px; overflow-y: auto; display: none; z-index: 1000; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
                 </div>
             </div>
             <select id="assignmentSortBy" style="padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; cursor: pointer;">
                 <option value="employee">Sort by Employee</option>
-                <option value="shift">Sort by Shift</option>
-                <option value="date">Sort by Date</option>
+                <option value="shift">Sort by Shifts</option>
+                <option value="active">Sort by Active Count</option>
                 <option value="status">Sort by Status</option>
             </select>
             <button type="button" onclick="resetAssignmentFilters()" style="padding: 10px 20px; background: #f0f0f0; border: 2px solid #ddd; border-radius: 6px; cursor: pointer; font-weight: 500;">
@@ -1324,56 +1225,13 @@ require_once __DIR__ . '/../layout/content_header.php';
                 <thead>
                     <tr>
                         <th style="cursor: pointer;" onclick="sortAssignments('employee')"><i class="fas fa-user"></i> Employee <i class="fas fa-sort"></i></th>
-                        <th style="cursor: pointer;" onclick="sortAssignments('shift')"><i class="fas fa-briefcase"></i> Shift <i class="fas fa-sort"></i></th>
-                        <th style="cursor: pointer;" onclick="sortAssignments('time')"><i class="fas fa-clock"></i> Time <i class="fas fa-sort"></i></th>
-                        <th style="cursor: pointer;" onclick="sortAssignments('from')"><i class="fas fa-calendar-alt"></i> From <i class="fas fa-sort"></i></th>
-                        <th style="cursor: pointer;" onclick="sortAssignments('to')"><i class="fas fa-calendar-check"></i> To <i class="fas fa-sort"></i></th>
+                        <th style="cursor: pointer;" onclick="sortAssignments('shift_count')"><i class="fas fa-briefcase"></i> Shifts <i class="fas fa-sort"></i></th>
+                        <th style="cursor: pointer;" onclick="sortAssignments('active_count')"><i class="fas fa-check-circle"></i> Active <i class="fas fa-sort"></i></th>
                         <th style="cursor: pointer;" onclick="sortAssignments('status')"><i class="fas fa-info-circle"></i> Status <i class="fas fa-sort"></i></th>
+                        <th>Action</th>
                     </tr>
                 </thead>
-                <tbody id="assignmentTableBody">
-                    <?php
-                    // Prepare data for JavaScript rendering
-                    $assignmentData = [];
-                    try {
-                        // Get regular shift assignments
-                        $query = "SELECT es.*, s.shift_name, s.start_time, s.end_time,
-                                         e.full_name, e.department
-                                  FROM ta_employee_shifts es
-                                  INNER JOIN ta_shifts s ON es.shift_id = s.shift_id
-                                  INNER JOIN employees e ON es.employee_id = e.employee_id
-                                  WHERE es.is_active = 1
-                                  ORDER BY s.shift_name, e.full_name";
-                        
-                        $stmt = $db->prepare($query);
-                        $stmt->execute();
-                        $assignments = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                        
-                        if (!empty($assignments)):
-                            foreach ($assignments as $assign):
-                                $isActive = strtotime($assign['effective_from']) <= time() && 
-                                          (is_null($assign['effective_to']) || strtotime($assign['effective_to']) >= time());
-                                
-                                $assignmentData[] = [
-                                    'employee' => $assign['full_name'],
-                                    'shift' => $assign['shift_name'],
-                                    'time' => date('g:i A', strtotime($assign['start_time'])) . ' - ' . date('g:i A', strtotime($assign['end_time'])),
-                                    'startTime' => $assign['start_time'],
-                                    'endTime' => $assign['end_time'],
-                                    'from' => date('M d, Y', strtotime($assign['effective_from'])),
-                                    'fromDate' => strtotime($assign['effective_from']),
-                                    'to' => $assign['effective_to'] ? date('M d, Y', strtotime($assign['effective_to'])) : 'Ongoing',
-                                    'toDate' => $assign['effective_to'] ? strtotime($assign['effective_to']) : 999999999999,
-                                    'status' => $isActive ? 'Active' : 'Scheduled',
-                                    'isActive' => $isActive
-                                ];
-                            endforeach;
-                        endif;
-                    } catch (Exception $e) {
-                        error_log("ERROR: Failed to load assignments: " . $e->getMessage());
-                    }
-                    ?>
-                </tbody>
+                <tbody id="assignmentTableBody"></tbody>
             </table>
             <!-- Pagination for Assignments -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding: 15px; background: white; border-radius: 10px; flex-wrap: wrap; gap: 10px;">
@@ -1401,33 +1259,160 @@ require_once __DIR__ . '/../layout/content_header.php';
             </div>
         </div>
 
+        <div id="employeeShiftModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i class="fas fa-user-clock"></i> Employee Shift Details</h2>
+                    <button class="modal-close" onclick="closeModal('employeeShiftModal')">&times;</button>
+                </div>
+                <div class="modal-body" id="employeeShiftModalBody" style="padding-bottom: 0;"></div>
+                <div class="modal-action-row" style="justify-content: flex-end; gap: 10px; padding: 20px 24px 24px;">
+                    <button class="btn btn-secondary" onclick="closeModal('employeeShiftModal')">Close</button>
+                    <button class="btn btn-primary" id="employeeShiftModalEditButton" type="button" onclick="openAssignmentModalForEmployee()" style="display: none;">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="viewFlexibleScheduleModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i class="fas fa-eye"></i> Flexible Schedule Details</h2>
+                    <button class="modal-close" onclick="closeModal('viewFlexibleScheduleModal')">&times;</button>
+                </div>
+                <div class="modal-body" id="viewFlexibleScheduleModalBody" style="padding-bottom: 0;"></div>
+                <div class="modal-action-row" style="justify-content: flex-end; gap: 10px; padding: 20px 24px 24px;">
+                    <button class="btn btn-secondary" onclick="closeModal('viewFlexibleScheduleModal')">Cancel</button>
+                    <button class="btn btn-primary" id="viewFlexibleScheduleModalEditButton" type="button" onclick="openFlexibleScheduleEditFromViewModal()" style="display: none;">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <script>
         // Assignment Table Data
-        let assignmentTableData = <?php echo json_encode($assignmentData ?? [], JSON_HEX_TAG | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_HEX_APOS); ?>;
+        let assignmentTableData = <?php echo json_encode($allAssignments ?? [], JSON_HEX_TAG | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_HEX_APOS); ?>;
+
+        // Shifts data exported from server to client to resolve shift_id -> name/time
+        const shiftsArray = <?php echo json_encode($shifts ?? [], JSON_HEX_TAG | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_HEX_APOS); ?>;
+        const shiftsMap = {};
+        (shiftsArray || []).forEach(s => {
+            shiftsMap[String(s.shift_id ?? s.shiftId ?? s.id)] = s;
+        });
+
+        function formatTime(hms) {
+            if (!hms) return '';
+            // Accept 'HH:MM:SS' or 'HH:MM'
+            const parts = String(hms).split(':');
+            if (parts.length < 2) return hms;
+            let hour = parseInt(parts[0], 10);
+            const minute = parts[1].padStart(2, '0');
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            hour = hour % 12;
+            if (hour === 0) hour = 12;
+            return `${hour}:${minute} ${ampm}`;
+        }
+
+        function formatTimeRange(start, end) {
+            if (!start && !end) return '';
+            if (!start) return formatTime(end);
+            if (!end) return formatTime(start);
+            return `${formatTime(start)} - ${formatTime(end)}`;
+        }
+        let employeeAssignmentData = [];
         let assignmentCurrentPage = 1;
         let assignmentPageSize = 10;
         let assignmentSortField = 'employee';
         let assignmentSortAsc = true;
         let assignmentFilterText = '';
+        let selectedEmployeeIdForEdit = null;
 
-        function renderAssignmentTable() {
-            const filtered = assignmentTableData.filter(row => {
-                const searchTerm = assignmentFilterText.toLowerCase();
-                return row.employee.toLowerCase().includes(searchTerm) || 
-                       row.shift.toLowerCase().includes(searchTerm);
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>"']/g, (match) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            }[match] || match));
+        }
+
+        function safeLower(value) {
+            return String(value || '').toLowerCase();
+        }
+
+        function normalizeAssignmentData() {
+            const employees = {};
+
+            assignmentTableData.forEach(row => {
+                const empId = String(row.employee_id ?? row.employee ?? row.employeeId ?? '');
+                const employeeName = row.employee || row.full_name || row.name || 'Unknown';
+                const departmentName = row.department || row.dept || '';
+                const isActive = row.isActive || row.is_active === 1 || row.is_active === '1' || row.is_active === true;
+                const rowStatus = row.status || (isActive ? 'Active' : 'Scheduled');
+
+                if (!employees[empId]) {
+                    employees[empId] = {
+                        employee_id: empId,
+                        employee: employeeName,
+                        department: departmentName,
+                        shift_count: 0,
+                        active_count: 0,
+                        status: rowStatus,
+                        assignments: []
+                    };
+                }
+
+                employees[empId].shift_count += 1;
+                if (isActive) {
+                    employees[empId].active_count += 1;
+                    employees[empId].status = 'Active';
+                }
+
+                // Normalize assignment row and attach shift details when available
+                const assign = Object.assign({}, row);
+                const sid = String((row.shift_id ?? row.shiftId ?? row.shift) || '');
+                const shiftInfo = shiftsMap[sid] || {};
+                assign.shift = shiftInfo.shift_name || row.shift || '';
+                assign.shift_id = sid || (row.shift_id || row.shiftId || '');
+                assign.time = formatTimeRange(shiftInfo.start_time || shiftInfo.start_time, shiftInfo.end_time || shiftInfo.end_time) || row.time || '';
+                assign.from = shiftInfo.start_time || row.from || row.start || '';
+                assign.to = shiftInfo.end_time || row.to || row.end || '';
+                assign.isActive = isActive;
+                assign.status = row.status || (isActive ? 'Active' : 'Scheduled');
+
+                employees[empId].assignments.push(assign);
             });
 
-            // Sort
+            employeeAssignmentData = Object.values(employees);
+        }
+
+        function renderAssignmentTable() {
+            const filtered = employeeAssignmentData.filter(row => {
+                const searchTerm = safeLower(assignmentFilterText);
+                const employeeName = String(row.employee || row.full_name || '');
+                const departmentName = String(row.department || '');
+                const matchesEmployee = safeLower(employeeName).includes(searchTerm);
+                const matchesDepartment = safeLower(departmentName).includes(searchTerm);
+                const matchesShift = row.assignments.some(assign => {
+                    const shiftText = String(assign.shift || assign.shift_name || assign.shiftName || '');
+                    return safeLower(shiftText).includes(searchTerm);
+                });
+                return matchesEmployee || matchesDepartment || matchesShift;
+            });
+
             const sorted = [...filtered];
             sorted.sort((a, b) => {
                 let aVal = a[assignmentSortField];
                 let bVal = b[assignmentSortField];
-                
-                if (assignmentSortField === 'fromDate' || assignmentSortField === 'toDate') {
-                    aVal = parseInt(aVal);
-                    bVal = parseInt(bVal);
+
+                if (assignmentSortField === 'shift_count' || assignmentSortField === 'active_count') {
+                    aVal = parseInt(aVal, 10);
+                    bVal = parseInt(bVal, 10);
                 }
-                
+
                 if (aVal < bVal) return assignmentSortAsc ? -1 : 1;
                 if (aVal > bVal) return assignmentSortAsc ? 1 : -1;
                 return 0;
@@ -1435,10 +1420,7 @@ require_once __DIR__ . '/../layout/content_header.php';
 
             const totalRecords = sorted.length;
             const totalPages = Math.ceil(totalRecords / assignmentPageSize);
-
-            if (assignmentCurrentPage > totalPages && totalPages > 0) {
-                assignmentCurrentPage = totalPages;
-            }
+            if (assignmentCurrentPage > totalPages && totalPages > 0) assignmentCurrentPage = totalPages;
 
             const start = (assignmentCurrentPage - 1) * assignmentPageSize;
             const end = start + assignmentPageSize;
@@ -1446,37 +1428,29 @@ require_once __DIR__ . '/../layout/content_header.php';
 
             let html = '';
             if (pageData.length === 0) {
-                html = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #999;"><i class="fas fa-inbox" style="font-size: 32px; display: block; margin-bottom: 12px;"></i>No shift assignments found.</td></tr>';
+                html = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: #999;"><i class="fas fa-inbox" style="font-size: 32px; display: block; margin-bottom: 12px;"></i>No employee assignments found.</td></tr>';
             } else {
                 pageData.forEach(row => {
+                    const employeeIdSafe = String(row.employee_id || '');
+                    const employeeIdJson = JSON.stringify(employeeIdSafe);
+                    const employeeIdJsonEscaped = escapeHtml(employeeIdJson);
                     html += `<tr>
                         <td>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-user-circle" style="font-size: 20px; color: #3498db;"></i>
-                                <span>${row.employee}</span>
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <i class="fas fa-user-circle" style="font-size: 20px; color: #3498db;"></i>
+                                    <span>${escapeHtml(row.employee)}</span>
+                                </div>
+                                <span style="font-size: 12px; color: #777;">${escapeHtml(row.department || 'No department')}</span>
                             </div>
                         </td>
+                        <td>${row.shift_count}</td>
+                        <td>${row.active_count}</td>
+                        <td><span class="shift-status ${row.status === 'Active' ? '' : 'inactive'}">${row.status}</span></td>
                         <td>
-                            <span style="background-color: #e3f2fd; color: #1976d2; padding: 4px 12px; border-radius: 20px; font-weight: 500;">
-                                ${row.shift}
-                            </span>
-                        </td>
-                        <td>
-                            <i class="fas fa-hourglass-start" style="color: #f39c12; margin-right: 4px;"></i>
-                            ${row.time}
-                        </td>
-                        <td>
-                            <i class="fas fa-calendar-plus" style="color: #27ae60; margin-right: 4px;"></i>
-                            ${row.from}
-                        </td>
-                        <td>
-                            <i class="fas fa-calendar-minus" style="color: #e74c3c; margin-right: 4px;"></i>
-                            ${row.to}
-                        </td>
-                        <td>
-                            <span style="background-color: ${row.isActive ? '#d4edda' : '#f8d7da'}; color: ${row.isActive ? '#155724' : '#721c24'}; padding: 4px 12px; border-radius: 4px; font-weight: 500; display: inline-block;">
-                                <i class="fas fa-${row.isActive ? 'check-circle' : 'clock'}" style="margin-right: 4px;"></i>${row.status}
-                            </span>
+                            <button type="button" class="btn btn-sm btn-primary" onclick='openEmployeeShiftModal(${employeeIdJsonEscaped})' style="padding: 6px 12px; display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-eye"></i> View
+                            </button>
                         </td>
                     </tr>`;
                 });
@@ -1487,8 +1461,7 @@ require_once __DIR__ . '/../layout/content_header.php';
         }
 
         function updateAssignmentPagination(total, pages) {
-            document.getElementById('assignmentInfo').textContent = `Showing ${Math.min((assignmentCurrentPage - 1) * assignmentPageSize + 1, total)} to ${Math.min(assignmentCurrentPage * assignmentPageSize, total)} of ${total} records`;
-            
+            document.getElementById('assignmentInfo').textContent = total === 0 ? 'Showing 0 of 0 records' : `Showing ${Math.min((assignmentCurrentPage - 1) * assignmentPageSize + 1, total)} to ${Math.min(assignmentCurrentPage * assignmentPageSize, total)} of ${total} records`;
             const pageNumbers = document.getElementById('assignmentPageNumbers');
             pageNumbers.innerHTML = '';
             for (let i = Math.max(1, assignmentCurrentPage - 2); i <= Math.min(pages, assignmentCurrentPage + 2); i++) {
@@ -1499,13 +1472,12 @@ require_once __DIR__ . '/../layout/content_header.php';
                 btn.onclick = () => { assignmentCurrentPage = i; renderAssignmentTable(); };
                 pageNumbers.appendChild(btn);
             }
-
             document.getElementById('prevAssignBtn').disabled = assignmentCurrentPage === 1;
             document.getElementById('nextAssignBtn').disabled = assignmentCurrentPage === pages || pages === 0;
         }
 
         function nextAssignmentPage() {
-            const pages = Math.ceil(assignmentTableData.length / assignmentPageSize);
+            const pages = Math.ceil(employeeAssignmentData.length / assignmentPageSize);
             if (assignmentCurrentPage < pages) assignmentCurrentPage++;
             renderAssignmentTable();
         }
@@ -1516,7 +1488,7 @@ require_once __DIR__ . '/../layout/content_header.php';
         }
 
         function changeAssignmentPageSize() {
-            assignmentPageSize = parseInt(document.getElementById('assignmentPerPage').value);
+            assignmentPageSize = parseInt(document.getElementById('assignmentPerPage').value, 10);
             assignmentCurrentPage = 1;
             renderAssignmentTable();
         }
@@ -1541,19 +1513,170 @@ require_once __DIR__ . '/../layout/content_header.php';
             renderAssignmentTable();
         }
 
-        // Search live filtering
-        document.getElementById('assignmentSearch').addEventListener('keyup', function() {
-            assignmentFilterText = this.value;
-            assignmentCurrentPage = 1;
-            showAssignmentSuggestions();
-            renderAssignmentTable();
-        });
+        function openEmployeeShiftModal(employeeId) {
+            const employee = employeeAssignmentData.find(row => row.employee_id === employeeId);
+            if (!employee) return;
 
-        // Show suggestions for assignment search
+            console.log('openEmployeeShiftModal - employee:', employee);
+
+            const detailsHtmlParts = [];
+
+            detailsHtmlParts.push(
+                '<div style="padding-bottom: 20px;">' +
+                '<p style="margin: 0 0 10px; color: #555;">Employee: <strong>' + escapeHtml(employee.employee) + '</strong></p>' +
+                '<p style="margin: 0; color: #555;">Department: <strong>' + escapeHtml(employee.department || 'N/A') + '</strong></p>' +
+                '</div>'
+            );
+
+            detailsHtmlParts.push('<div style="margin-bottom: 20px;">');
+            detailsHtmlParts.push('<div style="margin-bottom: 12px; font-weight: 700; color: #333;">Shift Assignments (' + (employee.assignments ? employee.assignments.length : 0) + ')</div>');
+
+            if (!employee.assignments || employee.assignments.length === 0) {
+                detailsHtmlParts.push('<div style="color: #777;">No shifts assigned yet for this employee.</div>');
+            } else {
+                detailsHtmlParts.push(
+                    '<table style="width:100%; border-collapse: collapse; margin-bottom: 16px;">' +
+                    '<thead><tr style="background:#f4f6f8;">' +
+                    '<th style="padding: 10px; text-align:left; font-size: 13px; color:#333;">Shift</th>' +
+                    '<th style="padding: 10px; text-align:left; font-size: 13px; color:#333;">Time</th>' +
+                    '<th style="padding: 10px; text-align:left; font-size: 13px; color:#333;">From</th>' +
+                    '<th style="padding: 10px; text-align:left; font-size: 13px; color:#333;">To</th>' +
+                    '<th style="padding: 10px; text-align:left; font-size: 13px; color:#333;">Status</th>' +
+                    '</tr></thead><tbody>'
+                );
+
+                employee.assignments.forEach(row => {
+                    const shiftName = row.shift || row.shift_name || row.shiftName || '—';
+                    const timeText = row.time || (row.from && row.to ? row.from + ' - ' + row.to : '—');
+                    const fromText = row.from || row.start || '—';
+                    const toText = row.to || row.end || '—';
+                    const isActiveFlag = row.isActive || row.is_active === 1 || row.is_active === '1' || false;
+                    const statusText = row.status || (isActiveFlag ? 'Active' : 'Scheduled');
+
+                    detailsHtmlParts.push(
+                        '<tr>' +
+                        '<td style="padding: 10px; border-bottom: 1px solid #eaeaea;">' + escapeHtml(shiftName) + '</td>' +
+                        '<td style="padding: 10px; border-bottom: 1px solid #eaeaea;">' + escapeHtml(timeText) + '</td>' +
+                        '<td style="padding: 10px; border-bottom: 1px solid #eaeaea;">' + escapeHtml(fromText) + '</td>' +
+                        '<td style="padding: 10px; border-bottom: 1px solid #eaeaea;">' + escapeHtml(toText) + '</td>' +
+                        '<td style="padding: 10px; border-bottom: 1px solid #eaeaea;">' +
+                        '<span style="display:inline-flex; align-items:center; gap:6px; background:' + (isActiveFlag ? '#d4edda' : '#f8d7da') + '; color:' + (isActiveFlag ? '#155724' : '#721c24') + '; padding: 4px 10px; border-radius: 999px;">' +
+                        (isActiveFlag ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-clock"></i>') + ' ' + escapeHtml(statusText) +
+                        '</span></td>' +
+                        '</tr>'
+                    );
+                });
+
+                detailsHtmlParts.push('</tbody></table>');
+                detailsHtmlParts.push(
+                    '<details style="font-size:12px; color:#666;">' +
+                    '<summary>Show raw assignment data (debug)</summary>' +
+                    '<pre style="white-space:pre-wrap; max-height:200px; overflow:auto;">' + escapeHtml(JSON.stringify(employee.assignments, null, 2)) + '</pre>' +
+                    '</details>'
+                );
+            }
+
+            detailsHtmlParts.push('</div>');
+
+            document.getElementById('employeeShiftModalBody').innerHTML = detailsHtmlParts.join('');
+            document.getElementById('employeeShiftModalEditButton').style.display = 'inline-flex';
+            selectedEmployeeIdForEdit = employeeId;
+            openModal('employeeShiftModal');
+        }
+
+        function openAssignmentModalForEmployee() {
+            if (!selectedEmployeeIdForEdit) {
+                closeModal('employeeShiftModal');
+                return;
+            }
+            // Enter single-employee edit mode
+            assignmentMode = 'edit';
+            selectedEmployeeForEdit = selectedEmployeeIdForEdit;
+            selectedEmployees = new Set([selectedEmployeeForEdit]);
+            const selectedCountEl = document.getElementById('selectedCount');
+            if (selectedCountEl) selectedCountEl.textContent = '1';
+
+            // Fetch employee details from server to ensure name/assignment are authoritative
+            fetch('../app/api/get_employee_details.php', {
+                method: 'POST',
+                headers: { 'Accept': 'application/json' },
+                body: new URLSearchParams({ employee_id: selectedEmployeeForEdit })
+            })
+            .then(r => r.text())
+            .then(text => {
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (err) {
+                    console.error('get_employee_details returned non-JSON:', text);
+                    throw new Error('Server error when fetching employee details');
+                }
+                if (!data || !data.success) {
+                    throw new Error(data && data.message ? data.message : 'Failed to fetch employee details');
+                }
+
+                // Fill display
+                const emp = data.employee || null;
+                const assignments = data.assignments || [];
+                const sd = document.getElementById('selectedEmployeeDisplay');
+                const summary = document.getElementById('selectedSummary');
+                if (sd) {
+                    const name = emp ? (emp.full_name || emp.full_name || emp.employee_id) : ('Employee ID: ' + selectedEmployeeForEdit);
+                    const dept = emp ? (emp.department || '') : '';
+                    sd.innerHTML = '<div style="display:flex; gap:10px; align-items:center;"><i class="fas fa-user-circle" style="font-size:18px;color:#1565c0"></i><div><div style="font-weight:700;color:#233e8b">' + escapeHtml(name) + '</div>' + (dept ? '<div style="font-size:12px;color:#777">' + escapeHtml(dept) + '</div>' : '') + '</div></div>';
+                    sd.style.display = 'block';
+                }
+                if (summary && emp) {
+                    summary.innerHTML = '<strong>Selected:</strong> ' + escapeHtml(emp.full_name || emp.employee_id);
+                }
+
+                // Prefill assignment fields if we have assignment data
+                if (assignments && assignments.length > 0) {
+                    const activeAssign = assignments.find(a => a.is_active == 1 || a.isActive) || assignments[0];
+                    if (activeAssign) {
+                        const shiftSel = document.getElementById('shift_id');
+                        if (shiftSel && (activeAssign.shift_id || activeAssign.shiftId || activeAssign.shift)) {
+                            shiftSel.value = activeAssign.shift_id || activeAssign.shiftId || activeAssign.shift;
+                        }
+                        const effFrom = document.getElementById('effective_from');
+                        if (effFrom && activeAssign.effective_from) effFrom.value = (activeAssign.effective_from || '').split(' ')[0];
+                        const effTo = document.getElementById('effective_to');
+                        if (effTo && activeAssign.effective_to) effTo.value = (activeAssign.effective_to || '').split ? activeAssign.effective_to.split(' ')[0] : activeAssign.effective_to;
+                        const excl = document.getElementById('exclude_saturday');
+                        if (excl) excl.checked = !!(activeAssign.exclude_saturday || activeAssign.excludeSaturday || false);
+                    }
+                }
+
+                loadEmployeeList();
+                openModal('assignmentModal');
+                closeModal('employeeShiftModal');
+            })
+            .catch(err => {
+                console.error('Error fetching employee details:', err);
+                // Fallback: open modal without prefill
+                loadEmployeeList();
+                openModal('assignmentModal');
+                closeModal('employeeShiftModal');
+            });
+        }
+
+        const assignmentSearchInput = document.getElementById('assignmentSearch');
+        if (assignmentSearchInput) {
+            assignmentSearchInput.addEventListener('keyup', function() {
+                assignmentFilterText = this.value || '';
+                assignmentCurrentPage = 1;
+                showAssignmentSuggestions();
+                renderAssignmentTable();
+            });
+        }
+
         function showAssignmentSuggestions() {
             const searchBox = document.getElementById('assignmentSearch');
             const suggestionsBox = document.getElementById('assignmentSuggestions');
-            const query = searchBox.value.toLowerCase().trim();
+            if (!searchBox || !suggestionsBox) {
+                return;
+            }
+            const query = safeLower(searchBox.value).trim();
 
             if (query.length === 0) {
                 suggestionsBox.style.display = 'none';
@@ -1561,13 +1684,21 @@ require_once __DIR__ . '/../layout/content_header.php';
             }
 
             const suggestions = new Set();
-            assignmentTableData.forEach(row => {
-                if (row.employee.toLowerCase().includes(query)) {
-                    suggestions.add(row.employee);
+            employeeAssignmentData.forEach(row => {
+                const employeeName = String(row.employee || row.full_name || '');
+                const departmentName = String(row.department || '');
+                if (safeLower(employeeName).includes(query)) {
+                    suggestions.add(employeeName);
                 }
-                if (row.shift.toLowerCase().includes(query)) {
-                    suggestions.add(row.shift);
+                if (safeLower(departmentName).includes(query)) {
+                    suggestions.add(departmentName);
                 }
+                row.assignments.forEach(assign => {
+                    const shiftText = String(assign.shift || assign.shift_name || assign.shiftName || '');
+                    if (safeLower(shiftText).includes(query)) {
+                        suggestions.add(assign.shift || assign.shift_name || assign.shiftName || '');
+                    }
+                });
             });
 
             if (suggestions.size === 0) {
@@ -1579,7 +1710,7 @@ require_once __DIR__ . '/../layout/content_header.php';
             Array.from(suggestions).slice(0, 8).forEach(suggestion => {
                 const item = document.createElement('div');
                 item.style.cssText = 'padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;';
-                item.innerHTML = `<i class="fas fa-search" style="color: #999; margin-right: 8px;"></i>${suggestion}`;
+                item.innerHTML = `<i class="fas fa-search" style="color: #999; margin-right: 8px;"></i>${escapeHtml(suggestion)}`;
                 item.onmouseover = () => item.style.background = '#f8f9fa';
                 item.onmouseout = () => item.style.background = 'white';
                 item.onclick = () => {
@@ -1595,14 +1726,13 @@ require_once __DIR__ . '/../layout/content_header.php';
             suggestionsBox.style.display = 'block';
         }
 
-        // Hide suggestions when clicking outside
         document.addEventListener('click', function(e) {
             if (!e.target.closest('#assignmentSearch') && !e.target.closest('#assignmentSuggestions')) {
                 document.getElementById('assignmentSuggestions').style.display = 'none';
             }
         });
 
-        // Initial render
+        normalizeAssignmentData();
         renderAssignmentTable();
     </script>
 
@@ -1619,8 +1749,8 @@ require_once __DIR__ . '/../layout/content_header.php';
             </div>
             <select id="flexibleSortBy" style="padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; cursor: pointer;">
                 <option value="employee">Sort by Employee</option>
-                <option value="date">Sort by Date</option>
-                <option value="time">Sort by Time</option>
+                <option value="day">Sort by Day(s)</option>
+                <option value="status">Sort by Status</option>
             </select>
             <button type="button" onclick="resetFlexibleFilters()" style="padding: 10px 20px; background: #f0f0f0; border: 2px solid #ddd; border-radius: 6px; cursor: pointer; font-weight: 500;">
                 <i class="fas fa-redo"></i> Reset
@@ -1632,12 +1762,8 @@ require_once __DIR__ . '/../layout/content_header.php';
                     <thead>
                         <tr>
                             <th style="cursor: pointer;" onclick="sortFlexible('employee')"><i class="fas fa-user"></i> Employee <i class="fas fa-sort"></i></th>
-                            <th style="cursor: pointer;" onclick="sortFlexible('date')"><i class="fas fa-calendar"></i> Date <i class="fas fa-sort"></i></th>
                             <th><i class="fas fa-calendar-check"></i> Day(s)</th>
-                            <th style="cursor: pointer;" onclick="sortFlexible('time')"><i class="fas fa-clock"></i> Time <i class="fas fa-sort"></i></th>
-                            <th><i class="fas fa-repeat"></i> Repeat Until</th>
-                            <th><i class="fas fa-calendar-times"></i> Contract End</th>
-                            <th><i class="fas fa-sticky-note"></i> Notes</th>
+                            <th style="cursor: pointer;" onclick="sortFlexible('status')"><i class="fas fa-info-circle"></i> Status <i class="fas fa-sort"></i></th>
                             <th><i class="fas fa-cog"></i> Action</th>
                         </tr>
                     </thead>
@@ -1660,6 +1786,13 @@ require_once __DIR__ . '/../layout/content_header.php';
                             if (!empty($flex_schedules)):
                                 foreach ($flex_schedules as $flex):
                                     $day_text = $flex['day_of_week'] !== null ? $day_names[$flex['day_of_week']] . ' (Weekly)' : date('l', strtotime($flex['schedule_date']));
+                                    $today = date('Y-m-d');
+                                    $status = 'Inactive';
+                                    if ($flex['day_of_week'] !== null) {
+                                        $status = empty($flex['repeat_until']) || $flex['repeat_until'] >= $today ? 'Active' : 'Inactive';
+                                    } else {
+                                        $status = $flex['schedule_date'] >= $today ? 'Active' : 'Inactive';
+                                    }
                                     $flexibleData[] = [
                                         'id' => $flex['id'],
                                         'employee_id' => $flex['employee_id'],
@@ -1667,11 +1800,13 @@ require_once __DIR__ . '/../layout/content_header.php';
                                         'date' => date('M d, Y', strtotime($flex['schedule_date'])),
                                         'dateSort' => strtotime($flex['schedule_date']),
                                         'day' => $day_text,
+                                        'status' => $status,
                                         'time' => date('g:i A', strtotime($flex['start_time'])) . ' - ' . date('g:i A', strtotime($flex['end_time'])),
                                         'timeSort' => $flex['start_time'],
                                         'repeat' => $flex['repeat_until'] ? date('M d, Y', strtotime($flex['repeat_until'])) : '—',
                                         'contract' => $flex['contract_end_date'] ? date('M d, Y', strtotime($flex['contract_end_date'])) : '—',
                                         'notes' => $flex['notes'] ?? '',
+                                        'day_of_week' => $flex['day_of_week'],
                                         'schedule_date' => $flex['schedule_date'],
                                         'start_time' => $flex['start_time'],
                                         'end_time' => $flex['end_time'],
@@ -1714,7 +1849,8 @@ require_once __DIR__ . '/../layout/content_header.php';
 
             <script>
             // Flexible Schedules Table Data
-            let flexibleTableData = <?php echo json_encode($flexibleData, JSON_HEX_TAG | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_HEX_APOS); ?>;
+            const rawFlexibleTableData = <?php echo json_encode($flexibleData, JSON_HEX_TAG | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_HEX_APOS); ?>;
+            let flexibleTableData = [];
             let flexibleCurrentPage = 1;
             let flexiblePageSize = 10;
             let flexibleSortField = 'employee';
@@ -1731,23 +1867,63 @@ require_once __DIR__ . '/../layout/content_header.php';
                 }[character]));
             }
 
-            function renderFlexibleTable() {
-                const filtered = flexibleTableData.filter(row => {
-                    const searchTerm = flexibleFilterText.toLowerCase();
-                    return row.employee.toLowerCase().includes(searchTerm) || 
-                           row.notes.toLowerCase().includes(searchTerm);
+            function groupFlexibleTableData() {
+                const groups = {};
+                rawFlexibleTableData.forEach(row => {
+                    const key = String(row.employee_id ?? row.employee ?? row.id ?? 'unknown');
+                    if (!groups[key]) {
+                        groups[key] = {
+                            employee_id: row.employee_id,
+                            employee: row.employee || 'Unknown',
+                            schedules: [],
+                            daySet: new Set(),
+                            status: 'Inactive',
+                            notes: ''
+                        };
+                    }
+
+                    const group = groups[key];
+                    group.schedules.push(row);
+                    group.notes = group.notes || row.notes || '';
+                    if (row.day) {
+                        group.daySet.add(row.day);
+                    }
+                    if (String(row.status || '').toLowerCase() === 'active') {
+                        group.status = 'Active';
+                    }
                 });
 
-                // Sort
+                flexibleTableData = Object.values(groups).map(group => ({
+                    employee_id: group.employee_id,
+                    employee: group.employee,
+                    day: Array.from(group.daySet).join(', '),
+                    status: group.status,
+                    schedules: group.schedules,
+                    notes: group.notes
+                }));
+            }
+
+            function renderFlexibleTable() {
+                groupFlexibleTableData();
+                const filtered = flexibleTableData.filter(row => {
+                    const searchTerm = safeLower(flexibleFilterText);
+                    return safeLower(row.employee).includes(searchTerm) ||
+                        safeLower(row.day).includes(searchTerm) ||
+                        safeLower(row.status).includes(searchTerm) ||
+                        safeLower(row.notes).includes(searchTerm);
+                });
+
                 const sorted = [...filtered];
                 sorted.sort((a, b) => {
-                    let aVal = a[flexibleSortField];
-                    let bVal = b[flexibleSortField];
-                    
+                    let aVal = a[flexibleSortField] ?? '';
+                    let bVal = b[flexibleSortField] ?? '';
+
                     if (typeof aVal === 'number' && typeof bVal === 'number') {
                         return flexibleSortAsc ? aVal - bVal : bVal - aVal;
                     }
-                    
+
+                    aVal = String(aVal).toLowerCase();
+                    bVal = String(bVal).toLowerCase();
                     if (aVal < bVal) return flexibleSortAsc ? -1 : 1;
                     if (aVal > bVal) return flexibleSortAsc ? 1 : -1;
                     return 0;
@@ -1766,43 +1942,25 @@ require_once __DIR__ . '/../layout/content_header.php';
 
                 let html = '';
                 if (pageData.length === 0) {
-                    html = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #999;"><i class="fas fa-inbox" style="font-size: 32px; display: block; margin-bottom: 12px;"></i>No flexible schedules found.</td></tr>';
+                    html = '<tr><td colspan="4" style="text-align: center; padding: 40px; color: #999;"><i class="fas fa-inbox" style="font-size: 32px; display: block; margin-bottom: 12px;"></i>No flexible schedules found.</td></tr>';
                 } else {
                     pageData.forEach(row => {
-                        const rowNotes = String(row.notes || '');
-                        const notesPreview = rowNotes.length > 30 ? rowNotes.substring(0, 30) + '...' : rowNotes || '—';
-                        const editData = JSON.stringify([
-                            row.id,
-                            String(row.employee_id || ''),
-                            row.schedule_date || '',
-                            row.start_time || '',
-                            row.end_time || '',
-                            rowNotes,
-                            row.repeat_until || '',
-                            row.contract_end_date || ''
-                        ]);
+                        const viewData = JSON.stringify(row);
                         html += `<tr>
-                            <td><i class="fas fa-user" style="margin-right: 8px; color: #3498db;"></i>${row.employee}</td>
-                            <td>${row.date}</td>
-                            <td>${row.day}</td>
-                            <td><i class="fas fa-clock" style="margin-right: 4px; color: #f39c12;"></i>${row.time}</td>
-                            <td>${row.repeat}</td>
-                            <td>${row.contract}</td>
-                            <td title="${escapeFlexibleHtml(rowNotes)}">${notesPreview}</td>
-                            <td style="display: flex; gap: 8px;">
-                                <button type="button" class="btn btn-sm btn-primary" data-flexible-edit="${escapeFlexibleHtml(editData)}" onclick="openFlexibleScheduleEditFromButton(this);" style="padding: 6px 12px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                                    <i class="fas fa-edit"></i> Edit
+                            <td>
+                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <i class="fas fa-user-circle" style="font-size: 20px; color: #3498db;"></i>
+                                        <span>${escapeFlexibleHtml(row.employee)}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>${escapeFlexibleHtml(row.day)}</td>
+                            <td><span class="shift-status ${row.status === 'Active' ? '' : 'inactive'}">${escapeFlexibleHtml(row.status)}</span></td>
+                            <td style="display: flex; gap: 8px; justify-content: flex-end;">
+                                <button type="button" class="btn btn-sm btn-primary" data-flexible-view="${escapeFlexibleHtml(viewData)}" onclick="openFlexibleScheduleViewFromButton(this);" style="padding: 6px 12px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                    <i class="fas fa-eye"></i> View
                                 </button>
-                                <form method="POST" style="display: inline;">
-                                    <input type="hidden" name="delete_flex_id" value="${row.id}">
-                                    <input type="hidden" name="delete_flex_employee_id" value="${row.employee_id}">
-                                    <input type="hidden" name="delete_flex_schedule_date" value="${row.schedule_date}">
-                                    <input type="hidden" name="delete_flex_start_time" value="${row.start_time}">
-                                    <input type="hidden" name="delete_flex_end_time" value="${row.end_time}">
-                                    <button type="submit" name="delete_flexible" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?');" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                                        <i class="fas fa-trash"></i> Delete
-                                    </button>
-                                </form>
                             </td>
                         </tr>`;
                     });
@@ -1810,6 +1968,84 @@ require_once __DIR__ . '/../layout/content_header.php';
 
                 document.getElementById('flexibleTableBody').innerHTML = html;
                 updateFlexiblePagination(totalRecords, totalPages);
+            }
+
+            let currentFlexibleViewData = null;
+
+            function openFlexibleScheduleViewFromButton(button) {
+                try {
+                    const viewData = JSON.parse(button.dataset.flexibleView);
+                    currentFlexibleViewData = viewData;
+                    openFlexibleScheduleView(viewData);
+                } catch (error) {
+                    console.error('Error reading flexible schedule view data:', error);
+                }
+            }
+
+            function openFlexibleScheduleView(data) {
+                const scheduleRows = Array.isArray(data.schedules) ? data.schedules : [];
+                const scheduleDetails = scheduleRows.map((item, index) => {
+                    return `
+                        <div style="margin-bottom: 16px; padding: 14px; background: #f7f9fc; border-radius: 8px; border: 1px solid #e3e8ef;">
+                            <div style="display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                                <strong style="font-size: 14px; color: #2c3e50;">Shift ${index + 1}</strong>
+                                <span style="font-size: 13px; color: #555;">Status: <strong>${escapeFlexibleHtml(item.status || 'Unknown')}</strong></span>
+                            </div>
+                            <p style="margin: 8px 0 4px; color: #555;">Date: <strong>${escapeFlexibleHtml(item.date || '')}</strong></p>
+                            <p style="margin: 4px 0; color: #555;">Day(s): <strong>${escapeFlexibleHtml(item.day || '')}</strong></p>
+                            <p style="margin: 4px 0; color: #555;">Time: <strong>${escapeFlexibleHtml(item.time || '')}</strong></p>
+                            <p style="margin: 4px 0; color: #555;">Repeat Until: <strong>${escapeFlexibleHtml(item.repeat || '—')}</strong></p>
+                            <p style="margin: 4px 0; color: #555;">Contract End Date: <strong>${escapeFlexibleHtml(item.contract || '—')}</strong></p>
+                            <p style="margin: 4px 0; color: #555;">Notes: <strong>${escapeFlexibleHtml(item.notes || '—')}</strong></p>
+                        </div>`;
+                }).join('');
+
+                const detailsHtml = [
+                    '<div style="padding-bottom: 20px;">',
+                    '<p style="margin: 0 0 10px; color: #555;">Employee: <strong>' + escapeFlexibleHtml(data.employee || 'Unknown') + '</strong></p>',
+                    '<p style="margin: 0 0 10px; color: #555;">Day(s): <strong>' + escapeFlexibleHtml(data.day || '') + '</strong></p>',
+                    '<p style="margin: 0 0 10px; color: #555;">Status: <strong>' + escapeFlexibleHtml(data.status || 'Unknown') + '</strong></p>',
+                    '<p style="margin: 0 0 10px; color: #555;">Total Shifts: <strong>' + scheduleRows.length + '</strong></p>',
+                    '<div style="margin-top: 10px;">' + scheduleDetails + '</div>',
+                    '</div>'
+                ].join('');
+
+                const editButton = document.getElementById('viewFlexibleScheduleModalEditButton');
+                if (editButton) {
+                    editButton.style.display = data && Array.isArray(data.schedules) && data.schedules.length > 0 ? 'inline-flex' : 'none';
+                }
+
+                document.getElementById('viewFlexibleScheduleModalBody').innerHTML = detailsHtml;
+                openModal('viewFlexibleScheduleModal');
+            }
+
+            function openFlexibleScheduleEditFromViewModal() {
+                if (!currentFlexibleViewData || !Array.isArray(currentFlexibleViewData.schedules) || currentFlexibleViewData.schedules.length === 0) {
+                    return;
+                }
+
+                // Prefer the first weekly schedule entry by day_of_week, otherwise fall back to the first schedule row.
+                let schedule = currentFlexibleViewData.schedules[0];
+                const weeklySchedules = currentFlexibleViewData.schedules
+                    .filter(item => item.day_of_week !== undefined && item.day_of_week !== null && item.day_of_week !== '')
+                    .sort((a, b) => Number(a.day_of_week) - Number(b.day_of_week));
+                if (weeklySchedules.length > 0) {
+                    schedule = weeklySchedules[0];
+                }
+
+                closeModal('viewFlexibleScheduleModal');
+                openFlexibleScheduleEdit(
+                    schedule.id,
+                    schedule.employee_id,
+                    currentFlexibleViewData.employee || '',
+                    schedule.day_of_week ?? schedule.dayOfWeek ?? '',
+                    schedule.schedule_date || schedule.date,
+                    schedule.start_time || (schedule.time ? schedule.time.split(' - ')[0] : ''),
+                    schedule.end_time || (schedule.time ? schedule.time.split(' - ')[1] : ''),
+                    schedule.notes || '',
+                    schedule.repeat_until || schedule.repeat || '',
+                    schedule.contract_end_date || schedule.contract || ''
+                );
             }
 
             function updateFlexiblePagination(total, pages) {
@@ -1868,18 +2104,21 @@ require_once __DIR__ . '/../layout/content_header.php';
             }
 
             // Search live filtering
-            document.getElementById('flexibleSearch').addEventListener('keyup', function() {
-                flexibleFilterText = this.value;
-                flexibleCurrentPage = 1;
-                showFlexibleSuggestions();
-                renderFlexibleTable();
-            });
+            const flexibleSearchInput = document.getElementById('flexibleSearch');
+            if (flexibleSearchInput) {
+                flexibleSearchInput.addEventListener('keyup', function() {
+                    flexibleFilterText = this.value || '';
+                    flexibleCurrentPage = 1;
+                    showFlexibleSuggestions();
+                    renderFlexibleTable();
+                });
+            }
 
             // Show suggestions for flexible search
             function showFlexibleSuggestions() {
                 const searchBox = document.getElementById('flexibleSearch');
                 const suggestionsBox = document.getElementById('flexibleSuggestions');
-                const query = searchBox.value.toLowerCase().trim();
+                const query = safeLower(searchBox.value).trim();
 
                 if (query.length === 0) {
                     suggestionsBox.style.display = 'none';
@@ -1888,11 +2127,13 @@ require_once __DIR__ . '/../layout/content_header.php';
 
                 const suggestions = new Set();
                 flexibleTableData.forEach(row => {
-                    if (row.employee.toLowerCase().includes(query)) {
-                        suggestions.add(row.employee);
+                    const emp = String(row.employee || '');
+                    const notes = String(row.notes || '');
+                    if (safeLower(emp).includes(query)) {
+                        suggestions.add(emp);
                     }
-                    if (row.notes.toLowerCase().includes(query)) {
-                        suggestions.add(row.notes.substring(0, 50));
+                    if (safeLower(notes).includes(query)) {
+                        suggestions.add(notes.substring(0, 50));
                     }
                 });
 
@@ -1932,11 +2173,11 @@ require_once __DIR__ . '/../layout/content_header.php';
             document.getElementById('assignmentSortBy').addEventListener('change', function() {
                 const mapping = {
                     'employee': 'employee',
-                    'shift': 'shift',
-                    'date': 'fromDate',
+                    'shift': 'shift_count',
+                    'active': 'active_count',
                     'status': 'status'
                 };
-                assignmentSortField = mapping[this.value];
+                assignmentSortField = mapping[this.value] || 'employee';
                 assignmentCurrentPage = 1;
                 renderAssignmentTable();
             });
@@ -1945,10 +2186,10 @@ require_once __DIR__ . '/../layout/content_header.php';
             document.getElementById('flexibleSortBy').addEventListener('change', function() {
                 const mapping = {
                     'employee': 'employee',
-                    'date': 'dateSort',
-                    'time': 'timeSort'
+                    'day': 'day',
+                    'status': 'status'
                 };
-                flexibleSortField = mapping[this.value];
+                flexibleSortField = mapping[this.value] || 'employee';
                 flexibleCurrentPage = 1;
                 renderFlexibleTable();
             });
@@ -2007,6 +2248,8 @@ require_once __DIR__ . '/../layout/content_header.php';
                                             <button type="button" class="btn btn-sm btn-primary" data-flexible-edit="<?php echo htmlspecialchars(json_encode([
                                                 $flex['id'],
                                                 (string)$flex['employee_id'],
+                                                $flex['full_name'],
+                                                $flex['day_of_week'] !== null ? (string)$flex['day_of_week'] : '',
                                                 $flex['schedule_date'],
                                                 $flex['start_time'],
                                                 $flex['end_time'],
@@ -2030,7 +2273,7 @@ require_once __DIR__ . '/../layout/content_header.php';
                         ?>
                                 <tr>
                                     <td colspan="7" style="text-align: center; padding: 20px; color: #999;">
-                                        <i class="fas fa-inbox"></i> No flexible schedules created yet. <a href="#" onclick="openModal('flexibleModal'); return false;" style="color: #0066cc; text-decoration: none;">Create one</a>
+                                        <i class="fas fa-inbox"></i> No flexible schedules created yet.
                                     </td>
                                 </tr>
                         <?php
@@ -2049,100 +2292,6 @@ require_once __DIR__ . '/../layout/content_header.php';
                 </table>
             </div>
 
-        <h3 style="margin-top: 50px; font-size: 22px; font-weight: 700; color: #2c3e50;">
-            <i class="fas fa-calendar-check"></i> Flexible Schedules
-        </h3>
-        <div class="table-container">
-            <table>
-                    <thead>
-                        <tr>
-                            <th><i class="fas fa-user"></i> Employee</th>
-                            <th><i class="fas fa-briefcase"></i> Shift</th>
-                            <th><i class="fas fa-clock"></i> Time</th>
-                            <th><i class="fas fa-calendar-alt"></i> From</th>
-                            <th><i class="fas fa-calendar-check"></i> To</th>
-                            <th><i class="fas fa-info-circle"></i> Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php
-                        try {
-                            $assignments = $shiftController->getEmployeesOnShift(null);
-                            if (!empty($assignments)):
-                                foreach ($assignments as $assign):
-                                    $isActive = strtotime($assign['effective_from']) <= time() && 
-                                              (is_null($assign['effective_to']) || strtotime($assign['effective_to']) >= time());
-                        ?>
-                                    <tr>
-                                        <td>
-                                            <div style="display: flex; align-items: center; gap: 8px;">
-                                                <i class="fas fa-user-circle" style="font-size: 20px; color: #3498db;"></i>
-                                                <span><?php echo htmlspecialchars($assign['full_name']); ?></span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span style="background-color: #e3f2fd; color: #1976d2; padding: 4px 12px; border-radius: 20px; font-weight: 500;">
-                                                <?php echo htmlspecialchars($assign['shift_name']); ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <i class="fas fa-hourglass-start" style="color: #f39c12; margin-right: 4px;"></i>
-                                            <?php echo date('g:i A', strtotime($assign['start_time'])); ?> - 
-                                            <?php echo date('g:i A', strtotime($assign['end_time'])); ?>
-                                        </td>
-                                        <td>
-                                            <i class="fas fa-calendar-plus" style="color: #27ae60; margin-right: 4px;"></i>
-                                            <?php echo date('M d, Y', strtotime($assign['effective_from'])); ?>
-                                        </td>
-                                        <td>
-                                            <?php if ($assign['effective_to']): ?>
-                                                <i class="fas fa-calendar-minus" style="color: #e74c3c; margin-right: 4px;"></i>
-                                                <?php echo date('M d, Y', strtotime($assign['effective_to'])); ?>
-                                            <?php else: ?>
-                                                <span style="color: #999;">
-                                                    <i class="fas fa-infinity" style="margin-right: 4px;"></i>Ongoing
-                                                </span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <?php if ($isActive): ?>
-                                                <span style="background-color: #d4edda; color: #155724; padding: 4px 12px; border-radius: 4px; font-weight: 500; display: inline-block;">
-                                                    <i class="fas fa-check-circle" style="margin-right: 4px;"></i>Active
-                                                </span>
-                                            <?php else: ?>
-                                                <span style="background-color: #f8d7da; color: #721c24; padding: 4px 12px; border-radius: 4px; font-weight: 500; display: inline-block;">
-                                                    <i class="fas fa-clock" style="margin-right: 4px;"></i>Scheduled
-                                                </span>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                        <?php
-                                endforeach;
-                            else:
-                        ?>
-                                <tr>
-                                    <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
-                                        <i class="fas fa-inbox" style="font-size: 32px; display: block; margin-bottom: 12px;"></i>
-                                        No shift assignments yet. <a href="#" onclick="openModal('assignmentModal'); return false;" style="color: #0066cc; text-decoration: none; font-weight: 500;">Create one</a>
-                                    </td>
-                                </tr>
-                        <?php
-                            endif;
-                        } catch (Exception $e) {
-                            error_log("ERROR: Failed to load assignments: " . $e->getMessage());
-                        ?>
-                                <tr>
-                                    <td colspan="6" style="text-align: center; padding: 20px; color: #e74c3c;">
-                                        <i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>Error loading assignments
-                                    </td>
-                                </tr>
-                        <?php
-                        }
-                        ?>
-                    </tbody>
-                </table>
-            </div>
-    </div>
 
     <!-- MODALS -->
     <!-- Create Shift Modal -->
@@ -2272,7 +2421,7 @@ require_once __DIR__ . '/../layout/content_header.php';
             <form method="POST" class="shift-form" style="padding: 0;">
                 <div class="modal-body">
                     <!-- Search and Filter Section -->
-                    <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap;">
+                    <div id="employeeSearchFilterContainer" style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap;">
                         <div style="flex: 1; min-width: 250px; position: relative;">
                             <input 
                                 type="text" 
@@ -2281,8 +2430,11 @@ require_once __DIR__ . '/../layout/content_header.php';
                                 style="width: 100%; padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;"
                                 oninput="filterEmployeeList(this.value)"
                             >
+                            <div id="selectedEmployeeDisplay" style="display:none; padding: 10px 12px; border: 2px solid #e0e0e0; border-radius:6px; background:#fff; font-weight:600;">
+                                <!-- Filled dynamically in edit mode -->
+                            </div>
                         </div>
-                        <button type="button" class="btn btn-info" onclick="searchEmployees()" title="Search" style="padding: 10px 15px; display: flex; align-items: center; gap: 8px;">
+                        <button id="employeeSearchButton" type="button" class="btn btn-info" onclick="searchEmployees()" title="Search" style="padding: 10px 15px; display: flex; align-items: center; gap: 8px;">
                             <i class="fas fa-search"></i>
                         </button>
                         <select id="employeeFilterStatus" style="padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; cursor: pointer;" onchange="filterEmployeeByStatus(this.value)">
@@ -2294,15 +2446,15 @@ require_once __DIR__ . '/../layout/content_header.php';
 
                     <!-- Multi-Select Employee List -->
                     <div class="form-group">
-                        <label><i class="fas fa-users"></i> Select Employees (Multi-select) *</label>
+                        <label id="employeeMultiLabel"><i class="fas fa-users"></i> Select Employees (Multi-select) *</label>
                         <div id="employeeListContainer" style="border: 2px solid #e0e0e0; border-radius: 6px; max-height: 300px; overflow-y: auto; background: #f9f9f9; display: none;">
                             <div id="employeeCheckboxList" style="padding: 10px;">
                                 <!-- Checkboxes will be populated by JavaScript -->
                             </div>
                         </div>
-                        <small style="color: #666; margin-top: 8px; display: block;">
+                        <div id="selectedSummary" style="color: #666; margin-top: 8px; display: block;">
                             <strong>Selected:</strong> <span id="selectedCount">0</span> employee(s)
-                        </small>
+                        </div>
                     </div>
 
                     <!-- Shift Selection -->
@@ -2352,7 +2504,7 @@ require_once __DIR__ . '/../layout/content_header.php';
 
                     <div class="modal-action-row">
                         <button type="button" class="btn btn-secondary" onclick="closeModal('assignmentModal')">Cancel</button>
-                        <button type="button" class="btn btn-primary" onclick="assignMultipleEmployees()" style="display: flex; align-items: center; gap: 8px;">
+                        <button type="button" id="assignmentModalActionButton" class="btn btn-primary" onclick="handleAssignmentModalAction()" style="display: flex; align-items: center; gap: 8px;">
                             <i class="fas fa-check"></i> Assign to Selected
                         </button>
                     </div>
@@ -2361,239 +2513,191 @@ require_once __DIR__ . '/../layout/content_header.php';
         </div>
     </div>
 
-    <!-- Edit Flexible Schedule Modal -->
-    <div id="editFlexibleModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header edit-modal-header">
-                <div>
-                    <span class="edit-modal-eyebrow">FLEXIBLE SCHEDULE</span>
-                    <h2><i class="fas fa-edit"></i> Edit Schedule</h2>
-                    <p>Adjust the employee's date, hours, and schedule options.</p>
-                </div>
-                <button class="modal-close" onclick="closeModal('editFlexibleModal')">&times;</button>
-            </div>
-            <form method="POST" class="shift-form" style="padding: 0;">
-                <div class="modal-body">
-                    <input type="hidden" id="edit_flex_id" name="edit_flex_id">
-                    <div class="edit-form-section">
-                        <div class="edit-section-title"><i class="fas fa-calendar-alt"></i><span>Schedule details</span></div>
-                    <div class="edit-form-grid">
-                    <div class="form-group edit-form-full">
-                        <label><i class="fas fa-user"></i> Employee *</label>
-                        <div class="employee-picker-toolbar">
-                            <input type="text" id="editFlexEmployeeSearchInput" placeholder="Search employees..." oninput="filterEditFlexEmployees(this.value)">
-                            <button type="button" class="btn btn-info" onclick="searchEditFlexEmployees()" title="Search"><i class="fas fa-search"></i></button>
-                            <select id="editFlexEmployeeFilterStatus" onchange="filterEditFlexEmployeesByStatus(this.value)">
-                                <option value="">All Employees</option>
-                                <option value="assigned">Assigned</option>
-                                <option value="unassigned">Unassigned</option>
-                            </select>
-                        </div>
-                        <div id="editFlexEmployeeListContainer" class="employee-picker-list">
-                            <div id="editFlexEmployeeCheckboxList"></div>
-                        </div>
-                        <input type="hidden" id="edit_flex_employee_id" name="edit_flex_employee_id" required>
-                        <small class="employee-picker-selected"><i class="fas fa-info-circle"></i> <strong>Selected:</strong> <span id="editFlexSelectedEmployee">None</span></small>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit_flex_date"><i class="fas fa-calendar"></i> Date *</label>
-                        <input type="date" id="edit_flex_date" name="edit_flex_date" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit_flex_day_of_week"><i class="fas fa-calendar-week"></i> Repeat on Day of Week (Optional)</label>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 10px;">
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="checkbox" name="edit_flex_days[]" value="1"> Monday</label>
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="checkbox" name="edit_flex_days[]" value="2"> Tuesday</label>
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="checkbox" name="edit_flex_days[]" value="3"> Wednesday</label>
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="checkbox" name="edit_flex_days[]" value="4"> Thursday</label>
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="checkbox" name="edit_flex_days[]" value="5"> Friday</label>
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="checkbox" name="edit_flex_days[]" value="6"> Saturday</label>
-                        </div>
-                        <p style="font-size: 12px; color: #999; margin-top: 8px;">Leave empty to assign only the selected date, or check days to repeat weekly</p>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit_flex_start_time"><i class="fas fa-clock"></i> Start Time *</label>
-                        <input type="time" id="edit_flex_start_time" name="edit_flex_start_time" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit_flex_end_time"><i class="fas fa-clock"></i> End Time *</label>
-                        <input type="time" id="edit_flex_end_time" name="edit_flex_end_time" required>
-                    </div>
-                    <div class="form-group edit-form-full">
-                        <label for="edit_flex_notes"><i class="fas fa-sticky-note"></i> Notes (Optional)</label>
-                        <textarea id="edit_flex_notes" name="edit_flex_notes" style="height: 100px; resize: vertical;"></textarea>
-                    </div>
-                    </div>
-                    </div>
-                    <div class="edit-form-section edit-options-section">
-                        <div class="edit-section-title"><i class="fas fa-repeat"></i><span>Schedule options</span></div>
-                    <div class="form-group edit-option-toggle">
-                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0;">
-                            <input type="checkbox" name="edit_flex_repeat_until" id="edit_flex_repeat_until">
-                            <span>Set Repeat End Date</span>
-                        </label>
-                    </div>
-                    <div class="form-group" id="edit_flex_repeat_until_container" style="display: none;">
-                        <label for="edit_flex_repeat_end_date"><i class="fas fa-calendar-times"></i> Repeat Until (Optional)</label>
-                        <input type="date" id="edit_flex_repeat_end_date" name="edit_flex_repeat_end_date">
-                    </div>
-                    <div class="form-group edit-option-toggle">
-                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0;">
-                            <input type="checkbox" name="edit_flex_contract_end" id="edit_flex_contract_end">
-                            <span>Set Contract End Date</span>
-                        </label>
-                    </div>
-                    <div class="form-group" id="edit_flex_contract_end_container" style="display: none;">
-                        <label for="edit_flex_contract_end_date"><i class="fas fa-briefcase"></i> Contract Ends On (Optional)</label>
-                        <input type="date" id="edit_flex_contract_end_date" name="edit_flex_contract_end_date">
-                        <p style="font-size: 12px; color: #999; margin-top: 8px;">Use this for temporary contracts with a specific end date</p>
-                    </div>
-                    </div>
-
-                    <div class="modal-action-row">
-                        <button type="button" class="btn btn-secondary" onclick="closeModal('editFlexibleModal')">Cancel</button>
-                        <button type="submit" name="update_flexible" class="btn btn-primary"><i class="fas fa-save"></i> Update Schedule</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Flexible Schedule Modal -->
-    <div id="flexibleModal" class="modal" style="display: none;">
+    <!-- Generate Fixed Schedule Modal -->
+    <div id="generateFixedModal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h2><i class="fas fa-calendar-day"></i> Create Flexible Schedule</h2>
-                <button class="modal-close" onclick="closeModal('flexibleModal')">&times;</button>
+                <h2><i class="fas fa-calendar-alt"></i> Generate Fixed Schedule</h2>
+                <button class="modal-close" onclick="closeModal('generateFixedModal')">&times;</button>
             </div>
-            <form method="POST" action="" class="shift-form" style="padding: 0;">
-                <div class="modal-body">
-                    <p style="color: #666; margin-bottom: 20px; font-size: 14px;">
-                        <i class="fas fa-info-circle"></i> Assign specific days and times for part-time or contract employees.
-                    </p>
-
-                    <!-- Search and Filter Section -->
-                    <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap;">
-                        <div style="flex: 1; min-width: 250px; position: relative;">
-                            <input 
-                                type="text" 
-                                id="flexEmployeeSearchInput" 
-                                placeholder="Search employees..." 
-                                style="width: 100%; padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;"
-                                oninput="filterFlexEmployeeList(this.value)"
-                            >
-                        </div>
-                        <button type="button" class="btn btn-info" onclick="searchFlexEmployees()" title="Search" style="padding: 10px 15px; display: flex; align-items: center; gap: 8px;">
-                            <i class="fas fa-search"></i>
-                        </button>
-                        <select id="flexEmployeeFilterStatus" style="padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; cursor: pointer;" onchange="filterFlexEmployeeByStatus(this.value)">
-                            <option value="">All Employees</option>
-                            <option value="assigned">Assigned</option>
-                            <option value="unassigned">Unassigned</option>
-                        </select>
+            <div class="modal-body">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="gf_employee_search"><i class="fas fa-user"></i> Employee</label>
+                    <input type="text" id="gf_employee_search" placeholder="Search employee name or ID" oninput="filterFixedEmployeeSuggestions(this.value)" autocomplete="off" style="width: 100%;">
+                    <div id="gf_employee_suggestions" style="display: none; position: static; width: 100%; margin-top: 8px; max-height: 220px; overflow-y: auto; border: 1px solid #d1d5db; background: #fff; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.08);">
                     </div>
+                    <div id="gf_selected_employee_display" style="margin-top: 10px; color: #444; font-weight: 600;">No employee selected</div>
+                    <input type="hidden" id="gf_employee_id" name="gf_employee_id">
+                </div>
 
-                    <!-- Employee Selection List -->
-                    <div class="form-group">
-                        <label><i class="fas fa-users"></i> Select an Employee *</label>
-                        <div id="flexEmployeeListContainer" style="border: 2px solid #e0e0e0; border-radius: 6px; max-height: 300px; overflow-y: auto; background: #f9f9f9; display: none;">
-                            <div id="flexEmployeeCheckboxList" style="padding: 10px;">
-                                <!-- Employee list will be populated by JavaScript -->
+                <div class="form-group" style="margin: 8px 0 14px;">
+                    <button type="button" id="gf_show_unassigned_button" class="btn btn-secondary" onclick="toggleGfUnassignedEmployees()" style="width: 100%;">Show unassigned employees</button>
+                </div>
+
+                <div id="gf_unassigned_employees" style="display: none; border: 1px solid #d1d5db; border-radius: 8px; padding: 10px; max-height: 220px; overflow-y: auto; background: #fff; margin-bottom: 14px;"></div>
+
+                <div class="form-group">
+                    <label for="gf_start_date"><i class="fas fa-calendar-day"></i> Schedule Start</label>
+                    <input type="date" id="gf_start_date" name="gf_start_date">
+                </div>
+
+                <div class="form-group">
+                    <label for="gf_end_date"><i class="fas fa-calendar-day"></i> Schedule End</label>
+                    <input type="date" id="gf_end_date" name="gf_end_date">
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-calendar-week"></i> Days of Week</label>
+                    <div style="display: grid; gap: 10px;">
+                        <div class="gf-day-row">
+                            <label><input type="checkbox" id="gf_day_1_enabled" onchange="toggleGfDayRow(1)" style="width: 16px; height: 16px;"> Monday</label>
+                            <div id="gf_day_1_controls" class="gf-day-controls">
+                                <div class="gf-time-field">
+                                    <label for="gf_day_1_start">Start</label>
+                                    <input type="time" id="gf_day_1_start" placeholder="Start">
+                                </div>
+                                <div class="gf-time-field">
+                                    <label for="gf_day_1_end">End</label>
+                                    <input type="time" id="gf_day_1_end" placeholder="End">
+                                </div>
+                                <div class="gf-time-field">
+                                    <label for="gf_day_1_break_start">Break Start</label>
+                                    <input type="time" id="gf_day_1_break_start" placeholder="Break start">
+                                </div>
+                                <div class="gf-time-field">
+                                    <label for="gf_day_1_break_end">Break End</label>
+                                    <input type="time" id="gf_day_1_break_end" placeholder="Break end">
+                                </div>
                             </div>
                         </div>
-                        <small style="color: #666; margin-top: 8px; display: block;">
-                            <i class="fas fa-info-circle"></i> <strong>Selected:</strong> <span id="flexSelectedEmployee" style="color: #333; font-weight: bold;">None</span>
-                        </small>
-                    </div>
-
-                    <!-- Hidden field to store selected employee -->
-                    <input type="hidden" id="flex_employee_id" name="flex_employee_id" value="">
-                    <input type="hidden" id="flex_employee_name" name="flex_employee_name" value="">
-                    <div class="form-group">
-                        <label for="flex_date"><i class="fas fa-calendar"></i> Date *</label>
-                        <input type="date" id="flex_date" name="flex_date" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="flex_day_of_week"><i class="fas fa-calendar-week"></i> Repeat on Day of Week (Optional)</label>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 10px;">
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="checkbox" name="flex_days[]" value="1"> Monday</label>
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="checkbox" name="flex_days[]" value="2"> Tuesday</label>
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="checkbox" name="flex_days[]" value="3"> Wednesday</label>
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="checkbox" name="flex_days[]" value="4"> Thursday</label>
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="checkbox" name="flex_days[]" value="5"> Friday</label>
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="checkbox" name="flex_days[]" value="6"> Saturday</label>
+                        <div class="gf-day-row">
+                            <label><input type="checkbox" id="gf_day_2_enabled" onchange="toggleGfDayRow(2)" style="width: 16px; height: 16px;"> Tuesday</label>
+                            <div id="gf_day_2_controls" class="gf-day-controls">
+                                <div class="gf-time-field">
+                                    <label for="gf_day_2_start">Start</label>
+                                    <input type="time" id="gf_day_2_start" placeholder="Start">
+                                </div>
+                                <div class="gf-time-field">
+                                    <label for="gf_day_2_end">End</label>
+                                    <input type="time" id="gf_day_2_end" placeholder="End">
+                                </div>
+                                <div class="gf-time-field">
+                                    <label for="gf_day_2_break_start">Break Start</label>
+                                    <input type="time" id="gf_day_2_break_start" placeholder="Break start">
+                                </div>
+                                <div class="gf-time-field">
+                                    <label for="gf_day_2_break_end">Break End</label>
+                                    <input type="time" id="gf_day_2_break_end" placeholder="Break end">
+                                </div>
+                            </div>
                         </div>
-                        <p style="font-size: 12px; color: #999; margin-top: 8px;">Leave empty to assign only the selected date, or check days to repeat weekly</p>
-                    </div>
-                    <div class="form-group">
-                        <label for="flex_start_time"><i class="fas fa-clock"></i> Start Time *</label>
-                        <input type="time" id="flex_start_time" name="flex_start_time" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="flex_end_time"><i class="fas fa-clock"></i> End Time *</label>
-                        <input type="time" id="flex_end_time" name="flex_end_time" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="flex_notes"><i class="fas fa-sticky-note"></i> Notes (Optional)</label>
-                        <textarea id="flex_notes" name="flex_notes" style="height: 100px; resize: vertical;"></textarea>
-                    </div>
-                    <!-- Repeat Until Checkbox -->
-                    <div class="form-group" style="display: flex; align-items: center; gap: 12px; background: #f0f8ff; padding: 15px; border-radius: 6px; border-left: 4px solid #2196F3;">
-                        <input 
-                            type="checkbox" 
-                            name="flex_repeat_until" 
-                            id="flex_repeat_until"
-                            style="width: 20px; height: 20px; cursor: pointer;"
-                            onchange="toggleFlexRepeatUntil()"
-                        >
-                        <label for="flex_repeat_until" style="margin: 0; cursor: pointer; flex: 1;">
-                            <strong style="color: #1565c0;">Set Repeat Until Date?</strong>
-                            <p style="margin: 5px 0 0 0; color: #666; font-size: 12px;">
-                                Check this to set when the weekly schedule pattern stops repeating
-                            </p>
-                        </label>
-                    </div>
-                    <div class="form-group" id="flex_repeat_until_container" style="display: none;">
-                        <label for="flex_repeat_end_date"><i class="fas fa-calendar-times"></i> Repeat Until (Optional)</label>
-                        <input type="date" id="flex_repeat_end_date" name="flex_repeat_end_date">
-                    </div>
-
-                    <!-- Contract End Date Checkbox -->
-                    <div class="form-group" style="display: flex; align-items: center; gap: 12px; background: #fff3e0; padding: 15px; border-radius: 6px; border-left: 4px solid #FF9800;">
-                        <input 
-                            type="checkbox" 
-                            name="flex_contract_end" 
-                            id="flex_contract_end"
-                            style="width: 20px; height: 20px; cursor: pointer;"
-                            onchange="toggleFlexContractEnd()"
-                        >
-                        <label for="flex_contract_end" style="margin: 0; cursor: pointer; flex: 1;">
-                            <strong style="color: #e65100;">Set Assignment Valid Until?</strong>
-                            <p style="margin: 5px 0 0 0; color: #666; font-size: 12px;">
-                                Check this to limit when this employee's flexible schedule assignment stays valid
-                            </p>
-                        </label>
-                    </div>
-                    <div class="form-group" id="flex_contract_end_container" style="display: none;">
-                        <label for="flex_contract_end_date"><i class="fas fa-briefcase"></i> Contract Ends On (Optional)</label>
-                        <input type="date" id="flex_contract_end_date" name="flex_contract_end_date">
-                    </div>
-
-                    <div class="modal-action-row">
-                        <button type="button" class="btn btn-secondary" onclick="closeModal('flexibleModal')">Cancel</button>
-                        <button type="submit" name="create_flexible" class="btn btn-primary"><i class="fas fa-save"></i> Create Schedule</button>
+                        <div class="gf-day-row">
+                            <label><input type="checkbox" id="gf_day_3_enabled" onchange="toggleGfDayRow(3)" style="width: 16px; height: 16px;"> Wednesday</label>
+                            <div id="gf_day_3_controls" class="gf-day-controls">
+                                <div class="gf-time-field">
+                                    <label for="gf_day_3_start">Start</label>
+                                    <input type="time" id="gf_day_3_start" placeholder="Start">
+                                </div>
+                                <div class="gf-time-field">
+                                    <label for="gf_day_3_end">End</label>
+                                    <input type="time" id="gf_day_3_end" placeholder="End">
+                                </div>
+                                <div class="gf-time-field">
+                                    <label for="gf_day_3_break_start">Break Start</label>
+                                    <input type="time" id="gf_day_3_break_start" placeholder="Break start">
+                                </div>
+                                <div class="gf-time-field">
+                                    <label for="gf_day_3_break_end">Break End</label>
+                                    <input type="time" id="gf_day_3_break_end" placeholder="Break end">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="gf-day-row">
+                            <label><input type="checkbox" id="gf_day_4_enabled" onchange="toggleGfDayRow(4)" style="width: 16px; height: 16px;"> Thursday</label>
+                            <div id="gf_day_4_controls" class="gf-day-controls">
+                                <div class="gf-time-field">
+                                    <label for="gf_day_4_start">Start</label>
+                                    <input type="time" id="gf_day_4_start" placeholder="Start">
+                                </div>
+                                <div class="gf-time-field">
+                                    <label for="gf_day_4_end">End</label>
+                                    <input type="time" id="gf_day_4_end" placeholder="End">
+                                </div>
+                                <div class="gf-time-field">
+                                    <label for="gf_day_4_break_start">Break Start</label>
+                                    <input type="time" id="gf_day_4_break_start" placeholder="Break start">
+                                </div>
+                                <div class="gf-time-field">
+                                    <label for="gf_day_4_break_end">Break End</label>
+                                    <input type="time" id="gf_day_4_break_end" placeholder="Break end">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="gf-day-row">
+                            <label><input type="checkbox" id="gf_day_5_enabled" onchange="toggleGfDayRow(5)" style="width: 16px; height: 16px;"> Friday</label>
+                            <div id="gf_day_5_controls" class="gf-day-controls">
+                                <div class="gf-time-field">
+                                    <label for="gf_day_5_start">Start</label>
+                                    <input type="time" id="gf_day_5_start" placeholder="Start">
+                                </div>
+                                <div class="gf-time-field">
+                                    <label for="gf_day_5_end">End</label>
+                                    <input type="time" id="gf_day_5_end" placeholder="End">
+                                </div>
+                                <div class="gf-time-field">
+                                    <label for="gf_day_5_break_start">Break Start</label>
+                                    <input type="time" id="gf_day_5_break_start" placeholder="Break start">
+                                </div>
+                                <div class="gf-time-field">
+                                    <label for="gf_day_5_break_end">Break End</label>
+                                    <input type="time" id="gf_day_5_break_end" placeholder="Break end">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="gf-day-row">
+                            <label><input type="checkbox" id="gf_day_6_enabled" onchange="toggleGfDayRow(6)" style="width: 16px; height: 16px;"> Saturday</label>
+                            <div id="gf_day_6_controls" class="gf-day-controls">
+                                <div class="gf-time-field">
+                                    <label for="gf_day_6_start">Start</label>
+                                    <input type="time" id="gf_day_6_start" placeholder="Start">
+                                </div>
+                                <div class="gf-time-field">
+                                    <label for="gf_day_6_end">End</label>
+                                    <input type="time" id="gf_day_6_end" placeholder="End">
+                                </div>
+                                <div class="gf-time-field">
+                                    <label for="gf_day_6_break_start">Break Start</label>
+                                    <input type="time" id="gf_day_6_break_start" placeholder="Break start">
+                                </div>
+                                <div class="gf-time-field">
+                                    <label for="gf_day_6_break_end">Break End</label>
+                                    <input type="time" id="gf_day_6_break_end" placeholder="Break end">
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </form>
+            <div class="modal-action-row">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('generateFixedModal')">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitGenerateFixed()"><i class="fas fa-check"></i> Generate Schedule</button>
+            </div>
         </div>
     </div>
+
+    <!-- Flexible schedule UI deprecated in this view. -->
             </div>
         </div>
     </div>
 
     <style>
+        /* Keep modal constrained to the content area (not covering the sidebar)
+           Make the nearest content wrapper a positioned container and
+           render modals absolutely inside it so the overlay only covers
+           the main content region. */
+        .content-wrapper { position: relative; }
+
         .modal {
-            position: fixed;
+            position: absolute; /* cover only the content wrapper */
             top: 0;
             left: 0;
             width: 100%;
@@ -2618,6 +2722,12 @@ require_once __DIR__ . '/../layout/content_header.php';
             animation: slideIn 0.3s ease;
             display: flex;
             flex-direction: column;
+            /* Keep the dialog fixed and centered in viewport so it doesn't move while scrolling */
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100000; /* on top of overlay */
         }
 
         .modal-body {
@@ -2627,6 +2737,14 @@ require_once __DIR__ . '/../layout/content_header.php';
             flex: 1 1 auto;
             min-height: 0;
             max-height: calc(100vh - 220px);
+        }
+
+        #generateFixedModal .form-group input,
+        #generateFixedModal .form-group select,
+        #generateFixedModal .form-group textarea {
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: none;
+            background: #fff;
         }
 
         body.modal-open {
@@ -2743,6 +2861,45 @@ require_once __DIR__ . '/../layout/content_header.php';
             align-items: center;
             gap: 5px;
             margin: 0;
+        }
+
+        #generateFixedModal .gf-day-row {
+            display: grid;
+            gap: 4px;
+            padding: 4px 0;
+        }
+
+        #generateFixedModal .gf-day-row label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        #generateFixedModal .gf-day-controls {
+            display: none;
+            gap: 8px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-auto-flow: row;
+            align-items: flex-start;
+        }
+
+        #generateFixedModal .gf-time-field {
+            display: grid;
+            gap: 4px;
+            min-width: 144px;
+        }
+
+        #generateFixedModal .gf-time-field label {
+            font-size: 12px;
+            color: #5f6c7b;
+            margin-bottom: 2px;
+        }
+
+        #generateFixedModal .gf-day-controls input[type="time"] {
+            width: 100%;
         }
 
         body.dark-mode .modal .checkbox-group {
@@ -3076,21 +3233,93 @@ require_once __DIR__ . '/../layout/content_header.php';
 
     <script>
         function openModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
+            try {
+                const modal = document.getElementById(modalId);
+                console.log('openModal called for', modalId, 'exists:', !!modal);
+                if (!modal) return;
+
+                // Ensure modal is appended to the document (so fixed positioning covers viewport)
+                const contentWrapper = document.querySelector('.content-wrapper') || document.body;
+                if (modal.parentElement !== document.body) {
+                    try { document.body.appendChild(modal); } catch (e) { /* ignore */ }
+                }
+
+                // Compute the area of the content wrapper so the overlay only covers main content
+                const rect = contentWrapper.getBoundingClientRect();
+
+                // Apply fixed positioning to keep modal in place while allowing page scroll
+                modal.style.position = 'fixed';
+                modal.style.left = rect.left + 'px';
+                modal.style.top = rect.top + 'px';
+                modal.style.width = rect.width + 'px';
+                modal.style.height = rect.height + 'px';
                 modal.style.display = 'flex';
+                // Ensure visible stacking
+                modal.style.zIndex = '99999';
                 document.body.classList.add('modal-open');
+
+                // Update handler to reposition overlay on resize/scroll
+                const handler = () => {
+                    const r = contentWrapper.getBoundingClientRect();
+                    modal.style.left = r.left + 'px';
+                    modal.style.top = r.top + 'px';
+                    modal.style.width = r.width + 'px';
+                    modal.style.height = r.height + 'px';
+                };
+                // store handler so we can remove later
+                modal.__overlayHandler = handler;
+                window.addEventListener('resize', handler);
+                // use capture on scroll to respond when containers scroll
+                window.addEventListener('scroll', handler, true);
+            } catch (err) {
+                console.error('openModal error:', err);
             }
         }
 
         function closeModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
+            try {
+                const modal = document.getElementById(modalId);
+                console.log('closeModal called for', modalId, 'exists:', !!modal);
+                if (!modal) return;
+
                 modal.style.display = 'none';
                 document.body.classList.remove('modal-open');
+
+                // remove overlay handlers if present
+                if (modal.__overlayHandler) {
+                    window.removeEventListener('resize', modal.__overlayHandler);
+                    window.removeEventListener('scroll', modal.__overlayHandler, true);
+                    delete modal.__overlayHandler;
+                }
+
                 // Reset any forms inside the modal
                 const forms = modal.querySelectorAll('form');
                 forms.forEach(form => form.reset());
+
+                // Reset inline positioning so modal returns to default layout if reopened differently
+                modal.style.position = 'absolute';
+                modal.style.left = '0';
+                modal.style.top = '0';
+                modal.style.width = '100%';
+                modal.style.height = '100%';
+                modal.style.zIndex = '';
+                // If closing assignment modal, reset edit mode
+                if (modalId === 'assignmentModal') {
+                    assignmentMode = 'create';
+                    selectedEmployeeForEdit = null;
+                    const actionBtn = document.getElementById('assignmentModalActionButton');
+                    const headerTitle = document.querySelector('#assignmentModal .modal-header h2');
+                    const container = document.getElementById('employeeListContainer');
+                    if (headerTitle) headerTitle.innerHTML = '<i class="fas fa-user-check"></i> Assign Shift to Employees';
+                    if (actionBtn) { actionBtn.innerHTML = '<i class="fas fa-check"></i> Assign to Selected'; actionBtn.dataset.action = 'assign'; }
+                    if (container) container.style.display = 'none';
+                    const searchFilterContainer = document.getElementById('employeeSearchFilterContainer');
+                    const selectedDisplay = document.getElementById('selectedEmployeeDisplay');
+                    if (searchFilterContainer) searchFilterContainer.style.display = '';
+                    if (selectedDisplay) selectedDisplay.style.display = 'none';
+                }
+            } catch (err) {
+                console.error('closeModal error:', err);
             }
         }
 
@@ -3098,12 +3327,17 @@ require_once __DIR__ . '/../layout/content_header.php';
         let allEmployees = [];
         let filteredEmployees = [];
         let selectedEmployees = new Set();
+        // assignmentMode: 'create' = multi-assign flow, 'edit' = editing a single employee
+        let assignmentMode = 'create';
+        let selectedEmployeeForEdit = null;
 
         // Load employees when modal opens
         function loadEmployeeList() {
             fetch('../app/api/get_employees_for_shift.php')
-                .then(response => response.json())
-                .then(data => {
+                .then(response => response.text())
+                .then(text => {
+                    let data;
+                    try { data = JSON.parse(text); } catch (err) { console.error('get_employees_for_shift returned non-JSON:', text); throw err; }
                     if (data.success) {
                         allEmployees = data.employees;
                         filteredEmployees = [...allEmployees];
@@ -3152,19 +3386,21 @@ require_once __DIR__ . '/../layout/content_header.php';
             document.querySelectorAll('.employee-checkbox:checked').forEach(checkbox => {
                 selectedEmployees.add(checkbox.value);
             });
-            document.getElementById('selectedCount').textContent = selectedEmployees.size;
+            const selectedCountEl = document.getElementById('selectedCount');
+            if (selectedCountEl) selectedCountEl.textContent = selectedEmployees.size;
         }
 
         // Filter employees by search term
         function filterEmployeeList(searchTerm) {
-            const term = searchTerm.toLowerCase();
+            const term = safeLower(searchTerm || '').trim();
             const container = document.getElementById('employeeListContainer');
-            
+            if (!container) return;
+
             filteredEmployees = allEmployees.filter(emp => 
-                emp.full_name.toLowerCase().includes(term) || 
-                emp.department.toLowerCase().includes(term)
+                safeLower(emp.full_name).includes(term) || 
+                safeLower(emp.department).includes(term)
             );
-            
+
             // Show container only if there's search text
             if (term.length > 0) {
                 container.style.display = 'block';
@@ -3250,8 +3486,10 @@ require_once __DIR__ . '/../layout/content_header.php';
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
-            .then(data => {
+            .then(response => response.text())
+            .then(text => {
+                let data;
+                try { data = JSON.parse(text); } catch (err) { console.error('assign_shift_multiple returned non-JSON:', text); throw err; }
                 if (data.success) {
                     alert('Shifts assigned successfully to ' + selectedEmployees.size + ' employee(s)');
                     closeModal('assignmentModal');
@@ -3266,6 +3504,68 @@ require_once __DIR__ . '/../layout/content_header.php';
             });
         }
 
+        // Generic handler for assignment modal primary action
+        function handleAssignmentModalAction() {
+            const actionBtn = document.getElementById('assignmentModalActionButton');
+            const mode = actionBtn && actionBtn.dataset && actionBtn.dataset.action ? actionBtn.dataset.action : (assignmentMode === 'edit' ? 'update' : 'assign');
+            if (mode === 'assign') {
+                assignMultipleEmployees();
+            } else {
+                updateEmployeeAssignment();
+            }
+        }
+
+        // Update assignment for a single employee (frontend-only; backend endpoint may need to support this action)
+        function updateEmployeeAssignment() {
+            if (!selectedEmployeeForEdit) {
+                alert('No employee selected for update');
+                return;
+            }
+
+            const shiftId = document.getElementById('shift_id').value;
+            const effectiveFrom = document.getElementById('effective_from').value;
+            const effectiveTo = document.getElementById('effective_to').value;
+            const excludeSaturday = document.getElementById('exclude_saturday').checked;
+
+            if (!shiftId) {
+                alert('Please select a shift');
+                return;
+            }
+
+            if (!effectiveFrom) {
+                alert('Please select an effective from date');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('employee_id', selectedEmployeeForEdit);
+            formData.append('shift_id', shiftId);
+            formData.append('effective_from', effectiveFrom);
+            formData.append('effective_to', effectiveTo || null);
+            formData.append('exclude_saturday', excludeSaturday ? '1' : '0');
+
+            fetch('../app/api/update_employee_assignment.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(text => {
+                let data;
+                try { data = JSON.parse(text); } catch (err) { console.error('assign_shift_multiple(update) returned non-JSON:', text); throw err; }
+                if (data.success) {
+                    alert('Assignment updated successfully');
+                    closeModal('assignmentModal');
+                    location.reload();
+                } else {
+                    alert('Error: ' + (data.message || 'Failed to update assignment'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating assignment: ' + error.message);
+            });
+        }
+
         // Helper function to escape HTML
         function escapeHtml(text) {
             const map = {
@@ -3275,7 +3575,7 @@ require_once __DIR__ . '/../layout/content_header.php';
                 '"': '&quot;',
                 "'": '&#039;'
             };
-            return text.replace(/[&<>"']/g, m => map[m]);
+            return String(text || '').replace(/[&<>"']/g, m => map[m] || m);
         }
 
         // Initialize employee list when modal opens
@@ -3283,8 +3583,71 @@ require_once __DIR__ . '/../layout/content_header.php';
         openModal = function(modalId) {
             if (modalId === 'assignmentModal') {
                 loadEmployeeList();
-                selectedEmployees.clear();
-                document.getElementById('selectedCount').textContent = '0';
+                const actionBtn = document.getElementById('assignmentModalActionButton');
+                const headerTitle = document.querySelector('#assignmentModal .modal-header h2');
+                const container = document.getElementById('employeeListContainer');
+                const searchFilterContainer = document.getElementById('employeeSearchFilterContainer');
+
+                const selectedDisplay = document.getElementById('selectedEmployeeDisplay');
+                const searchInput = document.getElementById('employeeSearchInput');
+                const multiLabel = document.getElementById('employeeMultiLabel');
+                const selectedSummaryEl = document.getElementById('selectedSummary');
+                if (assignmentMode === 'create') {
+                    selectedEmployees.clear();
+                    const selectedCountEl = document.getElementById('selectedCount');
+                    if (selectedCountEl) selectedCountEl.textContent = '0';
+                    if (container) container.style.display = 'none';
+                    if (searchFilterContainer) searchFilterContainer.style.display = '';
+                    if (searchInput) searchInput.style.display = '';
+                    if (selectedDisplay) selectedDisplay.style.display = 'none';
+                    if (multiLabel) multiLabel.style.display = '';
+                    if (selectedSummaryEl) selectedSummaryEl.innerHTML = '<strong>Selected:</strong> <span id="selectedCount">0</span> employee(s)';
+                    if (headerTitle) headerTitle.innerHTML = '<i class="fas fa-user-check"></i> Assign Shift to Employees';
+                    if (actionBtn) { actionBtn.innerHTML = '<i class="fas fa-check"></i> Assign to Selected'; actionBtn.dataset.action = 'assign'; }
+                } else if (assignmentMode === 'edit') {
+                    // preselect single employee and hide the multi-select list
+                    selectedEmployees = new Set([selectedEmployeeForEdit]);
+                    const selectedCountEl = document.getElementById('selectedCount');
+                    if (selectedCountEl) selectedCountEl.textContent = '1';
+                    if (container) container.style.display = 'none';
+                    if (searchFilterContainer) searchFilterContainer.style.display = 'none';
+                    if (searchInput) searchInput.style.display = 'none';
+                    if (selectedDisplay) selectedDisplay.style.display = 'block';
+                    if (multiLabel) multiLabel.style.display = 'none';
+                    if (headerTitle) headerTitle.innerHTML = '<i class="fas fa-user-edit"></i> Edit Employee Assignment';
+                    if (actionBtn) { actionBtn.innerHTML = '<i class="fas fa-save"></i> Update Assignment'; actionBtn.dataset.action = 'update'; }
+                    const selField = document.getElementById('selected_employees');
+                    if (selField) selField.value = JSON.stringify([selectedEmployeeForEdit]);
+                    // Prefill form fields from normalized assignment data if available and show selected employee
+                    try {
+                        const emp = (employeeAssignmentData || []).find(e => String(e.employee_id) === String(selectedEmployeeForEdit));
+                        const selectedDisplay = document.getElementById('selectedEmployeeDisplay');
+                        if (selectedDisplay) {
+                            selectedDisplay.textContent = emp ? (emp.employee || emp.full_name || emp.employee_id) : ('Employee ID: ' + selectedEmployeeForEdit);
+                        }
+                        if (emp && emp.assignments && emp.assignments.length > 0) {
+                            const activeAssign = emp.assignments.find(a => a.isActive) || emp.assignments[0];
+                            if (activeAssign) {
+                                const shiftSel = document.getElementById('shift_id');
+                                if (shiftSel && activeAssign.shift_id) shiftSel.value = activeAssign.shift_id;
+                                const effFrom = document.getElementById('effective_from');
+                                if (effFrom && activeAssign.effective_from) effFrom.value = (activeAssign.effective_from || '').split(' ')[0];
+                                const effTo = document.getElementById('effective_to');
+                                if (effTo) effTo.value = activeAssign.effective_to ? (activeAssign.effective_to.split ? activeAssign.effective_to.split(' ')[0] : activeAssign.effective_to) : '';
+                                const excl = document.getElementById('exclude_saturday');
+                                if (excl) {
+                                    excl.checked = !!activeAssign.exclude_saturday || false;
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Error pre-filling assignment edit form:', err);
+                    }
+                }
+            } else if (modalId === 'generateFixedModal') {
+                loadFixedScheduleEmployees();
+                const suggestions = document.getElementById('gf_employee_suggestions');
+                if (suggestions) suggestions.style.display = 'none';
             }
             originalOpenModal(modalId);
         };
@@ -3356,106 +3719,7 @@ require_once __DIR__ . '/../layout/content_header.php';
             }
         }
 
-        function openFlexibleScheduleEdit(flexId, employeeId, date, startTime, endTime, notes, repeatUntil, contractEndDate) {
-            // Populate the edit modal with current values
-            document.getElementById('edit_flex_id').value = flexId;
-            document.getElementById('edit_flex_employee_id').value = employeeId;
-            const currentEmployee = flexibleEmployeesData.find(employee => employee.employee_id == employeeId);
-            document.getElementById('editFlexSelectedEmployee').textContent = currentEmployee ? currentEmployee.full_name : employeeId;
-            document.getElementById('edit_flex_date').value = date;
-            document.getElementById('edit_flex_start_time').value = startTime;
-            document.getElementById('edit_flex_end_time').value = endTime;
-            document.getElementById('edit_flex_notes').value = notes;
-            
-            // Handle repeat until date
-            if (repeatUntil) {
-                document.getElementById('edit_flex_repeat_until').checked = true;
-                document.getElementById('edit_flex_repeat_end_date').value = repeatUntil;
-                document.getElementById('edit_flex_repeat_until_container').style.display = 'block';
-            } else {
-                document.getElementById('edit_flex_repeat_until').checked = false;
-                document.getElementById('edit_flex_repeat_end_date').value = '';
-                document.getElementById('edit_flex_repeat_until_container').style.display = 'none';
-            }
-            
-            // Handle contract end date
-            if (contractEndDate) {
-                document.getElementById('edit_flex_contract_end').checked = true;
-                document.getElementById('edit_flex_contract_end_date').value = contractEndDate;
-                document.getElementById('edit_flex_contract_end_container').style.display = 'block';
-            } else {
-                document.getElementById('edit_flex_contract_end').checked = false;
-                document.getElementById('edit_flex_contract_end_date').value = '';
-                document.getElementById('edit_flex_contract_end_container').style.display = 'none';
-            }
-            
-            // Clear day selections
-            document.querySelectorAll('input[name="edit_flex_days[]"]').forEach(checkbox => {
-                checkbox.checked = false;
-            });
-            
-            // Open the edit modal
-            openModal('editFlexibleModal');
-            loadFlexibleScheduleEmployees();
-        }
-
-        let editFlexFilteredEmployees = [];
-
-        function renderEditFlexEmployeeList(employees) {
-            const container = document.getElementById('editFlexEmployeeCheckboxList');
-            const selectedId = document.getElementById('edit_flex_employee_id').value;
-            container.innerHTML = '';
-
-            if (!employees.length) {
-                container.innerHTML = '<div style="padding: 18px; text-align: center; color: #999;">No employees found</div>';
-                return;
-            }
-
-            employees.forEach(employee => {
-                const isSelected = String(employee.employee_id) === String(selectedId);
-                const item = document.createElement('div');
-                item.style.cssText = `padding: 11px 12px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; cursor: pointer; background: ${isSelected ? '#e3f2fd' : 'transparent'}; border-left: 3px solid ${isSelected ? '#2196F3' : 'transparent'};`;
-                item.innerHTML = `<div style="width: 20px; height: 20px; border-radius: 50%; background: ${isSelected ? '#2196F3' : '#ddd'}; display: grid; place-items: center;">${isSelected ? '<i class="fas fa-check" style="color: white; font-size: 11px;"></i>' : ''}</div><strong>${escapeHtml(employee.full_name)}</strong><span style="margin-left: auto; background: ${employee.has_flexible_schedule ? '#4CAF50' : '#FF9800'}; color: white; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: bold;">${employee.has_flexible_schedule ? 'ASSIGNED' : 'UNASSIGNED'}</span>`;
-                item.addEventListener('click', () => selectEditFlexEmployee(employee));
-                container.appendChild(item);
-            });
-        }
-
-        function selectEditFlexEmployee(employee) {
-            document.getElementById('edit_flex_employee_id').value = employee.employee_id;
-            document.getElementById('editFlexSelectedEmployee').textContent = employee.full_name;
-            renderEditFlexEmployeeList(editFlexFilteredEmployees);
-        }
-
-        function filterEditFlexEmployees(searchTerm) {
-            const term = String(searchTerm || '').toLowerCase().trim();
-            editFlexFilteredEmployees = flexibleEmployeesData.filter(employee => employee.full_name.toLowerCase().includes(term));
-            document.getElementById('editFlexEmployeeListContainer').style.display = term ? 'block' : 'none';
-            renderEditFlexEmployeeList(editFlexFilteredEmployees);
-        }
-
-        function filterEditFlexEmployeesByStatus(status) {
-            editFlexFilteredEmployees = status === 'assigned'
-                ? flexibleEmployeesData.filter(employee => employee.has_flexible_schedule)
-                : status === 'unassigned'
-                    ? flexibleEmployeesData.filter(employee => !employee.has_flexible_schedule)
-                    : [...flexibleEmployeesData];
-            document.getElementById('editFlexEmployeeListContainer').style.display = status ? 'block' : 'none';
-            renderEditFlexEmployeeList(editFlexFilteredEmployees);
-        }
-
-        function searchEditFlexEmployees() {
-            filterEditFlexEmployees(document.getElementById('editFlexEmployeeSearchInput').value);
-        }
-
-        function openFlexibleScheduleEditFromButton(button) {
-            try {
-                const editData = JSON.parse(button.dataset.flexibleEdit);
-                openFlexibleScheduleEdit(...editData);
-            } catch (error) {
-                console.error('Error reading flexible schedule data:', error);
-            }
-        }
+        // Flexible schedule edit functions removed from this view.
 
         // Close modal when clicking outside
         window.addEventListener('click', function(event) {
@@ -3571,232 +3835,13 @@ require_once __DIR__ . '/../layout/content_header.php';
             }
         });
 
-        // Form validation for flexible schedule creation - using event delegation
-        console.log('Script loaded - setting up form delegation');
-        
-        document.addEventListener('submit', function(e) {
-            // Check if this is the flexible schedule form
-            if (e.target && e.target.closest('#flexibleModal')) {
-                console.log('✓ Flexible schedule form submission detected');
-                const flexForm = e.target.closest('#flexibleModal form');
-                const formData = new FormData(flexForm);
-                
-                console.log('=== FORM DATA BEING SUBMITTED ===');
-                for (let [key, value] of formData.entries()) {
-                    console.log(key + ':', value);
-                }
-                console.log('===================================');
-                
-                const employeeId = document.getElementById('flex_employee_id').value;
-                const date = document.getElementById('flex_date').value;
-                const startTime = document.getElementById('flex_start_time').value;
-                const endTime = document.getElementById('flex_end_time').value;
-
-                console.log('Direct element values:');
-                console.log('  flex_employee_id field exists:', !!document.getElementById('flex_employee_id'));
-                console.log('  flex_employee_id value:', employeeId, '| Type:', typeof employeeId, '| Length:', employeeId ? employeeId.length : 0);
-                console.log('  flex_date value:', date);
-                console.log('  flex_start_time value:', startTime);
-                console.log('  flex_end_time value:', endTime);
-
-                if (!employeeId || employeeId === '' || employeeId === '0') {
-                    e.preventDefault();
-                    console.error('❌ Employee validation failed! Employee ID is empty or 0');
-                    alert('ERROR: Please select an employee from the dropdown before submitting!');
-                    document.getElementById('flex_employee_id').focus();
-                    return false;
-                }
-                if (!date) {
-                    e.preventDefault();
-                    alert('ERROR: Please select a date!');
-                    return false;
-                }
-                if (!startTime) {
-                    e.preventDefault();
-                    alert('ERROR: Please select a start time!');
-                    return false;
-                }
-                if (!endTime) {
-                    e.preventDefault();
-                    alert('ERROR: Please select an end time!');
-                    return false;
-                }
-                console.log('✓ All validations passed. Form will submit with employee_id:', employeeId);
-            }
-        });
-
-        // Flexible Schedule Employee Search and Filter Functions
-        let flexibleEmployeesData = [];
-        let filteredFlexEmployees = [];
-        let selectedFlexEmployee = null;
-
-        // Load flexible schedule employees on modal open
-        function loadFlexibleScheduleEmployees() {
-            fetch('../app/api/get_employees.php')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        flexibleEmployeesData = data.employees;
-                        // Don't render until user searches or filters
-                        console.log('✓ Employees loaded: ' + data.count);
-                    } else {
-                        console.error('Error loading employees:', data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-        }
-
-        // Render flexible schedule employee list with styled indicators
-        function renderFlexEmployeeList(employees) {
-            const container = document.getElementById('flexEmployeeCheckboxList');
-            container.innerHTML = '';
-
-            employees.forEach(emp => {
-                const isSelected = selectedFlexEmployee && selectedFlexEmployee.employee_id == emp.employee_id;
-                const employeeHTML = `
-                    <div style="padding: 12px 10px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; cursor: pointer; background: ${isSelected ? '#e3f2fd' : 'transparent'}; border-left: 3px solid ${isSelected ? '#2196F3' : 'transparent'}; transition: all 0.2s;" onclick="selectFlexEmployee(${emp.employee_id}, '${escapeHtml(emp.full_name)}')">
-                        <div style="width: 20px; height: 20px; border-radius: 50%; background: ${isSelected ? '#2196F3' : '#ddd'}; display: flex; align-items: center; justify-content: center;">
-                            ${isSelected ? '<i class="fas fa-check" style="color: white; font-size: 12px;"></i>' : ''}
-                        </div>
-                        <div style="flex: 1; display: flex; align-items: center; gap: 10px;">
-                            <span style="font-weight: 600; color: #333;">${escapeHtml(emp.full_name)}</span>
-                            ${emp.has_flexible_schedule ? '<span style="background: #4CAF50; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">ASSIGNED</span>' : '<span style="background: #FF9800; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">UNASSIGNED</span>'}
-                        </div>
-                    </div>
-                `;
-                container.innerHTML += employeeHTML;
-            });
-
-            if (employees.length === 0) {
-                container.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No employees found</div>';
-            }
-        }
-
-        // Select employee from list
-        function selectFlexEmployee(employeeId, employeeName) {
-            selectedFlexEmployee = {
-                employee_id: employeeId,
-                full_name: employeeName
-            };
-            document.getElementById('flex_employee_id').value = employeeId;
-            document.getElementById('flex_employee_name').value = employeeName;
-            document.getElementById('flexSelectedEmployee').textContent = employeeName;
-            
-            // Re-render to show selection highlight
-            renderFlexEmployeeList(filteredFlexEmployees);
-            console.log('Selected flex employee:', employeeId, employeeName);
-        }
-
-        // Filter flexible employees by search term
-        function filterFlexEmployeeList(searchTerm) {
-            const term = searchTerm.toLowerCase();
-            const container = document.getElementById('flexEmployeeListContainer');
-            
-            filteredFlexEmployees = flexibleEmployeesData.filter(emp => 
-                emp.full_name.toLowerCase().includes(term)
-            );
-            
-            // Show container only if there's search text
-            if (term.length > 0) {
-                container.style.display = 'block';
-                renderFlexEmployeeList(filteredFlexEmployees);
-            } else {
-                container.style.display = 'none';
-            }
-            
-            // Re-select if previously selected
-            if (selectedFlexEmployee) {
-                const stillExists = filteredFlexEmployees.some(emp => emp.employee_id == selectedFlexEmployee.employee_id);
-                if (!stillExists) {
-                    selectedFlexEmployee = null;
-                    document.getElementById('flex_employee_id').value = '';
-                    document.getElementById('flexSelectedEmployee').textContent = 'None';
-                }
-            }
-        }
-
-        // Filter flex employees by assignment status
-        function filterFlexEmployeeByStatus(status) {
-            const container = document.getElementById('flexEmployeeListContainer');
-            
-            if (status === '') {
-                container.style.display = 'none';
-                filteredFlexEmployees = [...flexibleEmployeesData];
-            } else if (status === 'assigned') {
-                container.style.display = 'block';
-                filteredFlexEmployees = flexibleEmployeesData.filter(emp => emp.has_flexible_schedule);
-            } else if (status === 'unassigned') {
-                container.style.display = 'block';
-                filteredFlexEmployees = flexibleEmployeesData.filter(emp => !emp.has_flexible_schedule);
-            }
-            renderFlexEmployeeList(filteredFlexEmployees);
-        }
-
-        // Search flex employees
-        function searchFlexEmployees() {
-            const searchTerm = document.getElementById('flexEmployeeSearchInput').value;
-            const container = document.getElementById('flexEmployeeListContainer');
-            
-            if (searchTerm.length > 0) {
-                container.style.display = 'block';
-                filterFlexEmployeeList(searchTerm);
-            } else {
-                container.style.display = 'none';
-            }
-        }
-
-        // Load employees when flexible modal opens
-        document.addEventListener('click', function(e) {
-            if (e.target && e.target.closest('button[onclick*="flexibleModal"]')) {
-                loadFlexibleScheduleEmployees();
-            }
-        });
-
-        // Also load on modal open event
-        const flexibleModal = document.getElementById('flexibleModal');
-        if (flexibleModal) {
-            const observer = new MutationObserver(function(mutations) {
-                mutations.forEach(function(mutation) {
-                    if (mutation.attributeName === 'style' && flexibleModal.style.display !== 'none') {
-                        loadFlexibleScheduleEmployees();
-                    }
-                });
-            });
-            observer.observe(flexibleModal, { attributes: true });
-        }
-
-        // Toggle Repeat Until date input
-        function toggleFlexRepeatUntil() {
-            const checkbox = document.getElementById('flex_repeat_until');
-            const container = document.getElementById('flex_repeat_until_container');
-            const input = document.getElementById('flex_repeat_end_date');
-            
-            if (checkbox.checked) {
-                container.style.display = 'block';
-                input.focus();
-            } else {
-                container.style.display = 'none';
-                input.value = ''; // Clear the value when unchecked
-            }
-        }
-
-        // Toggle Contract End date input
-        function toggleFlexContractEnd() {
-            const checkbox = document.getElementById('flex_contract_end');
-            const container = document.getElementById('flex_contract_end_container');
-            const input = document.getElementById('flex_contract_end_date');
-            
-            if (checkbox.checked) {
-                container.style.display = 'block';
-                input.focus();
-            } else {
-                container.style.display = 'none';
-                input.value = ''; // Clear the value when unchecked
-            }
-        }
+        // Flexible schedule client-side features removed from this view.
     </script>
 
-<?php require_once __DIR__ . '/../layout/content_footer.php'; ?>
-<?php require_once __DIR__ . '/../layout/page_end.php'; ?>
+<?php
+if (function_exists('shiftDebug')) shiftDebug('[DIAG] 15 At end of page');
+require_once __DIR__ . '/../layout/content_footer.php';
+if (function_exists('shiftDebug')) shiftDebug('[DIAG] 15a After content_footer.php');
+require_once __DIR__ . '/../layout/page_end.php';
+if (function_exists('shiftDebug')) shiftDebug('[DIAG] 15b After page_end.php');
+?>
