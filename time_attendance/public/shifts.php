@@ -13,14 +13,14 @@ require_once(__DIR__ . '/../app/helpers/Helper.php');
 
 // Verify user is logged in and is HR
 if (empty($_SESSION['user_id']) || !isset($_SESSION['role'])) {
-    header('Location: ../../login_form.php');
+    header('Location: ' . dirname(__DIR__) . '/../../login_form.php');
     exit();
 }
 
 // Check if user has time & attendance permissions
 $user_role = $_SESSION['role'] ?? '';
 if ($user_role !== 'time' && $user_role !== 'HR_ADMIN' && $user_role !== 'payroll') {
-    header('Location: shifts.php');
+    header('Location: ' . dirname(__DIR__) . '/public/shifts.php');
     exit();
 }
 

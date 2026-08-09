@@ -5,13 +5,13 @@
  */
 
 // Start session and auth first
-require_once "../app/core/Session.php";
+require_once __DIR__ . '/../app/core/Session.php';
 Session::start();
 
 // Check if user is authenticated
-require_once "../app/controllers/AuthController.php";
+require_once __DIR__ . '/../app/controllers/AuthController.php';
 if (!AuthController::isAuthenticated()) {
-    header("Location: ../../login_form.php");
+    header('Location: ' . dirname(__DIR__) . '/../../login_form.php');
     exit;
 }
 

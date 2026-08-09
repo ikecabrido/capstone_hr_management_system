@@ -4,15 +4,15 @@
  * Allows employees to submit excuses for absences and late arrivals
  */
 
-require_once "../app/controllers/AuthController.php";
-require_once "../app/models/AbsenceLateMgmt.php";
-require_once "../app/core/Session.php";
+require_once __DIR__ . '/../app/controllers/AuthController.php';
+require_once __DIR__ . '/../app/models/AbsenceLateMgmt.php';
+require_once __DIR__ . '/../app/core/Session.php';
 
 Session::start();
 
 // Check authentication
 if (!AuthController::isAuthenticated()) {
-    header("Location: ../../login_form.php");
+    header('Location: ' . dirname(__DIR__) . '/../../login_form.php');
     exit;
 }
 

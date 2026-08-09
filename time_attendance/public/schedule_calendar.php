@@ -4,12 +4,12 @@
  * Displays employee schedules in calendar format with timeline editor
  */
 
-require_once "../app/controllers/AuthController.php";
-require_once "../app/models/Attendance.php";
-require_once "../app/models/Employee.php";
-require_once "../app/helpers/Helper.php";
-require_once "../app/helpers/AuditLog.php";
-require_once "../app/core/Session.php";
+require_once __DIR__ . '/../app/controllers/AuthController.php';
+require_once __DIR__ . '/../app/models/Attendance.php';
+require_once __DIR__ . '/../app/models/Employee.php';
+require_once __DIR__ . '/../app/helpers/Helper.php';
+require_once __DIR__ . '/../app/helpers/AuditLog.php';
+require_once __DIR__ . '/../app/core/Session.php';
 
 Session::start();
 
@@ -28,13 +28,13 @@ if (isset($_SESSION['user']) && is_array($_SESSION['user']) && isset($_SESSION['
 }
 
 if (!$authenticated) {
-    header("Location: ../../login_form.php");
+    header('Location: ' . dirname(__DIR__) . '/../../login_form.php');
     exit;
 }
 
 // Only 'time' role can access this page
 if ($role !== 'time') {
-    header("Location: employee_dashboard.php");
+    header('Location: ' . dirname(__DIR__) . '/../../employee_dashboard.php');
     exit;
 }
 

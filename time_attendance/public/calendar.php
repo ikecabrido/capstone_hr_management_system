@@ -13,7 +13,7 @@ require_once '../app/controllers/AuthController.php';
 // Verify session
 Session::start();
 if (!AuthController::isAuthenticated()) {
-    header('Location: ../../login_form.php');
+    header('Location: ' . dirname(__DIR__) . '/../../login_form.php');
     exit;
 }
 
@@ -174,7 +174,7 @@ $current_page = 'calendar.php';
 <?php
 $page_title = 'Attendance Calendar';
 $page_subtitle = 'Monthly attendance calendar';
-$page_head_extra = <<<HTML
+$page_head_extra = <<<'HTML'
 <link rel="icon" href="../Bestlink College of the Philippines.jpeg" type="image/jpeg">
 <link rel="stylesheet" href="../assets/style.css">
 <script src="../assets/mobile-responsive.js" defer></script>
@@ -623,6 +623,8 @@ $page_head_extra = <<<HTML
         }
 
     </style>
+HTML;
+?>
 </head>
 <body>
     <div class="preloader flex-column justify-content-center align-items-center">

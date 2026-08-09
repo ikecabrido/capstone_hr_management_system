@@ -4,9 +4,9 @@
  * Validates QR token and redirects to login or processes attendance
  */
 
-require_once "../app/controllers/AuthController.php";
-require_once "../app/helpers/QRHelper.php";
-require_once "../app/core/Session.php";
+require_once __DIR__ . '/../app/controllers/AuthController.php';
+require_once __DIR__ . '/../app/helpers/QRHelper.php';
+require_once __DIR__ . '/../app/core/Session.php';
 
 Session::start();
 
@@ -15,7 +15,7 @@ $token = trim($_GET['token'] ?? '');
 
 if (empty($token)) {
     $_SESSION['qr_error'] = 'No token provided';
-    header("Location: employee_dashboard.php");
+    header('Location: ' . dirname(__DIR__) . '/../../employee_dashboard.php');
     exit;
 }
 
@@ -29,14 +29,14 @@ if (!$tokenData) {
     // Check if user is authenticated
     if (!AuthController::isAuthenticated()) {
         // Redirect to root login with error
-        header("Location: ../../login_form.php");
+        header('Location: ' . dirname(__DIR__) . '/../../login_form.php');
         exit;
     } else {
         // User is authenticated, send to dashboard with error
         if (AuthController::hasRole('time')) {
-            header("Location: dashboard.php");
+            header('Location: ' . dirname(__DIR__) . '/public/dashboard.php');
         } else {
-            header("Location: employee_dashboard.php");
+            header('Location: ' . dirname(__DIR__) . '/../../employee_dashboard.php');
         }
         exit;
     }
@@ -45,13 +45,13 @@ if (!$tokenData) {
 // Check if user is authenticated
 if (!AuthController::isAuthenticated()) {
     // Redirect to root login with the QR token
-    header("Location: ../../login_form.php?qr_token=" . urlencode($token));
+    header('Location: ' . dirname(__DIR__) . '/../../login_form.php?qr_token=' . urlencode($token));
     exit;
 }
 
 // User is authenticated - process attendance immediately
-require_once "../../auth/database.php";
-require_once "../app/models/Attendance.php";
+require_once __DIR__ . '/../../auth/database.php';
+require_once __DIR__ . '/../app/models/Attendance.php';
 
 $db = Database::getInstance();
 $conn = $db->getConnection();
@@ -62,7 +62,7 @@ try {
     
     if (!$userId) {
         $_SESSION['qr_error'] = 'User session invalid';
-        header("Location: ../../login_form.php");
+        header('Location: ' . dirname(__DIR__) . '/../../login_form.php');
         exit;
     }
 
@@ -76,9 +76,9 @@ try {
         $_SESSION['qr_error'] = 'Employee record not found';
         
         if (AuthController::hasRole('time')) {
-            header("Location: dashboard.php");
+            header('Location: ' . dirname(__DIR__) . '/public/dashboard.php');
         } else {
-            header("Location: employee_dashboard.php");
+            header('Location: ' . dirname(__DIR__) . '/../../employee_dashboard.php');
         }
         exit;
     }
@@ -101,9 +101,9 @@ try {
         if (empty($existingRecord['time_in']) && isset($existingRecord['status']) && $existingRecord['status'] === 'ABSENT') {
             $_SESSION['qr_error'] = 'Your attendance has already been marked ABSENT for today. Please contact HR for assistance.';
             if (AuthController::hasRole('time')) {
-                header("Location: dashboard.php");
+                header('Location: ' . dirname(__DIR__) . '/public/dashboard.php');
             } else {
-                header("Location: employee_dashboard.php");
+                header('Location: ' . dirname(__DIR__) . '/../../employee_dashboard.php');
             }
             exit;
         }
@@ -125,9 +125,9 @@ try {
             $_SESSION['qr_error'] = 'Attendance already recorded for today';
             
             if (AuthController::hasRole('time')) {
-                header("Location: dashboard.php");
+                header('Location: ' . dirname(__DIR__) . '/public/dashboard.php');
             } else {
-                header("Location: employee_dashboard.php");
+                header('Location: ' . dirname(__DIR__) . '/../../employee_dashboard.php');
             }
             exit;
         }
@@ -152,9 +152,9 @@ try {
         $_SESSION['qr_success'] = $message . ' for ' . $employee['full_name'];
         
         if (AuthController::hasRole('time')) {
-            header("Location: dashboard.php");
+            header('Location: ' . dirname(__DIR__) . '/public/dashboard.php');
         } else {
-            header("Location: employee_dashboard.php");
+            header('Location: ' . dirname(__DIR__) . '/../../employee_dashboard.php');
         }
         exit;
     } else {
@@ -162,9 +162,9 @@ try {
         $_SESSION['qr_error'] = 'Failed to record attendance';
         
         if (AuthController::hasRole('time')) {
-            header("Location: dashboard.php");
+            header('Location: ' . dirname(__DIR__) . '/public/dashboard.php');
         } else {
-            header("Location: employee_dashboard.php");
+            header('Location: ' . dirname(__DIR__) . '/../../employee_dashboard.php');
         }
         exit;
     }
@@ -174,12 +174,12 @@ try {
     
     if (AuthController::isAuthenticated()) {
         if (AuthController::hasRole('time')) {
-            header("Location: dashboard.php");
+            header('Location: ' . dirname(__DIR__) . '/public/dashboard.php');
         } else {
-            header("Location: employee_dashboard.php");
+            header('Location: ' . dirname(__DIR__) . '/../../employee_dashboard.php');
         }
     } else {
-        header("Location: ../../login_form.php");
+        header('Location: ' . dirname(__DIR__) . '/../../login_form.php');
     }
     exit;
 }

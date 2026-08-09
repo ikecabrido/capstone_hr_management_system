@@ -2,19 +2,19 @@
 /**
  * Employee QR List - separate tab for viewing and printing employee QR codes
  */
-require_once "../app/controllers/AuthController.php";
-require_once "../app/models/Employee.php";
-require_once "../app/core/Session.php";
+require_once __DIR__ . '/../app/controllers/AuthController.php';
+require_once __DIR__ . '/../app/models/Employee.php';
+require_once __DIR__ . '/../app/core/Session.php';
 
 Session::start();
 
 if (!AuthController::isAuthenticated()) {
-    header('Location: ../../login_form.php');
+    header('Location: ' . dirname(__DIR__) . '/../../login_form.php');
     exit;
 }
 
 if (!AuthController::hasRole('time')) {
-    header('Location: employee_dashboard.php');
+    header('Location: ' . dirname(__DIR__) . '/../../employee_dashboard.php');
     exit;
 }
 

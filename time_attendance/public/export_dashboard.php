@@ -3,20 +3,20 @@
  * Export Dashboard Data to Excel with Professional Template
  */
 
-require_once "../../auth/database.php";
-require_once "../app/controllers/AuthController.php";
-require_once "../app/models/Employee.php";
-require_once "../app/core/Session.php";
+require_once __DIR__ . '/../../auth/database.php';
+require_once __DIR__ . '/../app/controllers/AuthController.php';
+require_once __DIR__ . '/../app/models/Employee.php';
+require_once __DIR__ . '/../app/core/Session.php';
 
 // Include metrics calculator with namespace handling
 if (!class_exists('MetricsCalculator', false)) {
-    require_once "../app/helpers/MetricsCalculator.php";
+    require_once __DIR__ . '/../app/helpers/MetricsCalculator.php';
 }
 
 Session::start();
 
 if (!AuthController::isAuthenticated()) {
-    header("Location: ../../login_form.php");
+    header('Location: ' . dirname(__DIR__) . '/../../login_form.php');
     exit;
 }
 

@@ -4,13 +4,13 @@
  * Department heads and HR can review leave requests and view employee leave balances
  */
 
-require_once "../app/controllers/AuthController.php";
-require_once "../app/controllers/LeaveController.php";
-require_once "../app/models/Leave.php";
-require_once "../app/models/Employee.php";
-require_once "../app/helpers/Helper.php";
-require_once "../app/helpers/LeaveAbsenceHelper.php";
-require_once "../app/core/Session.php";
+require_once __DIR__ . '/../app/controllers/AuthController.php';
+require_once __DIR__ . '/../app/controllers/LeaveController.php';
+require_once __DIR__ . '/../app/models/Leave.php';
+require_once __DIR__ . '/../app/models/Employee.php';
+require_once __DIR__ . '/../app/helpers/Helper.php';
+require_once __DIR__ . '/../app/helpers/LeaveAbsenceHelper.php';
+require_once __DIR__ . '/../app/core/Session.php';
 
 Session::start();
 
@@ -33,13 +33,13 @@ if (isset($_SESSION['user']) && is_array($_SESSION['user']) && isset($_SESSION['
 }
 
 if (!$authenticated) {
-    header("Location: ../../login_form.php");
+    header('Location: ' . dirname(__DIR__) . '/../../login_form.php');
     exit;
 }
 
 // Only the time module approver roles can access this page
 if (!in_array($role, ['time', 'HR_ADMIN', 'DEPARTMENT_HEAD'], true)) {
-    header("Location: employee_dashboard.php");
+    header('Location: ' . dirname(__DIR__) . '/../../employee_dashboard.php');
     exit;
 }
 

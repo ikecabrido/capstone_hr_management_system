@@ -4,23 +4,23 @@
  * Review and approve pending manual attendance entries
  */
 
-require_once "../app/controllers/AuthController.php";
-require_once "../app/models/Attendance.php";
-require_once "../app/helpers/Helper.php";
-require_once "../app/helpers/AuditLog.php";
-require_once "../app/core/Session.php";
+require_once __DIR__ . '/../app/controllers/AuthController.php';
+require_once __DIR__ . '/../app/models/Attendance.php';
+require_once __DIR__ . '/../app/helpers/Helper.php';
+require_once __DIR__ . '/../app/helpers/AuditLog.php';
+require_once __DIR__ . '/../app/core/Session.php';
 
 Session::start();
 
 // Check if user is authenticated
 if (!AuthController::isAuthenticated()) {
-    header("Location: ../../login_form.php");
+    header('Location: ' . dirname(__DIR__) . '/../../login_form.php');
     exit;
 }
 
 // Only HR can access this page
 if (!AuthController::hasRole('time')) {
-    header("Location: employee_dashboard.php");
+    header('Location: ' . dirname(__DIR__) . '/../../employee_dashboard.php');
     exit;
 }
 

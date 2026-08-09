@@ -8,7 +8,7 @@ require_once __DIR__ . "/../app/core/Session.php";
 Session::start();
 
 if (!AuthController::isAuthenticated()) {
-    header('Location: ../../login_form.php');
+    header('Location: ' . dirname(__DIR__) . '/../../login_form.php');
     exit;
 }
 

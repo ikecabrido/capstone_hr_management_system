@@ -4,22 +4,22 @@
  * HR interface for managing absence and late arrival records
  */
 
-require_once "../app/controllers/AuthController.php";
-require_once "../app/models/AbsenceLateMgmt.php";
-require_once "../app/models/Employee.php";
-require_once "../app/core/Session.php";
+require_once __DIR__ . '/../app/controllers/AuthController.php';
+require_once __DIR__ . '/../app/models/AbsenceLateMgmt.php';
+require_once __DIR__ . '/../app/models/Employee.php';
+require_once __DIR__ . '/../app/core/Session.php';
 
 Session::start();
 
 // Check authentication
 if (!AuthController::isAuthenticated()) {
-    header("Location: ../../login_form.php");
+    header('Location: ' . dirname(__DIR__) . '/../../login_form.php');
     exit;
 }
 
 // Check HR/Time permission
 if (!AuthController::hasRole('time') && !AuthController::hasRole('hr')) {
-    header("Location: employee_dashboard.php");
+    header('Location: ' . dirname(__DIR__) . '/../../employee_dashboard.php');
     exit;
 }
 

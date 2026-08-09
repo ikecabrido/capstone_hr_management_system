@@ -8,16 +8,16 @@
 // Set timezone to Philippines (UTC+8)
 date_default_timezone_set('Asia/Manila');
 
-require_once "../app/controllers/AuthController.php";
-require_once "../app/helpers/QRHelper.php";
-require_once "../app/helpers/Helper.php";
-require_once "../app/core/Session.php";
+require_once __DIR__ . '/../app/controllers/AuthController.php';
+require_once __DIR__ . '/../app/helpers/QRHelper.php';
+require_once __DIR__ . '/../app/helpers/Helper.php';
+require_once __DIR__ . '/../app/core/Session.php';
 
 Session::start();
 
 // Check authentication (must be HR Admin to access this)
 if (!AuthController::isAuthenticated() || !AuthController::hasRole('time')) {
-    header("Location: ../../login_form.php");
+    header('Location: ' . dirname(__DIR__) . '/../../login_form.php');
     exit;
 }
 

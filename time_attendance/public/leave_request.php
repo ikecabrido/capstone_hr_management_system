@@ -4,24 +4,24 @@
  * Employees can submit leave requests for approval
  */
 
-require_once "../../auth/database.php";
-require_once "../app/controllers/AuthController.php";
-require_once "../app/controllers/LeaveController.php";
-require_once "../app/models/Employee.php";
-require_once "../app/models/Leave.php";
-require_once "../app/helpers/Helper.php";
-require_once "../app/core/Session.php";
+require_once __DIR__ . '/../../auth/database.php';
+require_once __DIR__ . '/../app/controllers/AuthController.php';
+require_once __DIR__ . '/../app/controllers/LeaveController.php';
+require_once __DIR__ . '/../app/models/Employee.php';
+require_once __DIR__ . '/../app/models/Leave.php';
+require_once __DIR__ . '/../app/helpers/Helper.php';
+require_once __DIR__ . '/../app/core/Session.php';
 
 Session::start();
 
 // Check if user is authenticated and is employee
 if (!AuthController::isAuthenticated()) {
-    header("Location: ../../login_form.php");
+    header('Location: ' . dirname(__DIR__) . '/../../login_form.php');
     exit;
 }
 
 if (!AuthController::hasRole('EMPLOYEE')) {
-    header("Location: dashboard.php");
+    header('Location: ' . dirname(__DIR__) . '/public/dashboard.php');
     exit;
 }
 
