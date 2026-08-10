@@ -1,11 +1,17 @@
 <?php
 /**
  * Generate Fixed Schedule API
- * Generates per-date custom shifts (ta_custom_shifts + ta_custom_shift_times)
+ * Saves per-date fixed shifts using the same ta_shifts and ta_employee_shifts
+ * tables used by the create and assign APIs.
  */
 header('Content-Type: application/json');
 
-require_once __DIR__ . '/../../../auth/database.php';
+// This endpoint is consumed as JSON. Prevent PHP notices/warnings from being
+// prepended to the response and turning it into invalid JSON in the browser.
+ini_set('display_errors', '0');
+ob_start();
+
+require_once __DIR__ . '/../../../../auth/database.php';
 
 try {
     $data = json_decode(file_get_contents('php://input'), true);
@@ -93,30 +99,37 @@ try {
             $break_end = date('H:i:s', $bend_ts);
         }
 
-        // Upsert ta_custom_shifts
-        $check_query = "SELECT custom_shift_id FROM ta_custom_shifts WHERE employee_id = ? AND shift_date = ?";
-        $stmt = $conn->prepare($check_query);
-        $stmt->execute([$employee_id, $dstr]);
-        $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+        // Map the time window to a ta_shifts record, as the normal create flow does.
+        $shift_start_only = date('H:i:s', $start_ts);
+        $shift_end_only = date('H:i:s', $end_ts);
 
-        if ($existing) {
-            $custom_shift_id = $existing['custom_shift_id'];
-            // remove previous times
-            $del = $conn->prepare("DELETE FROM ta_custom_shift_times WHERE custom_shift_id = ?");
-            $del->execute([$custom_shift_id]);
+        // Try to find an existing shift with the same start and end times
+        $shiftStmt = $conn->prepare("SELECT shift_id FROM ta_shifts WHERE start_time = ? AND end_time = ? LIMIT 1");
+        $shiftStmt->execute([$shift_start_only, $shift_end_only]);
+        $shiftRow = $shiftStmt->fetch(PDO::FETCH_ASSOC);
+        if ($shiftRow && isset($shiftRow['shift_id'])) {
+            $shift_id = $shiftRow['shift_id'];
         } else {
-            $ins = $conn->prepare("INSERT INTO ta_custom_shifts (employee_id, shift_date, created_at, updated_at) VALUES (?, ?, NOW(), NOW())");
-            $ins->execute([$employee_id, $dstr]);
-            $custom_shift_id = $conn->lastInsertId();
+            // Create a simple custom shift record
+            $shiftName = 'Custom ' . substr($shift_start_only,0,5) . '-' . substr($shift_end_only,0,5);
+            $insShift = $conn->prepare("INSERT INTO ta_shifts (shift_name, start_time, end_time, created_at, updated_at, is_active) VALUES (?, ?, ?, NOW(), NOW(), 1)");
+            $insShift->execute([$shiftName, $shift_start_only, $shift_end_only]);
+            $shift_id = $conn->lastInsertId();
         }
 
-        // Insert the time entry (support optional break_start / break_end)
-        $insert_time = $conn->prepare("INSERT INTO ta_custom_shift_times (custom_shift_id, start_time, end_time, break_start, break_end) VALUES (?, ?, ?, ?, ?)");
-        // store as full datetime to match existing save API
-        $start_dt = $dstr . ' ' . date('H:i:s', $start_ts);
-        $end_dt = $dstr . ' ' . date('H:i:s', $end_ts);
+        // Deactivate any currently active assignments overlapping this date for the employee
+        $deact = $conn->prepare("UPDATE ta_employee_shifts SET is_active = 0 WHERE employee_id = ? AND is_active = 1 AND effective_from <= ? AND (effective_to IS NULL OR effective_to >= ?)");
+        $deact->execute([$employee_id, $dstr, $dstr]);
 
-        $insert_time->execute([$custom_shift_id, $start_dt, $end_dt, $break_start, $break_end]);
+        // Insert into ta_employee_shifts if not already present for this employee/date/shift
+        $checkEmpShift = $conn->prepare("SELECT employee_shift_id FROM ta_employee_shifts WHERE employee_id = ? AND shift_id = ? AND effective_from = ? LIMIT 1");
+        $checkEmpShift->execute([$employee_id, $shift_id, $dstr]);
+        $existsEmpShift = $checkEmpShift->fetch(PDO::FETCH_ASSOC);
+        if (!$existsEmpShift) {
+            $insEmpShift = $conn->prepare("INSERT INTO ta_employee_shifts (employee_id, shift_id, effective_from, effective_to, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, 1, NOW(), NOW())");
+            // For single-date custom schedules, set effective_to equal to the date
+            $insEmpShift->execute([$employee_id, $shift_id, $dstr, $dstr]);
+        }
 
         $insertCount++;
     }
@@ -129,8 +142,9 @@ try {
         'message' => 'Fixed schedule generated'
     ]);
 
-} catch (Exception $e) {
+} catch (Throwable $e) {
     if (isset($conn) && $conn->inTransaction()) $conn->rollBack();
+    if (ob_get_length()) ob_clean();
     http_response_code(400);
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }

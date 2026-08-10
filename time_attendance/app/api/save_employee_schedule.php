@@ -38,42 +38,9 @@ try {
     // Start transaction
     $conn->beginTransaction();
 
-    // For this implementation, we're creating custom_shifts table to store day-specific overrides
-    // First, check if custom shift entry exists for this date
-    $check_query = "SELECT custom_shift_id FROM ta_custom_shifts 
-                   WHERE employee_id = ? AND shift_date = ?";
-    $stmt = $conn->prepare($check_query);
-    $stmt->execute([$employee_id, $date]);
-    $existing = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($existing) {
-        // Update existing custom shift
-        $delete_query = "DELETE FROM ta_custom_shift_times WHERE custom_shift_id = ?";
-        $stmt = $conn->prepare($delete_query);
-        $stmt->execute([$existing['custom_shift_id']]);
-    } else {
-        // Create new custom shift entry
-        $insert_query = "INSERT INTO ta_custom_shifts (employee_id, shift_date, created_at, updated_at) 
-                        VALUES (?, ?, NOW(), NOW())";
-        $stmt = $conn->prepare($insert_query);
-        $stmt->execute([$employee_id, $date]);
-        $custom_shift_id = $conn->lastInsertId();
-    }
-
-    // Get custom shift ID
-    $get_id_query = "SELECT custom_shift_id FROM ta_custom_shifts 
-                    WHERE employee_id = ? AND shift_date = ?";
-    $stmt = $conn->prepare($get_id_query);
-    $stmt->execute([$employee_id, $date]);
-    $custom_shift_row = $stmt->fetch(PDO::FETCH_ASSOC);
-    $custom_shift_id = $custom_shift_row['custom_shift_id'];
-
-    // Insert new shift times (support optional break_start / break_end)
+    // Store schedule changes through the same tables used by the create,
+    // assign, edit, and viewing flows.
     if (!empty($shifts)) {
-        $insert_times_query = "INSERT INTO ta_custom_shift_times (custom_shift_id, start_time, end_time, break_start, break_end) 
-                              VALUES (?, ?, ?, ?, ?)";
-        $stmt = $conn->prepare($insert_times_query);
-
         foreach ($shifts as $shift) {
             $start_time_raw = $shift['start_time'] ?? null;
             $end_time_raw = $shift['end_time'] ?? null;
@@ -96,38 +63,24 @@ try {
                 throw new Exception('Start time must be before end time');
             }
 
-            // normalize to full datetime
-            $start_time = $date . ' ' . date('H:i:s', $start_ts);
-            $end_time = $date . ' ' . date('H:i:s', $end_ts);
-
-            $break_start = null;
-            $break_end = null;
-            if ($break_start_raw || $break_end_raw) {
-                if (!$break_start_raw || !$break_end_raw) {
-                    $conn->rollBack();
-                    throw new Exception('Both break_start and break_end must be provided if specifying a break');
-                }
-                $bstart_ts = strtotime($break_start_raw);
-                $bend_ts = strtotime($break_end_raw);
-                if ($bstart_ts === false || $bend_ts === false) {
-                    $conn->rollBack();
-                    throw new Exception('Invalid break time format');
-                }
-                if ($bstart_ts < $start_ts || $bend_ts > $end_ts || $bstart_ts >= $bend_ts) {
-                    $conn->rollBack();
-                    throw new Exception('Break times must be within the work period and break start < break end');
-                }
-                $break_start = date('H:i:s', $bstart_ts);
-                $break_end = date('H:i:s', $bend_ts);
+            $start_only = date('H:i:s', $start_ts);
+            $end_only = date('H:i:s', $end_ts);
+            $find_shift = $conn->prepare("SELECT shift_id FROM ta_shifts WHERE start_time = ? AND end_time = ? LIMIT 1");
+            $find_shift->execute([$start_only, $end_only]);
+            $shift_row = $find_shift->fetch(PDO::FETCH_ASSOC);
+            if ($shift_row) {
+                $shift_id = $shift_row['shift_id'];
+            } else {
+                $shift_name = 'Custom ' . substr($start_only, 0, 5) . '-' . substr($end_only, 0, 5);
+                $create_shift = $conn->prepare("INSERT INTO ta_shifts (shift_name, start_time, end_time, created_at, updated_at, is_active) VALUES (?, ?, ?, NOW(), NOW(), 1)");
+                $create_shift->execute([$shift_name, $start_only, $end_only]);
+                $shift_id = $conn->lastInsertId();
             }
 
-            $stmt->execute([
-                $custom_shift_id,
-                $start_time,
-                $end_time,
-                $break_start,
-                $break_end
-            ]);
+            $deactivate = $conn->prepare("UPDATE ta_employee_shifts SET is_active = 0 WHERE employee_id = ? AND is_active = 1 AND effective_from <= ? AND (effective_to IS NULL OR effective_to >= ?)");
+            $deactivate->execute([$employee_id, $date, $date]);
+            $insert_assignment = $conn->prepare("INSERT INTO ta_employee_shifts (employee_id, shift_id, effective_from, effective_to, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, 1, NOW(), NOW())");
+            $insert_assignment->execute([$employee_id, $shift_id, $date, $date]);
         }
     }
 

@@ -3,6 +3,14 @@
  * Update assignment for a single employee
  */
 
+// Ensure PHP warnings/notices do not break JSON output
+ini_set('display_errors', '0');
+ini_set('display_startup_errors', '0');
+error_reporting(E_ALL);
+
+// Buffer output to prevent accidental HTML from leaking into JSON
+ob_start();
+
 require_once(__DIR__ . '/../../../auth/database.php');
 require_once(__DIR__ . '/../controllers/ShiftController.php');
 
@@ -78,9 +86,13 @@ try {
     ]);
 
 } catch (Exception $e) {
+    // Clean any buffered output that might contain HTML
+    if (ob_get_length() > 0) ob_end_clean();
     http_response_code(400);
     echo json_encode([
         'success' => false,
         'message' => $e->getMessage()
     ]);
 }
+// Flush remaining buffer safely
+if (ob_get_length() > 0) ob_end_flush();

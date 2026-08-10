@@ -77,30 +77,6 @@ try {
     $stmt->execute();
     $available_shifts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Get custom per-date shifts (ta_custom_shifts + ta_custom_shift_times)
-    $custom_query = "SELECT cs.shift_date, cst.start_time, cst.end_time, cst.break_start, cst.break_end
-                     FROM ta_custom_shifts cs
-                     JOIN ta_custom_shift_times cst ON cs.custom_shift_id = cst.custom_shift_id
-                     WHERE cs.employee_id = ?
-                     AND cs.shift_date BETWEEN ? AND ?";
-    $stmt = $conn->prepare($custom_query);
-    try {
-        $stmt->execute([$employee_id, $start_date, $end_date]);
-        $custom_rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (Exception $e) {
-        $custom_rows = [];
-    }
-
-    $custom_map = [];
-    foreach ($custom_rows as $cr) {
-        $custom_map[$cr['shift_date']] = [
-            'start_time' => $cr['start_time'],
-            'end_time' => $cr['end_time'],
-            'break_start' => $cr['break_start'],
-            'break_end' => $cr['break_end']
-        ];
-    }
-
     // Build schedule data
     $schedule_data = [];
     $start = new DateTime($start_date);
@@ -119,6 +95,23 @@ try {
             'flexible' => null,
             'has_exclusion' => false
         ];
+
+                // Fixed schedules are represented by employee-shift assignments.
+                // Resolve the assignment for this date instead of reading a separate
+                // custom-shift table.
+                $day_shift_query = "SELECT es.*, s.*
+                                                        FROM ta_employee_shifts es
+                                                        JOIN ta_shifts s ON es.shift_id = s.shift_id
+                                                        WHERE es.employee_id = ?
+                                                            AND es.is_active = 1
+                                                            AND es.effective_from <= ?
+                                                            AND (es.effective_to IS NULL OR es.effective_to >= ?)
+                                                        ORDER BY es.effective_from DESC, es.employee_shift_id DESC
+                                                        LIMIT 1";
+                $day_shift_stmt = $conn->prepare($day_shift_query);
+                $day_shift_stmt->execute([$employee_id, $date_str, $date_str]);
+                $day_shift = $day_shift_stmt->fetch(PDO::FETCH_ASSOC);
+                $day_data['shift'] = $day_shift ?: null;
 
         // Check if this employee has a shift exclusion for this date
         $exclusion_query = "SELECT COUNT(*) as exclusion_count 
@@ -153,13 +146,9 @@ try {
             }
         }
 
-        // If a custom per-date shift exists, prefer it (unless excluded)
-        if (!$day_data['has_exclusion'] && isset($custom_map[$date_str])) {
-            $day_data['custom'] = $custom_map[$date_str];
-        } else {
+        if (!$day_data['has_exclusion']) {
             // Find flexible schedule for this date (one-time or recurring)
             // BUT SKIP if employee has a shift exclusion for this date
-            if (!$day_data['has_exclusion']) {
                 foreach ($flexible_schedules as $flex) {
                     $should_display = false;
                     
@@ -200,7 +189,6 @@ try {
                         break;
                     }
                 }
-            }
         }
 
         $schedule_data[] = $day_data;

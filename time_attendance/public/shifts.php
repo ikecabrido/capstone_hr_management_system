@@ -8,8 +8,7 @@
 // Start session and check authentication
 // Ensure required app bootstrap is available so runtime variables used
 // later (like $db, $shifts, $allAssignments) are defined.
-// Debug helper for writing diagnostics to time_attendance/debug_shifts.log
-require_once __DIR__ . '/../debug_helpers.php';
+// JS helpers and modal-prefill moved to the scripts section further down the file.
 require_once __DIR__ . '/../app/controllers/AuthController.php';
 require_once __DIR__ . '/../app/core/Session.php';
 require_once __DIR__ . '/../../auth/database.php';
@@ -871,6 +870,14 @@ require_once __DIR__ . '/../layout/content_header.php';
                 <i class="fas fa-calendar-plus"></i>
                 Assign Shift
             </button>
+                <button class="btn btn-primary" onclick="openCreateShiftModal();">
+                    <i class="fas fa-plus"></i>
+                    Create Shift
+                </button>
+                <button class="btn btn-primary" onclick="openMultipleAssign()">
+                    <i class="fas fa-users-cog"></i>
+                    Multiple Assign
+                </button>
         </div>
 
         <script>
@@ -907,7 +914,7 @@ require_once __DIR__ . '/../layout/content_header.php';
                 };
             }
 
-            // ===== Minimal Generate Fixed Schedule Modal logic =====
+            // ===== Employee Shift Edit Modal logic =====
             function closeModal(modalId) {
                 const modal = document.getElementById(modalId);
                 if (modal) {
@@ -919,16 +926,31 @@ require_once __DIR__ . '/../layout/content_header.php';
             let fixedScheduleEmployees = [];
             let filteredFixedScheduleEmployees = [];
 
+            function showToast(message, type) {
+                const toast = document.createElement('div');
+                toast.className = 'ta-toast ta-toast-' + (type === 'error' ? 'error' : 'success');
+                toast.textContent = message;
+                toast.style.cssText = 'position:fixed; right:24px; bottom:24px; z-index:10000; min-width:280px; max-width:420px; padding:14px 18px; border-radius:8px; color:#fff; font-weight:600; box-shadow:0 8px 24px rgba(0,0,0,.2); background:' + (type === 'error' ? '#c0392b' : '#218739') + ';';
+                document.body.appendChild(toast);
+                setTimeout(function() {
+                    toast.style.opacity = '0';
+                    toast.style.transition = 'opacity .25s ease';
+                    setTimeout(function() { toast.remove(); }, 250);
+                }, 3500);
+            }
+
             function submitGenerateFixed() {
                 const employeeId = document.getElementById('gf_employee_id').value;
-                if (!employeeId) { alert('Please choose an employee before generating the schedule'); return; }
+                if (!employeeId) { showToast('No employee shift was selected for editing.', 'error'); return; }
                 const startDate = document.getElementById('gf_start_date').value;
                 const endDate = document.getElementById('gf_end_date').value;
 
-                if (!startDate || !endDate) { alert('Please provide start and end dates'); return; }
+                if (!startDate || !endDate) { showToast('Please provide the schedule start and end dates.', 'error'); return; }
 
                 const days = {};
+                let validationError = '';
                 ['1','2','3','4','5','6'].forEach(function(d) {
+                    if (validationError) return;
                     const enabledEl = document.getElementById('gf_day_' + d + '_enabled');
                     const enabled = enabledEl ? enabledEl.checked : false;
                     if (!enabled) return;
@@ -941,10 +963,13 @@ require_once __DIR__ . '/../layout/content_header.php';
                     const beEl = document.getElementById('gf_day_' + d + '_break_end');
                     const bs = bsEl ? bsEl.value : null;
                     const be = beEl ? beEl.value : null;
-                    if (!s || !e) { alert('Please enter start/end for selected days'); throw 'validation'; }
+                    if (!s || !e) { validationError = 'Please enter start and end times for every selected day.'; return; }
                     days[d] = { start: s, end: e };
                     if (bs || be) { days[d].break_start = bs; days[d].break_end = be; }
                 });
+
+                if (validationError) { showToast(validationError, 'error'); return; }
+                if (Object.keys(days).length === 0) { showToast('Select at least one scheduled day.', 'error'); return; }
 
                 const payload = { employee_id: employeeId, start_date: startDate, end_date: endDate, days: days };
 
@@ -952,32 +977,34 @@ require_once __DIR__ . '/../layout/content_header.php';
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
-                }).then(r => r.json()).then(res => {
-                    if (res.success) {
-                        alert('Generated: ' + res.inserted + ' entries');
-                        closeModal('generateFixedModal');
-                        location.reload();
-                    } else {
-                        alert('Error: ' + (res.error || 'Unknown'));
+                }).then(async r => {
+                    const responseText = await r.text();
+                    let res;
+                    try {
+                        res = JSON.parse(responseText);
+                    } catch (parseError) {
+                        console.error('Save shift returned invalid JSON:', responseText);
+                        throw new Error('The server returned an invalid response. Check the PHP error log.');
                     }
-                }).catch(err => { alert('Network error'); console.error(err); });
+                    if (!r.ok && (!res || res.success !== false)) {
+                        throw new Error('The server rejected the shift update.');
+                    }
+                    return res;
+                }).then(res => {
+                    if (res.success) {
+                        showToast('Employee shift changes saved successfully.', 'success');
+                        closeModal('generateFixedModal');
+                        setTimeout(() => location.reload(), 900);
+                    } else {
+                        showToast('Unable to save shift changes: ' + (res.error || 'Unknown error'), 'error');
+                    }
+                }).catch(err => {
+                    showToast('Unable to save shift changes: ' + (err.message || 'Network or server error'), 'error');
+                    console.error(err);
+                });
             }
 
-            function copySelectedFlexToGenerate() {
-                const srcId = document.getElementById('flex_employee_id');
-                const srcName = document.getElementById('flex_employee_name');
-                const display = document.getElementById('gf_selected_employee_display');
-                const hid = document.getElementById('gf_employee_id');
-                const searchInput = document.getElementById('gf_employee_search');
-                if (srcId && srcId.value) {
-                    hid.value = srcId.value;
-                    display.textContent = (srcName && srcName.value) ? srcName.value : srcId.value;
-                    if (searchInput) searchInput.value = (srcName && srcName.value) ? srcName.value : srcId.value;
-                    closeModal('flexibleModal');
-                } else {
-                    alert('No employee selected in the flexible schedule modal');
-                }
-            }
+            // copySelectedFlexToGenerate removed — flexible modal deprecated in this view
 
             function loadFixedScheduleEmployees() {
                 fetch('../app/api/get_employees.php')
@@ -1038,61 +1065,10 @@ require_once __DIR__ . '/../layout/content_header.php';
             function searchFixedEmployees() {
                 const searchTerm = document.getElementById('gf_employee_search').value;
                 if (!searchTerm || String(searchTerm).trim().length === 0) {
-                    alert('Enter an employee name or ID to search');
+                    showToast('An employee shift must be selected before editing.', 'error');
                     return;
                 }
                 filterFixedEmployeeSuggestions(searchTerm);
-            }
-
-            function toggleGfUnassignedEmployees() {
-                const list = document.getElementById('gf_unassigned_employees');
-                const button = document.getElementById('gf_show_unassigned_button');
-                const suggestions = document.getElementById('gf_employee_suggestions');
-                if (!list || !button) return;
-
-                if (list.style.display === 'block') {
-                    list.style.display = 'none';
-                    button.textContent = 'Show unassigned employees';
-                    return;
-                }
-
-                if (suggestions) suggestions.style.display = 'none';
-                button.textContent = 'Loading unassigned...';
-                fetch('../api/shift_assignment.php?action=get_unassigned_employees')
-                    .then(response => response.text())
-                    .then(text => {
-                        let data;
-                        try { data = JSON.parse(text); } catch (err) { console.error('get_unassigned_employees returned non-JSON:', text); throw err; }
-                        if (data.success && Array.isArray(data.data)) {
-                            renderUnassignedEmployeeList(data.data);
-                            list.style.display = 'block';
-                            button.textContent = 'Hide unassigned employees';
-                        } else {
-                            list.innerHTML = '<div style="padding:12px; color:#666;">No unassigned employees found.</div>';
-                            list.style.display = 'block';
-                            button.textContent = 'Hide unassigned employees';
-                        }
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        list.innerHTML = '<div style="padding:12px; color:#c00;">Unable to load unassigned employees.</div>';
-                        list.style.display = 'block';
-                        button.textContent = 'Hide unassigned employees';
-                    });
-            }
-
-            function renderUnassignedEmployeeList(employees) {
-                const list = document.getElementById('gf_unassigned_employees');
-                if (!list) return;
-                if (!employees || employees.length === 0) {
-                    list.innerHTML = '<div style="padding:12px; color:#666;">No unassigned employees found.</div>';
-                    return;
-                }
-                list.innerHTML = employees.map(emp => {
-                    const label = emp.full_name || emp.employee || emp.name || emp.employee_id || emp.id || 'Unknown';
-                    const id = emp.employee_id ?? emp.id ?? emp.employeeId ?? '';
-                    return `<div class="employee-suggestion-item" data-id="${escapeHtml(id)}" data-name="${escapeHtml(label)}" style="padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #eee;">${escapeHtml(label)}<span style="float:right; color:#999;">${escapeHtml(id)}</span></div>`;
-                }).join('');
             }
 
             function selectFixedEmployee(employeeId, employeeName) {
@@ -1113,21 +1089,120 @@ require_once __DIR__ . '/../layout/content_header.php';
                 controls.style.display = checkbox.checked ? 'grid' : 'none';
             }
 
-            document.addEventListener('click', function(event) {
-                const suggestions = document.getElementById('gf_employee_suggestions');
-                const searchInput = document.getElementById('gf_employee_search');
-                if (!suggestions || !searchInput) return;
-                const target = event.target;
-                if (target.closest && (target.closest('#gf_employee_suggestions') || target.closest('#gf_unassigned_employees'))) {
-                    const item = target.closest('.employee-suggestion-item');
-                    if (item) {
-                        selectFixedEmployee(item.dataset.id, item.dataset.name);
-                    }
+            // Open the edit employee shift modal and prefill with the employee's existing schedule
+            function openGenerateFixedModalForEmployee(employeeId) {
+                const id = employeeId || (typeof selectedEmployeeIdForEdit !== 'undefined' ? selectedEmployeeIdForEdit : (window.selectedEmployeeIdForEdit || window.selectedEmployeeForEdit));
+                if (!id) {
+                    showToast('No employee shift was selected for editing.', 'error');
                     return;
                 }
-                if (target === searchInput) return;
-                suggestions.style.display = 'none';
-            });
+
+                selectedEmployeeIdForEdit = id;
+                try { window.selectedEmployeeIdForEdit = id; } catch (e) { /* ignore */ }
+
+                const searchInput = document.getElementById('gf_employee_search');
+                const suggestions = document.getElementById('gf_employee_suggestions');
+                const disp = document.getElementById('gf_selected_employee_display');
+                const hid = document.getElementById('gf_employee_id');
+                const startDate = document.getElementById('gf_start_date');
+                const endDate = document.getElementById('gf_end_date');
+
+                closeModal('employeeShiftModal');
+
+                if (searchInput) {
+                    searchInput.value = '';
+                }
+                if (suggestions) {
+                    suggestions.style.display = 'none';
+                }
+                if (hid) {
+                    hid.value = id;
+                }
+                if (disp) {
+                    disp.innerText = 'Loading employee schedule...';
+                }
+                if (startDate) {
+                    startDate.value = '';
+                }
+                if (endDate) {
+                    endDate.value = '';
+                }
+
+                for (let i = 1; i <= 6; i++) {
+                    const cb = document.getElementById('gf_day_' + i + '_enabled');
+                    const startEl = document.getElementById('gf_day_' + i + '_start');
+                    const endEl = document.getElementById('gf_day_' + i + '_end');
+                    const breakStartEl = document.getElementById('gf_day_' + i + '_break_start');
+                    const breakEndEl = document.getElementById('gf_day_' + i + '_break_end');
+                    if (cb) {
+                        cb.checked = false;
+                        toggleGfDayRow(i);
+                    }
+                    if (startEl) startEl.value = '';
+                    if (endEl) endEl.value = '';
+                    if (breakStartEl) breakStartEl.value = '';
+                    if (breakEndEl) breakEndEl.value = '';
+                }
+
+                const weekRange = getCurrentWeekRange();
+                fetch(`../app/api/get_employee_schedule.php?employee_id=${encodeURIComponent(id)}&start_date=${encodeURIComponent(weekRange.start)}&end_date=${encodeURIComponent(weekRange.end)}`)
+                    .then(r => r.text())
+                    .then(text => {
+                        let data;
+                        try { data = JSON.parse(text); } catch (e) { throw new Error('Invalid JSON'); }
+                        if (!data || !data.success) throw new Error(data && data.error ? data.error : 'Failed to fetch employee schedule');
+
+                        const emp = data.employee || {};
+                        const schedule = Array.isArray(data.schedule) ? data.schedule : [];
+
+                        if (disp) {
+                            disp.innerText = (emp.full_name || emp.name || emp.employee_name || ('Employee ' + id));
+                        }
+                        if (searchInput) {
+                            searchInput.value = emp.full_name || emp.name || emp.employee_name || id;
+                        }
+                        if (startDate) startDate.value = weekRange.start;
+                        if (endDate) endDate.value = weekRange.end;
+
+                        schedule.forEach(day => {
+                            const dayDate = day.date ? new Date(day.date) : null;
+                            if (!dayDate) return;
+                            const dow = dayDate.getDay();
+                            if (dow === 0) return;
+                            const idx = dow;
+                            const cb = document.getElementById('gf_day_' + idx + '_enabled');
+                            if (!cb) return;
+
+                            const source = day.custom ? day.custom : (day.flexible ? day.flexible : day.shift);
+                            const startValue = source ? parseTimeValue(source.start_time || source.start || '') : '';
+                            const endValue = source ? parseTimeValue(source.end_time || source.end || '') : '';
+                            const breakStartValue = source ? parseTimeValue(source.break_start || source.breakStart || '') : '';
+                            const breakEndValue = source ? parseTimeValue(source.break_end || source.breakEnd || '') : '';
+
+                            if (!startValue || !endValue) return;
+                            cb.checked = true;
+                            const startEl = document.getElementById('gf_day_' + idx + '_start');
+                            const endEl = document.getElementById('gf_day_' + idx + '_end');
+                            const breakStartEl = document.getElementById('gf_day_' + idx + '_break_start');
+                            const breakEndEl = document.getElementById('gf_day_' + idx + '_break_end');
+                            if (startEl) startEl.value = startValue;
+                            if (endEl) endEl.value = endValue;
+                            if (breakStartEl) breakStartEl.value = breakStartValue;
+                            if (breakEndEl) breakEndEl.value = breakEndValue;
+                            toggleGfDayRow(idx);
+                        });
+
+                        openModal('generateFixedModal');
+                    })
+                    .catch(err => {
+                        console.error('Error loading employee schedule for generate modal', err);
+                        if (disp) {
+                            disp.innerText = (typeof id === 'string' ? id : 'Employee ID: ' + id);
+                        }
+                        showToast('Unable to load the employee schedule for editing.', 'error');
+                        openModal('generateFixedModal');
+                    });
+            }
 
             if (typeof closeModal !== 'function') {
                 window.closeModal = function(modalId) {
@@ -1233,6 +1308,20 @@ require_once __DIR__ . '/../layout/content_header.php';
                 </thead>
                 <tbody id="assignmentTableBody"></tbody>
             </table>
+            
+            <!-- Shift Templates Table -->
+            <h3 style="margin-top: 24px; font-size: 18px; font-weight: 700;">Shift Templates</h3>
+            <table id="templatesTable" style="margin-top:10px;">
+                <thead>
+                    <tr>
+                        <th>Template</th>
+                        <th>Time</th>
+                        <th>Active</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="templatesTableBody"></tbody>
+            </table>
             <!-- Pagination for Assignments -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding: 15px; background: white; border-radius: 10px; flex-wrap: wrap; gap: 10px;">
                 <div>
@@ -1268,28 +1357,27 @@ require_once __DIR__ . '/../layout/content_header.php';
                 <div class="modal-body" id="employeeShiftModalBody" style="padding-bottom: 0;"></div>
                 <div class="modal-action-row" style="justify-content: flex-end; gap: 10px; padding: 20px 24px 24px;">
                     <button class="btn btn-secondary" onclick="closeModal('employeeShiftModal')">Close</button>
-                    <button class="btn btn-primary" id="employeeShiftModalEditButton" type="button" onclick="openAssignmentModalForEmployee()" style="display: none;">
-                        <i class="fas fa-edit"></i> Edit
+                    <button class="btn btn-primary" id="employeeShiftModalEditButton" type="button" onclick="openGenerateFixedModalForEmployee()" style="display: none;">
+                        <i class="fas fa-edit"></i> Edit Schedule
                     </button>
                 </div>
             </div>
         </div>
 
-        <div id="viewFlexibleScheduleModal" class="modal" style="display: none;">
-            <div class="modal-content">
+        <div id="scheduleDetailModal" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 520px;">
                 <div class="modal-header">
-                    <h2><i class="fas fa-eye"></i> Flexible Schedule Details</h2>
-                    <button class="modal-close" onclick="closeModal('viewFlexibleScheduleModal')">&times;</button>
+                    <h2><i class="fas fa-calendar-check"></i> Shift Information</h2>
+                    <button class="modal-close" onclick="closeModal('scheduleDetailModal')">&times;</button>
                 </div>
-                <div class="modal-body" id="viewFlexibleScheduleModalBody" style="padding-bottom: 0;"></div>
-                <div class="modal-action-row" style="justify-content: flex-end; gap: 10px; padding: 20px 24px 24px;">
-                    <button class="btn btn-secondary" onclick="closeModal('viewFlexibleScheduleModal')">Cancel</button>
-                    <button class="btn btn-primary" id="viewFlexibleScheduleModalEditButton" type="button" onclick="openFlexibleScheduleEditFromViewModal()" style="display: none;">
-                        <i class="fas fa-edit"></i> Edit
-                    </button>
+                <div class="modal-body" id="scheduleDetailModalBody"></div>
+                <div class="modal-action-row" style="justify-content: flex-end; padding: 20px 24px 24px;">
+                    <button class="btn btn-secondary" type="button" onclick="closeModal('scheduleDetailModal')">Close</button>
                 </div>
             </div>
         </div>
+
+        <!-- viewFlexibleScheduleModal removed (flexible schedule UI deprecated) -->
 
         <script>
         // Assignment Table Data
@@ -1321,6 +1409,34 @@ require_once __DIR__ . '/../layout/content_header.php';
             if (!end) return formatTime(start);
             return `${formatTime(start)} - ${formatTime(end)}`;
         }
+
+        function padDateSegment(value) {
+            return String(value).padStart(2, '0');
+        }
+
+        function formatDateISO(date) {
+            return `${date.getFullYear()}-${padDateSegment(date.getMonth() + 1)}-${padDateSegment(date.getDate())}`;
+        }
+
+        function getCurrentWeekRange(referenceDate = new Date()) {
+            const date = new Date(referenceDate);
+            const day = date.getDay();
+            const monday = new Date(date);
+            monday.setDate(date.getDate() - ((day + 6) % 7));
+            const saturday = new Date(monday);
+            saturday.setDate(monday.getDate() + 5);
+            return { start: formatDateISO(monday), end: formatDateISO(saturday) };
+        }
+
+        function parseTimeValue(value) {
+            if (!value) return '';
+            if (value.length >= 5 && value.indexOf(':') === 2) {
+                return value.slice(0, 5);
+            }
+            const parsed = value.split(' '); // handle datetime strings
+            return parsed.length > 0 ? parsed[0].slice(0, 5) : value.slice(0, 5);
+        }
+
         let employeeAssignmentData = [];
         let assignmentCurrentPage = 1;
         let assignmentPageSize = 10;
@@ -1337,6 +1453,25 @@ require_once __DIR__ . '/../layout/content_header.php';
                 '"': '&quot;',
                 "'": '&#039;'
             }[match] || match));
+        }
+
+        function escapeJs(value) {
+            return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, ' ');
+        }
+
+        function showScheduleDetail(detailText) {
+            if (typeof detailText !== 'string' || detailText.trim() === '') {
+                detailText = 'No schedule details available.';
+            }
+            const body = document.getElementById('scheduleDetailModalBody');
+            if (body) {
+                body.innerHTML = '<div style="display:grid; gap:12px;">' +
+                    '<div style="padding:14px 16px; background:#f4f7fb; border-radius:8px; color:#263238; line-height:1.6;">' +
+                    escapeHtml(detailText) +
+                    '</div>' +
+                    '</div>';
+            }
+            openModal('scheduleDetailModal');
         }
 
         function safeLower(value) {
@@ -1529,58 +1664,86 @@ require_once __DIR__ . '/../layout/content_header.php';
             );
 
             detailsHtmlParts.push('<div style="margin-bottom: 20px;">');
-            detailsHtmlParts.push('<div style="margin-bottom: 12px; font-weight: 700; color: #333;">Shift Assignments (' + (employee.assignments ? employee.assignments.length : 0) + ')</div>');
+            detailsHtmlParts.push('<div style="margin-bottom: 12px; font-weight: 700; color: #333;">Assigned Days</div>');
 
-            if (!employee.assignments || employee.assignments.length === 0) {
-                detailsHtmlParts.push('<div style="color: #777;">No shifts assigned yet for this employee.</div>');
+            const dayAbbr = ['Su', 'M', 'T', 'W', 'Th', 'F', 'Sa'];
+            const scheduleRows = (employee.assignments || []).map(a => {
+                const explicitDay = a.day_of_week !== undefined && a.day_of_week !== null && !isNaN(Number(a.day_of_week)) ? Number(a.day_of_week) : null;
+                const dateValue = a.effective_from || a.schedule_date || a.date || a.shift_date || a.day_date || a.date_assigned || '';
+                let dayIndex = explicitDay;
+                if (dayIndex === null && dateValue) {
+                    const dateParts = String(dateValue).split(/[ T-]/).slice(0, 3);
+                    if (dateParts.length === 3 && /^\d{4}$/.test(dateParts[0])) {
+                        const dateObject = new Date(Number(dateParts[0]), Number(dateParts[1]) - 1, Number(dateParts[2]));
+                        if (!isNaN(dateObject.getTime())) dayIndex = dateObject.getDay();
+                    }
+                }
+                const label = dayIndex !== null && dayIndex >= 0 && dayIndex <= 6 ? dayAbbr[dayIndex] : '—';
+                const dateNoteText = dateValue ? ` ${String(dateValue).split(' ')[0]}` : '';
+                const scheduleStart = a.start_time || a.start || a.from || a.shift_start || a.schedule_start || '';
+                const scheduleEnd = a.end_time || a.end || a.to || a.shift_end || a.schedule_end || '';
+                const startText = scheduleStart ? formatTime(scheduleStart) : '—';
+                const endText = scheduleEnd ? formatTime(scheduleEnd) : '—';
+                const isActiveFlag = a.isActive || a.is_active === 1 || a.is_active === '1' || false;
+                const statusText = a.status || (isActiveFlag ? 'Active' : 'Scheduled');
+                const sourceType = a.custom ? 'Custom Shift' : a.flexible ? 'Flexible Schedule' : 'Standard Shift';
+                return {
+                    labelHtml: '<div style="display:flex; flex-direction:column; gap:3px;"><span style="font-weight:600; color:#222;">' + escapeHtml(label) + '</span>' +
+                        (dateNoteText ? '<span style="font-size:11px; color:#777;">' + escapeHtml(dateNoteText) + '</span>' : '') +
+                        '</div>',
+                    detailTitle: `${employee.employee} | Assigned ${label}${dateNoteText ? ' on ' + dateNoteText.trim() : ''} | ${a.shift || a.shift_name || sourceType} | ${startText} - ${endText}`,
+                    startText,
+                    endText,
+                    statusText,
+                    sourceType
+                };
+            });
+
+            let scheduleHtml = '<div style="margin-bottom:14px;">';
+            if (scheduleRows.length === 0) {
+                scheduleHtml += '<div style="color:#777;">No scheduled shifts available for this employee.</div>';
             } else {
-                detailsHtmlParts.push(
-                    '<table style="width:100%; border-collapse: collapse; margin-bottom: 16px;">' +
-                    '<thead><tr style="background:#f4f6f8;">' +
-                    '<th style="padding: 10px; text-align:left; font-size: 13px; color:#333;">Shift</th>' +
-                    '<th style="padding: 10px; text-align:left; font-size: 13px; color:#333;">Time</th>' +
-                    '<th style="padding: 10px; text-align:left; font-size: 13px; color:#333;">From</th>' +
-                    '<th style="padding: 10px; text-align:left; font-size: 13px; color:#333;">To</th>' +
-                    '<th style="padding: 10px; text-align:left; font-size: 13px; color:#333;">Status</th>' +
-                    '</tr></thead><tbody>'
-                );
+                scheduleHtml += '<table style="width:100%; border-collapse:collapse; margin-bottom:16px;">';
+                scheduleHtml += '<thead><tr style="background:#f4f6f8;">';
+                scheduleHtml += '<th style="padding:10px; text-align:left; font-size:13px; color:#333;">Day</th>';
+                scheduleHtml += '<th style="padding:10px; text-align:left; font-size:13px; color:#333;">Schedule Start</th>';
+                scheduleHtml += '<th style="padding:10px; text-align:left; font-size:13px; color:#333;">Schedule End</th>';
+                scheduleHtml += '<th style="padding:10px; text-align:left; font-size:13px; color:#333;">Status</th>';
+                scheduleHtml += '<th style="padding:10px; text-align:left; font-size:13px; color:#333;">Details</th>';
+                scheduleHtml += '</tr></thead><tbody>';
 
-                employee.assignments.forEach(row => {
-                    const shiftName = row.shift || row.shift_name || row.shiftName || '—';
-                    const timeText = row.time || (row.from && row.to ? row.from + ' - ' + row.to : '—');
-                    const fromText = row.from || row.start || '—';
-                    const toText = row.to || row.end || '—';
-                    const isActiveFlag = row.isActive || row.is_active === 1 || row.is_active === '1' || false;
-                    const statusText = row.status || (isActiveFlag ? 'Active' : 'Scheduled');
-
-                    detailsHtmlParts.push(
-                        '<tr>' +
-                        '<td style="padding: 10px; border-bottom: 1px solid #eaeaea;">' + escapeHtml(shiftName) + '</td>' +
-                        '<td style="padding: 10px; border-bottom: 1px solid #eaeaea;">' + escapeHtml(timeText) + '</td>' +
-                        '<td style="padding: 10px; border-bottom: 1px solid #eaeaea;">' + escapeHtml(fromText) + '</td>' +
-                        '<td style="padding: 10px; border-bottom: 1px solid #eaeaea;">' + escapeHtml(toText) + '</td>' +
-                        '<td style="padding: 10px; border-bottom: 1px solid #eaeaea;">' +
-                        '<span style="display:inline-flex; align-items:center; gap:6px; background:' + (isActiveFlag ? '#d4edda' : '#f8d7da') + '; color:' + (isActiveFlag ? '#155724' : '#721c24') + '; padding: 4px 10px; border-radius: 999px;">' +
-                        (isActiveFlag ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-clock"></i>') + ' ' + escapeHtml(statusText) +
-                        '</span></td>' +
-                        '</tr>'
-                    );
+                scheduleRows.forEach(r => {
+                    scheduleHtml += '<tr>' +
+                        '<td style="padding:10px; border-bottom:1px solid #eaeaea; font-weight:600; color:#222;">' + r.labelHtml + '</td>' +
+                        '<td style="padding:10px; border-bottom:1px solid #eaeaea;">' + escapeHtml(r.startText) + '</td>' +
+                        '<td style="padding:10px; border-bottom:1px solid #eaeaea;">' + escapeHtml(r.endText) + '</td>' +
+                        '<td style="padding:10px; border-bottom:1px solid #eaeaea;">' + escapeHtml(r.statusText) + '</td>' +
+                        '<td style="padding:10px; border-bottom:1px solid #eaeaea; text-align:center;">' +
+                            '<button type="button" onclick="showScheduleDetail(\'' + escapeJs(r.detailTitle) + '\')" style="background:none;border:none;padding:0;color:#1565c0;cursor:pointer;">' +
+                                '<i class="fas fa-eye"></i>' +
+                            '</button>' +
+                        '</td>' +
+                    '</tr>';
                 });
 
-                detailsHtmlParts.push('</tbody></table>');
-                detailsHtmlParts.push(
-                    '<details style="font-size:12px; color:#666;">' +
-                    '<summary>Show raw assignment data (debug)</summary>' +
-                    '<pre style="white-space:pre-wrap; max-height:200px; overflow:auto;">' + escapeHtml(JSON.stringify(employee.assignments, null, 2)) + '</pre>' +
-                    '</details>'
-                );
+                scheduleHtml += '</tbody></table>';
             }
 
+            scheduleHtml += '</div>';
+            detailsHtmlParts.push(scheduleHtml);
             detailsHtmlParts.push('</div>');
 
-            document.getElementById('employeeShiftModalBody').innerHTML = detailsHtmlParts.join('');
-            document.getElementById('employeeShiftModalEditButton').style.display = 'inline-flex';
+            const body = document.getElementById('employeeShiftModalBody');
+            if (body) {
+                body.innerHTML = detailsHtmlParts.join('');
+            }
+
+            const editButton = document.getElementById('employeeShiftModalEditButton');
+            if (editButton) {
+                editButton.style.display = 'inline-flex';
+            }
             selectedEmployeeIdForEdit = employeeId;
+            try { window.selectedEmployeeIdForEdit = employeeId; } catch (e) { /* ignore */ }
             openModal('employeeShiftModal');
         }
 
@@ -1647,7 +1810,7 @@ require_once __DIR__ . '/../layout/content_header.php';
                     }
                 }
 
-                loadEmployeeList();
+                // Open the assignment modal prefilled for edit
                 openModal('assignmentModal');
                 closeModal('employeeShiftModal');
             })
@@ -1734,564 +1897,233 @@ require_once __DIR__ . '/../layout/content_header.php';
 
         normalizeAssignmentData();
         renderAssignmentTable();
-    </script>
 
-        <h3 style="margin-top: 50px; font-size: 22px; font-weight: 700; color: #2c3e50;">
-            <i class="fas fa-calendar-check"></i> Flexible Schedules
-        </h3>
-        
-        <!-- Search and Controls for Flexible -->
-        <div style="margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; background: rgba(255,255,255,0.9); padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-            <div style="flex: 1; min-width: 200px; position: relative;">
-                <input type="text" id="flexibleSearch" placeholder="Search by employee name or notes..." style="width: 100%; padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;" autocomplete="off">
-                <div id="flexibleSuggestions" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 2px solid #e0e0e0; border-top: none; border-radius: 0 0 6px 6px; max-height: 200px; overflow-y: auto; display: none; z-index: 1000; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-                </div>
-            </div>
-            <select id="flexibleSortBy" style="padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; cursor: pointer;">
-                <option value="employee">Sort by Employee</option>
-                <option value="day">Sort by Day(s)</option>
-                <option value="status">Sort by Status</option>
-            </select>
-            <button type="button" onclick="resetFlexibleFilters()" style="padding: 10px 20px; background: #f0f0f0; border: 2px solid #ddd; border-radius: 6px; cursor: pointer; font-weight: 500;">
-                <i class="fas fa-redo"></i> Reset
-            </button>
-        </div>
-        
-        <div class="table-container">
-            <table id="flexibleTable">
-                    <thead>
-                        <tr>
-                            <th style="cursor: pointer;" onclick="sortFlexible('employee')"><i class="fas fa-user"></i> Employee <i class="fas fa-sort"></i></th>
-                            <th><i class="fas fa-calendar-check"></i> Day(s)</th>
-                            <th style="cursor: pointer;" onclick="sortFlexible('status')"><i class="fas fa-info-circle"></i> Status <i class="fas fa-sort"></i></th>
-                            <th><i class="fas fa-cog"></i> Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="flexibleTableBody">
-                        <?php
-                        // Prepare flexible schedule data
-                        $flexibleData = [];
-                        try {
-                            $flex_query = "SELECT fs.id, fs.employee_id, fs.schedule_date, fs.start_time, fs.end_time, 
-                                          fs.day_of_week, fs.repeat_until, fs.contract_end_date, fs.notes, fs.created_at,
-                                          e.full_name
-                                          FROM ta_flexible_schedules fs
-                                          LEFT JOIN employees e ON fs.employee_id = e.employee_id
-                                          ORDER BY fs.schedule_date DESC, fs.start_time ASC";
-                            
-                            $flex_stmt = $db->query($flex_query);
-                            $flex_schedules = $flex_stmt->fetchAll(PDO::FETCH_ASSOC);
-                            
-                            $day_names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                            if (!empty($flex_schedules)):
-                                foreach ($flex_schedules as $flex):
-                                    $day_text = $flex['day_of_week'] !== null ? $day_names[$flex['day_of_week']] . ' (Weekly)' : date('l', strtotime($flex['schedule_date']));
-                                    $today = date('Y-m-d');
-                                    $status = 'Inactive';
-                                    if ($flex['day_of_week'] !== null) {
-                                        $status = empty($flex['repeat_until']) || $flex['repeat_until'] >= $today ? 'Active' : 'Inactive';
-                                    } else {
-                                        $status = $flex['schedule_date'] >= $today ? 'Active' : 'Inactive';
-                                    }
-                                    $flexibleData[] = [
-                                        'id' => $flex['id'],
-                                        'employee_id' => $flex['employee_id'],
-                                        'employee' => $flex['full_name'] ?? 'Unknown',
-                                        'date' => date('M d, Y', strtotime($flex['schedule_date'])),
-                                        'dateSort' => strtotime($flex['schedule_date']),
-                                        'day' => $day_text,
-                                        'status' => $status,
-                                        'time' => date('g:i A', strtotime($flex['start_time'])) . ' - ' . date('g:i A', strtotime($flex['end_time'])),
-                                        'timeSort' => $flex['start_time'],
-                                        'repeat' => $flex['repeat_until'] ? date('M d, Y', strtotime($flex['repeat_until'])) : '—',
-                                        'contract' => $flex['contract_end_date'] ? date('M d, Y', strtotime($flex['contract_end_date'])) : '—',
-                                        'notes' => $flex['notes'] ?? '',
-                                        'day_of_week' => $flex['day_of_week'],
-                                        'schedule_date' => $flex['schedule_date'],
-                                        'start_time' => $flex['start_time'],
-                                        'end_time' => $flex['end_time'],
-                                        'repeat_until' => $flex['repeat_until'],
-                                        'contract_end_date' => $flex['contract_end_date']
-                                    ];
-                                endforeach;
-                            endif;
-                        } catch (Exception $e) {
-                            error_log("ERROR: Flexible schedules query failed: " . $e->getMessage());
-                        }
-                        ?>
-                    </tbody>
-                </table>
-                <!-- Pagination for Flexible Schedules -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.8); border-radius: 10px; flex-wrap: wrap; gap: 10px;">
-                    <div>
-                        <span id="flexibleInfo" style="font-size: 14px; color: #666;">Showing 0 of 0 records</span>
-                    </div>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <button type="button" onclick="previousFlexiblePage()" id="prevFlexBtn" style="padding: 8px 15px; background: #f0f0f0; border: 2px solid #ddd; border-radius: 6px; cursor: pointer; font-weight: 500;">
-                            <i class="fas fa-chevron-left"></i> Previous
-                        </button>
-                        <div id="flexiblePageNumbers" style="display: flex; gap: 5px;"></div>
-                        <button type="button" onclick="nextFlexiblePage()" id="nextFlexBtn" style="padding: 8px 15px; background: #f0f0f0; border: 2px solid #ddd; border-radius: 6px; cursor: pointer; font-weight: 500;">
-                            Next <i class="fas fa-chevron-right"></i>
-                        </button>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <label for="flexiblePerPage" style="font-size: 14px;">Records per page:</label>
-                        <select id="flexiblePerPage" onchange="changeFlexiblePageSize()" style="padding: 6px 10px; border: 2px solid #ddd; border-radius: 6px; cursor: pointer;">
-                            <option value="5">5</option>
-                            <option value="10" selected>10</option>
-                            <option value="20">20</option>
-                            <option value="50">50</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
+        // Load existing shift templates into templates table
+        function loadShiftTemplates() {
+            fetch('../app/api/shifts/get_templates.php')
+                .then(r => r.text())
+                .then(text => {
+                    let data;
+                    try { data = JSON.parse(text); } catch (err) { console.error('get_templates non-json', text); return; }
+                    if (!data || !data.success) return;
+                    renderTemplatesTable(data.templates || []);
+                })
+                .catch(err => console.error('Error loading templates:', err));
+        }
 
-            <script>
-            // Flexible Schedules Table Data
-            const rawFlexibleTableData = <?php echo json_encode($flexibleData, JSON_HEX_TAG | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_HEX_APOS); ?>;
-            let flexibleTableData = [];
-            let flexibleCurrentPage = 1;
-            let flexiblePageSize = 10;
-            let flexibleSortField = 'employee';
-            let flexibleSortAsc = true;
-            let flexibleFilterText = '';
-
-            function escapeFlexibleHtml(value) {
-                return String(value ?? '').replace(/[&<>"']/g, character => ({
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    '"': '&quot;',
-                    "'": '&#039;'
-                }[character]));
+        function renderTemplatesTable(templates) {
+            const body = document.getElementById('templatesTableBody');
+            if (!body) return;
+            if (!templates || templates.length === 0) {
+                body.innerHTML = '<tr><td colspan="4" style="padding:12px; color:#666;">No templates</td></tr>';
+                return;
             }
+            body.innerHTML = templates.map(t => {
+                const id = t.shift_id || t.id || '';
+                const name = t.shift_name || 'Template';
+                const time = (t.start_time && t.end_time) ? formatTimeRange(t.start_time, t.end_time) : '';
+                const active = (t.is_active == 1 || t.is_active === '1') ? '<span style="color:green;">Active</span>' : '<span style="color:#999;">Inactive</span>';
+                return `<tr><td>${escapeHtml(name)}</td><td>${escapeHtml(time)}</td><td>${active}</td><td><button class="btn btn-secondary" onclick="viewTemplate(${escapeHtml(id)})">View</button> <button class="btn btn-primary" onclick="openMultipleAssignForTemplate(${escapeHtml(id)})">Assign</button></td></tr>`;
+            }).join('');
+        }
 
-            function groupFlexibleTableData() {
-                const groups = {};
-                rawFlexibleTableData.forEach(row => {
-                    const key = String(row.employee_id ?? row.employee ?? row.id ?? 'unknown');
-                    if (!groups[key]) {
-                        groups[key] = {
-                            employee_id: row.employee_id,
-                            employee: row.employee || 'Unknown',
-                            schedules: [],
-                            daySet: new Set(),
-                            status: 'Inactive',
-                            notes: ''
-                        };
+        function viewTemplate(shiftId) {
+            fetch('../app/api/shifts/get_template_detail.php?shift_id=' + encodeURIComponent(shiftId))
+                .then(r => r.text())
+                .then(text => {
+                    let data; try { data = JSON.parse(text); } catch (err) { console.error('get_template_detail non-json', text); return; }
+                    if (!data || !data.success) { alert('Unable to load template'); return; }
+                    openTemplateViewModal(data.template);
+                }).catch(err => console.error(err));
+        }
+
+        let currentTemplateForEdit = null;
+
+        function openTemplateViewModal(template) {
+            currentTemplateForEdit = template;
+            const body = document.getElementById('templateViewBody');
+            if (!body) return;
+            const name = template.shift_name || template.shiftName || 'Template';
+            const start = template.start_time || '';
+            const end = template.end_time || '';
+            const daysHtml = template.weekdays ? Object.keys(template.weekdays).map(k => {
+                const cfg = template.weekdays[k];
+                return `<li><strong>Day ${k}:</strong> ${cfg.start || ''} - ${cfg.end || ''}${cfg.break_start ? ' (break ' + cfg.break_start + '-' + cfg.break_end + ')' : ''}</li>`;
+            }).join('') : '';
+            body.innerHTML = `<div><h3>${escapeHtml(name)}</h3><p><strong>Time:</strong> ${escapeHtml(formatTimeRange(start,end))}</p><p><strong>Description:</strong> ${escapeHtml(template.description || '')}</p><p><strong>Include Saturday:</strong> ${template.include_saturday ? 'Yes' : 'No'}</p><ul>${daysHtml}</ul></div>`;
+            openModal('templateViewModal');
+        }
+
+        function openEditTemplateModal() {
+            if (!currentTemplateForEdit) {
+                alert('Template data not loaded yet. Please open the template view again.');
+                return;
+            }
+            loadTemplateIntoEditModal(currentTemplateForEdit);
+            closeModal('templateViewModal');
+            openModal('editShiftModal');
+        }
+
+        function loadTemplateIntoEditModal(template) {
+            document.getElementById('edit_shift_id').value = template.shift_id || '';
+            document.getElementById('edit_shift_name').value = template.shift_name || '';
+            document.getElementById('edit_start_time').value = template.start_time || '';
+            document.getElementById('edit_end_time').value = template.end_time || '';
+            document.getElementById('edit_break_duration').value = template.break_duration || '';
+            document.getElementById('edit_description').value = template.description || '';
+            document.getElementById('edit_is_active').checked = !!template.is_active;
+            document.getElementById('edit_exclude_saturday').checked = template.include_saturday === 0;
+
+            // Prefill weekday template values when available
+            const weekdayConfig = template.weekdays || {};
+            for (let d = 1; d <= 6; d++) {
+                const cfg = weekdayConfig[d] || weekdayConfig[String(d)] || {};
+                const enabled = !!cfg.assigned || cfg.assigned === 1 || cfg.start || cfg.end;
+                const checkbox = document.getElementById('edit_day_' + d + '_enabled');
+                const controls = document.getElementById('edit_day_' + d + '_controls');
+                if (checkbox) checkbox.checked = enabled;
+                if (controls) controls.style.display = enabled ? 'grid' : 'none';
+                const start = document.getElementById('edit_day_' + d + '_start');
+                const end = document.getElementById('edit_day_' + d + '_end');
+                const breakStart = document.getElementById('edit_day_' + d + '_break_start');
+                const breakEnd = document.getElementById('edit_day_' + d + '_break_end');
+                if (start) start.value = cfg.start || '';
+                if (end) end.value = cfg.end || '';
+                if (breakStart) breakStart.value = cfg.break_start || cfg.breakStart || '';
+                if (breakEnd) breakEnd.value = cfg.break_end || cfg.breakEnd || '';
+            }
+        }
+
+        function buildEditTemplateWeekdays() {
+            const weekdays = {};
+            for (let d = 1; d <= 6; d++) {
+                const enabled = !!document.getElementById('edit_day_' + d + '_enabled')?.checked;
+                const start = document.getElementById('edit_day_' + d + '_start')?.value || '';
+                const end = document.getElementById('edit_day_' + d + '_end')?.value || '';
+                const breakStart = document.getElementById('edit_day_' + d + '_break_start')?.value || null;
+                const breakEnd = document.getElementById('edit_day_' + d + '_break_end')?.value || null;
+
+                if (enabled) {
+                    if (!start || !end) {
+                        alert('Please set both start and end times for all enabled weekdays.');
+                        return null;
                     }
-
-                    const group = groups[key];
-                    group.schedules.push(row);
-                    group.notes = group.notes || row.notes || '';
-                    if (row.day) {
-                        group.daySet.add(row.day);
-                    }
-                    if (String(row.status || '').toLowerCase() === 'active') {
-                        group.status = 'Active';
-                    }
-                });
-
-                flexibleTableData = Object.values(groups).map(group => ({
-                    employee_id: group.employee_id,
-                    employee: group.employee,
-                    day: Array.from(group.daySet).join(', '),
-                    status: group.status,
-                    schedules: group.schedules,
-                    notes: group.notes
-                }));
-            }
-
-            function renderFlexibleTable() {
-                groupFlexibleTableData();
-                const filtered = flexibleTableData.filter(row => {
-                    const searchTerm = safeLower(flexibleFilterText);
-                    return safeLower(row.employee).includes(searchTerm) ||
-                        safeLower(row.day).includes(searchTerm) ||
-                        safeLower(row.status).includes(searchTerm) ||
-                        safeLower(row.notes).includes(searchTerm);
-                });
-
-                const sorted = [...filtered];
-                sorted.sort((a, b) => {
-                    let aVal = a[flexibleSortField] ?? '';
-                    let bVal = b[flexibleSortField] ?? '';
-
-                    if (typeof aVal === 'number' && typeof bVal === 'number') {
-                        return flexibleSortAsc ? aVal - bVal : bVal - aVal;
-                    }
-
-                    aVal = String(aVal).toLowerCase();
-                    bVal = String(bVal).toLowerCase();
-                    if (aVal < bVal) return flexibleSortAsc ? -1 : 1;
-                    if (aVal > bVal) return flexibleSortAsc ? 1 : -1;
-                    return 0;
-                });
-
-                const totalRecords = sorted.length;
-                const totalPages = Math.ceil(totalRecords / flexiblePageSize);
-
-                if (flexibleCurrentPage > totalPages && totalPages > 0) {
-                    flexibleCurrentPage = totalPages;
-                }
-
-                const start = (flexibleCurrentPage - 1) * flexiblePageSize;
-                const end = start + flexiblePageSize;
-                const pageData = sorted.slice(start, end);
-
-                let html = '';
-                if (pageData.length === 0) {
-                    html = '<tr><td colspan="4" style="text-align: center; padding: 40px; color: #999;"><i class="fas fa-inbox" style="font-size: 32px; display: block; margin-bottom: 12px;"></i>No flexible schedules found.</td></tr>';
-                } else {
-                    pageData.forEach(row => {
-                        const viewData = JSON.stringify(row);
-                        html += `<tr>
-                            <td>
-                                <div style="display: flex; flex-direction: column; gap: 4px;">
-                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                        <i class="fas fa-user-circle" style="font-size: 20px; color: #3498db;"></i>
-                                        <span>${escapeFlexibleHtml(row.employee)}</span>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>${escapeFlexibleHtml(row.day)}</td>
-                            <td><span class="shift-status ${row.status === 'Active' ? '' : 'inactive'}">${escapeFlexibleHtml(row.status)}</span></td>
-                            <td style="display: flex; gap: 8px; justify-content: flex-end;">
-                                <button type="button" class="btn btn-sm btn-primary" data-flexible-view="${escapeFlexibleHtml(viewData)}" onclick="openFlexibleScheduleViewFromButton(this);" style="padding: 6px 12px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                                    <i class="fas fa-eye"></i> View
-                                </button>
-                            </td>
-                        </tr>`;
-                    });
-                }
-
-                document.getElementById('flexibleTableBody').innerHTML = html;
-                updateFlexiblePagination(totalRecords, totalPages);
-            }
-
-            let currentFlexibleViewData = null;
-
-            function openFlexibleScheduleViewFromButton(button) {
-                try {
-                    const viewData = JSON.parse(button.dataset.flexibleView);
-                    currentFlexibleViewData = viewData;
-                    openFlexibleScheduleView(viewData);
-                } catch (error) {
-                    console.error('Error reading flexible schedule view data:', error);
-                }
-            }
-
-            function openFlexibleScheduleView(data) {
-                const scheduleRows = Array.isArray(data.schedules) ? data.schedules : [];
-                const scheduleDetails = scheduleRows.map((item, index) => {
-                    return `
-                        <div style="margin-bottom: 16px; padding: 14px; background: #f7f9fc; border-radius: 8px; border: 1px solid #e3e8ef;">
-                            <div style="display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
-                                <strong style="font-size: 14px; color: #2c3e50;">Shift ${index + 1}</strong>
-                                <span style="font-size: 13px; color: #555;">Status: <strong>${escapeFlexibleHtml(item.status || 'Unknown')}</strong></span>
-                            </div>
-                            <p style="margin: 8px 0 4px; color: #555;">Date: <strong>${escapeFlexibleHtml(item.date || '')}</strong></p>
-                            <p style="margin: 4px 0; color: #555;">Day(s): <strong>${escapeFlexibleHtml(item.day || '')}</strong></p>
-                            <p style="margin: 4px 0; color: #555;">Time: <strong>${escapeFlexibleHtml(item.time || '')}</strong></p>
-                            <p style="margin: 4px 0; color: #555;">Repeat Until: <strong>${escapeFlexibleHtml(item.repeat || '—')}</strong></p>
-                            <p style="margin: 4px 0; color: #555;">Contract End Date: <strong>${escapeFlexibleHtml(item.contract || '—')}</strong></p>
-                            <p style="margin: 4px 0; color: #555;">Notes: <strong>${escapeFlexibleHtml(item.notes || '—')}</strong></p>
-                        </div>`;
-                }).join('');
-
-                const detailsHtml = [
-                    '<div style="padding-bottom: 20px;">',
-                    '<p style="margin: 0 0 10px; color: #555;">Employee: <strong>' + escapeFlexibleHtml(data.employee || 'Unknown') + '</strong></p>',
-                    '<p style="margin: 0 0 10px; color: #555;">Day(s): <strong>' + escapeFlexibleHtml(data.day || '') + '</strong></p>',
-                    '<p style="margin: 0 0 10px; color: #555;">Status: <strong>' + escapeFlexibleHtml(data.status || 'Unknown') + '</strong></p>',
-                    '<p style="margin: 0 0 10px; color: #555;">Total Shifts: <strong>' + scheduleRows.length + '</strong></p>',
-                    '<div style="margin-top: 10px;">' + scheduleDetails + '</div>',
-                    '</div>'
-                ].join('');
-
-                const editButton = document.getElementById('viewFlexibleScheduleModalEditButton');
-                if (editButton) {
-                    editButton.style.display = data && Array.isArray(data.schedules) && data.schedules.length > 0 ? 'inline-flex' : 'none';
-                }
-
-                document.getElementById('viewFlexibleScheduleModalBody').innerHTML = detailsHtml;
-                openModal('viewFlexibleScheduleModal');
-            }
-
-            function openFlexibleScheduleEditFromViewModal() {
-                if (!currentFlexibleViewData || !Array.isArray(currentFlexibleViewData.schedules) || currentFlexibleViewData.schedules.length === 0) {
-                    return;
-                }
-
-                // Prefer the first weekly schedule entry by day_of_week, otherwise fall back to the first schedule row.
-                let schedule = currentFlexibleViewData.schedules[0];
-                const weeklySchedules = currentFlexibleViewData.schedules
-                    .filter(item => item.day_of_week !== undefined && item.day_of_week !== null && item.day_of_week !== '')
-                    .sort((a, b) => Number(a.day_of_week) - Number(b.day_of_week));
-                if (weeklySchedules.length > 0) {
-                    schedule = weeklySchedules[0];
-                }
-
-                closeModal('viewFlexibleScheduleModal');
-                openFlexibleScheduleEdit(
-                    schedule.id,
-                    schedule.employee_id,
-                    currentFlexibleViewData.employee || '',
-                    schedule.day_of_week ?? schedule.dayOfWeek ?? '',
-                    schedule.schedule_date || schedule.date,
-                    schedule.start_time || (schedule.time ? schedule.time.split(' - ')[0] : ''),
-                    schedule.end_time || (schedule.time ? schedule.time.split(' - ')[1] : ''),
-                    schedule.notes || '',
-                    schedule.repeat_until || schedule.repeat || '',
-                    schedule.contract_end_date || schedule.contract || ''
-                );
-            }
-
-            function updateFlexiblePagination(total, pages) {
-                document.getElementById('flexibleInfo').textContent = `Showing ${Math.min((flexibleCurrentPage - 1) * flexiblePageSize + 1, total)} to ${Math.min(flexibleCurrentPage * flexiblePageSize, total)} of ${total} records`;
-                
-                const pageNumbers = document.getElementById('flexiblePageNumbers');
-                pageNumbers.innerHTML = '';
-                for (let i = Math.max(1, flexibleCurrentPage - 2); i <= Math.min(pages, flexibleCurrentPage + 2); i++) {
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.textContent = i;
-                    btn.style.cssText = `padding: 6px 12px; border: 2px solid ${i === flexibleCurrentPage ? '#003d82' : '#ddd'}; background: ${i === flexibleCurrentPage ? '#003d82' : 'white'}; color: ${i === flexibleCurrentPage ? 'white' : '#333'}; border-radius: 6px; cursor: pointer; font-weight: ${i === flexibleCurrentPage ? '600' : '400'};`;
-                    btn.onclick = () => { flexibleCurrentPage = i; renderFlexibleTable(); };
-                    pageNumbers.appendChild(btn);
-                }
-
-                document.getElementById('prevFlexBtn').disabled = flexibleCurrentPage === 1;
-                document.getElementById('nextFlexBtn').disabled = flexibleCurrentPage === pages || pages === 0;
-            }
-
-            function nextFlexiblePage() {
-                const pages = Math.ceil(flexibleTableData.length / flexiblePageSize);
-                if (flexibleCurrentPage < pages) flexibleCurrentPage++;
-                renderFlexibleTable();
-            }
-
-            function previousFlexiblePage() {
-                if (flexibleCurrentPage > 1) flexibleCurrentPage--;
-                renderFlexibleTable();
-            }
-
-            function changeFlexiblePageSize() {
-                flexiblePageSize = parseInt(document.getElementById('flexiblePerPage').value);
-                flexibleCurrentPage = 1;
-                renderFlexibleTable();
-            }
-
-            function sortFlexible(field) {
-                if (flexibleSortField === field) {
-                    flexibleSortAsc = !flexibleSortAsc;
-                } else {
-                    flexibleSortField = field;
-                    flexibleSortAsc = true;
-                }
-                flexibleCurrentPage = 1;
-                renderFlexibleTable();
-            }
-
-            function resetFlexibleFilters() {
-                flexibleFilterText = '';
-                document.getElementById('flexibleSearch').value = '';
-                flexibleCurrentPage = 1;
-                flexibleSortField = 'employee';
-                flexibleSortAsc = true;
-                renderFlexibleTable();
-            }
-
-            // Search live filtering
-            const flexibleSearchInput = document.getElementById('flexibleSearch');
-            if (flexibleSearchInput) {
-                flexibleSearchInput.addEventListener('keyup', function() {
-                    flexibleFilterText = this.value || '';
-                    flexibleCurrentPage = 1;
-                    showFlexibleSuggestions();
-                    renderFlexibleTable();
-                });
-            }
-
-            // Show suggestions for flexible search
-            function showFlexibleSuggestions() {
-                const searchBox = document.getElementById('flexibleSearch');
-                const suggestionsBox = document.getElementById('flexibleSuggestions');
-                const query = safeLower(searchBox.value).trim();
-
-                if (query.length === 0) {
-                    suggestionsBox.style.display = 'none';
-                    return;
-                }
-
-                const suggestions = new Set();
-                flexibleTableData.forEach(row => {
-                    const emp = String(row.employee || '');
-                    const notes = String(row.notes || '');
-                    if (safeLower(emp).includes(query)) {
-                        suggestions.add(emp);
-                    }
-                    if (safeLower(notes).includes(query)) {
-                        suggestions.add(notes.substring(0, 50));
-                    }
-                });
-
-                if (suggestions.size === 0) {
-                    suggestionsBox.style.display = 'none';
-                    return;
-                }
-
-                suggestionsBox.innerHTML = '';
-                Array.from(suggestions).slice(0, 8).forEach(suggestion => {
-                    const item = document.createElement('div');
-                    item.style.cssText = 'padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;';
-                    item.innerHTML = `<i class="fas fa-search" style="color: #999; margin-right: 8px;"></i>${suggestion}`;
-                    item.onmouseover = () => item.style.background = '#f8f9fa';
-                    item.onmouseout = () => item.style.background = 'white';
-                    item.onclick = () => {
-                        searchBox.value = suggestion;
-                        flexibleFilterText = suggestion;
-                        flexibleCurrentPage = 1;
-                        renderFlexibleTable();
-                        suggestionsBox.style.display = 'none';
+                    weekdays[d] = {
+                        assigned: 1,
+                        start: start,
+                        end: end,
+                        break_start: breakStart,
+                        break_end: breakEnd
                     };
-                    suggestionsBox.appendChild(item);
-                });
+                } else {
+                    weekdays[d] = {
+                        assigned: 0,
+                        start: null,
+                        end: null,
+                        break_start: breakStart,
+                        break_end: breakEnd
+                    };
+                }
+            }
+            return weekdays;
+        }
 
-                suggestionsBox.style.display = 'block';
+        document.addEventListener('DOMContentLoaded', function() {
+            const editShiftForm = document.getElementById('editShiftForm');
+            if (editShiftForm) {
+                editShiftForm.addEventListener('submit', function(ev) {
+                    ev.preventDefault();
+                    saveTemplateUpdate();
+                });
+            }
+        });
+
+        function saveTemplateUpdate() {
+            const shiftId = parseInt(document.getElementById('edit_shift_id').value, 10);
+            const shiftName = document.getElementById('edit_shift_name').value.trim();
+            const startTime = document.getElementById('edit_start_time').value;
+            const endTime = document.getElementById('edit_end_time').value;
+            const breakDuration = parseInt(document.getElementById('edit_break_duration').value, 10) || null;
+            const description = document.getElementById('edit_description').value.trim();
+            const isActive = document.getElementById('edit_is_active').checked ? 1 : 0;
+            const excludeSaturday = document.getElementById('edit_exclude_saturday').checked ? 1 : 0;
+
+            if (!shiftId || !shiftName || !startTime || !endTime) {
+                alert('Please complete the shift name, start time, and end time.');
+                return;
             }
 
-            // Hide suggestions when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('#flexibleSearch') && !e.target.closest('#flexibleSuggestions')) {
-                    document.getElementById('flexibleSuggestions').style.display = 'none';
+            const weekdays = buildEditTemplateWeekdays();
+            if (weekdays === null) return;
+            const payload = {
+                shift_id: shiftId,
+                shift_name: shiftName,
+                start_time: startTime,
+                end_time: endTime,
+                break_duration: breakDuration,
+                description: description,
+                is_active: isActive,
+                include_saturday: excludeSaturday ? 0 : 1,
+                weekdays: weekdays
+            };
+
+            fetch('../app/api/shifts/update_template.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(r => r.text())
+            .then(text => {
+                let data;
+                try { data = JSON.parse(text); } catch (err) { console.error('update_template returned non-JSON:', text); throw err; }
+                if (data.success) {
+                    alert('Template updated successfully');
+                    closeModal('editShiftModal');
+                    loadShiftTemplates();
+                } else {
+                    alert('Error updating template: ' + (data.error || data.message || 'Unknown error'));
                 }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Error updating template: ' + err.message);
             });
+        }
 
-            // Sort dropdown
-            document.getElementById('assignmentSortBy').addEventListener('change', function() {
-                const mapping = {
-                    'employee': 'employee',
-                    'shift': 'shift_count',
-                    'active': 'active_count',
-                    'status': 'status'
-                };
-                assignmentSortField = mapping[this.value] || 'employee';
-                assignmentCurrentPage = 1;
-                renderAssignmentTable();
+        function openMultipleAssign() {
+            // open assignment modal in create mode
+            assignmentMode = 'create';
+            openModal('assignmentModal');
+        }
+
+        function openMultipleAssignForTemplate(shiftId) {
+            // preselect the shift in assignment modal and show only unassigned employees
+            document.getElementById('shift_id').value = shiftId;
+            document.getElementById('employeeFilterStatus').value = 'unassigned';
+            openModal('assignmentModal');
+            filterEmployeeByStatus('unassigned');
+        }
+
+        // Load templates on page ready
+        loadShiftTemplates();
+
+        // Debug helper: ensure edit button clicks are observed
+        (function attachEditButtonDebug() {
+            const btn = document.getElementById('employeeShiftModalEditButton');
+            if (!btn) return;
+            // prevent attaching multiple times
+            if (btn._debugAttached) return;
+            btn._debugAttached = true;
+            btn.addEventListener('click', function (e) {
+                try {
+                    console.log('employeeShiftModalEditButton clicked', {
+                        selectedEmployeeIdForEdit: (typeof selectedEmployeeIdForEdit !== 'undefined' ? selectedEmployeeIdForEdit : undefined),
+                        windowSelected: window.selectedEmployeeIdForEdit
+                    });
+                } catch (err) { console.log('edit click log error', err); }
             });
-
-            // Sort dropdown
-            document.getElementById('flexibleSortBy').addEventListener('change', function() {
-                const mapping = {
-                    'employee': 'employee',
-                    'day': 'day',
-                    'status': 'status'
-                };
-                flexibleSortField = mapping[this.value] || 'employee';
-                flexibleCurrentPage = 1;
-                renderFlexibleTable();
-            });
-
-            // Initial render
-            renderFlexibleTable();
-            </script>
-
-        <!-- Flexible Tab -->
-        <div id="flexible" class="tab-content">
-            <h2 style="margin-bottom: 30px; font-size: 24px; font-weight: 700; color: #2c3e50;">
-                <i class="fas fa-calendar-day"></i> Flexible Schedules
-            </h2>
-            
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Employee</th>
-                            <th>Date</th>
-                            <th>Day(s)</th>
-                            <th>Time</th>
-                            <th>Repeat Until</th>
-                            <th>Contract End Date</th>
-                            <th>Notes</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php
-                        try {
-                            $flex_query = "SELECT fs.id, fs.employee_id, fs.schedule_date, fs.start_time, fs.end_time, 
-                                          fs.day_of_week, fs.repeat_until, fs.contract_end_date, fs.notes, fs.created_at,
-                                          e.full_name
-                                          FROM ta_flexible_schedules fs
-                                          LEFT JOIN employees e ON fs.employee_id = e.employee_id
-                                          ORDER BY fs.schedule_date DESC, fs.start_time ASC";
-                            
-                            $flex_stmt = $db->query($flex_query);
-                            $flex_schedules = $flex_stmt->fetchAll(PDO::FETCH_ASSOC);
-                            
-                            if (!empty($flex_schedules)):
-                                foreach ($flex_schedules as $flex):
-                                    $day_names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                                    $day_text = $flex['day_of_week'] !== null ? $day_names[$flex['day_of_week']] . ' (Weekly)' : date('l', strtotime($flex['schedule_date']));
-                        ?>
-                                    <tr>
-                                        <td><?php echo htmlspecialchars($flex['full_name']); ?></td>
-                                        <td><?php echo date('M d, Y', strtotime($flex['schedule_date'])); ?></td>
-                                        <td><?php echo htmlspecialchars($day_text); ?></td>
-                                        <td><?php echo date('g:i A', strtotime($flex['start_time'])); ?> - <?php echo date('g:i A', strtotime($flex['end_time'])); ?></td>
-                                        <td><?php echo $flex['repeat_until'] ? date('M d, Y', strtotime($flex['repeat_until'])) : '—'; ?></td>
-                                        <td><?php echo $flex['contract_end_date'] ? date('M d, Y', strtotime($flex['contract_end_date'])) : '—'; ?></td>
-                                        <td><?php echo $flex['notes'] ? htmlspecialchars(substr($flex['notes'], 0, 50)) . (strlen($flex['notes']) > 50 ? '...' : '') : '—'; ?></td>
-                                        <td style="display: flex; gap: 8px;">
-                                            <button type="button" class="btn btn-sm btn-primary" data-flexible-edit="<?php echo htmlspecialchars(json_encode([
-                                                $flex['id'],
-                                                (string)$flex['employee_id'],
-                                                $flex['full_name'],
-                                                $flex['day_of_week'] !== null ? (string)$flex['day_of_week'] : '',
-                                                $flex['schedule_date'],
-                                                $flex['start_time'],
-                                                $flex['end_time'],
-                                                $flex['notes'] ?? '',
-                                                $flex['repeat_until'] ?? '',
-                                                $flex['contract_end_date'] ?? ''
-                                            ]), ENT_QUOTES, 'UTF-8'); ?>" onclick="openFlexibleScheduleEditFromButton(this);">
-                                                <i class="fas fa-edit"></i> Edit
-                                            </button>
-                                            <form method="POST" style="display: inline;">
-                                                <input type="hidden" name="delete_flex_id" value="<?php echo $flex['id']; ?>">
-                                                <button type="submit" name="delete_flexible" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?');">
-                                                    <i class="fas fa-trash"></i> Delete
-                                                </button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                        <?php
-                                endforeach;
-                            else:
-                        ?>
-                                <tr>
-                                    <td colspan="7" style="text-align: center; padding: 20px; color: #999;">
-                                        <i class="fas fa-inbox"></i> No flexible schedules created yet.
-                                    </td>
-                                </tr>
-                        <?php
-                            endif;
-                        } catch (Exception $e) {
-                        ?>
-                                <tr>
-                                    <td colspan="7" style="text-align: center; padding: 20px; color: #999;">
-                                        <i class="fas fa-inbox"></i> No flexible schedules created yet.
-                                    </td>
-                                </tr>
-                        <?php
-                        }
-                        ?>
-                    </tbody>
-                </table>
-            </div>
-
+        })();
+    </script>
 
     <!-- MODALS -->
     <!-- Create Shift Modal -->
@@ -2308,33 +2140,44 @@ require_once __DIR__ . '/../layout/content_header.php';
                         <input type="text" id="shift_name" name="shift_name" required placeholder="e.g., Morning Shift">
                     </div>
                     <div class="form-group">
-                        <label for="start_time"><i class="fas fa-sign-in-alt"></i> Start Time *</label>
-                        <input type="time" id="start_time" name="start_time" required>
+                        <label for="create_start_date"><i class="fas fa-calendar-day"></i> Effective Start *</label>
+                        <input type="date" id="create_start_date" name="create_start_date" required>
                     </div>
+
                     <div class="form-group">
-                        <label for="end_time"><i class="fas fa-sign-out-alt"></i> End Time *</label>
-                        <input type="time" id="end_time" name="end_time" required>
+                        <label for="create_end_date"><i class="fas fa-calendar-day"></i> Effective End *</label>
+                        <input type="date" id="create_end_date" name="create_end_date" required>
                     </div>
-                    <div class="form-group">
-                        <label for="break_duration"><i class="fas fa-hourglass-half"></i> Break Duration (minutes)</label>
-                        <input type="number" id="break_duration" name="break_duration" min="0" max="480" value="60">
-                    </div>
-                    <div class="form-group">
-                        <label for="description"><i class="fas fa-file-alt"></i> Description</label>
-                        <textarea id="description" name="description" placeholder="Enter shift description (optional)"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label class="checkbox-group">
-                            <input type="checkbox" name="is_active" value="1" checked>
-                            <span><i class="fas fa-check"></i> Active</span>
-                        </label>
-                    </div>
-                    <div class="form-group" style="display: flex; align-items: center; gap: 12px; background: #f0f8ff; padding: 15px; border-radius: 6px; border-left: 4px solid #2196F3;">
-                        <input type="checkbox" id="create_exclude_saturday" name="exclude_saturday" style="width: 20px; height: 20px; cursor: pointer;">
-                        <label for="create_exclude_saturday" style="margin: 0; cursor: pointer; flex: 1;">
-                            <strong style="color: #1565c0;">Exclude Saturdays?</strong>
-                            <p style="margin: 5px 0 0 0; color: #666; font-size: 12px;">Check this if the shift does not operate on Saturdays</p>
-                        </label>
+
+                    <div class="form-group weekday-template-section">
+                        <label><i class="fas fa-calendar-week"></i> Weekday Template (exclude Sundays)</label>
+                        <div class="weekday-template-grid">
+                            <!-- Weekday rows 1..6 (Mon..Sat) -->
+                            <?php for ($d = 1; $d <= 6; $d++): ?>
+                            <div class="weekday-row">
+                                <?php $__day_names = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']; $__day_label = $__day_names[$d-1] ?? 'Day'; ?>
+                                <label class="weekday-label"><input type="checkbox" id="create_day_<?php echo $d; ?>_enabled" class="create-day-enabled"> <?php echo $__day_label; ?></label>
+                                <div id="create_day_<?php echo $d; ?>_controls" class="weekday-controls" style="display:none;">
+                                    <div class="weekday-control-field">
+                                        <label for="create_day_<?php echo $d; ?>_start">Start</label>
+                                        <input type="time" id="create_day_<?php echo $d; ?>_start">
+                                    </div>
+                                    <div class="weekday-control-field">
+                                        <label for="create_day_<?php echo $d; ?>_end">End</label>
+                                        <input type="time" id="create_day_<?php echo $d; ?>_end">
+                                    </div>
+                                    <div class="weekday-control-field">
+                                        <label for="create_day_<?php echo $d; ?>_break_start">Break Start</label>
+                                        <input type="time" id="create_day_<?php echo $d; ?>_break_start">
+                                    </div>
+                                    <div class="weekday-control-field">
+                                        <label for="create_day_<?php echo $d; ?>_break_end">Break End</label>
+                                        <input type="time" id="create_day_<?php echo $d; ?>_break_end">
+                                    </div>
+                                </div>
+                            </div>
+                            <?php endfor; ?>
+                        </div>
                     </div>
 
                     <div class="modal-action-row">
@@ -2384,6 +2227,35 @@ require_once __DIR__ . '/../layout/content_header.php';
                         <textarea id="edit_description" name="description" placeholder="Enter shift description (optional)"></textarea>
                     </div>
                     </div>
+                    </div>
+                    <div class="edit-form-section">
+                        <div class="edit-section-title"><i class="fas fa-calendar-week"></i><span>Weekday Template</span></div>
+                        <div class="weekday-template-grid">
+                            <?php for ($d = 1; $d <= 6; $d++): ?>
+                            <div class="weekday-row">
+                                <?php $__day_names = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']; $__day_label = $__day_names[$d-1] ?? 'Day'; ?>
+                                <label class="weekday-label"><input type="checkbox" id="edit_day_<?php echo $d; ?>_enabled"> <?php echo $__day_label; ?></label>
+                                <div id="edit_day_<?php echo $d; ?>_controls" class="weekday-controls" style="display:none;">
+                                    <div class="weekday-control-field">
+                                        <label for="edit_day_<?php echo $d; ?>_start">Start</label>
+                                        <input type="time" id="edit_day_<?php echo $d; ?>_start">
+                                    </div>
+                                    <div class="weekday-control-field">
+                                        <label for="edit_day_<?php echo $d; ?>_end">End</label>
+                                        <input type="time" id="edit_day_<?php echo $d; ?>_end">
+                                    </div>
+                                    <div class="weekday-control-field">
+                                        <label for="edit_day_<?php echo $d; ?>_break_start">Break Start</label>
+                                        <input type="time" id="edit_day_<?php echo $d; ?>_break_start">
+                                    </div>
+                                    <div class="weekday-control-field">
+                                        <label for="edit_day_<?php echo $d; ?>_break_end">Break End</label>
+                                        <input type="time" id="edit_day_<?php echo $d; ?>_break_end">
+                                    </div>
+                                </div>
+                            </div>
+                            <?php endfor; ?>
+                        </div>
                     </div>
                     <div class="edit-form-section edit-options-section">
                         <div class="edit-section-title"><i class="fas fa-toggle-on"></i><span>Availability</span></div>
@@ -2513,28 +2385,20 @@ require_once __DIR__ . '/../layout/content_header.php';
         </div>
     </div>
 
-    <!-- Generate Fixed Schedule Modal -->
+    <!-- Edit Employee Shift Modal -->
     <div id="generateFixedModal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h2><i class="fas fa-calendar-alt"></i> Generate Fixed Schedule</h2>
+                <h2><i class="fas fa-user-clock"></i> Edit Employee Shift</h2>
                 <button class="modal-close" onclick="closeModal('generateFixedModal')">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label for="gf_employee_search"><i class="fas fa-user"></i> Employee</label>
-                    <input type="text" id="gf_employee_search" placeholder="Search employee name or ID" oninput="filterFixedEmployeeSuggestions(this.value)" autocomplete="off" style="width: 100%;">
-                    <div id="gf_employee_suggestions" style="display: none; position: static; width: 100%; margin-top: 8px; max-height: 220px; overflow-y: auto; border: 1px solid #d1d5db; background: #fff; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.08);">
-                    </div>
+                    <input type="text" id="gf_employee_search" autocomplete="off" readonly style="width: 100%; background:#f5f5f5; cursor:not-allowed;">
                     <div id="gf_selected_employee_display" style="margin-top: 10px; color: #444; font-weight: 600;">No employee selected</div>
                     <input type="hidden" id="gf_employee_id" name="gf_employee_id">
                 </div>
-
-                <div class="form-group" style="margin: 8px 0 14px;">
-                    <button type="button" id="gf_show_unassigned_button" class="btn btn-secondary" onclick="toggleGfUnassignedEmployees()" style="width: 100%;">Show unassigned employees</button>
-                </div>
-
-                <div id="gf_unassigned_employees" style="display: none; border: 1px solid #d1d5db; border-radius: 8px; padding: 10px; max-height: 220px; overflow-y: auto; background: #fff; margin-bottom: 14px;"></div>
 
                 <div class="form-group">
                     <label for="gf_start_date"><i class="fas fa-calendar-day"></i> Schedule Start</label>
@@ -2550,7 +2414,7 @@ require_once __DIR__ . '/../layout/content_header.php';
                     <label><i class="fas fa-calendar-week"></i> Days of Week</label>
                     <div style="display: grid; gap: 10px;">
                         <div class="gf-day-row">
-                            <label><input type="checkbox" id="gf_day_1_enabled" onchange="toggleGfDayRow(1)" style="width: 16px; height: 16px;"> Monday</label>
+                            <label><input type="checkbox" id="gf_day_1_enabled" onchange="toggleGfDayRow(1)"> Monday</label>
                             <div id="gf_day_1_controls" class="gf-day-controls">
                                 <div class="gf-time-field">
                                     <label for="gf_day_1_start">Start</label>
@@ -2571,7 +2435,7 @@ require_once __DIR__ . '/../layout/content_header.php';
                             </div>
                         </div>
                         <div class="gf-day-row">
-                            <label><input type="checkbox" id="gf_day_2_enabled" onchange="toggleGfDayRow(2)" style="width: 16px; height: 16px;"> Tuesday</label>
+                            <label><input type="checkbox" id="gf_day_2_enabled" onchange="toggleGfDayRow(2)"> Tuesday</label>
                             <div id="gf_day_2_controls" class="gf-day-controls">
                                 <div class="gf-time-field">
                                     <label for="gf_day_2_start">Start</label>
@@ -2592,7 +2456,7 @@ require_once __DIR__ . '/../layout/content_header.php';
                             </div>
                         </div>
                         <div class="gf-day-row">
-                            <label><input type="checkbox" id="gf_day_3_enabled" onchange="toggleGfDayRow(3)" style="width: 16px; height: 16px;"> Wednesday</label>
+                            <label><input type="checkbox" id="gf_day_3_enabled" onchange="toggleGfDayRow(3)"> Wednesday</label>
                             <div id="gf_day_3_controls" class="gf-day-controls">
                                 <div class="gf-time-field">
                                     <label for="gf_day_3_start">Start</label>
@@ -2613,7 +2477,7 @@ require_once __DIR__ . '/../layout/content_header.php';
                             </div>
                         </div>
                         <div class="gf-day-row">
-                            <label><input type="checkbox" id="gf_day_4_enabled" onchange="toggleGfDayRow(4)" style="width: 16px; height: 16px;"> Thursday</label>
+                            <label><input type="checkbox" id="gf_day_4_enabled" onchange="toggleGfDayRow(4)"> Thursday</label>
                             <div id="gf_day_4_controls" class="gf-day-controls">
                                 <div class="gf-time-field">
                                     <label for="gf_day_4_start">Start</label>
@@ -2634,7 +2498,7 @@ require_once __DIR__ . '/../layout/content_header.php';
                             </div>
                         </div>
                         <div class="gf-day-row">
-                            <label><input type="checkbox" id="gf_day_5_enabled" onchange="toggleGfDayRow(5)" style="width: 16px; height: 16px;"> Friday</label>
+                            <label><input type="checkbox" id="gf_day_5_enabled" onchange="toggleGfDayRow(5)"> Friday</label>
                             <div id="gf_day_5_controls" class="gf-day-controls">
                                 <div class="gf-time-field">
                                     <label for="gf_day_5_start">Start</label>
@@ -2655,7 +2519,7 @@ require_once __DIR__ . '/../layout/content_header.php';
                             </div>
                         </div>
                         <div class="gf-day-row">
-                            <label><input type="checkbox" id="gf_day_6_enabled" onchange="toggleGfDayRow(6)" style="width: 16px; height: 16px;"> Saturday</label>
+                            <label><input type="checkbox" id="gf_day_6_enabled" onchange="toggleGfDayRow(6)"> Saturday</label>
                             <div id="gf_day_6_controls" class="gf-day-controls">
                                 <div class="gf-time-field">
                                     <label for="gf_day_6_start">Start</label>
@@ -2679,11 +2543,27 @@ require_once __DIR__ . '/../layout/content_header.php';
                 </div>
             <div class="modal-action-row">
                 <button type="button" class="btn btn-secondary" onclick="closeModal('generateFixedModal')">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="submitGenerateFixed()"><i class="fas fa-check"></i> Generate Schedule</button>
+                <button type="button" class="btn btn-primary" onclick="submitGenerateFixed()"><i class="fas fa-save"></i> Save Changes</button>
             </div>
         </div>
     </div>
 
+    <!-- Template View Modal -->
+    <div id="templateViewModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-eye"></i> View Shift Template</h2>
+                <button class="modal-close" onclick="closeModal('templateViewModal')">&times;</button>
+            </div>
+            <div class="modal-body" id="templateViewBody"></div>
+            <div class="modal-action-row">
+                <button class="btn btn-secondary" onclick="closeModal('templateViewModal')">Close</button>
+                <button class="btn btn-primary" onclick="openEditTemplateModal()">Edit Template</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Template Modal uses existing editShiftModal to allow changing details -->
     <!-- Flexible schedule UI deprecated in this view. -->
             </div>
         </div>
@@ -2737,6 +2617,59 @@ require_once __DIR__ . '/../layout/content_header.php';
             flex: 1 1 auto;
             min-height: 0;
             max-height: calc(100vh - 220px);
+        }
+
+        .weekday-template-section {
+            margin-top: 18px;
+        }
+
+        .weekday-template-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .weekday-row {
+            display: grid;
+            gap: 10px;
+            padding: 14px 12px;
+            background: #f8fbff;
+            border: 1px solid #eaf2fb;
+            border-radius: 10px;
+        }
+
+        .weekday-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #1f4f9c;
+        }
+
+        .weekday-controls {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            align-items: start;
+        }
+
+        .weekday-control-field {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .weekday-control-field label {
+            font-size: 13px;
+            color: #444;
+        }
+
+        .weekday-control-field input[type="time"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 8px;
+            background: #fff;
         }
 
         #generateFixedModal .form-group input,
@@ -2867,15 +2800,30 @@ require_once __DIR__ . '/../layout/content_header.php';
             display: grid;
             gap: 4px;
             padding: 4px 0;
+            align-items: center;
         }
 
-        #generateFixedModal .gf-day-row label {
-            display: flex;
+        #generateFixedModal .gf-day-row label,
+        #createShiftModal .create-day-row label {
+            display: inline-flex;
             align-items: center;
             gap: 8px;
             cursor: pointer;
             font-size: 14px;
             margin: 0;
+            width: auto;
+            max-width: max-content;
+        }
+
+        #createShiftModal .create-day-row input[type="checkbox"],
+        #generateFixedModal .gf-day-row input[type="checkbox"] {
+            width: 16px !important;
+            height: 16px !important;
+            min-width: 16px !important;
+            min-height: 16px !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
         }
 
         #generateFixedModal .gf-day-controls {
@@ -3473,18 +3421,19 @@ require_once __DIR__ . '/../layout/content_header.php';
                 return;
             }
 
-            // Send request to assign shift to multiple employees
-            const formData = new FormData();
-            formData.append('action', 'assign_multiple');
-            formData.append('employee_ids', JSON.stringify(Array.from(selectedEmployees)));
-            formData.append('shift_id', shiftId);
-            formData.append('effective_from', effectiveFrom);
-            formData.append('effective_to', effectiveTo || null);
-            formData.append('exclude_saturday', excludeSaturday ? '1' : '0');
+            // Send request to assign shift to multiple employees using template assign API
+            const payload = {
+                shift_id: parseInt(shiftId, 10),
+                employees: Array.from(selectedEmployees).map(x => parseInt(x,10)),
+                start_date: effectiveFrom,
+                end_date: effectiveTo || effectiveFrom,
+                exclude_saturday: excludeSaturday ? 1 : 0
+            };
 
-            fetch('../app/api/assign_shift_multiple.php', {
+            fetch('../app/api/shifts/assign_to_template.php', {
                 method: 'POST',
-                body: formData
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             })
             .then(response => response.text())
             .then(text => {
@@ -3645,7 +3594,6 @@ require_once __DIR__ . '/../layout/content_header.php';
                     }
                 }
             } else if (modalId === 'generateFixedModal') {
-                loadFixedScheduleEmployees();
                 const suggestions = document.getElementById('gf_employee_suggestions');
                 if (suggestions) suggestions.style.display = 'none';
             }
@@ -3656,19 +3604,81 @@ require_once __DIR__ . '/../layout/content_header.php';
             // Reset the form completely
             const form = document.querySelector('#createShiftModal .shift-form');
             if (form) {
-                // Clear all input fields explicitly
                 document.getElementById('shift_name').value = '';
-                document.getElementById('start_time').value = '';
-                document.getElementById('end_time').value = '';
-                document.getElementById('break_duration').value = '60';
-                document.getElementById('description').value = '';
-                
-                // Reset checkboxes
-                document.querySelector('#createShiftModal input[name="is_active"]').checked = true;
-                document.getElementById('create_exclude_saturday').checked = false;
+                document.getElementById('create_start_date').value = '';
+                document.getElementById('create_end_date').value = '';
             }
-            // Open the modal
             openModal('createShiftModal');
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const startInput = document.getElementById('create_start_date');
+                const endInput = document.getElementById('create_end_date');
+                if (startInput) { startInput.value = today; startInput.setAttribute('min', today); }
+                if (endInput) { endInput.value = today; endInput.setAttribute('min', today); }
+            } catch (e) { /* ignore */ }
+        }
+
+        // Create shift: weekday toggles for create modal
+        function attachDayToggles(prefix) {
+            for (let d = 1; d <= 6; d++) {
+                const cb = document.getElementById(prefix + '_day_' + d + '_enabled');
+                const controls = document.getElementById(prefix + '_day_' + d + '_controls');
+                if (!cb || !controls) continue;
+                cb.addEventListener('change', function() {
+                    controls.style.display = cb.checked ? 'grid' : 'none';
+                });
+            }
+        }
+
+        (function initializeDayToggles() {
+            attachDayToggles('create');
+            attachDayToggles('edit');
+        })();
+
+        // Handle Create Shift form submit
+        const createShiftForm = document.getElementById('createShiftForm');
+        if (createShiftForm) {
+            createShiftForm.addEventListener('submit', function(ev) {
+                ev.preventDefault();
+                createAndAssignShift();
+            });
+        }
+
+        function createAndAssignShift() {
+            const shiftName = document.getElementById('shift_name').value.trim();
+            const startDate = document.getElementById('create_start_date').value;
+            const endDate = document.getElementById('create_end_date').value;
+            if (!shiftName) { alert('Shift name is required'); return; }
+            if (!startDate || !endDate) { alert('Please set effective start and end dates'); return; }
+
+            const weekdays = {};
+            for (let d = 1; d <= 6; d++) {
+                const enabled = document.getElementById('create_day_' + d + '_enabled').checked;
+                if (!enabled) continue;
+                const s = document.getElementById('create_day_' + d + '_start').value;
+                const e = document.getElementById('create_day_' + d + '_end').value;
+                const bs = document.getElementById('create_day_' + d + '_break_start').value || null;
+                const be = document.getElementById('create_day_' + d + '_break_end').value || null;
+                if (!s || !e) { alert('Start and end time required for selected weekdays'); return; }
+                weekdays[d] = { assigned: 1, start: s, end: e };
+                if (bs || be) { weekdays[d].break_start = bs; weekdays[d].break_end = be; }
+            }
+
+            const payload = { shift_name: shiftName, weekdays: weekdays, start_date: startDate, end_date: endDate };
+
+            fetch('../app/api/shifts/create_and_assign.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(r => r.json()).then(res => {
+                if (res.success) {
+                    alert('Shift created and assigned: ' + (res.assigned_rows || 0) + ' rows');
+                    closeModal('createShiftModal');
+                    location.reload();
+                } else {
+                    alert('Error: ' + (res.error || res.message || 'Unknown'));
+                }
+            }).catch(err => { console.error(err); alert('Network or server error'); });
         }
 
         function openEditShiftModalSafe(shiftId, shiftName, startTime, endTime, breakDuration, description, isActive, excludeSaturday) {
@@ -3824,15 +3834,7 @@ require_once __DIR__ . '/../layout/content_header.php';
                 editDateInput.setAttribute('min', today);
             }
 
-            // Auto-switch to flexible tab if action is flexible
-            const currentAction = '<?php echo $action; ?>';
-            if (currentAction === 'flexible') {
-                switchTab('flexible');
-                const flexTab = document.querySelector('[onclick="switchTab(\'flexible\')"]');
-                if (flexTab) {
-                    flexTab.classList.add('active');
-                }
-            }
+            // Auto-switch to flexible tab removed — flexible UI deprecated in this view
         });
 
         // Flexible schedule client-side features removed from this view.
