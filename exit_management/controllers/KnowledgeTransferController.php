@@ -300,6 +300,70 @@ class KnowledgeTransferController extends ExitManagementController
     }
 
     /**
+     * Render printable transfer plan page
+     */
+    public function renderTransferPrintPage(int $planId): string
+    {
+        $plan = $this->getTransferPlan($planId);
+        if (isset($plan['error'])) {
+            return '<!doctype html><html><head><title>Transfer Plan Not Found</title></head><body><h1>Transfer plan not found</h1></body></html>';
+        }
+
+        $employeeName = htmlspecialchars($plan['employee_name'] ?? 'Unknown', ENT_QUOTES);
+        $successorName = htmlspecialchars($plan['successor_name'] ?? 'Unassigned', ENT_QUOTES);
+        $startDate = htmlspecialchars($plan['start_date'] ?? 'N/A', ENT_QUOTES);
+        $endDate = htmlspecialchars($plan['end_date'] ?? 'N/A', ENT_QUOTES);
+        $status = htmlspecialchars(ucfirst((string)($plan['status'] ?? 'N/A')), ENT_QUOTES);
+        $createdAt = htmlspecialchars($plan['created_at'] ?? 'N/A', ENT_QUOTES);
+        $updatedAt = htmlspecialchars($plan['updated_at'] ?? 'N/A', ENT_QUOTES);
+
+        $itemsHtml = '';
+        if (!empty($plan['items'])) {
+            foreach ($plan['items'] as $item) {
+                $itemsHtml .= '<tr>' .
+                    '<td>' . htmlspecialchars($item['item_type'] ?? $item['type'] ?? 'N/A', ENT_QUOTES) . '</td>' .
+                    '<td>' . htmlspecialchars($item['title'] ?? 'N/A', ENT_QUOTES) . '</td>' .
+                    '<td>' . htmlspecialchars($item['priority'] ?? 'N/A', ENT_QUOTES) . '</td>' .
+                    '<td>' . htmlspecialchars($item['status'] ?? 'N/A', ENT_QUOTES) . '</td>' .
+                    '<td>' . htmlspecialchars($item['description'] ?? '', ENT_QUOTES) . '</td>' .
+                    '<td>' . htmlspecialchars($item['notes'] ?? '', ENT_QUOTES) . '</td>' .
+                '</tr>';
+            }
+        } else {
+            $itemsHtml = '<tr><td colspan="6">No transfer items found.</td></tr>';
+        }
+
+        // Use same header and signatory layout as settlement for consistent preview
+        $header = '<div class="school-header"><img src="/capstone_hr_management_system2/assets/pics/bcpLogo.png" alt="Bestlink College of the Philippines logo"><div><div class="school-name">Bestlink College of the Philippines - Bulacan Campus</div><div class="school-details">Lot 1 Ipo Road Brgy. Minuyan Proper, City of San Jose Del Monte, Bulacan.<br>Tel. No.: (044)792-1992</div></div></div>';
+
+        $signatories = '<div class="signatories">'
+            . '<div><strong>Prepared by:</strong><br><br>HR Staff</div>'
+            . '<div><strong>Reviewed/Approved by:</strong><br><br>HR Administrator</div>'
+            . '<div><strong>Employee Acknowledgment:</strong><br><br>Employee</div>'
+            . '</div>';
+
+        return '<!doctype html><html><head><meta charset="UTF-8"><title>Knowledge Transfer Plan</title>' .
+            '<style>body{font-family:Arial,sans-serif;margin:24px;color:#172b4d;}h1,h2{margin-bottom:0.5rem;}table{width:100%;border-collapse:collapse;margin-top:1rem;}th,td{padding:10px;border:1px solid #ddd;text-align:left;}th{background:#f8f9fa;}.section{margin-top:24px;} .section-title{font-size:1rem;font-weight:700;margin-bottom:12px;} .panel{padding:16px;background:#f7f9fc;border:1px solid #e3e8ef;border-radius:6px;}.school-header{display:flex;align-items:center;border-bottom:2px solid #1f5fbf;padding-bottom:14px;margin-bottom:20px;}.school-header img{width:86px;height:86px;object-fit:contain;margin-right:18px;}.school-name{font-size:20px;font-weight:700;color:#174a8b;}.school-details{font-size:12px;line-height:1.6;color:#333;margin-top:4px;}table{width:100%;border-collapse:collapse;margin-top:1rem;}th,td{padding:8px;border:1px solid #ddd;text-align:left;}th{background:#f4f4f4;} .signatories{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:52px;page-break-inside:avoid;color:#172b4d;}.signatories>div{min-height:72px;border-top:1px solid #172b4d;padding-top:8px;font-size:12px;line-height:1.5;}</style>' .
+            '</head><body>' .
+            $header .
+            '<h1>Knowledge Transfer Plan</h1>' .
+            '<div class="panel"><strong>Status:</strong> ' . $status . '</div>' .
+            '<div class="section"><div class="section-title">Plan Summary</div>' .
+            '<table><tbody>' .
+            '<tr><th>Employee</th><td>' . $employeeName . '</td></tr>' .
+            '<tr><th>Successor</th><td>' . $successorName . '</td></tr>' .
+            '<tr><th>Start Date</th><td>' . $startDate . '</td></tr>' .
+            '<tr><th>End Date</th><td>' . $endDate . '</td></tr>' .
+            '<tr><th>Created At</th><td>' . $createdAt . '</td></tr>' .
+            '<tr><th>Updated At</th><td>' . $updatedAt . '</td></tr>' .
+            '</tbody></table></div>' .
+            '<div class="section"><div class="section-title">Transfer Items</div>' .
+            '<table><thead><tr><th>Type</th><th>Title</th><th>Priority</th><th>Status</th><th>Description</th><th>Notes</th></tr></thead><tbody>' . $itemsHtml . '</tbody></table></div>' .
+            $signatories .
+            '</body></html>';
+    }
+
+    /**
      * Complete transfer plan
      */
     public function completeTransferPlan(int $planId): array

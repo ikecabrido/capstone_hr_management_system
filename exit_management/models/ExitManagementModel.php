@@ -76,7 +76,7 @@ class ExitManagementModel
     /**
      * Check whether a table exists in the current database
      */
-    protected function tableExists(string $tableName): bool
+    public function tableExists(string $tableName): bool
     {
         $stmt = $this->db->prepare("SHOW TABLES LIKE ?");
         $stmt->execute([$tableName]);
@@ -86,7 +86,7 @@ class ExitManagementModel
     /**
      * Check whether a column exists in the current table
      */
-    protected function columnExists(string $tableName, string $columnName): bool
+    public function columnExists(string $tableName, string $columnName): bool
     {
         $stmt = $this->db->prepare("SHOW COLUMNS FROM {$tableName} LIKE ?");
         $stmt->execute([$columnName]);
@@ -98,10 +98,79 @@ class ExitManagementModel
      */
     public function getApprovedExitCases(): array
     {
+        return $this->getExitCases(['approved']);
+    }
+
+    /**
+     * Get active/approved exit cases for valid documentation and process linkage
+     */
+    public function getActiveExitCases(string $employeeId = ''): array
+    {
+        return $this->getExitCases(['pending_review', 'pending_legal_review', 'approved'], $employeeId);
+    }
+
+    public function getExitCaseDocumentationList(string $status = 'all', int $page = 1, int $limit = 10, string $search = ''): array
+    {
+        $cases = $this->getExitCases(['pending_review', 'pending_legal_review', 'approved']);
+        $search = trim($search);
+        $filtered = array_filter($cases, function ($case) use ($status, $search) {
+            if ($status && $status !== 'all' && $status !== 'active') {
+                if (strcasecmp($case['case_status'] ?? '', $status) !== 0) {
+                    return false;
+                }
+            }
+
+            if ($search !== '') {
+                $needle = mb_strtolower($search);
+                $haystack = mb_strtolower(($case['full_name'] ?? '') . ' ' . ($case['username'] ?? '') . ' ' . ($case['exit_reason'] ?? ''));
+                if (strpos($haystack, $needle) === false) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+
+        $total = count($filtered);
+        $page = max(1, $page);
+        $limit = max(1, $limit);
+        $offset = ($page - 1) * $limit;
+        $paged = array_slice($filtered, $offset, $limit);
+
+        return [
+            'data' => array_values($paged),
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit
+        ];
+    }
+
+    /**
+     * Get exit cases filtered by status and optionally employee
+     */
+    protected function getExitCases(array $statuses, string $employeeId = ''): array
+    {
         $cases = [];
 
+        if (empty($statuses)) {
+            return $cases;
+        }
+
+        // Prepare placeholders and params for IN(...) and optional employee filter
+        $placeholders = implode(',', array_fill(0, count($statuses), '?'));
+        $employeeClause = '';
+        $params = $statuses;
+        if (!empty($employeeId)) {
+            $employeeClause = ' AND e.employee_id = ?';
+            $params[] = $employeeId;
+        }
+
         if ($this->tableExists('exit_resignations')) {
-            $stmt = $this->db->query("SELECT
+            // include resignation_type column only if it exists in the table to avoid SQL errors on older schemas
+            $includeResignationType = $this->columnExists('exit_resignations', 'resignation_type');
+            $resignationSubtypeSelect = $includeResignationType ? "r.resignation_type AS exit_subtype" : "NULL AS exit_subtype";
+
+            $sql = "SELECT
                 'resignation' AS exit_case_type,
                 r.id AS exit_case_id,
                 e.employee_id AS employee_id,
@@ -120,18 +189,20 @@ class ExitManagementModel
                 r.approved_by,
                 approver.full_name AS approved_by_name,
                 r.approved_at,
-                r.resignation_type AS exit_subtype
+                " . $resignationSubtypeSelect . "
             FROM exit_resignations r
             JOIN employees e ON r.employee_id = e.employee_id
             LEFT JOIN users u ON e.user_id = u.id
             LEFT JOIN users approver ON r.approved_by = approver.id
-            WHERE r.status = 'approved'
-            ORDER BY e.full_name");
+            WHERE r.status IN ($placeholders){$employeeClause}
+            ORDER BY e.full_name";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
             $cases = array_merge($cases, $stmt->fetchAll(PDO::FETCH_ASSOC));
         }
 
         if ($this->tableExists('exit_terminations')) {
-            $stmt = $this->db->query("SELECT
+            $sql = "SELECT
                 'termination' AS exit_case_type,
                 t.id AS exit_case_id,
                 e.employee_id AS employee_id,
@@ -155,8 +226,10 @@ class ExitManagementModel
             JOIN employees e ON t.employee_id = e.employee_id
             LEFT JOIN users u ON e.user_id = u.id
             LEFT JOIN users approver ON t.approved_by = approver.id
-            WHERE t.status = 'approved'
-            ORDER BY e.full_name");
+            WHERE t.status IN ($placeholders){$employeeClause}
+            ORDER BY e.full_name";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
             $cases = array_merge($cases, $stmt->fetchAll(PDO::FETCH_ASSOC));
         }
 
@@ -186,6 +259,7 @@ class ExitManagementModel
                 r.reason AS exit_reason,
                 r.notice_date,
                 r.last_working_date,
+                r.status AS case_status,
                 r.approved_by,
                 approver.full_name AS approved_by_name,
                 r.approved_at
@@ -193,7 +267,7 @@ class ExitManagementModel
             JOIN employees e ON r.employee_id = e.employee_id
             LEFT JOIN users u ON e.user_id = u.id
             LEFT JOIN users approver ON r.approved_by = approver.id
-            WHERE r.id = ? AND r.status = 'approved'");
+            WHERE r.id = ?");
         } elseif ($exitCaseType === 'termination') {
             $stmt = $this->db->prepare("SELECT
                 'termination' AS exit_case_type,
@@ -208,6 +282,7 @@ class ExitManagementModel
                 t.termination_reason AS exit_reason,
                 t.effective_date,
                 t.effective_date AS last_working_date,
+                t.status AS case_status,
                 t.approved_by,
                 approver.full_name AS approved_by_name,
                 t.approved_at
@@ -215,7 +290,7 @@ class ExitManagementModel
             JOIN employees e ON t.employee_id = e.employee_id
             LEFT JOIN users u ON e.user_id = u.id
             LEFT JOIN users approver ON t.approved_by = approver.id
-            WHERE t.id = ? AND t.status = 'approved'");
+            WHERE t.id = ?");
         } else {
             return null;
         }
@@ -300,7 +375,7 @@ class ExitManagementModel
      */
     public function getEligibleEmployees(): array
     {
-        // Get employees who are new or currently have no assigned position
+        // Get all active employees for exit-related operations such as document uploads
         $stmt = $this->db->query("
             SELECT
                 e.employee_id AS id,
@@ -312,8 +387,8 @@ class ExitManagementModel
                 e.employment_status AS employee_status
             FROM employees e
             LEFT JOIN users u ON e.user_id = u.id
-            WHERE TRIM(COALESCE(e.position, '')) = ''
-            ORDER BY e.created_at DESC
+            WHERE LOWER(TRIM(e.employment_status)) = 'active'
+            ORDER BY e.full_name ASC
         ");
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -590,15 +665,17 @@ class ExitManagementModel
      */
     public function getEmployeesWithResignations(): array
     {
-        $stmt = $this->db->query("
-            SELECT DISTINCT
+        $includeResignationType = $this->columnExists('exit_resignations', 'resignation_type');
+        $resTypeSelect = $includeResignationType ? 'r.resignation_type' : 'NULL AS resignation_type';
+
+        $sql = "SELECT DISTINCT
                 e.employee_id AS id,
                 e.full_name,
                 COALESCE(u.username, e.employee_id) AS username,
                 e.email,
                 e.department,
                 e.position,
-                r.resignation_type,
+                {$resTypeSelect},
                 r.status as resignation_status,
                 r.notice_date,
                 r.last_working_date
@@ -606,9 +683,9 @@ class ExitManagementModel
             INNER JOIN exit_resignations r ON e.employee_id = r.employee_id
             LEFT JOIN users u ON e.user_id = u.id
             WHERE r.status = 'approved'
-            ORDER BY e.full_name
-        ");
+            ORDER BY e.full_name";
 
+        $stmt = $this->db->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -630,7 +707,6 @@ class ExitManagementModel
                 e.position,
                 ei.exit_case_type,
                 ei.exit_case_id,
-                CASE WHEN ei.exit_case_type = 'resignation' THEN r.resignation_type ELSE NULL END AS resignation_type,
                 COALESCE(r.last_working_date, t.effective_date) AS last_working_date,
                 CASE WHEN ei.exit_case_type = 'resignation' THEN 'Resignation' ELSE 'Termination' END AS exit_type
             FROM exit_interviews ei
@@ -640,7 +716,7 @@ class ExitManagementModel
             LEFT JOIN exit_resignations r ON ei.exit_case_type = 'resignation' AND ei.exit_case_id = r.id AND r.status = 'approved'
             LEFT JOIN exit_terminations t ON ei.exit_case_type = 'termination' AND ei.exit_case_id = t.id AND t.status = 'approved'
             LEFT JOIN exit_knowledge_transfer_plans ktp ON ktp.employee_id = e.employee_id AND ktp.status = 'active'
-            WHERE ei.status = 'completed'
+            WHERE ei.status IN ('scheduled', 'completed')
               AND ktp.id IS NULL
               AND ((ei.exit_case_type = 'resignation' AND r.id IS NOT NULL)
                    OR (ei.exit_case_type = 'termination' AND t.id IS NOT NULL))

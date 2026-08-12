@@ -44,10 +44,21 @@ class SurveyController extends ExitManagementController
     /**
      * Submit survey response
      */
-    public function submitSurveyResponse(int $surveyId, int $employeeId, array $responses): array
+    public function submitSurveyResponse(int $surveyId, int $employeeId, array $responses, ?string $exitCaseType = null, ?int $exitCaseId = null, ?string $surveyType = null, ?string $scheduledDate = null, ?string $scheduledTime = null): array
     {
         try {
-            $success = $this->surveyModel->submitSurveyResponse($surveyId, $employeeId, $responses);
+            if (($employeeId === 0 || empty($employeeId)) && $exitCaseType && $exitCaseId) {
+                $exitCase = $this->surveyModel->getExitCaseDetails($exitCaseType, $exitCaseId);
+                if ($exitCase && !empty($exitCase['employee_id'])) {
+                    $employeeId = (int)$exitCase['employee_id'];
+                }
+            }
+
+            if ($employeeId === 0) {
+                return ['success' => false, 'message' => 'Employee ID is required for survey submission.'];
+            }
+
+            $success = $this->surveyModel->submitSurveyResponse($surveyId, $employeeId, $responses, $exitCaseType, $exitCaseId, $surveyType, $scheduledDate, $scheduledTime);
 
             if ($success) {
                 return [
@@ -115,7 +126,7 @@ class SurveyController extends ExitManagementController
     /**
      * Get all surveys with optional status filter
      */
-    public function getSurveys(string $status = null): array
+    public function getSurveys(?string $status = null): array
     {
         return $this->surveyModel->getAllSurveys($status);
     }
@@ -161,7 +172,12 @@ class SurveyController extends ExitManagementController
                 return $this->submitSurveyResponse(
                     $data['survey_id'] ?? 0,
                     $employeeId,
-                    $data['responses'] ?? []
+                    $data['responses'] ?? [],
+                    $data['exit_case_type'] ?? null,
+                    isset($data['exit_case_id']) ? (int)$data['exit_case_id'] : null,
+                    $data['survey_type'] ?? null,
+                    $data['scheduled_date'] ?? null,
+                    $data['scheduled_time'] ?? null
                 );
 
             case 'get_survey':

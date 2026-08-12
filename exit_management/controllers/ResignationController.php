@@ -226,6 +226,37 @@ class ResignationController extends ExitManagementController
     }
 
     /**
+     * Render printable resignation record page
+     */
+    public function renderResignationPrintPage(int $resignationId): string
+    {
+        $res = $this->resignationModel->getResignationById($resignationId);
+        if (!$res) {
+            return '<!doctype html><html><head><title>Resignation Not Found</title></head><body><h1>Resignation not found</h1></body></html>';
+        }
+
+        $employeeName = htmlspecialchars($res['employee_name'] ?? 'Unknown', ENT_QUOTES);
+        $resignationType = htmlspecialchars($res['resignation_type'] ?? 'N/A', ENT_QUOTES);
+        $reason = htmlspecialchars($res['reason'] ?? '', ENT_QUOTES);
+        $noticeDate = htmlspecialchars($res['notice_date'] ?? 'N/A', ENT_QUOTES);
+        $lastWorking = htmlspecialchars($res['last_working_date'] ?? 'N/A', ENT_QUOTES);
+        $status = htmlspecialchars($res['status'] ?? 'N/A', ENT_QUOTES);
+
+        $header = '<div style="border-bottom:2px solid #1f5fbf;padding-bottom:12px;margin-bottom:18px;display:flex;align-items:center"><img src="/capstone_hr_management_system2/assets/pics/bcpLogo.png" style="width:80px;height:80px;margin-right:16px"><div><h2 style="margin:0;color:#174a8b">Resignation Record</h2><div style="font-size:12px;color:#333">Bestlink College of the Philippines - Bulacan Campus</div></div></div>';
+
+        $html = '<!doctype html><html><head><meta charset="utf-8"><title>Resignation Record</title><style>body{font-family:Arial,Helvetica,sans-serif;padding:20px;color:#172b4d}table{width:100%;border-collapse:collapse}th,td{padding:8px;border:1px solid #ddd}th{background:#f4f4f4;text-align:left}</style></head><body>' . $header . '<table><tbody>' .
+            '<tr><th>Employee</th><td>' . $employeeName . '</td></tr>' .
+            '<tr><th>Resignation Type</th><td>' . $resignationType . '</td></tr>' .
+            '<tr><th>Reason</th><td>' . $reason . '</td></tr>' .
+            '<tr><th>Notice Date</th><td>' . $noticeDate . '</td></tr>' .
+            '<tr><th>Last Working Day</th><td>' . $lastWorking . '</td></tr>' .
+            '<tr><th>Status</th><td>' . $status . '</td></tr>' .
+            '</tbody></table></body></html>';
+
+        return $html;
+    }
+
+    /**
      * Check employee eligibility for resignation
      */
     public function checkEmployeeEligibility(string $employeeId): array

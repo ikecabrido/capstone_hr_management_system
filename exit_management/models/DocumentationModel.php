@@ -12,52 +12,65 @@ class DocumentationModel extends ExitManagementModel
         try {
             error_log("=== DocumentationModel::createDocument START ===");
             error_log("Input data: " . json_encode($data));
-            
-            $sql = "
-                INSERT INTO exit_documents (employee_id, document_type, title, file_path,
-                                          uploaded_by, status, created_at)
-                VALUES (?, ?, ?, ?, ?, 'active', NOW())
-            ";
-            error_log("SQL: " . $sql);
-            
-            $stmt = $this->db->prepare($sql);
-            
-            $values = [
-                $data['employee_id'],
+
+            $hasExitCaseCols = $this->columnExists('exit_documents', 'exit_case_type') && $this->columnExists('exit_documents', 'exit_case_id');
+
+            // Build insert columns/values dynamically depending on schema
+            $columns = ['employee_id'];
+            $placeholders = ['?'];
+            $values = [$data['employee_id']];
+
+            if ($hasExitCaseCols) {
+                $columns[] = 'exit_case_type';
+                $placeholders[] = '?';
+                $values[] = $data['exit_case_type'] ?? null;
+
+                $columns[] = 'exit_case_id';
+                $placeholders[] = '?';
+                $values[] = !empty($data['exit_case_id']) ? (int)$data['exit_case_id'] : null;
+            }
+
+            $columns = array_merge($columns, ['document_type', 'title', 'file_path', 'uploaded_by']);
+            $placeholders = array_merge($placeholders, ['?', '?', '?', '?']);
+            $values = array_merge($values, [
                 $data['document_type'],
                 $data['title'],
                 $data['file_path'],
                 $data['uploaded_by']
-            ];
+            ]);
+
+            $sql = "INSERT INTO exit_documents (" . implode(', ', $columns) . ", status, created_at) VALUES (" . implode(', ', $placeholders) . ", 'active', NOW())";
+            error_log("SQL: " . $sql);
             error_log("Bind values: " . json_encode($values));
 
+            $stmt = $this->db->prepare($sql);
             $result = $stmt->execute($values);
-            
+
             error_log("Execute result: " . ($result ? 'TRUE' : 'FALSE'));
-            
+
             if (!$result) {
                 $errorInfo = $stmt->errorInfo();
-                error_log("SQLSTATE: " . $errorInfo[0] . ", Driver: " . $errorInfo[1] . ", Message: " . $errorInfo[2]);
+                error_log("SQLSTATE: " . $errorInfo[0] . ", Driver: " . ($errorInfo[1] ?? '') . ", Message: " . ($errorInfo[2] ?? ''));
                 return 0;
             }
 
             $lastId = $this->db->lastInsertId();
             error_log("lastInsertId: " . $lastId);
-            
+
             // Verify it was inserted
             $verifyStmt = $this->db->prepare("SELECT COUNT(*) as cnt FROM exit_documents WHERE id = ?");
             $verifyStmt->execute([$lastId]);
             $verify = $verifyStmt->fetch(PDO::FETCH_ASSOC);
             error_log("Verification - Document ID $lastId exists: " . $verify['cnt']);
-            
+
             // Check status value
             $statusStmt = $this->db->prepare("SELECT id, status FROM exit_documents WHERE id = ?");
             $statusStmt->execute([$lastId]);
             $statusRow = $statusStmt->fetch(PDO::FETCH_ASSOC);
             error_log("Document status in DB: " . json_encode($statusRow));
-            
+
             error_log("=== DocumentationModel::createDocument END (ID: $lastId) ===");
-            
+
             return (int)$lastId;
         } catch (Exception $e) {
             error_log("DocumentationModel::createDocument EXCEPTION: " . $e->getMessage());
@@ -71,18 +84,26 @@ class DocumentationModel extends ExitManagementModel
      */
     public function updateDocument(int $documentId, array $data): bool
     {
-        $stmt = $this->db->prepare("
-            UPDATE exit_documents
-            SET employee_id = ?, document_type = ?, title = ?
-            WHERE id = ?
-        ");
+        // Handle schema differences: include exit_case_* fields only when present
+        $hasExitCaseCols = $this->columnExists('exit_documents', 'exit_case_type') && $this->columnExists('exit_documents', 'exit_case_id');
 
-        return $stmt->execute([
+        $fields = ['employee_id = ?', 'document_type = ?', 'title = ?'];
+        $values = [
             $data['employee_id'],
             $data['document_type'],
-            $data['title'],
-            $documentId
-        ]);
+            $data['title']
+        ];
+
+        if ($hasExitCaseCols) {
+            array_unshift($fields, 'exit_case_type = ?', 'exit_case_id = ?');
+            array_unshift($values, $data['exit_case_type'] ?? null, !empty($data['exit_case_id']) ? (int)$data['exit_case_id'] : null);
+        }
+
+        $sql = "UPDATE exit_documents SET " . implode(', ', $fields) . " WHERE id = ?";
+        $values[] = $documentId;
+
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute($values);
     }
 
     /**
@@ -96,6 +117,27 @@ class DocumentationModel extends ExitManagementModel
             ORDER BY created_at DESC
         ");
         $stmt->execute([$employeeId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Get documents linked to a specific exit case
+     */
+    public function getDocumentsByExitCase(string $exitCaseType, int $exitCaseId): array
+    {
+        // Some deployments may not have exit_case_type/exit_case_id columns on exit_documents.
+        if (!$this->columnExists('exit_documents', 'exit_case_type') || !$this->columnExists('exit_documents', 'exit_case_id')) {
+            // No case linkage available in this schema; return empty list to avoid SQL errors.
+            return [];
+        }
+
+        $stmt = $this->db->prepare("SELECT d.*, e.full_name as employee_name, u.full_name as uploaded_by_name
+            FROM exit_documents d
+            LEFT JOIN employees e ON d.employee_id = e.employee_id
+            LEFT JOIN users u ON d.uploaded_by = u.id
+            WHERE d.exit_case_type = ? AND d.exit_case_id = ? AND d.status = 'active'
+            ORDER BY d.created_at DESC");
+        $stmt->execute([$exitCaseType, $exitCaseId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -145,22 +187,29 @@ class DocumentationModel extends ExitManagementModel
         try {
             $offset = ($page - 1) * $limit;
 
-            $sql = "
-                SELECT
-                    d.id,
-                    d.employee_id,
-                    d.document_type,
-                    d.title,
-                    d.file_path,
-                    d.uploaded_by,
-                    d.status,
-                    d.created_at,
-                    e.full_name as employee_name,
-                    u.full_name as uploaded_by_name
-                FROM exit_documents d
-                LEFT JOIN employees e ON d.employee_id = e.employee_id
-                LEFT JOIN users u ON d.uploaded_by = u.id
-            ";
+            $hasExitCaseCols = $this->columnExists('exit_documents', 'exit_case_type') && $this->columnExists('exit_documents', 'exit_case_id');
+
+            // Build select fields depending on schema
+            $selectFields = [
+                'd.id',
+                'd.employee_id',
+            ];
+            if ($hasExitCaseCols) {
+                $selectFields[] = 'd.exit_case_type';
+                $selectFields[] = 'd.exit_case_id';
+            }
+            $selectFields = array_merge($selectFields, [
+                'd.document_type',
+                'd.title',
+                'd.file_path',
+                'd.uploaded_by',
+                'd.status',
+                'd.created_at',
+                'e.full_name as employee_name',
+                'u.full_name as uploaded_by_name'
+            ]);
+
+            $sql = "SELECT\n                " . implode(",\n                    ", $selectFields) . "\n                FROM exit_documents d\n                LEFT JOIN employees e ON d.employee_id = e.employee_id\n                LEFT JOIN users u ON d.uploaded_by = u.id\n            ";
 
             $countSql = "
                 SELECT COUNT(*) as total
@@ -180,12 +229,21 @@ class DocumentationModel extends ExitManagementModel
             // Add search condition if provided
             if (!empty($search)) {
                 $searchCondition = $whereClause ? " AND" : " WHERE";
-                $searchCondition .= " (e.full_name LIKE :search0 OR d.title LIKE :search1 OR d.document_type LIKE :search2)";
+                // include employee name, document title/type, and exit case type/id in searchable fields
+                $searchCondition .= " (e.full_name LIKE :search0 OR d.title LIKE :search1 OR d.document_type LIKE :search2";
+                if ($hasExitCaseCols) {
+                    $searchCondition .= " OR d.exit_case_type LIKE :search3 OR CAST(d.exit_case_id AS CHAR) LIKE :search4";
+                }
+                $searchCondition .= ")";
                 $whereClause .= $searchCondition;
                 $searchParam = "%$search%";
                 $params['search0'] = $searchParam;
                 $params['search1'] = $searchParam;
                 $params['search2'] = $searchParam;
+                if ($hasExitCaseCols) {
+                    $params['search3'] = $searchParam;
+                    $params['search4'] = $searchParam;
+                }
             }
 
             // Get total count
@@ -334,6 +392,8 @@ class DocumentationModel extends ExitManagementModel
             'resignation_letter' => 'Resignation Letter',
             'clearance_form' => 'Clearance Form',
             'handover_document' => 'Handover Document',
+            'settlement_receipt' => 'Settlement Receipt',
+            'exit_interview' => 'Exit Interview Notes',
             'certificate' => 'Experience Certificate',
             'other' => 'Other Documents'
         ];

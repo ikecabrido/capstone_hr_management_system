@@ -127,6 +127,9 @@ class ExitManagementController
                           ORDER BY r.created_at DESC -- Default sorting: newest first
                           LIMIT ?";
 
+                // ensure we have a DB connection in fallback
+                $db = $this->model->getConnection();
+
                 $stmt = $db->prepare($query);
                 $stmt->bindValue(1, $limit, PDO::PARAM_INT);
                 $stmt->execute();
@@ -297,12 +300,17 @@ class ExitManagementController
     {
         try {
             $db = $this->model->getConnection();
+            // If the schema does not include resignation_type, return empty distribution
+            if (!$this->model->columnExists('exit_resignations', 'resignation_type')) {
+                return ['labels' => [], 'data' => []];
+            }
+
             $query = "SELECT resignation_type, COUNT(*) as count
                       FROM exit_resignations
                       WHERE resignation_type IS NOT NULL AND resignation_type != ''
                       GROUP BY resignation_type
                       ORDER BY count DESC";
-            
+
             $stmt = $db->query($query);
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
@@ -427,6 +435,108 @@ class ExitManagementController
     {
         try {
             switch ($action) {
+                case 'get_exit_case_documentation_list':
+                    $status = $data['status'] ?? 'all';
+                    $page = (int)($data['page'] ?? 1);
+                    $limit = (int)($data['limit'] ?? 10);
+                    $search = $data['search'] ?? '';
+                    return $this->model->getExitCaseDocumentationList($status, $page, $limit, $search);
+
+                case 'get_exit_case_documentation':
+                    $exitCaseType = $data['exit_case_type'] ?? '';
+                    $exitCaseId = (int)($data['exit_case_id'] ?? 0);
+
+                    if (empty($exitCaseType) || empty($exitCaseId)) {
+                        error_log('get_exit_case_documentation missing params: ' . json_encode($data));
+                        return ['success' => false, 'message' => 'exit_case_type and exit_case_id are required'];
+                    }
+
+                    error_log("get_exit_case_documentation called with type={$exitCaseType}, id={$exitCaseId}");
+                    // Load core case details
+                    $case = $this->model->getExitCaseDetails($exitCaseType, $exitCaseId);
+                    if (!$case) {
+                        error_log("Exit case not found: type={$exitCaseType}, id={$exitCaseId}");
+                        return ['success' => false, 'message' => 'Exit case not found'];
+                    }
+
+                    // Load related records: documents, interview, transfer plans, settlement
+                    require_once __DIR__ . '/../models/DocumentationModel.php';
+                    require_once __DIR__ . '/../models/ExitInterviewModel.php';
+                    require_once __DIR__ . '/../models/KnowledgeTransferModel.php';
+                    require_once __DIR__ . '/../models/SettlementModel.php';
+
+                    $docModel = new DocumentationModel();
+                    $interviewModel = new ExitInterviewModel();
+                    $transferModel = new KnowledgeTransferModel();
+                    $settlementModel = new SettlementModel();
+
+                    $documents = $docModel->getDocumentsByExitCase($exitCaseType, $exitCaseId);
+
+                    // Detect whether this installation supports per-case document linking
+                    $documentsSupported = $docModel->columnExists('exit_documents', 'exit_case_type') && $docModel->columnExists('exit_documents', 'exit_case_id');
+
+                    error_log('Documents supported in schema: ' . ($documentsSupported ? 'yes' : 'no'));
+                    error_log('Documents found: ' . count($documents));
+
+                    // Try to get the interview linked to the case (return latest)
+                    $hasInterviewSchema = $this->model->tableExists('exit_interviews')
+                        && $this->model->columnExists('exit_interviews', 'exit_case_type')
+                        && $this->model->columnExists('exit_interviews', 'exit_case_id');
+
+                    if ($hasInterviewSchema) {
+                        $stmt = $this->model->getConnection()->prepare("SELECT * FROM exit_interviews WHERE exit_case_type = ? AND exit_case_id = ? ORDER BY created_at DESC LIMIT 1");
+                        $stmt->execute([$exitCaseType, $exitCaseId]);
+                        $exitInterview = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+                    } else {
+                        error_log('Exit interview query skipped: missing exit_interviews schema or case linkage columns');
+                        $exitInterview = null;
+                    }
+                    error_log('Exit interview found: ' . ($exitInterview ? 'yes' : 'no'));
+
+                    // Knowledge transfer: pick most recent plan for the employee
+                    $transferPlans = $transferModel->getTransferPlansByEmployee($case['employee_id']);
+                    $knowledgeTransfer = count($transferPlans) ? $transferPlans[0] : null;
+
+                    // Settlement: attempt to find settlement by exit_case_type/exit_case_id
+                    $settlement = null;
+                    $hasSettlementSchema = $this->model->tableExists('exit_employee_settlements')
+                        && $this->model->columnExists('exit_employee_settlements', 'exit_case_type')
+                        && $this->model->columnExists('exit_employee_settlements', 'exit_case_id');
+
+                    if ($hasSettlementSchema) {
+                        $stmt2 = $this->model->getConnection()->prepare("SELECT * FROM exit_employee_settlements WHERE exit_case_type = ? AND exit_case_id = ? ORDER BY created_at DESC LIMIT 1");
+                        $stmt2->execute([$exitCaseType, $exitCaseId]);
+                        $settlement = $stmt2->fetch(PDO::FETCH_ASSOC) ?: null;
+                    }
+
+                    if (!$settlement && $this->model->tableExists('exit_employee_settlements') && $exitCaseType === 'resignation' && $this->model->columnExists('exit_employee_settlements', 'resignation_id')) {
+                        $stmt2 = $this->model->getConnection()->prepare("SELECT * FROM exit_employee_settlements WHERE resignation_id = ? ORDER BY created_at DESC LIMIT 1");
+                        $stmt2->execute([$exitCaseId]);
+                        $settlement = $stmt2->fetch(PDO::FETCH_ASSOC) ?: null;
+                        error_log('Settlement found by resignation_id fallback: ' . ($settlement ? 'yes' : 'no'));
+                    }
+
+                    if (!$settlement && !empty($case['employee_id']) && $this->model->tableExists('exit_employee_settlements') && $this->model->columnExists('exit_employee_settlements', 'employee_id')) {
+                        $stmt2 = $this->model->getConnection()->prepare("SELECT * FROM exit_employee_settlements WHERE employee_id = ? ORDER BY created_at DESC LIMIT 1");
+                        $stmt2->execute([$case['employee_id']]);
+                        $settlement = $stmt2->fetch(PDO::FETCH_ASSOC) ?: null;
+                        error_log('Settlement found by employee_id fallback: ' . ($settlement ? 'yes' : 'no'));
+                    }
+
+                    if (!$settlement && !$hasSettlementSchema) {
+                        error_log('Settlement query skipped: missing exit_employee_settlements schema or case linkage columns');
+                    }
+                    error_log('Settlement found: ' . ($settlement ? 'yes' : 'no'));
+
+                    return [
+                        'success' => true,
+                        'data' => $case,
+                        'documents_supported' => $documentsSupported,
+                        'documents' => $documents,
+                        'exit_interview' => $exitInterview,
+                        'knowledge_transfer' => $knowledgeTransfer,
+                        'settlement' => $settlement
+                    ];
                 case 'get_employee_details':
                     return $this->getEmployeeExitSummary($data['employee_id'] ?? 0);
 
@@ -444,6 +554,8 @@ class ExitManagementController
 
                 case 'get_approved_exit_cases':
                     return $this->model->getApprovedExitCases();
+                case 'get_active_exit_cases':
+                    return $this->model->getActiveExitCases();
 
                 case 'get_employee_salary_components':
                     return $this->model->getEmployeeSalaryComponents($data['employee_id'] ?? '');

@@ -51,6 +51,16 @@
                         <textarea class="form-control" id="comments" name="comments" rows="2"></textarea>
                     </div>
 
+                    <div class="form-group" id="resignationLetterSection" style="display: none;">
+                        <label>Resignation Letter</label>
+                        <div class="form-control-plaintext border rounded px-3 py-2 bg-light">
+                            <a id="resignationLetterLink" href="#" target="_blank" rel="noopener" style="display: none;">
+                                <i class="fas fa-file-alt mr-1"></i><span id="resignationLetterName">View resignation letter</span>
+                            </a>
+                            <span id="resignationLetterMissing" class="text-danger" style="display: none;">No resignation letter attached.</span>
+                        </div>
+                    </div>
+
                     <!-- Approval section (for admins) -->
                     <div id="approvalSection" style="display: none;">
                         <hr>
@@ -431,14 +441,6 @@
                                 <label for="hrKnowledgeTransfer">Knowledge Transfer Required</label>
                                 <div class="form-control-plaintext"><input type="checkbox" id="hrKnowledgeTransfer" name="hr_knowledge_transfer"> Yes</div>
                             </div>
-                            <div class="form-group col-md-4">
-                                <label for="hrClearanceRecommendation">Clearance Recommendation</label>
-                                <select class="form-control" id="hrClearanceRecommendation" name="hr_clearance_recommendation">
-                                    <option value="pending">Pending</option>
-                                    <option value="clear">Clear</option>
-                                    <option value="not_clear">Not Clear</option>
-                                </select>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -718,6 +720,8 @@
             <form id="documentForm" enctype="multipart/form-data">
                 <div class="modal-body">
                     <input type="hidden" id="documentId" name="document_id">
+                    <input type="hidden" id="documentExitCaseType" name="exit_case_type">
+                    <input type="hidden" id="documentExitCaseId" name="exit_case_id">
 
                     <div class="row">
                         <div class="col-md-6">
@@ -738,10 +742,19 @@
                                     <option value="handover_document">Handover Document</option>
                                     <option value="settlement_receipt">Settlement Receipt</option>
                                     <option value="exit_interview">Exit Interview Notes</option>
+                                    <option value="certificate">Experience Certificate</option>
                                     <option value="other">Other</option>
                                 </select>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="documentCaseSelect">Link to Exit Case</label>
+                        <select class="form-control" id="documentCaseSelect" name="document_case_select">
+                            <option value="">No exit case linked</option>
+                        </select>
+                        <small class="form-text text-muted">Optional: link the document to a resignation or termination case.</small>
                     </div>
 
                     <div class="form-group">
@@ -937,12 +950,12 @@
     </div>
 </div>
 
-<!-- Answer Survey Modal -->
+<!-- Record Feedback Modal -->
 <div class="modal fade exit-modal" id="answerSurveyModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header bg-primary">
-                <h5 class="modal-title" id="answerSurveyTitle">Answer Survey</h5>
+                <h5 class="modal-title" id="answerSurveyTitle">Record Post-Exit Feedback</h5>
                 <button type="button" class="close" data-dismiss="modal">
                     <span>&times;</span>
                 </button>
@@ -950,6 +963,56 @@
             <form id="answerSurveyForm">
                 <div class="modal-body">
                     <input type="hidden" id="answerSurveyId" name="survey_id">
+                    <input type="hidden" id="answerSurveyEmployeeId" name="employee_id">
+                    <input type="hidden" id="answerSurveyExitCaseType" name="exit_case_type">
+                    <input type="hidden" id="answerSurveyExitCaseId" name="exit_case_id">
+
+                    <div class="form-group">
+                        <label for="answerSurveyCaseSelect">Approved Exit Case *</label>
+                        <select class="form-control" id="answerSurveyCaseSelect" required>
+                            <option value="">Select Approved Exit Case</option>
+                        </select>
+                        <small class="form-text text-muted">Select the exit case associated with this survey response.</small>
+                    </div>
+
+                    <div class="card mb-3 border-left-info">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="fas fa-clock text-info mr-2"></i>Survey Schedule</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="surveyType">Survey Type *</label>
+                                        <select class="form-control" id="surveyType" name="survey_type" required>
+                                            <option value="">Select Survey Type</option>
+                                            <option value="post_exit_feedback">Post-Exit Feedback</option>
+                                            <option value="exit_interview_summary">Exit Interview Summary</option>
+                                            <option value="clearance_survey">Clearance Survey</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                        <small class="form-text text-muted">Choose the type of survey being recorded.</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="surveyScheduledDate">Survey Date *</label>
+                                        <input type="date" class="form-control" id="surveyScheduledDate" name="scheduled_date" required>
+                                        <small class="form-text text-muted">When the survey was administered or scheduled.</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="surveyScheduledTime">Survey Time *</label>
+                                        <input type="time" class="form-control" id="surveyScheduledTime" name="scheduled_time" required>
+                                        <small class="form-text text-muted">Time the survey session was recorded.</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- Progress Bar -->
                     <div class="progress mb-4" style="height: 8px;">

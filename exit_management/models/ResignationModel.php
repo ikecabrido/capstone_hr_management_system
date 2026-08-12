@@ -53,6 +53,7 @@ class ResignationModel extends ExitManagementModel
             }
 
             $requiredColumns = [
+                'resignation_letter_path' => 'varchar(500) DEFAULT NULL',
                 'hr_approved_by' => 'int(11) DEFAULT NULL',
                 'hr_approved_at' => 'datetime DEFAULT NULL',
                 'hr_approval_comments' => 'text DEFAULT NULL',
@@ -127,23 +128,39 @@ class ResignationModel extends ExitManagementModel
     public function submitResignation(array $data): int
     {
         try {
-            $stmt = $this->db->prepare(" 
-                INSERT INTO exit_resignations (employee_id, resignation_type, reason, notice_date,
-                                        last_working_date, comments, submitted_by, status, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 'pending_review', NOW())
-            ");
+            // Build insert columns conditionally to support schemas without resignation_type
+            $columns = ['employee_id'];
+            $placeholders = ['?'];
+            $values = [$data['employee_id']];
+
+            if ($this->columnExists('exit_resignations', 'resignation_type')) {
+                $columns[] = 'resignation_type';
+                $placeholders[] = '?';
+                $values[] = $data['resignation_type'];
+            }
+
+            $columns = array_merge($columns, ['reason', 'notice_date', 'last_working_date', 'comments', 'resignation_letter_path', 'submitted_by', 'status', 'created_at']);
+            $placeholders = array_merge($placeholders, ['?', '?', '?', '?', '?', '?', "'pending_review'", 'NOW()']);
+
+            // Values for non-dynamic columns
+            $values[] = $data['reason'];
+            $values[] = $data['notice_date'];
+            $values[] = $data['last_working_date'];
+            $values[] = $data['comments'] ?? null;
+            $values[] = $data['resignation_letter_path'] ?? null;
+            $values[] = $data['submitted_by'] ?? null;
+
+            $sql = sprintf(
+                "INSERT INTO exit_resignations (%s) VALUES (%s)",
+                implode(', ', $columns),
+                implode(', ', $placeholders)
+            );
+
+            $stmt = $this->db->prepare($sql);
 
             $this->db->beginTransaction();
 
-            $result = $stmt->execute([
-                $data['employee_id'],
-                $data['resignation_type'],
-                $data['reason'],
-                $data['notice_date'],
-                $data['last_working_date'],
-                $data['comments'] ?? null,
-                $data['submitted_by'] ?? null
-            ]);
+            $result = $stmt->execute($values);
 
             if (!$result) {
                 throw new Exception('Failed to insert resignation');
@@ -183,15 +200,59 @@ class ResignationModel extends ExitManagementModel
     {
         $stmt = $this->db->prepare("
             SELECT r.*, e.full_name AS employee_name, e.employee_id AS emp_id,
-                   e.email, e.department,
-                   p.full_name AS preclearance_desk_person_name
+                                     e.email, e.department,
+                                     p.full_name AS preclearance_desk_person_name
             FROM exit_resignations r
             LEFT JOIN employees e ON r.employee_id = e.employee_id
             LEFT JOIN users p ON r.preclearance_desk_person = p.id
             WHERE r.id = ?
         ");
         $stmt->execute([$resignationId]);
-        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        $resignation = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+        if (!$resignation) {
+            return null;
+        }
+
+        $resignation['resignation_request_id'] = null;
+        $resignation['resignation_letter_path'] = $resignation['resignation_letter_path'] ?? null;
+
+        // The portal request tables are optional to the Exit Management
+        // record. Do not let an attachment lookup prevent the review modal
+        // from loading the resignation itself.
+        try {
+            $attachmentStmt = $this->db->prepare("
+                SELECT req.id, req.attachment
+                FROM requests req
+                INNER JOIN request_types rt ON rt.id = req.request_type_id
+                INNER JOIN employees e ON e.user_id = req.user_id
+                WHERE e.employee_id = ?
+                  AND LOWER(rt.name) LIKE '%resignation%'
+                  AND req.attachment IS NOT NULL
+                  AND req.attachment <> ''
+                ORDER BY req.created_at DESC
+                LIMIT 1
+            ");
+            $attachmentStmt->execute([$resignation['employee_id']]);
+            $attachment = $attachmentStmt->fetch(PDO::FETCH_ASSOC);
+            if ($attachment) {
+                $resignation['resignation_request_id'] = $attachment['id'];
+                if (empty($resignation['resignation_letter_path'])) {
+                    $resignation['resignation_letter_path'] = $attachment['attachment'];
+                    // Backfill the dedicated exit record column for legacy
+                    // portal requests so future reads do not depend on the
+                    // generic requests table lookup.
+                    $updateAttachment = $this->db->prepare(
+                        'UPDATE exit_resignations SET resignation_letter_path = ? WHERE id = ?'
+                    );
+                    $updateAttachment->execute([$attachment['attachment'], $resignationId]);
+                }
+            }
+        } catch (Exception $e) {
+            error_log('Optional resignation letter lookup skipped: ' . $e->getMessage());
+        }
+
+        return $resignation;
     }
 
     /**
@@ -257,11 +318,13 @@ class ResignationModel extends ExitManagementModel
             $sql .= ' ORDER BY a.archived_at DESC LIMIT :limit OFFSET :offset';
         } else {
             // Query from exit_resignations for active records
+            $resignationTypeSelect = $this->columnExists('exit_resignations', 'resignation_type') ? 'r.resignation_type' : "NULL AS resignation_type";
+
             $sql = "
                 SELECT
                     r.id,
                     r.employee_id,
-                    r.resignation_type,
+                    " . $resignationTypeSelect . ",
                     r.reason,
                     r.notice_date,
                     r.last_working_date,
@@ -302,13 +365,22 @@ class ResignationModel extends ExitManagementModel
 
             // Add search condition if provided
             if (!empty($search)) {
-                $searchCondition = " AND (e.full_name LIKE :search0 OR e.email LIKE :search1 OR r.reason LIKE :search2 OR r.resignation_type LIKE :search3)";
-                $whereClause .= $searchCondition;
                 $searchParam = "%$search%";
-                $params['search0'] = $searchParam;
-                $params['search1'] = $searchParam;
-                $params['search2'] = $searchParam;
-                $params['search3'] = $searchParam;
+                // Include resignation_type in search only if column exists
+                if ($this->columnExists('exit_resignations', 'resignation_type')) {
+                    $searchCondition = " AND (e.full_name LIKE :search0 OR e.email LIKE :search1 OR r.reason LIKE :search2 OR r.resignation_type LIKE :search3)";
+                    $whereClause .= $searchCondition;
+                    $params['search0'] = $searchParam;
+                    $params['search1'] = $searchParam;
+                    $params['search2'] = $searchParam;
+                    $params['search3'] = $searchParam;
+                } else {
+                    $searchCondition = " AND (e.full_name LIKE :search0 OR e.email LIKE :search1 OR r.reason LIKE :search2)";
+                    $whereClause .= $searchCondition;
+                    $params['search0'] = $searchParam;
+                    $params['search1'] = $searchParam;
+                    $params['search2'] = $searchParam;
+                }
             }
 
             $sql .= $whereClause . ' ORDER BY r.created_at DESC LIMIT :limit OFFSET :offset';
@@ -343,21 +415,34 @@ class ResignationModel extends ExitManagementModel
      */
     public function updateResignation(int $resignationId, array $data): bool
     {
-        $stmt = $this->db->prepare(" 
-            UPDATE exit_resignations
-            SET employee_id = ?, resignation_type = ?, reason = ?, notice_date = ?,
-                last_working_date = ?, comments = ?, updated_at = NOW()
-            WHERE id = ?
-        ");
-        return $stmt->execute([
-            $data['employee_id'],
-            $data['resignation_type'],
-            $data['reason'],
-            $data['notice_date'],
-            $data['last_working_date'],
-            $data['comments'] ?? null,
-            $resignationId
-        ]);
+        // Build update query conditionally if resignation_type exists
+        $setParts = ['employee_id = ?'];
+        $values = [$data['employee_id']];
+
+        if ($this->columnExists('exit_resignations', 'resignation_type')) {
+            $setParts[] = 'resignation_type = ?';
+            $values[] = $data['resignation_type'];
+        }
+
+        $setParts[] = 'reason = ?';
+        $values[] = $data['reason'];
+
+        $setParts[] = 'notice_date = ?';
+        $values[] = $data['notice_date'];
+
+        $setParts[] = 'last_working_date = ?';
+        $values[] = $data['last_working_date'];
+
+        $setParts[] = 'comments = ?';
+        $values[] = $data['comments'] ?? null;
+
+        $setParts[] = 'updated_at = NOW()';
+
+        $sql = "UPDATE exit_resignations SET " . implode(', ', $setParts) . " WHERE id = ?";
+        $values[] = $resignationId;
+
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute($values);
     }
 
     /**
@@ -609,9 +694,9 @@ class ResignationModel extends ExitManagementModel
             $insertStmt = $this->db->prepare("
                 INSERT INTO exit_resignations (
                     id, employee_id, resignation_type, reason, notice_date, last_working_date,
-                    comments, submitted_by, preclearance_desk_person, status, approved_by,
+                    comments, resignation_letter_path, submitted_by, preclearance_desk_person, status, approved_by,
                     approved_at, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
 
             $insertStmt->execute([
@@ -622,6 +707,7 @@ class ResignationModel extends ExitManagementModel
                 $resignationData['notice_date'],
                 $resignationData['last_working_date'],
                 $resignationData['comments'],
+                $resignationData['resignation_letter_path'] ?? null,
                 $resignationData['submitted_by'],
                 $resignationData['preclearance_desk_person'],
                 $resignationData['status'] ?? 'pending',

@@ -203,17 +203,19 @@ class SettlementModel extends ExitManagementModel
 
         $fields[] = 'status = ?';
         $values[] = $data['status'] ?? 'pending_approval';
-        $fields[] = 'updated_by = ?';
-        $values[] = $data['updated_by'] ?? null;
+        if ($this->settlementColumnExists('updated_by')) {
+            $fields[] = 'updated_by = ?';
+            $values[] = $data['updated_by'] ?? null;
+        }
         $fields[] = 'updated_at = NOW()';
 
         $fieldStr = implode(',\n                ', $fields);
 
-        $stmt = $this->db->prepare("\
-            UPDATE exit_employee_settlements
-            SET {$fieldStr}
-            WHERE id = ?
-        ");
+        $stmt = $this->db->prepare(
+            "UPDATE exit_employee_settlements
+             SET {$fieldStr}
+             WHERE id = ?"
+        );
 
         $values[] = $settlementId;
 
@@ -225,9 +227,13 @@ class SettlementModel extends ExitManagementModel
      */
     public function getSettlementById(int $settlementId): ?array
     {
+        // Include resignation_type only if column exists in exit_resignations
+        $resignationTypeSelect = $this->columnExists('exit_resignations', 'resignation_type') ? 'r.resignation_type' : 'NULL AS resignation_type';
+
         $stmt = $this->db->prepare("
-            SELECT s.*, e.full_name, e.employee_id as emp_id,
-                   r.resignation_type, r.last_working_date
+             SELECT s.*, COALESCE(NULLIF(s.status, ''), 'pending_approval') AS status,
+                 e.full_name, e.employee_id as emp_id,
+                   " . $resignationTypeSelect . ", r.last_working_date
             FROM exit_employee_settlements s
             JOIN employees e ON s.employee_id = e.employee_id
             LEFT JOIN exit_resignations r ON s.resignation_id = r.id
@@ -412,7 +418,7 @@ class SettlementModel extends ExitManagementModel
         }
 
         // Always include status and timestamps (may be present or will be NULL if missing)
-        $baseSelect[] = "COALESCE(s.status, 'unknown') AS status";
+        $baseSelect[] = "COALESCE(NULLIF(s.status, ''), 'pending_approval') AS status";
         $baseSelect[] = "s.created_at";
         $baseSelect[] = "s.updated_at";
 

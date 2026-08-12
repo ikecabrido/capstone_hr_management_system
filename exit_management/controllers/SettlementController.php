@@ -289,13 +289,22 @@ class SettlementController extends ExitManagementController
         $employeeName = htmlspecialchars($settlement['full_name'] ?? 'Unknown', ENT_QUOTES);
         $settlementDate = htmlspecialchars($settlement['settlement_date'] ?? '', ENT_QUOTES);
         $paymentDate = htmlspecialchars($settlement['payment_date'] ?? 'N/A', ENT_QUOTES);
-        $status = htmlspecialchars($settlement['status'] ?? '', ENT_QUOTES);
+        $statusValue = strtolower(trim((string)($settlement['status'] ?? '')));
+        $statusLabels = [
+            'pending_approval' => 'Pending Approval',
+            'approved' => 'Approved',
+            'paid' => 'Paid',
+            'rejected' => 'Rejected',
+            'draft' => 'Draft'
+        ];
+        $status = htmlspecialchars($statusLabels[$statusValue] ?? ucwords(str_replace('_', ' ', $statusValue)), ENT_QUOTES);
         $netPayable = number_format($settlement['net_payable'] ?? 0, 2);
 
         $html = '<!doctype html><html><head><meta charset="UTF-8"><title>Final Settlement</title>' .
-            '<style>body{font-family:Arial,sans-serif;margin:24px;}h1,h2{margin-bottom:0.5rem;}table{width:100%;border-collapse:collapse;margin-top:1rem;}th,td{padding:8px;border:1px solid #ddd;text-align:left;}th{background:#f4f4f4;}</style>' .
+            '<style>body{font-family:Arial,sans-serif;margin:24px;color:#172b4d;}h1,h2{margin-bottom:0.5rem;}.school-header{display:flex;align-items:center;border-bottom:2px solid #1f5fbf;padding-bottom:14px;margin-bottom:20px;}.school-header img{width:86px;height:86px;object-fit:contain;margin-right:18px;}.school-name{font-size:20px;font-weight:700;color:#174a8b;}.school-details{font-size:12px;line-height:1.6;color:#333;margin-top:4px;}table{width:100%;border-collapse:collapse;margin-top:1rem;}th,td{padding:8px;border:1px solid #ddd;text-align:left;}th{background:#f4f4f4;}.report-title{text-align:center;margin:12px 0 18px;}.signatories{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:52px;page-break-inside:avoid;color:#172b4d;}.signatories>div{min-height:72px;border-top:1px solid #172b4d;padding-top:8px;font-size:12px;line-height:1.5;}</style>' .
             '</head><body>' .
-            '<h1>Final Settlement Report</h1>' .
+            '<div class="school-header"><img src="/capstone_hr_management_system2/assets/pics/bcpLogo.png" alt="Bestlink College of the Philippines logo"><div><div class="school-name">Bestlink College of the Philippines - Bulacan Campus</div><div class="school-details">Lot 1 Ipo Road Brgy. Minuyan Proper, City of San Jose Del Monte, Bulacan.<br>Tel. No.: (044)792-1992</div></div></div>' .
+            '<h1 class="report-title">Final Settlement Report</h1>' .
             '<p><strong>Employee:</strong> ' . $employeeName . '</p>' .
             '<p><strong>Settlement Date:</strong> ' . $settlementDate . '</p>' .
             '<p><strong>Payment Date:</strong> ' . $paymentDate . '</p>' .
@@ -331,7 +340,11 @@ class SettlementController extends ExitManagementController
             '<tr><td>Other Deductions</td><td>' . number_format($settlement['other_deductions'] ?? 0, 2) . '</td></tr>' .
             '<tr><th>Total Net Payable</th><th>' . $netPayable . '</th></tr>' .
             '</tbody></table>' .
-            '<script>window.onload=function(){window.print();};</script>' .
+            '<div class="signatories">' .
+            '<div><strong>Prepared by:</strong><br><br>Payroll Staff</div>' .
+            '<div><strong>Reviewed/Approved by:</strong><br><br>Payroll Administrator</div>' .
+            '<div><strong>Employee Acknowledgment:</strong><br><br>Employee</div>' .
+            '</div>' .
             '</body></html>';
 
         return $html;

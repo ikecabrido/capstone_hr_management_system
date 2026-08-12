@@ -529,6 +529,11 @@ CREATE TABLE `exit_survey_responses` (
   `id` int(11) NOT NULL,
   `survey_id` int(11) NOT NULL,
   `employee_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `exit_case_type` enum('resignation','termination') DEFAULT NULL,
+  `exit_case_id` int(11) DEFAULT NULL,
+  `survey_type` varchar(100) NOT NULL,
+  `scheduled_date` date NOT NULL,
+  `scheduled_time` time NOT NULL,
   `responses` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`responses`)),
   `submitted_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

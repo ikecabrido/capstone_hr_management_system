@@ -31,6 +31,7 @@ CREATE TABLE `exit_resignations` (
   `notice_date` date NOT NULL,
   `last_working_date` date NOT NULL,
   `comments` text,
+  `resignation_letter_path` varchar(500) DEFAULT NULL,
   `submitted_by` int(11) DEFAULT NULL,
   `preclearance_desk_person` int(11) DEFAULT NULL,
   `status` enum('pending_review','pending_legal_review','approved','rejected','rejected_by_legal','withdrawn') DEFAULT 'pending_review',
@@ -223,7 +224,9 @@ CREATE TABLE IF NOT EXISTS `payroll_clearances` (
 CREATE TABLE `exit_documents` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `employee_id` varchar(50) NOT NULL,
-  `document_type` enum('resignation_letter','clearance_form','handover_document','certificate','other') NOT NULL,
+  `exit_case_type` enum('resignation','termination') DEFAULT NULL,
+  `exit_case_id` int(11) DEFAULT NULL,
+  `document_type` enum('resignation_letter','clearance_form','handover_document','certificate','settlement_receipt','exit_interview','other') NOT NULL,
   `title` varchar(255) NOT NULL,
   `file_path` varchar(500) NOT NULL,
   `uploaded_by` int(11) DEFAULT NULL,
@@ -231,11 +234,11 @@ CREATE TABLE `exit_documents` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `fk_document_employee` (`employee_id`),
+  KEY `idx_document_exit_case` (`exit_case_type`,`exit_case_id`),
   KEY `fk_document_uploaded_by` (`uploaded_by`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for table `exit_surveys`
-CREATE TABLE `exit_surveys` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(255) NOT NULL,
   `description` text,
@@ -269,11 +272,16 @@ CREATE TABLE `exit_survey_responses` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `survey_id` int(11) NOT NULL,
   `employee_id` varchar(50) NOT NULL,
-  `responses` json NOT NULL,
+  `exit_case_type` enum('resignation','termination') DEFAULT NULL,
+  `exit_case_id` int(11) DEFAULT NULL,
+  `survey_type` varchar(100) NOT NULL,
+  `scheduled_date` date NOT NULL,
+  `scheduled_time` time NOT NULL,
   `submitted_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `fk_response_survey` (`survey_id`),
-  KEY `fk_response_employee` (`employee_id`)
+  KEY `fk_response_employee` (`employee_id`),
+  KEY `idx_response_exit_case` (`exit_case_type`, `exit_case_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table structure for table `exit_survey_answers`

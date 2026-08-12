@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once "../auth/auth_check.php";
+require_once __DIR__ . "/../auth/auth_check.php";
 require_once "controllers/ExitManagementController.php";
 require_once "controllers/ResignationController.php";
 require_once "controllers/TerminationController.php";
@@ -27,9 +27,22 @@ $surveyController = new SurveyController();
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
     $action = $_GET['ajax_action'];
     
-    if ($action === 'print_settlement' && isset($_GET['settlement_id'])) {
+    if (($action === 'print_settlement' && isset($_GET['settlement_id']))
+        || ($action === 'print_interview' && isset($_GET['interview_id']))
+        || ($action === 'print_transfer' && isset($_GET['plan_id']))
+        || ($action === 'print_resignation' && isset($_GET['resignation_id']))) {
         header('Content-Type: text/html; charset=UTF-8');
-        echo $settlementController->renderSettlementPrintPage((int)$_GET['settlement_id']);
+
+        if ($action === 'print_settlement') {
+            echo $settlementController->renderSettlementPrintPage((int)$_GET['settlement_id']);
+        } elseif ($action === 'print_interview') {
+            echo $interviewController->renderInterviewPrintPage((int)$_GET['interview_id']);
+        } elseif ($action === 'print_transfer') {
+            echo $transferController->renderTransferPrintPage((int)$_GET['plan_id']);
+        } else {
+            echo $resignationController->renderResignationPrintPage((int)$_GET['resignation_id']);
+        }
+
         exit;
     }
 
@@ -39,6 +52,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
         $response = $documentationController->viewDocument((int)$_GET['document_id']);
         echo json_encode($response);
         exit;
+    } elseif ($action === 'serve_document' && isset($_GET['document_id'])) {
+      // stream the document file for inline preview
+      $documentationController->serveDocument((int)$_GET['document_id']);
+      exit;
     } elseif ($action === 'download_document' && isset($_GET['document_id'])) {
         $response = $documentationController->downloadDocument((int)$_GET['document_id']);
         echo json_encode($response);
@@ -48,15 +65,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
 
 // Handle AJAX requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
-    header('Content-Type: application/json');
+  // For AJAX requests, don't echo PHP warnings into the JSON response; log them instead.
+  ini_set('display_errors', 0);
+  header('Content-Type: application/json');
 
-    $action = $_POST['ajax_action'];
-    $controller = $_POST['controller'] ?? 'exit_management';
+  $action = $_POST['ajax_action'];
+  $controller = $_POST['controller'] ?? 'exit_management';
 
-    $data = $_POST;
-    unset($data['ajax_action'], $data['controller']);
+  $data = $_POST;
+  unset($data['ajax_action'], $data['controller']);
 
-    error_log("=== AJAX REQUEST: action=$action, controller=$controller ===");
+  error_log("=== AJAX REQUEST: action=$action, controller=$controller, data=" . json_encode($data) . " ===");
 
     switch ($controller) {
         case 'resignation':
@@ -820,7 +839,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                 <div class="d-flex align-items-center gap-2" style="flex: 1;">
                   <!-- Search Bar -->
                   <div class="input-group input-group-sm" style="flex: 19;">
-                    <input type="text" id="document-search" class="form-control" placeholder="Search documents..." onkeyup="onDocumentSearchChange()">
+                    <!-- Main UI document search hidden: printing search lives in the Print modal -->
+                    <input type="text" id="document-search" class="form-control" placeholder="Search documents..." onkeyup="onDocumentSearchChange()" style="display:none;">
                     <div class="input-group-append">
                       <span class="input-group-text"><i class="fas fa-search"></i></span>
                     </div>
@@ -836,8 +856,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                   <button type="button" class="btn btn-warning btn-sm mr-2" onclick="archiveDocuments()">
                     <i class="fas fa-archive"></i> Archive
                   </button>
-                  <button type="button" class="btn btn-info btn-sm" onclick="showDocumentModal()">
-                    <i class="fas fa-plus"></i> Add
+                  <button type="button" class="btn btn-info btn-sm" onclick="openPrintSelectorModal()">
+                    <i class="fas fa-print"></i> Print
                   </button>
                 </div>
               </div>
@@ -846,9 +866,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                   <thead>
                     <tr>
                       <th>Employee</th>
-                      <th>Document Type</th>
-                      <th>Title</th>
-                      <th>Upload Date</th>
+                      <th>Case Type</th>
+                      <th>Exit Reason</th>
+                      <th>Notice / Exit Date</th>
+                      <th>Status</th>
                       <th>Actions</th>
                     </tr>
                   </thead>

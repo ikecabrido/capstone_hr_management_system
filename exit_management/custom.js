@@ -29,12 +29,14 @@ function setInterviewModalMode(viewOnly = false) {
         $('#saveHrAssessmentBtn').hide();
         $('#editInterviewBtn').show();
         $('#interviewForm').find('.form-control').addClass('disabled');
+        $('#interviewForm').find('input:not([type=hidden]), textarea, select').prop('disabled', true);
         $('#interviewCaseSelect').hide();
         $('#interviewCaseDisplay').show();
     } else {
         $('#interviewSubmitBtn').show();
         $('#editInterviewBtn').hide();
         $('#interviewForm').find('.form-control').removeClass('disabled');
+        $('#interviewForm').find('input:not([type=hidden]), textarea, select').prop('disabled', false);
         $('#interviewCaseSelect').show();
         $('#interviewCaseDisplay').hide();
 
@@ -42,6 +44,12 @@ function setInterviewModalMode(viewOnly = false) {
             $('#interviewSubmitBtn').text('Save Changes');
         } else {
             $('#interviewSubmitBtn').text('Schedule Interview');
+        }
+
+        if (canManageHrAssessment()) {
+            $('#saveHrAssessmentBtn').show();
+        } else {
+            $('#saveHrAssessmentBtn').hide();
         }
 
         updateInterviewSubmitState();
@@ -234,7 +242,7 @@ function formatInterviewTimeDisplay(value) {
 
 function canManageHrAssessment() {
     const role = String(window.exitManagementUserRole || '').toLowerCase();
-    return ['admin', 'superadmin', 'administrator', 'hr_admin'].includes(role);
+    return ['admin', 'superadmin', 'administrator', 'hr_admin', 'exit'].includes(role);
 }
 
 function initExitModalPickers() {
@@ -555,6 +563,11 @@ function initializeModals() {
         submitDocumentForm();
     });
 
+    $('#documentEmployeeSelect').on('change', function() {
+        const employeeId = $(this).val() || '';
+        loadDocumentCases(employeeId);
+    });
+
     $('#documentFile').on('change', function() {
         const fileName = $(this).val().split('\\').pop();
         $(this).next('.custom-file-label').html(fileName);
@@ -736,7 +749,7 @@ function loadEmployees(callback) {
         } else {
             console.warn('[LOAD EMPLOYEES] No employees returned or not an array:', response);
             // Set empty state message
-            $('#employeeSelect, #terminationEmployeeSelect').html('<option value="">No employees available</option>');
+            $('#employeeSelect, #terminationEmployeeSelect, #interviewEmployeeSelect, #documentEmployeeSelect').html('<option value="">No employees available</option>');
         }
 
         if (typeof callback === 'function') {
@@ -772,7 +785,14 @@ function updateInterviewSubmitState() {
     $('#interviewSubmitBtn').prop('disabled', !canSubmit);
 }
 
-function loadApprovedExitCases(callback) {
+function loadApprovedExitCases(selectSelector, callback) {
+    if (typeof selectSelector === 'function') {
+        callback = selectSelector;
+        selectSelector = '#interviewCaseSelect';
+    }
+
+    const $select = $(selectSelector || '#interviewCaseSelect');
+
     $.post('exit_management.php', {
         ajax_action: 'get_approved_exit_cases',
         controller: 'exit_management'
@@ -805,34 +825,44 @@ function loadApprovedExitCases(callback) {
                     `;
                 }).join('');
 
-            $('#interviewCaseSelect').html(caseOptions);
+            $select.html(caseOptions);
         } else {
             console.warn('No approved exit cases returned', response);
-            $('#interviewCaseSelect').html('<option value="">No approved exit cases found</option>');
+            $select.html('<option value="">No approved exit cases found</option>');
         }
 
-        $('#interviewCaseSelect').off('change').on('change', function() {
+        $select.off('change').on('change', function() {
             const selected = $(this).val();
+            const caseTypeField = selectSelector === '#interviewCaseSelect' ? '#interviewExitCaseType' : '#answerSurveyExitCaseType';
+            const caseIdField = selectSelector === '#interviewCaseSelect' ? '#interviewExitCaseId' : '#answerSurveyExitCaseId';
+            const employeeField = selectSelector === '#interviewCaseSelect' ? '#interviewEmployeeId' : '#answerSurveyEmployeeId';
+
             if (selected) {
                 const [caseType, caseId] = selected.split(':');
                 const employeeId = $(this).find('option:selected').data('employee-id');
-                $('#interviewExitCaseType').val(caseType);
-                $('#interviewExitCaseId').val(caseId);
-                $('#interviewEmployeeId').val(employeeId);
+                $(caseTypeField).val(caseType);
+                $(caseIdField).val(caseId);
+                $(employeeField).val(employeeId);
             } else {
-                $('#interviewExitCaseType').val('');
-                $('#interviewExitCaseId').val('');
-                $('#interviewEmployeeId').val('');
+                $(caseTypeField).val('');
+                $(caseIdField).val('');
+                $(employeeField).val('');
             }
-            updateInterviewSubmitState();
+
+            if (selectSelector === '#interviewCaseSelect') {
+                updateInterviewSubmitState();
+            }
         });
 
-        updateInterviewSubmitState();
         if (typeof callback === 'function') callback();
     }, 'json').fail(function(err) {
         console.error('Error loading approved exit cases:', err);
-        $('#interviewCaseSelect').html('<option value="">Error loading exit cases</option>');
-        updateInterviewSubmitState();
+        $select.html('<option value="">Error loading exit cases</option>');
+        if (typeof callback === 'function') callback();
+
+        if (selectSelector === '#interviewCaseSelect') {
+            updateInterviewSubmitState();
+        }
         if (typeof callback === 'function') callback();
     });
 }
@@ -963,6 +993,9 @@ function showResignationModal(resignationId = null) {
     $('#resignationModalTitle').text('Review Resignation');
     $('#resignationForm')[0].reset();
     $('#resignationId').val(resignationId);
+    $('#resignationLetterSection').hide();
+    $('#resignationLetterLink').hide().attr('href', '#');
+    $('#resignationLetterMissing').hide();
     $('#approvalSection').show();
     $('#eligibilityMessage').hide();
     $('#resignationForm').find('input, textarea, select').prop('disabled', true);
@@ -1122,16 +1155,58 @@ function showSettlementModal(settlementId = null, viewOnly = false) {
     }
 }
 
-function showDocumentModal(documentId = null) {
-    if (documentId) {
-        $('#documentModalTitle').text('Edit Document');
-        loadDocumentData(documentId);
-    } else {
-        $('#documentModalTitle').text('Upload Document');
-        $('#documentForm')[0].reset();
-        $('#documentId').val('');
+function viewSettlementWithLoading(button, settlementId) {
+    const $button = $(button);
+    const originalHtml = $button.html();
+    $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
+    $('#settlementModal').one('shown.bs.modal.settlementLoading', function() {
+        $button.prop('disabled', false).html(originalHtml);
+    });
+
+    showSettlementModal(settlementId, true);
+}
+
+function viewInterviewWithLoading(button, interviewId) {
+    const $button = $(button);
+    const originalHtml = $button.html();
+    $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
+    $('#interviewModal').one('shown.bs.modal.interviewLoading', function() {
+        $button.prop('disabled', false).html(originalHtml);
+    });
+
+    showInterviewModal(interviewId, true);
+}
+
+function showDocumentModal(documentId = null, options = {}) {
+    // Repurposed: by default open the print selector modal to keep API compatibility.
+    // If caller explicitly requests the upload modal (options.openUploadModal === true), show the upload modal instead.
+    if (options && options.openUploadModal) {
+        if (documentId) {
+            $('#documentModalTitle').text('Edit Document');
+            loadDocumentData(documentId);
+        } else {
+            $('#documentModalTitle').text('Upload Document');
+            $('#documentForm')[0].reset();
+            $('#documentId').val('');
+            $('#documentExitCaseType').val(options.exitCaseType || '');
+            $('#documentExitCaseId').val(options.exitCaseId || '');
+            $('#documentCaseSelect').val('');
+
+            if (options.employeeId) {
+                $('#documentEmployeeSelect').val(options.employeeId);
+            }
+        }
+
+        const selectedEmployeeId = options.employeeId || $('#documentEmployeeSelect').val() || '';
+        loadDocumentCases(selectedEmployeeId);
+        $('#documentModal').modal('show');
+        return;
     }
-    $('#documentModal').modal('show');
+
+    // Default behavior: open print selector with provided context
+    openPrintSelectorModal({ exitCaseType: options.exitCaseType || null, exitCaseId: options.exitCaseId || null, employeeId: options.employeeId || null });
 }
 
 function showSurveyModal(surveyId = null) {
@@ -1197,6 +1272,19 @@ function submitInterviewForm() {
         formData.set('scheduled_time', interviewTime);
     }
     
+    if (interviewId && canManageHrAssessment()) {
+        const assessment = {
+            summary: $('#hrSummary').val(),
+            key_findings: $('#hrKeyFindings').val(),
+            hr_recommendations: $('#hrRecommendations').val(),
+            follow_up_actions: $('#hrFollowUpActions').val(),
+            rehire_eligibility: $('#hrRehireEligibility').val(),
+            knowledge_transfer_required: $('#hrKnowledgeTransfer').is(':checked') ? 1 : 0
+        };
+
+        formData.append('assessment', JSON.stringify(assessment));
+    }
+
     formData.append('ajax_action', interviewId ? 'update_interview' : 'submit_interview');
     formData.append('controller', 'interview');
 
@@ -1235,8 +1323,7 @@ function saveHrAssessment(interviewId) {
         hr_recommendations: $('#hrRecommendations').val(),
         follow_up_actions: $('#hrFollowUpActions').val(),
         rehire_eligibility: $('#hrRehireEligibility').val(),
-        knowledge_transfer_required: $('#hrKnowledgeTransfer').is(':checked') ? 1 : 0,
-        clearance_recommendation: $('#hrClearanceRecommendation').val()
+        knowledge_transfer_required: $('#hrKnowledgeTransfer').is(':checked') ? 1 : 0
     };
 
     $('#saveHrAssessmentBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
@@ -1249,8 +1336,10 @@ function saveHrAssessment(interviewId) {
     }, function(response) {
         if (response && response.success) {
             showToast('success', response.message || 'HR assessment saved');
-            // reload interview data
-            loadInterviewData(interviewId);
+            // refresh the table and reload interview data
+            loadInterviewsTable();
+            loadDashboardData();
+            loadInterviewData(interviewId, interviewModalViewOnlyMode);
         } else {
             showToast('error', response ? response.message : 'Failed to save HR assessment');
         }
@@ -1337,9 +1426,22 @@ function submitDocumentForm() {
     const formData = new FormData($('#documentForm')[0]);
     const documentId = $('#documentId').val();
     
+    // Capture selected exit case if provided
+    const selectedCase = $('#documentCaseSelect').val();
+    if (selectedCase) {
+        const [caseType, caseId] = selectedCase.split(':');
+        formData.set('exit_case_type', caseType);
+        formData.set('exit_case_id', caseId);
+    } else {
+        formData.delete('exit_case_type');
+        formData.delete('exit_case_id');
+    }
+
     // Log form data for debugging
     console.log('=== DOCUMENT FORM SUBMISSION ===');
     console.log('Employee ID:', formData.get('employee_id'));
+    console.log('Exit Case Type:', formData.get('exit_case_type'));
+    console.log('Exit Case ID:', formData.get('exit_case_id'));
     console.log('Document Type:', formData.get('document_type'));
     console.log('Title:', formData.get('title'));
     console.log('File:', formData.get('document_file'));
@@ -1379,6 +1481,29 @@ function submitDocumentForm() {
             $('#documentSubmitBtn').prop('disabled', false).html('Upload Document');
         }
     });
+}
+
+function loadDocumentCases(employeeId = '') {
+    $.post('exit_management.php', {
+        ajax_action: 'get_active_exit_cases',
+        controller: 'exit_management',
+        employee_id: employeeId
+    }, function(response) {
+        const cases = Array.isArray(response) ? response : (response && Array.isArray(response.data) ? response.data : []);
+        const options = ['<option value="">No exit case linked</option>'];
+
+        if (cases && cases.length > 0) {
+            cases.forEach(emp => {
+                const exitType = emp.exit_case_type ? emp.exit_case_type.charAt(0).toUpperCase() + emp.exit_case_type.slice(1) : '';
+                const exitDate = emp.exit_date || emp.last_working_date || '';
+                options.push(
+                    `<option value="${emp.exit_case_type}:${emp.exit_case_id}">${emp.full_name} (${emp.username}) - ${exitType}${exitDate ? ' - ' + exitDate : ''}</option>`
+                );
+            });
+        }
+
+        $('#documentCaseSelect').html(options.join(''));
+    }, 'json');
 }
 
 function submitSurveyForm() {
@@ -1627,10 +1752,50 @@ function loadResignationData(id, callback) {
         controller: 'resignation',
         resignation_id: id
     }, function(response) {
-        if (response) {
+        response = response && response.data && !response.id ? response.data : response;
+        if (response && !response.error) {
+            const employeeId = response.employee_id || response.emp_id || '';
+
+            if (employeeId) {
+                const $employeeSelect = $('#employeeSelect');
+                const hasEmployeeOption = $employeeSelect.find('option').filter(function() {
+                    return String($(this).val()) === String(employeeId);
+                }).length > 0;
+
+                // Review uses the saved employee, not only currently eligible
+                // employees. An employee can disappear from the eligible list
+                // after submitting a resignation or receiving a position.
+                if (!hasEmployeeOption) {
+                    const employeeName = response.employee_name || response.full_name || employeeId;
+                    $employeeSelect.append($('<option>', {
+                        value: employeeId,
+                        text: `${employeeName} (${employeeId})`
+                    }));
+                }
+
+                $employeeSelect.val(employeeId);
+            }
+
             Object.keys(response).forEach(key => {
                 if (key === 'employee_id') {
                     $('#employeeSelect').val(response[key]);
+                } else if (key === 'resignation_letter_path') {
+                    const path = String(response[key] || '').trim();
+                    const $section = $('#resignationLetterSection');
+                    const $link = $('#resignationLetterLink');
+                    const $missing = $('#resignationLetterMissing');
+
+                    $section.show();
+                    if (path) {
+                        const safePath = path.split('/').pop();
+                        $link.attr('href', '../employee_portal/public/uploads/' + encodeURIComponent(safePath))
+                            .show();
+                        $('#resignationLetterName').text(safePath);
+                        $missing.hide();
+                    } else {
+                        $link.hide();
+                        $missing.show();
+                    }
                 } else {
                     const $field = $(`#${key}`);
                     if ($field.length) {
@@ -1644,6 +1809,13 @@ function loadResignationData(id, callback) {
                 }
             });
 
+            // Explicitly populate the fields whose IDs match the database
+            // names, and normalize date values for date inputs.
+            $('#reason').val(response.reason || '');
+            setDateInputValue('#noticeDate', response.notice_date || '');
+            setDateInputValue('#lastWorkingDate', response.last_working_date || '');
+            $('#comments').val(response.comments || '');
+
             if (response.hr_approval_comments) {
                 $('#approvalComments').val(response.hr_approval_comments);
             }
@@ -1652,12 +1824,21 @@ function loadResignationData(id, callback) {
             }
 
             renderResignationApprovalOptions(response.status, response);
+        } else {
+            console.error('Failed to load resignation details:', response);
+            showToast('error', response && response.error ? response.error : 'Unable to load resignation details.');
         }
 
         if (typeof callback === 'function') {
             callback();
         }
-    }, 'json');
+    }, 'json').fail(function(xhr, status, error) {
+        console.error('AJAX error loading resignation:', status, error, xhr.responseText);
+        showToast('error', 'Unable to load resignation details.');
+        if (typeof callback === 'function') {
+            callback();
+        }
+    });
 }
 
 function renderResignationApprovalOptions(status, response = {}) {
@@ -1718,8 +1899,21 @@ function loadInterviewData(id, viewOnly = false) {
         if (response && !response.error) {
             response.id = response.id || id;
             $('#interviewId').val(response.id);
-            const caseValue = response.exit_case_type && response.exit_case_id ? `${response.exit_case_type}:${response.exit_case_id}` : '';
+            const caseType = response.exit_case_type || '';
+            const caseId = response.exit_case_id || '';
+            const caseValue = caseType && caseId ? `${caseType}:${caseId}` : '';
             if (caseValue) {
+                if (!$('#interviewCaseSelect option').filter(function() {
+                    return String($(this).val()) === caseValue;
+                }).length) {
+                    const employeeName = response.employee_full_name || response.employee_name || response.employee_id || 'Saved employee';
+                    const labelType = caseType.charAt(0).toUpperCase() + caseType.slice(1);
+                    $('#interviewCaseSelect').append($('<option>', {
+                        value: caseValue,
+                        text: `${employeeName} - ${labelType}`,
+                        'data-employee-id': response.employee_id || ''
+                    }));
+                }
                 $('#interviewCaseSelect').val(caseValue).trigger('change');
                 $('#interviewCaseDisplay').text($('#interviewCaseSelect option:selected').text());
             } else {
@@ -1734,8 +1928,8 @@ function loadInterviewData(id, viewOnly = false) {
                     return;
                 } else if (key === 'interviewer_id') {
                     $('#interviewerSelect').val(response[key]);
-                } else if (key === 'scheduled_date') {
-                    $('#interviewDate').val(response[key]);
+                } else if (key === 'scheduled_date' || key === 'interview_date') {
+                    setDateInputValue('#interviewDate', response[key]);
                 } else if (key === 'scheduled_time') {
                     if (response[key]) {
                         populateInterviewTimeFields(response[key]);
@@ -1752,6 +1946,10 @@ function loadInterviewData(id, viewOnly = false) {
                     }
                 }
             });
+
+            // Date inputs may be enhanced by Flatpickr, so setting .val()
+            // alone does not update the visible control.
+            setDateInputValue('#interviewDate', response.scheduled_date || response.interview_date || '');
 
             // Populate read-only Employee Info if present
             if (response.employee_full_name) {
@@ -1847,19 +2045,16 @@ function loadInterviewData(id, viewOnly = false) {
                 $('#hrFollowUpActions').val(hr.follow_up_actions || '');
                 $('#hrRehireEligibility').val(hr.rehire_eligibility || '');
                 $('#hrKnowledgeTransfer').prop('checked', hr.knowledge_transfer_required == 1 || hr.knowledge_transfer_required === '1');
-                $('#hrClearanceRecommendation').val(hr.clearance_recommendation || 'pending');
-                $('#hrAssessmentSection').show();
             } else {
-                // show empty HR section when editing
-                $('#hrAssessmentSection').show();
+                $('#hrSummary').val('');
+                $('#hrKeyFindings').val('');
+                $('#hrRecommendations').val('');
+                $('#hrFollowUpActions').val('');
+                $('#hrRehireEligibility').val('');
+                $('#hrKnowledgeTransfer').prop('checked', false);
             }
 
-            if (canManageHrAssessment()) {
-                $('#saveHrAssessmentBtn').show();
-            } else {
-                $('#saveHrAssessmentBtn').hide();
-            }
-
+            $('#hrAssessmentSection').show();
             setInterviewModalMode(viewOnly);
             if (!viewOnly && $('#interviewId').val()) {
                 $('#interviewSubmitBtn').text('Save Changes');
@@ -1945,23 +2140,30 @@ function loadSettlementData(id, viewOnly = false, callback = null) {
         settlement_id: id
     }, function(response) {
         console.log('Settlement response:', response);
+        // Support both the direct settlement payload and an optional data wrapper.
+        response = response && response.data && !response.id ? response.data : response;
         if (response && !response.error) {
             $('#settlementId').val(response.id || id);
-            let selectedCaseValue = '';
+            const responseCaseType = response.exit_case_type || (response.resignation_id ? 'resignation' : '');
+            const responseCaseId = response.exit_case_id || response.resignation_id || '';
+            let selectedCaseValue = responseCaseType && responseCaseId
+                ? `${responseCaseType}:${responseCaseId}`
+                : '';
+
+            // The form uses camel-case element IDs while the API returns
+            // snake-case database column names, so map these fields explicitly.
+            setDateInputValue('#settlementDate', response.settlement_date || response.settlementDate || '');
+            $('#settlementEmployeeId').val(response.employee_id || '');
+            $('#settlementExitCaseType').val(responseCaseType);
+            $('#settlementExitCaseId').val(responseCaseId);
+            $('#settlementResignationId').val(response.resignation_id || '');
+
+            if (response.employee_id) {
+                loadEmployeeSalaryComponents(response.employee_id);
+            }
 
             Object.keys(response).forEach(key => {
-                if (key === 'employee_id') {
-                    $('#settlementEmployeeId').val(response[key]);
-                    loadEmployeeSalaryComponents(response[key]);
-                } else if (key === 'exit_case_type' || key === 'exit_case_id') {
-                    const fieldId = key === 'exit_case_type' ? '#settlementExitCaseType' : '#settlementExitCaseId';
-                    $(fieldId).val(response[key]);
-                    if (response.exit_case_type && response.exit_case_id) {
-                        selectedCaseValue = `${response.exit_case_type}:${response.exit_case_id}`;
-                    }
-                } else if (key === 'resignation_id') {
-                    $('#settlementResignationId').val(response[key] || '');
-                } else {
+                if (!['employee_id', 'settlement_date', 'exit_case_type', 'exit_case_id', 'resignation_id'].includes(key)) {
                     const $field = $(`#${key}`);
                     if ($field.length) {
                         $field.val(response[key]);
@@ -1975,7 +2177,53 @@ function loadSettlementData(id, viewOnly = false, callback = null) {
             });
 
             if (selectedCaseValue) {
+                // A case may no longer be returned by the approved-case list
+                // after its settlement has been created. Add it temporarily so
+                // the view/edit modal can still show the saved selection.
+                if (!$('#settlementCaseSelect option').filter(function() {
+                    return String($(this).val()) === selectedCaseValue;
+                }).length) {
+                    const employeeName = response.full_name || response.employee_name || 'Saved employee';
+                    const labelType = responseCaseType.charAt(0).toUpperCase() + responseCaseType.slice(1);
+                    $('#settlementCaseSelect').append(
+                        $('<option>', {
+                            value: selectedCaseValue,
+                            text: `${employeeName} - ${labelType}`,
+                            'data-employee-id': response.employee_id || '',
+                            'data-exit-case-type': responseCaseType,
+                            'data-exit-case-id': responseCaseId,
+                            'data-resignation-id': responseCaseType === 'resignation' ? responseCaseId : ''
+                        })
+                    );
+                }
                 $('#settlementCaseSelect').val(selectedCaseValue);
+
+                // Match by option metadata as well, because API/database IDs
+                // may be numeric while select values are strings.
+                const $selectedOption = $('#settlementCaseSelect option').filter(function() {
+                    return String($(this).data('exit-case-type')) === String(responseCaseType) &&
+                        String($(this).data('exit-case-id')) === String(responseCaseId);
+                }).first();
+                if ($selectedOption.length) {
+                    $('#settlementCaseSelect').val($selectedOption.val());
+                }
+            } else if (response.employee_id) {
+                // Older settlement rows may not have exit_case_type/exit_case_id
+                // stored. Recover the approved case using the saved employee ID.
+                // This is safe because the dropdown only contains approved cases.
+                const $employeeCase = $('#settlementCaseSelect option').filter(function() {
+                    return String($(this).data('employee-id')) === String(response.employee_id);
+                }).first();
+                if ($employeeCase.length) {
+                    const recoveredValue = $employeeCase.val() || '';
+                    const [recoveredType, recoveredId] = recoveredValue.split(':');
+                    $('#settlementCaseSelect').val(recoveredValue);
+                    $('#settlementExitCaseType').val(recoveredType || '');
+                    $('#settlementExitCaseId').val(recoveredId || '');
+                    $('#settlementResignationId').val(
+                        recoveredType === 'resignation' ? (recoveredId || '') : ''
+                    );
+                }
             }
 
             populatePayrollSettlementSummary(response, viewOnly);
@@ -2000,7 +2248,7 @@ function loadDocumentData(id) {
     // Load document data for editing
     $.post('exit_management.php', {
         ajax_action: 'get_document',
-        controller: 'document',
+        controller: 'documentation',
         document_id: id
     }, function(response) {
         if (response) {
@@ -2015,6 +2263,17 @@ function loadDocumentData(id) {
                     }
                 }
             });
+
+            if (response.exit_case_type && response.exit_case_id) {
+                const selectedValue = `${response.exit_case_type}:${response.exit_case_id}`;
+                $('#documentCaseSelect').val(selectedValue);
+                $('#documentExitCaseType').val(response.exit_case_type);
+                $('#documentExitCaseId').val(response.exit_case_id);
+            } else {
+                $('#documentCaseSelect').val('');
+                $('#documentExitCaseType').val('');
+                $('#documentExitCaseId').val('');
+            }
         }
     }, 'json');
 }
@@ -2550,15 +2809,25 @@ function loadInterviewsTable(status = 'all', page = 1, searchTerm = '') {
             response.data.forEach(function(interview) {
                 const statusBadge = getStatusBadge(interview.status);
                 const canComplete = isInterviewCompletable(interview.scheduled_date);
-                const completeButton = canComplete
-                    ? `<button class="btn btn-sm btn-success" onclick="completeInterview(${interview.id})" title="Complete Interview">
-                        <i class="fas fa-check"></i>
-                    </button>`
-                    : `<button class="btn btn-sm btn-secondary" disabled title="Cannot complete past interview">
+                const hasHrAssessment = interview.has_hr_assessment === 1 || interview.has_hr_assessment === '1' || interview.has_hr_assessment === true;
+                let completeButton;
+
+                if (!canComplete) {
+                    completeButton = `<button class="btn btn-sm btn-secondary" disabled title="Interview date is in the future">
                         <i class="fas fa-check"></i>
                     </button>`;
+                } else if (!hasHrAssessment) {
+                    completeButton = `<button class="btn btn-sm btn-secondary" disabled title="HR assessment required before approval">
+                        <i class="fas fa-check"></i>
+                    </button>`;
+                } else {
+                    completeButton = `<button class="btn btn-sm btn-success" onclick="completeInterview(${interview.id})" title="Complete Interview">
+                        <i class="fas fa-check"></i>
+                    </button>`;
+                }
+
                 const actions = `
-                    <button class="btn btn-sm btn-info" onclick="showInterviewModal(${interview.id}, true)" title="View Interview">
+                    <button class="btn btn-sm btn-info" onclick="viewInterviewWithLoading(this, ${interview.id})" title="View Interview">
                         <i class="fas fa-eye"></i>
                     </button>
                     ${completeButton}
@@ -2863,10 +3132,10 @@ function loadSettlementsTable(status = 'all', page = 1, limit = 10, searchTerm =
                 response.data.forEach(function(settlement) {
                     const statusBadge = getStatusBadge(settlement.status);
                     const actions = `
-                        <button class="btn btn-sm btn-info" onclick="showSettlementModal(${settlement.id}, true)" title="View Settlement">
+                        <button class="btn btn-sm btn-info" onclick="viewSettlementWithLoading(this, ${settlement.id})" title="View Settlement">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <button class="btn btn-sm btn-success" onclick="printSettlement(${settlement.id})" title="Print Settlement">
+                        <button class="btn btn-sm btn-success" onclick="printSettlement(${settlement.id}, this)" title="Print Settlement">
                             <i class="fas fa-print"></i>
                         </button>
                         <button class="btn btn-sm btn-warning" onclick="archiveSettlement(${settlement.id}, this)" data-employee-id="${settlement.employee_id || ''}" data-employee-name="${(settlement.employee_name || '').replace(/"/g, '&quot;')}" title="Archive Settlement">
@@ -2904,54 +3173,44 @@ function loadDocumentsTable(status = 'all', page = 1, limit = 10, searchTerm = '
     showTableLoading(tbody, 5);
 
     $.post('exit_management.php', {
-        ajax_action: 'get_documents',
-        controller: 'documentation',
+        ajax_action: 'get_exit_case_documentation_list',
+        controller: 'exit_management',
         status: status,
         page: page,
         limit: limit,
         search: searchTerm
     }, function(response) {
-        console.log('=== DOCUMENTS TABLE RESPONSE ===');
+        console.log('=== DOCUMENTATION CASE LIST RESPONSE ===');
         console.log('Full response:', response);
-        console.log('Response type:', typeof response);
-        console.log('Is array:', Array.isArray(response));
-        console.log('Response length:', response ? response.length : 'null/undefined');
 
         const tbody = $('#documents-tbody');
         tbody.empty();
 
         if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
-            console.log('Found ' + response.data.length + ' documents');
-            response.data.forEach(function(doc, index) {
-                console.log('Document ' + index + ':', doc);
+            console.log('Found ' + response.data.length + ' exit cases');
+            response.data.forEach(function(caseRecord) {
+                const statusBadge = getStatusBadge(caseRecord.case_status);
+                const caseTypeLabel = caseRecord.exit_case_type ? caseRecord.exit_case_type.charAt(0).toUpperCase() + caseRecord.exit_case_type.slice(1) : 'Case';
                 const actions = `
-                    <button class="btn btn-sm btn-info" onclick="viewDocument(${doc.id})">
+                    <button class="btn btn-sm btn-info" onclick="viewExitCaseDocumentation(${caseRecord.exit_case_id}, '${caseRecord.exit_case_type}')" title="View Case Documentation">
                         <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="btn btn-sm btn-success" onclick="downloadDocument(${doc.id})">
-                        <i class="fas fa-download"></i>
-                    </button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteDocument(${doc.id})">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                    <button class="btn btn-sm btn-warning" onclick="archiveDocument(${doc.id})" title="Archive Document">
-                        <i class="fas fa-archive"></i>
                     </button>
                 `;
 
                 tbody.append(`
                     <tr>
-                        <td>${doc.employee_name || 'Unknown'}</td>
-                        <td>${doc.document_type || 'N/A'}</td>
-                        <td>${doc.title || 'N/A'}</td>
-                        <td>${doc.created_at || 'N/A'}</td>
+                        <td>${caseRecord.full_name || 'Unknown'}</td>
+                        <td>${caseTypeLabel}</td>
+                        <td>${caseRecord.exit_reason || ''}</td>
+                        <td>${caseRecord.last_working_date || caseRecord.effective_date || ''}</td>
+                        <td>${statusBadge}</td>
                         <td>${actions}</td>
                     </tr>
                 `);
             });
         } else {
-            console.log('No documents found or invalid response');
-            tbody.append('<tr><td colspan="5" class="text-center">No documents found</td></tr>');
+            console.log('No exit cases found or invalid response');
+            tbody.append('<tr><td colspan="6" class="text-center">No active exit cases found</td></tr>');
         }
 
         // Render pagination
@@ -2962,6 +3221,311 @@ function loadDocumentsTable(status = 'all', page = 1, limit = 10, searchTerm = '
         tbody.empty();
         tbody.append('<tr><td colspan="5" class="text-center text-danger">Error loading documents: ' + error + '</td></tr>');
     });
+}
+
+function viewExitCaseDocumentation(exitCaseId, exitCaseType) {
+    if (!exitCaseId || !exitCaseType) {
+        showToast('error', 'Invalid exit case selected');
+        return;
+    }
+
+    $.post('exit_management.php', {
+        ajax_action: 'get_exit_case_documentation',
+        controller: 'exit_management',
+        exit_case_id: exitCaseId,
+        exit_case_type: exitCaseType
+    }, function(response) {
+        if (!response || !response.success) {
+            showToast('error', response?.message || 'Failed to load exit case documentation');
+            return;
+        }
+
+        const data = response.data || {};
+        const employeeName = data.full_name || 'Unknown Employee';
+        const employeeId = data.employee_id || '';
+        const employeeIdDisplay = employeeId || 'N/A';
+        const caseTypeLabel = data.exit_case_type ? data.exit_case_type.charAt(0).toUpperCase() + data.exit_case_type.slice(1) : 'Case';
+        const caseCodePrefix = data.exit_case_type === 'resignation' ? 'RES' : data.exit_case_type === 'termination' ? 'TER' : 'CASE';
+        const caseCode = data.exit_case_id ? `${caseCodePrefix}-${String(data.exit_case_id).padStart(3, '0')}` : 'N/A';
+        const noticeDate = data.notice_date || data.effective_date || data.last_working_date || 'N/A';
+
+        const caseRecordCompleted = !!data.exit_case_id;
+        const caseRecordLabel = data.exit_case_type === 'termination' ? 'Termination' : 'Resignation';
+        const caseDocumentLabel = data.exit_case_type === 'termination' ? 'Termination Letter' : 'Resignation Letter';
+        const caseRecordEntryLabel = `${caseRecordLabel} Record`;
+        const caseDocumentEntryLabel = `${caseDocumentLabel}`;
+        const caseRecordSectionTitle = caseRecordLabel;
+        const caseLetterUploaded = Array.isArray(response.documents) && response.documents.some(doc => new RegExp(caseRecordLabel, 'i').test(doc.document_type || doc.title || '') || /letter/i.test(doc.document_type || doc.title || ''));
+        const interviewStarted = Boolean(response.exit_interview);
+        const knowledgeTransferStarted = Boolean(response.knowledge_transfer);
+        const settlementStarted = Boolean(response.settlement);
+
+        const normalizeLabel = (value) => {
+            if (!value) return '';
+            return String(value).replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+        };
+
+        const interviewLabel = interviewStarted
+            ? `Exit Interview ${normalizeLabel(response.exit_interview.status)}`
+            : 'Not Started';
+        const knowledgeTransferLabel = knowledgeTransferStarted
+            ? `${normalizeLabel(response.knowledge_transfer.status || 'Active')}`
+            : 'Not Started';
+        const settlementLabel = settlementStarted
+            ? `Settlement ${normalizeLabel(response.settlement.status || 'Pending')}`
+            : 'Not Started';
+
+        const buildStatusItem = (done, label) => `
+            <div class="exit-status-item">
+                <span class="status-icon">${done ? '<i class="fas fa-check-circle text-success"></i>' : '<i class="far fa-circle text-muted"></i>'}</span>
+                <span>${label}</span>
+            </div>
+        `;
+
+        let content = `
+            <div class="exit-case-documentation-card card mb-3">
+                <div class="card-body p-4">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start mb-4">
+                        <div>
+                            <h4 class="mb-1">${employeeName}</h4>
+                            <p class="mb-1 text-muted">Employee ID: ${employeeIdDisplay}</p>
+                        </div>
+                        <div class="text-md-right mt-3 mt-md-0">
+                            <p class="mb-1 text-uppercase text-muted small">${caseTypeLabel}</p>
+                            <h5 class="mb-1">${caseCode}</h5>
+                            <div>${getStatusBadge(data.case_status)}</div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="exit-summary-box p-3 rounded">
+                                <div class="text-muted small mb-2">Exit Reason</div>
+                                <div class="font-weight-bold">${data.exit_reason || 'N/A'}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="exit-summary-box p-3 rounded">
+                                <div class="text-muted small mb-2">Notice / Effective Date</div>
+                                <div class="font-weight-bold">${noticeDate}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="exit-case-section card mb-3">
+                <div class="card-header bg-white border-bottom-0">
+                    <h5 class="mb-0">Exit Records</h5>
+                </div>
+                <div class="card-body">
+                    <div class="exit-record-group mb-4">
+                        <div class="exit-record-title">${caseRecordSectionTitle}</div>
+                        ${buildStatusItem(caseRecordCompleted, caseRecordEntryLabel)}
+                        ${buildStatusItem(caseRecordCompleted && caseLetterUploaded, caseDocumentEntryLabel)}
+                    </div>
+                    <div class="exit-record-group mb-4 d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="exit-record-title">Exit Interview</div>
+                            ${buildStatusItem(interviewStarted, interviewLabel)}
+                        </div>
+                        ${interviewStarted ? `<button type="button" class="btn btn-sm btn-outline-primary" onclick="openInterviewFromDocumentation(${response.exit_interview.id})">View Interview PDF</button>` : ''}
+                    </div>
+                    <div class="exit-record-group mb-4 d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="exit-record-title">Knowledge Transfer</div>
+                            ${buildStatusItem(knowledgeTransferStarted, knowledgeTransferLabel)}
+                        </div>
+                        ${knowledgeTransferStarted ? `<button type="button" class="btn btn-sm btn-outline-primary" onclick="openTransferFromDocumentation(${response.knowledge_transfer.id})">View Transfer PDF</button>` : ''}
+                    </div>
+                    <div class="exit-record-group d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="exit-record-title">Settlement</div>
+                            ${buildStatusItem(settlementStarted, settlementLabel)}
+                        </div>
+                        ${settlementStarted ? `<button type="button" class="btn btn-sm btn-outline-primary" onclick="openSettlementFromDocumentation(${response.settlement.id})">View Settlement PDF</button>` : ''}
+                    </div>
+                </div>
+            </div>
+
+            <div class="exit-case-section card mb-3">
+                <div class="card-header bg-white border-bottom-0">
+                    <h5 class="mb-0">Uploaded Documents</h5>
+                </div>
+                <div class="card-body">
+        `;
+
+        if (response.documents && response.documents.length > 0) {
+            content += `<div class="list-group">`;
+            response.documents.forEach(doc => {
+                const docTitle = doc.title || doc.document_type || 'Attachment';
+                const docDate = doc.created_at ? `<small class="text-muted">(${doc.created_at})</small>` : '';
+                content += `
+                    <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                        <div>
+                            <div class="font-weight-bold">${docTitle}</div>
+                            ${docDate}
+                        </div>
+                        <button class="btn btn-sm btn-outline-success" onclick="downloadDocument(${doc.id})">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            content += `</div>`;
+        } else {
+            content += `
+                <div class="empty-documents text-center py-4 text-muted">
+                    <i class="far fa-file-alt fa-2x mb-2"></i>
+                    <div>No uploaded documents yet.</div>
+                </div>
+            `;
+        }
+
+        if (response.documents_supported === false) {
+            content += `<div class="alert alert-info mt-3">This installation does not support linking uploaded documents to exit cases. Uploaded files are stored but not associated with this exit case.</div>`;
+        }
+
+        content += `
+                        <div class="text-right mt-4">
+                        <button type="button" class="btn btn-primary" onclick="openPrintSelectorForCase('${exitCaseType}', ${exitCaseId}, '${employeeId}')">
+                            <i class="fas fa-print mr-1"></i> Print Exit Case Records
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const modalHtml = `
+            <div class="modal fade exit-modal" id="exitCaseDocumentationModal" tabindex="-1" role="dialog">
+                <div class="modal-dialog modal-xl" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Exit Case Documentation</h5>
+                            <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                        </div>
+                        <div class="modal-body">${content}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        $('body').append(modalHtml);
+        $('#exitCaseDocumentationModal').modal('show');
+        $('#exitCaseDocumentationModal').on('hidden.bs.modal', function() {
+            $(this).remove();
+        });
+    }, 'json').fail(function(xhr, status, error) {
+        console.error('Failed to load exit case documentation:', status, error, xhr.responseText);
+        showToast('error', 'Failed to load exit case documentation');
+    });
+}
+
+function openUploadDocumentForCase(exitCaseType, exitCaseId, employeeId) {
+    $('#exitCaseDocumentationModal').one('hidden.bs.modal', function() {
+        $('.modal-backdrop').remove();
+        setTimeout(function() {
+            // explicitly request upload modal behavior
+            showDocumentModal(null, { openUploadModal: true, exitCaseType, exitCaseId, employeeId });
+        }, 10);
+    }).modal('hide');
+}
+
+function openInterviewFromDocumentation(interviewId) {
+    $('#exitCaseDocumentationModal').one('hidden.bs.modal', function() {
+        $('.modal-backdrop').remove();
+        setTimeout(function() {
+            printInterview(interviewId);
+        }, 10);
+    }).modal('hide');
+}
+
+function openTransferFromDocumentation(transferId) {
+    $('#exitCaseDocumentationModal').one('hidden.bs.modal', function() {
+        $('.modal-backdrop').remove();
+        setTimeout(function() {
+            printTransfer(transferId);
+        }, 10);
+    }).modal('hide');
+}
+
+function openSettlementFromDocumentation(settlementId) {
+    $('#exitCaseDocumentationModal').one('hidden.bs.modal', function() {
+        $('.modal-backdrop').remove();
+        setTimeout(function() {
+            printSettlement(settlementId);
+        }, 10);
+    }).modal('hide');
+}
+
+function printInterview(id) {
+    // fetch preview HTML and show in modal iframe
+    $.get('exit_management.php', { ajax_action: 'print_interview', interview_id: id }, function(html) {
+        showPreviewModal(html);
+    }).fail(function() {
+        showToast('error', 'Failed to load interview preview');
+    });
+}
+
+function printTransfer(id) {
+    $.get('exit_management.php', { ajax_action: 'print_transfer', plan_id: id }, function(html) {
+        showPreviewModal(html);
+    }).fail(function() {
+        showToast('error', 'Failed to load transfer preview');
+    });
+}
+
+function printSettlement(id) {
+    $.get('exit_management.php', { ajax_action: 'print_settlement', settlement_id: id }, function(html) {
+        showPreviewModal(html);
+    }).fail(function() {
+        showToast('error', 'Failed to load settlement preview');
+    });
+}
+
+function showPreviewModal(html) {
+    // remove any existing preview modal
+    $('#exitPreviewModal').remove();
+        const modal = `
+        <div class="modal fade" id="exitPreviewModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-xl" role="document" style="max-width:1100px;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Preview</h5>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    </div>
+                    <div class="modal-body p-0" style="height:80vh;">
+                        <iframe id="exitPreviewIframe" sandbox="allow-same-origin allow-forms allow-scripts allow-downloads" style="width:100%;height:100%;border:0;" ></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+        $('body').append(modal);
+        // show modal then set srcdoc to avoid issues with HTML containing </script> etc.
+        $('#exitPreviewModal').modal({ backdrop: 'static' }).modal('show');
+        $('#exitPreviewModal').on('shown.bs.modal', function() {
+            const iframe = document.getElementById('exitPreviewIframe');
+            try {
+                iframe.srcdoc = html;
+            } catch (e) {
+                // fallback: write to iframe document
+                const doc = iframe.contentWindow.document;
+                doc.open(); doc.write(html); doc.close();
+            }
+
+            // attach handlers to detect load problems
+            iframe.addEventListener('load', function() {
+                console.debug('Preview iframe loaded.');
+            });
+            iframe.addEventListener('error', function() {
+                console.error('Failed to load preview iframe content');
+                const parent = document.getElementById('exitPreviewModal');
+                $(parent).find('.modal-body').html('<div class="p-3 text-danger">Failed to load preview. Check file availability and server headers.</div>');
+            });
+
+            // for cases where the iframe attempts to download instead of render,
+            // modern browsers may prevent download if sandbox lacks allow-downloads.
+        }).on('hidden.bs.modal', function() { $(this).remove(); });
 }
 
 function loadSurveysTable(status = 'all', page = 1, limit = 10, searchTerm = '') {
@@ -2983,7 +3547,7 @@ function loadSurveysTable(status = 'all', page = 1, limit = 10, searchTerm = '')
                 const statusBadge = getStatusBadge(survey.status);
                 const actions = `
                     <button class="btn btn-sm btn-success" onclick="answerSurvey(${survey.id})">
-                        <i class="fas fa-pen"></i> Answer
+                        <i class="fas fa-comments"></i> Record Feedback
                     </button>
                     <button class="btn btn-sm btn-info" onclick="showSurveyModal(${survey.id})">
                         <i class="fas fa-edit"></i>
@@ -3678,9 +4242,24 @@ function viewTransferItems(id) {
     });
 }
 
-function printSettlement(id) {
-    // Open print window
-    window.open('exit_management.php?ajax_action=print_settlement&settlement_id=' + id, '_blank');
+function printSettlement(id, button = null) {
+    const $button = button ? $(button) : $();
+    const originalHtml = $button.length ? $button.html() : '';
+    if ($button.length) {
+        $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+    }
+
+    $.get('exit_management.php', { ajax_action: 'print_settlement', settlement_id: id }, function(html) {
+        showPreviewModal(html);
+    }).fail(function() {
+        showToast('error', 'Failed to load settlement preview');
+    });
+
+    if ($button.length) {
+        window.setTimeout(function() {
+            $button.prop('disabled', false).html(originalHtml);
+        }, 1500);
+    }
 }
 
 function viewDocument(id) {
@@ -3761,9 +4340,9 @@ function viewSurveyResponses(id) {
         survey_id: id
     }, function(response) {
         if (response && response.length > 0) {
-            let responsesHtml = '<div class="table-responsive"><table class="table table-striped"><thead><tr><th>Question</th><th>Response</th><th>Respondent</th><th>Date</th></tr></thead><tbody>';
+            let responsesHtml = '<div class="table-responsive"><table class="table table-striped"><thead><tr><th>Question</th><th>Response</th><th>Respondent</th><th>Exit Case</th><th>Date</th></tr></thead><tbody>';
             response.forEach(resp => {
-                responsesHtml += `<tr><td>${resp.question_text}</td><td>${resp.answer_value}</td><td>${resp.respondent_name}</td><td>${resp.submitted_at}</td></tr>`;
+                responsesHtml += `<tr><td>${resp.question_text}</td><td>${resp.answer_value}</td><td>${resp.respondent_name}</td><td>${resp.exit_case_label || ''}</td><td>${resp.submitted_at}</td></tr>`;
             });
             responsesHtml += '</tbody></table></div>';
             
@@ -3825,6 +4404,7 @@ function viewSurveyResponseDetails(responseId) {
                             <div class="modal-body">
                                 <p><strong>Survey:</strong> ${responseData.survey_title || 'Unknown'}</p>
                                 <p><strong>Respondent:</strong> ${responseData.full_name || responseData.respondent_name || 'Unknown'}</p>
+                                <p><strong>Exit Case:</strong> ${responseData.exit_case_type ? responseData.exit_case_type.charAt(0).toUpperCase() + responseData.exit_case_type.slice(1) + ' #' + responseData.exit_case_id : 'N/A'}</p>
                                 <p><strong>Submitted At:</strong> ${responseData.submitted_at || ''}</p>
                                 ${answersHtml}
                             </div>
@@ -3876,17 +4456,27 @@ function answerSurvey(surveyId) {
     }, function(response) {
         if (response && response.id) {
             const survey = response;
-            
+
             // Set survey title and description
-            $('#answerSurveyTitle').text('Answer: ' + survey.title);
+            $('#answerSurveyTitle').text('Record Post-Exit Feedback: ' + survey.title);
             $('#answerSurveyDesc').text(survey.description || '');
             $('#answerSurveyId').val(surveyId);
-            
+            $('#answerSurveyEmployeeId').val('');
+            $('#answerSurveyExitCaseType').val('');
+            $('#answerSurveyExitCaseId').val('');
+            $('#answerSurveyCaseSelect').html('<option value="">Select Approved Exit Case</option>');
+            $('#surveyType').val('post_exit_feedback');
+            setDateInputValue('#surveyScheduledDate', new Date());
+            $('#surveyScheduledTime').val(new Date().toTimeString().slice(0, 5));
+
             // Initialize survey wizard
             initializeSurveyWizard(survey);
-            
-            // Show modal
-            $('#answerSurveyModal').modal('show');
+
+            // Load approved exit cases before showing the modal
+            loadApprovedExitCases('#answerSurveyCaseSelect', function() {
+                $('#answerSurveyModal').modal('show');
+                updateAnswerSurveySubmitState();
+            });
         } else {
             showToast('error', 'Failed to load survey');
         }
@@ -3902,6 +4492,7 @@ function initializeSurveyWizard(survey) {
     // Load first question
     loadSurveyQuestion(0);
     updateProgress();
+    updateAnswerSurveySubmitState();
 }
 
 function loadSurveyQuestion(index) {
@@ -3913,9 +4504,6 @@ function loadSurveyQuestion(index) {
     const questionHtml = generateModernQuestionField(question, index);
     $('#surveyQuestionContainer').html(questionHtml);
     
-    // Update counter
-    $('#questionCounter').text(`Question ${index + 1} of ${survey.questions.length}`);
-    
     // Update navigation buttons
     $('#prevQuestionBtn').toggle(index > 0);
     $('#nextQuestionBtn').toggle(index < survey.questions.length - 1);
@@ -3926,6 +4514,9 @@ function loadSurveyQuestion(index) {
     if (answer) {
         restoreQuestionAnswer(question, answer);
     }
+    
+    updateProgress();
+    updateAnswerSurveySubmitState();
 }
 
 function generateModernQuestionField(question, index) {
@@ -4124,8 +4715,46 @@ function restoreQuestionAnswer(question, answer) {
 }
 
 function updateProgress() {
-    const progress = ((window.currentQuestionIndex + 1) / window.currentSurvey.questions.length) * 100;
+    const answeredCount = Object.keys(window.surveyAnswers || {}).length;
+    const totalQuestions = window.currentSurvey.questions.length;
+    const progress = Math.round(((window.currentQuestionIndex + 1) / totalQuestions) * 100);
     $('#surveyProgress').css('width', progress + '%');
+    $('#surveyProgress').attr('aria-valuenow', progress);
+    $('#questionCounter').text(`Question ${window.currentQuestionIndex + 1} of ${totalQuestions}`);
+}
+
+function areAllRequiredSurveyAnswersProvided() {
+    if (!window.currentSurvey || !Array.isArray(window.currentSurvey.questions)) {
+        return false;
+    }
+
+    return window.currentSurvey.questions.every(question => {
+        if (!question.required) {
+            return true;
+        }
+
+        const answer = window.surveyAnswers[question.id];
+        if (Array.isArray(answer)) {
+            return answer.length > 0;
+        }
+
+        return String(answer || '').trim() !== '';
+    });
+}
+
+function updateAnswerSurveySubmitState() {
+    const exitCaseType = $('#answerSurveyExitCaseType').val();
+    const exitCaseId = $('#answerSurveyExitCaseId').val();
+    const surveyType = $('#surveyType').val();
+    const scheduledDate = $('#surveyScheduledDate').val();
+    const scheduledTime = $('#surveyScheduledTime').val();
+    const isScheduleComplete = exitCaseType && exitCaseId && surveyType && scheduledDate && scheduledTime;
+
+    const isLastQuestion = window.currentQuestionIndex === (window.currentSurvey.questions.length - 1);
+    const hasAllRequiredAnswers = areAllRequiredSurveyAnswersProvided();
+
+    $('#nextQuestionBtn').prop('disabled', !hasAllRequiredAnswers && isLastQuestion);
+    $('#answerSurveySubmitBtn').prop('disabled', !(isScheduleComplete && hasAllRequiredAnswers));
 }
 
 // Navigation functions
@@ -4165,9 +4794,12 @@ function saveCurrentAnswer() {
         answer = $(`[name="responses[${question.id}]"]`).val();
     }
     
-    if (answer !== null && answer !== '') {
+    if (answer !== null && answer !== '' && !(Array.isArray(answer) && answer.length === 0)) {
         window.surveyAnswers[question.id] = answer;
+    } else {
+        delete window.surveyAnswers[question.id];
     }
+    updateAnswerSurveySubmitState();
 }
 
 function validateCurrentQuestion() {
@@ -4197,22 +4829,54 @@ function validateCurrentQuestion() {
 
 // Handle answer survey form submission
 $('#answerSurveyForm').on('submit', function(e) {
-    e.preventDefault();
-    submitSurveyAnswers();
-});
+        e.preventDefault();
+        submitSurveyAnswers();
+    });
 
+    $('#answerSurveyCaseSelect, #surveyType, #surveyScheduledDate, #surveyScheduledTime').on('change input', function() {
+        updateAnswerSurveySubmitState();
+    });
 function submitSurveyAnswers() {
     // Save current answer
     saveCurrentAnswer();
-    
+
     const surveyId = $('#answerSurveyId').val();
+    const exitCaseType = $('#answerSurveyExitCaseType').val();
+    const exitCaseId = $('#answerSurveyExitCaseId').val();
+    const employeeId = $('#answerSurveyEmployeeId').val();
+    const surveyType = $('#surveyType').val();
+    const scheduledDate = $('#surveyScheduledDate').val();
+    const scheduledTime = $('#surveyScheduledTime').val();
+
+    if (!exitCaseType || !exitCaseId) {
+        showToast('warning', 'Please choose the approved exit case associated with this survey response.');
+        return;
+    }
+
+    if (!surveyType || !scheduledDate || !scheduledTime) {
+        showToast('warning', 'Please complete the survey type and schedule before submitting.');
+        return;
+    }
+
+    if (!areAllRequiredSurveyAnswersProvided()) {
+        showToast('warning', 'Please answer all required survey questions before submitting.');
+        return;
+    }
+
     const formData = new FormData();
-    
+
     formData.append('ajax_action', 'submit_survey_response');
     formData.append('controller', 'survey');
     formData.append('survey_id', surveyId);
-    formData.append('employee_id', 0); // Will be set by controller from session
-    
+    if (employeeId) {
+        formData.append('employee_id', employeeId);
+    }
+    formData.append('exit_case_type', exitCaseType);
+    formData.append('exit_case_id', exitCaseId);
+    formData.append('survey_type', surveyType);
+    formData.append('scheduled_date', scheduledDate);
+    formData.append('scheduled_time', scheduledTime);
+
     // Add all answers
     for (const [questionId, answer] of Object.entries(window.surveyAnswers)) {
         if (Array.isArray(answer)) {
@@ -5306,4 +5970,445 @@ function loadArchivedTerminationsTable(page = 1, inModal = false) {
         tbody.html(`<tr><td colspan="${noDataCols}" class="text-center text-danger">Error loading archived terminations</td></tr>`);
         $(`#${paginationId}`).empty();
     });
+}
+
+function openPrintSelectorForCase(exitCaseType, exitCaseId, employeeId) {
+        $('#exitCaseDocumentationModal').one('hidden.bs.modal', function() {
+                $('.modal-backdrop').remove();
+                setTimeout(function() {
+                        openPrintSelectorModal({ exitCaseType, exitCaseId, employeeId });
+                }, 10);
+        }).modal('hide');
+}
+
+function openPrintSelectorModal(options = {}) {
+        // options: { exitCaseType, exitCaseId, employeeId }
+        const caseOnlyMode = !!(options.exitCaseType && options.exitCaseId);
+        $('#printSelectorModal').remove();
+        const modal = `
+        <div class="modal fade" id="printSelectorModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">${caseOnlyMode ? 'Print Exit Case PDFs' : 'Select Documents to Print'}</h5>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="printCaseHeader" class="mb-3" style="display:${caseOnlyMode ? 'block' : 'none'};"></div>
+                        <div id="printCaseListContainer" class="mb-3" style="display:${caseOnlyMode ? 'block' : 'none'};"></div>
+                        <div id="printSearchSection" class="${caseOnlyMode ? 'd-none' : ''}">
+                            <div class="form-group input-group">
+                                <input type="text" id="printSearchInput" class="form-control" placeholder="Search employee name, exit case id, or document title" aria-label="Search documents">
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary" id="printSearchBtn" type="button"><i class="fas fa-search"></i></button>
+                                </div>
+                            </div>
+                            <div id="printSearchSuggestions" class="list-group mb-2" style="display:none;max-height:200px;overflow:auto;"></div>
+                            <div class="mb-2"><button class="btn btn-sm btn-secondary" id="printSelectAllBtn">Select All</button></div>
+                        </div>
+                        <div id="printResultsContainer" style="max-height:50vh;overflow:auto;border:1px solid #eaeaea;padding:8px;border-radius:6px;"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary ${caseOnlyMode ? 'd-none' : ''}" id="printSelectedBtn">Preview Selected</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+        $('body').append(modal);
+        $('#printSelectorModal').modal('show');
+
+        if (caseOnlyMode) {
+                $('#printCaseHeader').html(`<div class="badge badge-info">Case: ${escapeHtml(options.exitCaseType)} #${escapeHtml(options.exitCaseId)}</div>`);
+        }
+
+        // event handlers
+        // debounce search for suggestions
+        let printSearchTimer = null;
+        $('#printSearchInput').on('keyup', function(e) {
+            const q = $(this).val().trim();
+            clearTimeout(printSearchTimer);
+            if (e.key === 'Enter') {
+                fetchPrintSearchResults(q);
+                $('#printSearchSuggestions').hide();
+                return;
+            }
+            if (!q) { $('#printSearchSuggestions').hide(); $('#printResultsContainer').empty(); return; }
+            printSearchTimer = setTimeout(function() {
+                fetchPrintSearchSuggestions(q);
+            }, 250);
+        });
+
+        $('#printSearchBtn').on('click', function() {
+            const q = $('#printSearchInput').val().trim();
+            fetchPrintSearchResults(q);
+            $('#printSearchSuggestions').hide();
+        });
+
+        $('#printSelectAllBtn').on('click', function() {
+                $('#printResultsContainer').find('input[type=checkbox]').prop('checked', true);
+        });
+
+        $('#printSelectedBtn').on('click', function() {
+                const selected = [];
+                $('#printResultsContainer').find('input[type=checkbox]:checked').each(function() {
+                        selected.push($(this).data('doc'));
+                });
+            if (!selected.length) {
+                // if nothing selected, ask user whether to preview all found documents
+                const wantsAll = confirm('No documents selected. Do you want to preview all documents matching the current search?');
+                if (!wantsAll) return;
+                // gather all docs currently displayed
+                $('#printResultsContainer').find('input[type=checkbox]').each(function() { selected.push($(this).data('doc')); });
+                if (!selected.length) { showToast('info', 'No documents available to preview'); return; }
+            }
+
+                $('#printSelectorModal').modal('hide');
+                // open preview with selected documents (array of document objects)
+                openMultiDocumentPreview(selected);
+        });
+
+        // pre-populate search if employeeId provided and not in case-only mode
+        if (!caseOnlyMode && options.employeeId) {
+                $('#printSearchInput').val(options.employeeId);
+                fetchEmployeeDocuments(options.employeeId);
+        }
+
+        // if opening directly for a specific exit case, load its linked records
+        if (caseOnlyMode) {
+                const caseLabel = `${options.exitCaseType} #${options.exitCaseId}`;
+                $('#printSearchInput').val(caseLabel);
+                $('#printSearchSection').addClass('d-none');
+                $('#printSelectedBtn').addClass('d-none');
+                $('#printCaseListContainer').html('<div class="text-center text-muted p-3">Loading case records...</div>');
+                fetchCasePrintItems(options.exitCaseType, options.exitCaseId);
+        }
+}
+
+function fetchPrintSearchResults(q) {
+        $('#printResultsContainer').html('<div class="text-center p-3 text-muted">Searching...</div>');
+        $.post('exit_management.php', { ajax_action: 'get_documents', controller: 'documentation', search: q, limit: 200 }, function(response) {
+        const docs = (response && response.data) ? response.data : (response || []);
+        renderPrintResults(docs);
+        }).fail(function() {
+                $('#printResultsContainer').html('<div class="text-danger p-3">Failed to load results</div>');
+        });
+}
+
+function fetchCasePrintItems(caseType, caseId) {
+        $('#printResultsContainer').html('<div class="text-center p-3 text-muted">Loading case items...</div>');
+        $.post('exit_management.php', {
+            ajax_action: 'get_exit_case_documentation',
+            controller: 'exit_management',
+            exit_case_type: caseType,
+            exit_case_id: caseId
+        }, function(response) {
+            if (!response || response.success === false) {
+                $('#printResultsContainer').html('<div class="text-danger p-3">No case items found or failed to load the exit case.</div>');
+                $('#printCaseListContainer').empty();
+                return;
+            }
+            const caseItems = [];
+            const caseRecords = [];
+            if (response.data && response.data.exit_case_type && response.data.exit_case_id) {
+                caseItems.push({
+                    item_kind: response.data.exit_case_type,
+                    item_ref: response.data.exit_case_id,
+                    label: response.data.exit_case_type === 'resignation' ? 'Resignation Record' : 'Exit Case Record'
+                });
+                caseRecords.push({
+                    label: response.data.exit_case_type === 'resignation' ? 'Resignation Case' : 'Exit Case',
+                    details: `ID: ${escapeHtml(response.data.exit_case_id)} | Employee: ${escapeHtml(response.data.full_name || response.data.employee_name || '')}`
+                });
+            }
+            if (response.exit_interview) {
+                caseItems.push({
+                    item_kind: 'interview',
+                    item_ref: response.exit_interview.id,
+                    label: 'Exit Interview',
+                    extra: response.exit_interview
+                });
+                caseRecords.push({
+                    label: 'Exit Interview',
+                    details: `Scheduled: ${escapeHtml(response.exit_interview.scheduled_date || response.exit_interview.created_at || 'N/A')}`
+                });
+            }
+            if (response.knowledge_transfer) {
+                caseItems.push({
+                    item_kind: 'transfer',
+                    item_ref: response.knowledge_transfer.id,
+                    label: 'Knowledge Transfer',
+                    extra: response.knowledge_transfer
+                });
+                caseRecords.push({
+                    label: 'Knowledge Transfer',
+                    details: `Plan: ${escapeHtml(response.knowledge_transfer.plan_name || response.knowledge_transfer.title || 'N/A')}`
+                });
+            }
+            if (response.settlement) {
+                caseItems.push({
+                    item_kind: 'settlement',
+                    item_ref: response.settlement.id,
+                    label: 'Settlement Record',
+                    extra: response.settlement
+                });
+                caseRecords.push({
+                    label: 'Settlement Record',
+                    details: `Amount: ${escapeHtml(response.settlement.amount || '')}`
+                });
+            }
+            renderCaseList(caseRecords);
+            renderPrintResults(caseItems, response.data);
+        }).fail(function() {
+            $('#printResultsContainer').html('<div class="text-danger p-3">Failed to load documents for the exit case</div>');
+        });
+}
+
+function fetchPrintSearchSuggestions(q) {
+    // get a small sample of documents and infer suggestions (employees / exit cases / titles)
+    $.post('exit_management.php', { ajax_action: 'get_documents', controller: 'documentation', search: q, limit: 12 }, function(response) {
+        const docs = (response && response.data) ? response.data : (response || []);
+        const seen = new Set();
+        let html = '';
+        docs.forEach(function(d) {
+            // prefer employee suggestions
+            if (d.employee_id && d.employee_name) {
+                const key = 'emp:' + d.employee_id;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    html += `<button type="button" class="list-group-item list-group-item-action print-suggestion" data-employee-id="${d.employee_id}">${escapeHtml(d.employee_name)}</button>`;
+                }
+            }
+            // exit case suggestion
+            if (d.exit_case_type && d.exit_case_id) {
+                const key2 = 'case:' + d.exit_case_type + ':' + d.exit_case_id;
+                if (!seen.has(key2)) {
+                    seen.add(key2);
+                    html += `<button type="button" class="list-group-item list-group-item-action print-suggestion" data-exit-case-type="${d.exit_case_type}" data-exit-case-id="${d.exit_case_id}">${escapeHtml(d.exit_case_type)} #${d.exit_case_id} — ${escapeHtml(d.employee_name || '')}</button>`;
+                }
+            }
+        });
+
+        if (!html) {
+            $('#printSearchSuggestions').hide();
+            return;
+        }
+
+        $('#printSearchSuggestions').html(html).show();
+
+        $('.print-suggestion').off('click').on('click', function() {
+            const empId = $(this).data('employee-id');
+            const caseType = $(this).data('exit-case-type');
+            const caseId = $(this).data('exit-case-id');
+            if (empId) {
+                $('#printSearchInput').val($(this).text());
+                fetchEmployeeDocuments(empId);
+            } else if (caseType && caseId) {
+                $('#printSearchInput').val($(this).text());
+                fetchCasePrintItems(caseType, caseId);
+            }
+            $('#printSearchSuggestions').hide();
+        });
+    }).fail(function() {
+        $('#printSearchSuggestions').hide();
+    });
+}
+
+function fetchDocumentsByExitCase(caseType, caseId) {
+    $('#printResultsContainer').html('<div class="text-center p-3 text-muted">Loading documents for ' + escapeHtml(caseType) + ' #' + escapeHtml(caseId) + '...</div>');
+    $.post('exit_management.php', { ajax_action: 'get_documents_by_exit_case', controller: 'documentation', exit_case_type: caseType, exit_case_id: caseId }, function(response) {
+        // controller returns an array of documents
+        renderPrintResults(response || []);
+    }).fail(function() {
+        $('#printResultsContainer').html('<div class="text-danger p-3">Failed to load documents for the exit case</div>');
+    });
+}
+
+function fetchEmployeeDocuments(employeeId) {
+        $('#printResultsContainer').html('<div class="text-center p-3 text-muted">Loading documents...</div>');
+        $.post('exit_management.php', { ajax_action: 'get_employee_documents', controller: 'documentation', employee_id: employeeId }, function(response) {
+                renderPrintResults(response || []);
+        }).fail(function() {
+                $('#printResultsContainer').html('<div class="text-danger p-3">Failed to load documents</div>');
+        });
+}
+
+function renderPrintResults(docs, caseMeta) {
+        if (!docs || !docs.length) {
+                const noData = '<div class="text-center p-3 text-muted">No documents found</div>';
+                if (caseMeta && caseMeta.exit_case_type && caseMeta.exit_case_id) {
+                    $('#printResultsContainer').html(`<div class="mb-3"><span class="badge badge-info">Case: ${escapeHtml(caseMeta.exit_case_type)} #${escapeHtml(caseMeta.exit_case_id)} ${escapeHtml(caseMeta.full_name || '')}</span></div>${noData}`);
+                } else {
+                    $('#printResultsContainer').html(noData);
+                }
+                return;
+        }
+
+        let html = '';
+        if (caseMeta && caseMeta.exit_case_type && caseMeta.exit_case_id) {
+            html += `<div class="mb-3"><span class="badge badge-info">Case: ${escapeHtml(caseMeta.exit_case_type)} #${escapeHtml(caseMeta.exit_case_id)} ${escapeHtml(caseMeta.full_name || '')}</span></div>`;
+        }
+        html += '<div class="list-group">';
+        docs.forEach(function(d) {
+                if (d.item_kind) {
+                        const label = d.label || (d.item_kind + ' #' + (d.item_ref || ''));
+                        const context = `${d.item_kind === 'resignation' ? 'Resignation Case' : d.item_kind === 'interview' ? 'Interview' : d.item_kind === 'transfer' ? 'Knowledge Transfer' : d.item_kind === 'settlement' ? 'Settlement' : d.item_kind} #${d.item_ref || ''}`;
+                        html += `<div class="list-group-item d-flex align-items-center justify-content-between case-item" data-kind="${escapeHtml(d.item_kind)}" data-ref="${escapeHtml(d.item_ref)}">
+                                <div>
+                                        <div><strong>${escapeHtml(label)}</strong></div>
+                                        <div class="small text-muted">${escapeHtml(context)}</div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary preview-case-item">Preview</button>
+                        </div>`;
+                } else {
+                        const title = d.title || 'Uploaded Document';
+                        const subtitle = (d.employee_name ? d.employee_name + ' — ' : '') + (d.document_type ? d.document_type : 'Document');
+                        const exitInfo = (d.exit_case_type ? ('<small class="text-muted">' + (d.exit_case_type || '') + ' #' + (d.exit_case_id || '') + '</small>') : '');
+                        const safeJson = JSON.stringify(d).replace(/"/g, '&quot;');
+                        html += `<label class="list-group-item d-flex align-items-start">
+                                <input type="checkbox" style="margin-right:12px;" data-doc='${safeJson}' />
+                                <div>
+                                        <div><strong>${escapeHtml(title)}</strong></div>
+                                        <div class="small text-muted">${escapeHtml(subtitle)} ${exitInfo}</div>
+                                </div>
+                        </label>`;
+                }
+        });
+        html += '</div>';
+
+        $('#printResultsContainer').html(html);
+
+        $('.preview-case-item').off('click').on('click', function() {
+                const parent = $(this).closest('.case-item');
+                const kind = parent.data('kind');
+                const ref = parent.data('ref');
+                openCaseItemPreview(kind, ref);
+        });
+}
+
+function renderCaseList(caseRecords) {
+        const container = $('#printCaseListContainer');
+        if (!caseRecords || !caseRecords.length) {
+                container.html('<div class="text-muted small">No related case records found.</div>');
+                return;
+        }
+        let html = '<div class="card border-secondary mb-3"><div class="card-body p-3">';
+        html += '<h6 class="card-title mb-3">Exit Case Record Summary</h6>';
+        html += '<ul class="list-group list-group-flush">';
+        caseRecords.forEach(function(record) {
+                html += `<li class="list-group-item py-2"><strong>${escapeHtml(record.label)}</strong><div class="small text-muted">${escapeHtml(record.details)}</div></li>`;
+        });
+        html += '</ul>';
+        html += '</div></div>';
+        container.html(html);
+}
+
+function openCaseItemPreview(kind, ref) {
+        const base = window.location.pathname.replace(/[^\/]+$/, '');
+        let url = null;
+        if (kind === 'resignation') {
+                url = base + 'exit_management.php?ajax_action=print_resignation&resignation_id=' + encodeURIComponent(ref);
+        } else if (kind === 'interview') {
+                url = base + 'exit_management.php?ajax_action=print_interview&interview_id=' + encodeURIComponent(ref);
+        } else if (kind === 'transfer') {
+                url = base + 'exit_management.php?ajax_action=print_transfer&plan_id=' + encodeURIComponent(ref);
+        } else if (kind === 'settlement') {
+                url = base + 'exit_management.php?ajax_action=print_settlement&settlement_id=' + encodeURIComponent(ref);
+        }
+
+        if (!url) {
+                showToast('error', 'Unsupported case item type');
+                return;
+        }
+
+        $.get(url, function(html) {
+                showPreviewModal(html);
+        }).fail(function() {
+                showToast('error', 'Failed to load preview for this item');
+        });
+}
+
+function escapeHtml(str) {
+        return String(str || '').replace(/[&<>"']/g, function(m) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; });
+}
+
+function openMultiDocumentPreview(docs) {
+        // docs: array of document objects (should contain file_path and document details)
+        // create modal with iframe and navigation
+        $('#multiDocPreviewModal').remove();
+        const modal = `
+        <div class="modal fade" id="multiDocPreviewModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-xl" role="document" style="max-width:1100px;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Document Preview</h5>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    </div>
+                    <div class="modal-body p-0" style="height:80vh;">
+                        <iframe id="multiDocIframe" sandbox="allow-same-origin allow-forms allow-scripts allow-downloads" style="width:100%;height:100%;border:0;"></iframe>
+                    </div>
+                    <div class="modal-footer">
+                        <div class="mr-auto">
+                            <button class="btn btn-sm btn-secondary" id="multiPrevBtn">Prev</button>
+                            <button class="btn btn-sm btn-secondary" id="multiNextBtn">Next</button>
+                        </div>
+                        <button type="button" class="btn btn-primary" id="multiPrintBtn">Print</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+        $('body').append(modal);
+        $('#multiDocPreviewModal').modal('show');
+
+        let idx = 0;
+        function loadIndex(i) {
+                const doc = docs[i];
+                const iframe = document.getElementById('multiDocIframe');
+                // Resolve file path relative to current page so uploads in
+                // `exit_management/uploads/...` are addressable when stored as 'uploads/...'
+                let src = doc.file_path || '';
+                if (!src.match(/^https?:\/\//i)) {
+                    if (src.startsWith('/')) {
+                        // absolute path from host root - use as-is
+                    } else {
+                        // make relative to current location directory
+                        let baseDir = window.location.pathname.replace(/\/[^\/]*$/, '/');
+                        // if current path is not under /exit_management/, assume files are under that folder
+                        if (!baseDir.includes('/exit_management/')) {
+                            baseDir = baseDir + 'exit_management/';
+                        }
+                        src = baseDir + src;
+                    }
+                }
+                console.debug('Opening document in iframe:', src, doc);
+                // attach load/error handlers to show friendly message on failure
+                iframe.onload = function() { console.debug('Multi preview iframe loaded.'); };
+                iframe.onerror = function() {
+                    console.error('Failed to load multi preview iframe content');
+                    const parent = document.getElementById('multiDocPreviewModal');
+                    $(parent).find('.modal-body').html('<div class="p-3 text-danger">Failed to load document. Check file availability and server headers.</div>');
+                };
+
+                // prefer serving document via server endpoint that forces inline disposition
+                if (doc.id) {
+                    iframe.src = window.location.pathname.replace(/[^\/]+$/, '') + 'exit_management.php?ajax_action=serve_document&document_id=' + encodeURIComponent(doc.id);
+                } else {
+                    iframe.src = src;
+                }
+        }
+
+        $('#multiPrevBtn').on('click', function() { if (idx>0) { idx--; loadIndex(idx); } });
+        $('#multiNextBtn').on('click', function() { if (idx<docs.length-1) { idx++; loadIndex(idx); } });
+        $('#multiPrintBtn').on('click', function() {
+            const iframe = document.getElementById('multiDocIframe');
+            if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            }
+        });
+
+        $('#multiDocPreviewModal').on('shown.bs.modal', function() { loadIndex(0); }).on('hidden.bs.modal', function() { $(this).remove(); });
 }

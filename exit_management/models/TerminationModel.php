@@ -35,7 +35,7 @@ class TerminationModel extends ExitManagementModel
         }
     }
 
-    protected function tableExists(string $tableName): bool
+    public function tableExists(string $tableName): bool
     {
         try {
             $stmt = $this->db->prepare("SHOW TABLES LIKE ?");

@@ -77,6 +77,58 @@ class SurveyModel extends ExitManagementModel
     }
 
     /**
+     * Alias for backward compatibility
+     */
+    public function getSurvey(int $surveyId): ?array
+    {
+        return $this->getSurveyById($surveyId);
+    }
+
+    /**
+     * Duplicate a survey and its questions
+     */
+    public function duplicateSurvey(int $surveyId): ?int
+    {
+        $survey = $this->getSurveyById($surveyId);
+        if (!$survey) {
+            return null;
+        }
+
+        $this->db->beginTransaction();
+        try {
+            $stmt = $this->db->prepare("INSERT INTO exit_surveys (title, description, target_audience, start_date, end_date, status, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
+            $stmt->execute([
+                $survey['title'],
+                $survey['description'],
+                $survey['target_audience'],
+                $survey['start_date'],
+                $survey['end_date'],
+                'active',
+                $_SESSION['user']['id'] ?? null
+            ]);
+
+            $newSurveyId = (int)$this->db->lastInsertId();
+            $questions = $this->getSurveyQuestions($surveyId);
+            if (!empty($questions)) {
+                $this->addSurveyQuestions($newSurveyId, array_map(function ($question) {
+                    return [
+                        'text' => $question['question_text'],
+                        'type' => $question['question_type'],
+                        'options' => $question['options'] ? json_decode($question['options'], true) : null,
+                        'required' => (bool)$question['required']
+                    ];
+                }, $questions));
+            }
+
+            $this->db->commit();
+            return $newSurveyId;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            return null;
+        }
+    }
+
+    /**
      * Get survey questions
      */
     public function getSurveyQuestions(int $surveyId): array
@@ -99,21 +151,152 @@ class SurveyModel extends ExitManagementModel
         return $questions;
     }
 
+    private ?bool $hasResponseCaseColumns = null;
+    private ?bool $hasResponseJsonColumn = null;
+
+    private ?bool $hasResponseScheduleColumns = null;
+
+    protected function hasResponseCaseColumns(): bool
+    {
+        if ($this->hasResponseCaseColumns === null) {
+            $this->hasResponseCaseColumns = $this->columnExists('exit_survey_responses', 'exit_case_type')
+                && $this->columnExists('exit_survey_responses', 'exit_case_id');
+        }
+
+        return $this->hasResponseCaseColumns;
+    }
+
+    protected function hasResponseScheduleColumns(): bool
+    {
+        if ($this->hasResponseScheduleColumns === null) {
+            $this->hasResponseScheduleColumns = $this->columnExists('exit_survey_responses', 'survey_type')
+                && $this->columnExists('exit_survey_responses', 'scheduled_date')
+                && $this->columnExists('exit_survey_responses', 'scheduled_time');
+        }
+
+        return $this->hasResponseScheduleColumns;
+    }
+
+    protected function hasResponseJsonColumn(): bool
+    {
+        if ($this->hasResponseJsonColumn === null) {
+            $this->hasResponseJsonColumn = $this->columnExists('exit_survey_responses', 'responses');
+        }
+
+        return $this->hasResponseJsonColumn;
+    }
+
+    protected function hasExistingSurveyResponse(int $surveyId, int $employeeId, ?string $exitCaseType = null, ?int $exitCaseId = null): bool
+    {
+        if ($this->hasResponseCaseColumns() && $exitCaseType && $exitCaseId) {
+            $stmt = $this->db->prepare(
+                "SELECT COUNT(*) FROM exit_survey_responses WHERE survey_id = ? AND exit_case_type = ? AND exit_case_id = ?"
+            );
+            $stmt->execute([$surveyId, $exitCaseType, $exitCaseId]);
+        } else {
+            $stmt = $this->db->prepare(
+                "SELECT COUNT(*) FROM exit_survey_responses WHERE survey_id = ? AND employee_id = ?"
+            );
+            $stmt->execute([$surveyId, $employeeId]);
+        }
+
+        return (int)$stmt->fetchColumn() > 0;
+    }
+
+    protected function validateApprovedExitCase(?string $exitCaseType, ?int $exitCaseId, int $employeeId): bool
+    {
+        if (!$exitCaseType || !$exitCaseId) {
+            throw new Exception('Approved exit case selection is required for this feedback response.');
+        }
+
+        if (!in_array($exitCaseType, ['resignation', 'termination'], true)) {
+            throw new Exception('Invalid exit case type selected.');
+        }
+
+        if ($exitCaseType === 'resignation') {
+            $stmt = $this->db->prepare("SELECT id, employee_id FROM exit_resignations WHERE id = ? AND status = 'approved'");
+        } else {
+            $stmt = $this->db->prepare("SELECT id, employee_id FROM exit_terminations WHERE id = ? AND status = 'approved'");
+        }
+
+        $stmt->execute([$exitCaseId]);
+        $case = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$case) {
+            throw new Exception('Selected exit case is not approved or does not exist.');
+        }
+
+        if ((string)$case['employee_id'] !== (string)$employeeId) {
+            throw new Exception('Selected exit case does not belong to the specified employee.');
+        }
+
+        return true;
+    }
+
     /**
      * Submit survey response
      */
-    public function submitSurveyResponse(int $surveyId, int $employeeId, array $responses): bool
+    public function submitSurveyResponse(int $surveyId, int $employeeId, array $responses, ?string $exitCaseType = null, ?int $exitCaseId = null, ?string $surveyType = null, ?string $scheduledDate = null, ?string $scheduledTime = null): bool
     {
+        if ($this->hasResponseCaseColumns()) {
+            $this->validateApprovedExitCase($exitCaseType, $exitCaseId, $employeeId);
+        }
+
+        if ($this->hasResponseScheduleColumns()) {
+            if (!$surveyType || !$scheduledDate || !$scheduledTime) {
+                throw new Exception('Survey type, scheduled date and scheduled time are required.');
+            }
+
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $scheduledDate)) {
+                throw new Exception('Scheduled date must use YYYY-MM-DD format.');
+            }
+
+            if (!preg_match('/^\d{2}:\d{2}$/', $scheduledTime)) {
+                throw new Exception('Scheduled time must use HH:MM format.');
+            }
+        }
+
+        if ($this->hasExistingSurveyResponse($surveyId, $employeeId, $exitCaseType, $exitCaseId)) {
+            throw new Exception('This survey has already been submitted for the selected exit case.');
+        }
+
         // Start transaction
         $this->db->beginTransaction();
 
         try {
-            // Insert response record
-            $stmt = $this->db->prepare("
-                INSERT INTO exit_survey_responses (survey_id, employee_id, submitted_at)
-                VALUES (?, ?, NOW())
-            ");
-            if (!$stmt->execute([$surveyId, $employeeId])) {
+            $insertColumns = ['survey_id', 'employee_id'];
+            $placeholders = ['?', '?'];
+            $params = [$surveyId, $employeeId];
+
+            if ($this->hasResponseCaseColumns()) {
+                $insertColumns[] = 'exit_case_type';
+                $insertColumns[] = 'exit_case_id';
+                $placeholders[] = '?';
+                $placeholders[] = '?';
+                $params[] = $exitCaseType;
+                $params[] = $exitCaseId;
+            }
+
+            if ($this->hasResponseScheduleColumns()) {
+                $insertColumns[] = 'survey_type';
+                $insertColumns[] = 'scheduled_date';
+                $insertColumns[] = 'scheduled_time';
+                $placeholders[] = '?';
+                $placeholders[] = '?';
+                $placeholders[] = '?';
+                $params[] = $surveyType;
+                $params[] = $scheduledDate;
+                $params[] = $scheduledTime;
+            }
+
+            $insertColumns[] = 'submitted_at';
+            $placeholders[] = 'NOW()';
+
+            $stmt = $this->db->prepare(
+                "INSERT INTO exit_survey_responses (" . implode(', ', $insertColumns) . ") VALUES (" . implode(', ', $placeholders) . ")"
+            );
+
+            if (!$stmt->execute($params)) {
                 throw new Exception('Failed to insert survey response');
             }
             $responseId = (int)$this->db->lastInsertId();
@@ -146,14 +329,24 @@ class SurveyModel extends ExitManagementModel
      */
     public function getSurveyResponses(int $surveyId): array
     {
-        $stmt = $this->db->prepare("
-            SELECT sa.*, sq.question_text, u.full_name as respondent_name, sr.submitted_at
-            FROM exit_survey_answers sa
-            JOIN exit_survey_questions sq ON sa.question_id = sq.id
-            JOIN exit_survey_responses sr ON sa.response_id = sr.id
-            JOIN users u ON sr.employee_id = u.id
-            WHERE sr.survey_id = ?
-            ORDER BY sr.submitted_at DESC, sq.order_num ASC
+        $selectFields = 'sa.*, sq.question_text, sr.submitted_at, sr.employee_id';
+        if ($this->hasResponseCaseColumns()) {
+            $selectFields .= ', sr.exit_case_type, sr.exit_case_id, CONCAT(UPPER(LEFT(sr.exit_case_type, 1)), SUBSTRING(sr.exit_case_type, 2), " #", sr.exit_case_id) AS exit_case_label';
+        }
+
+        if ($this->hasResponseScheduleColumns()) {
+            $selectFields .= ', sr.survey_type, sr.scheduled_date, sr.scheduled_time';
+        }
+
+        $stmt = $this->db->prepare("\
+            SELECT {$selectFields}, COALESCE(emp.full_name, u.full_name, u.username, sr.employee_id) AS respondent_name\
+            FROM exit_survey_answers sa\
+            JOIN exit_survey_questions sq ON sa.question_id = sq.id\
+            JOIN exit_survey_responses sr ON sa.response_id = sr.id\
+            LEFT JOIN employees emp ON sr.employee_id = emp.employee_id\
+            LEFT JOIN users u ON sr.employee_id = u.id\
+            WHERE sr.survey_id = ?\
+            ORDER BY sr.submitted_at DESC, sq.order_num ASC\
         ");
         $stmt->execute([$surveyId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -165,12 +358,22 @@ class SurveyModel extends ExitManagementModel
     public function getSurveyResponseDetails(int $responseId): array
     {
         // Get response info
-        $stmt = $this->db->prepare("
-            SELECT sr.*, s.title as survey_title, u.full_name
-            FROM exit_survey_responses sr
-            JOIN exit_surveys s ON sr.survey_id = s.id
-            JOIN users u ON sr.employee_id = u.id
-            WHERE sr.id = ?
+        $selectFields = 'sr.*, s.title as survey_title, COALESCE(emp.full_name, u.full_name, u.username, sr.employee_id) AS full_name';
+        if ($this->hasResponseCaseColumns()) {
+            $selectFields .= ', sr.exit_case_type, sr.exit_case_id';
+        }
+
+        if ($this->hasResponseScheduleColumns()) {
+            $selectFields .= ', sr.survey_type, sr.scheduled_date, sr.scheduled_time';
+        }
+
+        $stmt = $this->db->prepare("\
+            SELECT {$selectFields}\
+            FROM exit_survey_responses sr\
+            JOIN exit_surveys s ON sr.survey_id = s.id\
+            LEFT JOIN employees emp ON sr.employee_id = emp.employee_id\
+            LEFT JOIN users u ON sr.employee_id = u.id\
+            WHERE sr.id = ?\
         ");
         $stmt->execute([$responseId]);
         $response = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -222,7 +425,7 @@ class SurveyModel extends ExitManagementModel
     /**
      * Get all surveys with optional status filter and pagination
      */
-    public function getAllSurveys(string $status = null, int $page = 1, int $limit = 10, string $search = ''): array
+    public function getAllSurveys(?string $status = null, int $page = 1, int $limit = 10, string $search = ''): array
     {
         $offset = ($page - 1) * $limit;
 

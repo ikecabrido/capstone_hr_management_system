@@ -31,6 +31,16 @@ class DocumentationController extends ExitManagementController
                 }
             }
 
+            if (!empty($data['exit_case_type']) || !empty($data['exit_case_id'])) {
+                if (empty($data['exit_case_type']) || empty($data['exit_case_id'])) {
+                    return ['success' => false, 'message' => 'Both exit_case_type and exit_case_id are required when linking to an exit case'];
+                }
+                if (!in_array($data['exit_case_type'], ['resignation', 'termination'], true)) {
+                    return ['success' => false, 'message' => 'Invalid exit_case_type'];
+                }
+                $data['exit_case_id'] = (int)$data['exit_case_id'];
+            }
+
             // Handle file upload if present
             $filePath = $data['file_path'] ?? null;
             
@@ -115,6 +125,16 @@ class DocumentationController extends ExitManagementController
                 }
             }
 
+            if (!empty($data['exit_case_type']) || !empty($data['exit_case_id'])) {
+                if (empty($data['exit_case_type']) || empty($data['exit_case_id'])) {
+                    return ['success' => false, 'message' => 'Both exit_case_type and exit_case_id are required when linking to an exit case'];
+                }
+                if (!in_array($data['exit_case_type'], ['resignation', 'termination'], true)) {
+                    return ['success' => false, 'message' => 'Invalid exit_case_type'];
+                }
+                $data['exit_case_id'] = (int)$data['exit_case_id'];
+            }
+
             $success = $this->documentationModel->updateDocument($data['document_id'], $data);
 
             if ($success) {
@@ -136,6 +156,14 @@ class DocumentationController extends ExitManagementController
     public function getEmployeeDocuments(int $employeeId): array
     {
         return $this->documentationModel->getDocumentsByEmployee($employeeId);
+    }
+
+    /**
+     * Get documents linked to a specific exit case
+     */
+    public function getDocumentsByExitCase(string $exitCaseType, int $exitCaseId): array
+    {
+        return $this->documentationModel->getDocumentsByExitCase($exitCaseType, $exitCaseId);
     }
 
     /**
@@ -255,6 +283,59 @@ class DocumentationController extends ExitManagementController
     }
 
     /**
+     * Serve document file for inline preview/download.
+     * Outputs headers and streams file content directly.
+     */
+    public function serveDocument(int $documentId): void
+    {
+        try {
+            $document = $this->documentationModel->getDocumentById($documentId);
+            if (!$document) {
+                http_response_code(404);
+                echo 'Document not found';
+                exit;
+            }
+
+            // Resolve full path relative to exit_management directory
+            $relative = $document['file_path'];
+            $fullPath = realpath(__DIR__ . '/../' . $relative);
+            if (!$fullPath || !file_exists($fullPath)) {
+                http_response_code(404);
+                echo 'File not found on server';
+                exit;
+            }
+
+            // Basic security: ensure file is under the project directory
+            $allowedBase = realpath(__DIR__ . '/../');
+            if (strpos($fullPath, $allowedBase) !== 0) {
+                http_response_code(403);
+                echo 'Forbidden';
+                exit;
+            }
+
+            // Determine mime type
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime = finfo_file($finfo, $fullPath) ?: 'application/octet-stream';
+            finfo_close($finfo);
+
+            // Send headers to force inline rendering when possible
+            header('Content-Type: ' . $mime);
+            header('Content-Length: ' . filesize($fullPath));
+            header('Content-Disposition: inline; filename="' . basename($fullPath) . '"');
+            header('Cache-Control: private, must-revalidate');
+
+            // Stream file
+            readfile($fullPath);
+            exit;
+        } catch (Exception $e) {
+            http_response_code(500);
+            error_log('Error serving document: ' . $e->getMessage());
+            echo 'Error serving document';
+            exit;
+        }
+    }
+
+    /**
      * Download document (force file download)
      */
     public function downloadDocument(int $documentId): array
@@ -326,6 +407,9 @@ class DocumentationController extends ExitManagementController
                     $data['limit'] ?? 10,
                     $data['search'] ?? ''
                 );
+
+            case 'get_documents_by_exit_case':
+                return $this->getDocumentsByExitCase($data['exit_case_type'] ?? '', (int)($data['exit_case_id'] ?? 0));
 
             case 'view_document':
                 return $this->viewDocument($data['document_id'] ?? 0);

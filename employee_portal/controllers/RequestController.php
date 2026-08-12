@@ -45,6 +45,12 @@ class RequestController
                 throw new Exception("Attachment is required.");
             }
 
+            // A resignation request must include the employee's resignation
+            // letter, even if the request type was not configured correctly.
+            if (stripos((string)($type['name'] ?? ''), 'resignation') !== false && empty($_FILES['attachment']['name'])) {
+                throw new Exception("A resignation letter attachment is required.");
+            }
+
             $attachmentName = null;
 
             if (!empty($_FILES['attachment']['name'])) {

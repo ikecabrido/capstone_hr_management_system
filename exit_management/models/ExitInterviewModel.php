@@ -219,7 +219,7 @@ class ExitInterviewModel extends ExitManagementModel
         if ($existing) {
             $stmt = $this->db->prepare("UPDATE exit_interview_hr_assessments SET
                 summary = ?, key_findings = ?, hr_recommendations = ?, follow_up_actions = ?,
-                rehire_eligibility = ?, knowledge_transfer_required = ?, clearance_recommendation = ?,
+                rehire_eligibility = ?, knowledge_transfer_required = ?,
                 updated_at = NOW()
                 WHERE interview_id = ?");
 
@@ -230,15 +230,14 @@ class ExitInterviewModel extends ExitManagementModel
                 $data['follow_up_actions'] ?? null,
                 $data['rehire_eligibility'] ?? null,
                 !empty($data['knowledge_transfer_required']) ? 1 : 0,
-                $data['clearance_recommendation'] ?? 'pending',
                 $interviewId
             ]);
         }
 
         $stmt = $this->db->prepare("INSERT INTO exit_interview_hr_assessments (
             interview_id, summary, key_findings, hr_recommendations, follow_up_actions,
-            rehire_eligibility, knowledge_transfer_required, clearance_recommendation, created_by, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+            rehire_eligibility, knowledge_transfer_required, created_by, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())");
 
         return (bool)$stmt->execute([
             $interviewId,
@@ -248,7 +247,6 @@ class ExitInterviewModel extends ExitManagementModel
             $data['follow_up_actions'] ?? null,
             $data['rehire_eligibility'] ?? null,
             !empty($data['knowledge_transfer_required']) ? 1 : 0,
-            $data['clearance_recommendation'] ?? 'pending',
             $userId
         ]);
     }
@@ -291,10 +289,12 @@ class ExitInterviewModel extends ExitManagementModel
                 ei.created_at,
                 ei.updated_at,
                 e.full_name as employee_name,
-                u.full_name as interviewer_name
+                u.full_name as interviewer_name,
+                CASE WHEN h.id IS NOT NULL THEN 1 ELSE 0 END AS has_hr_assessment
             FROM exit_interviews ei
             JOIN employees e ON ei.employee_id = e.employee_id
             LEFT JOIN users u ON ei.interviewer_id = u.id
+            LEFT JOIN exit_interview_hr_assessments h ON ei.id = h.interview_id
         ";
 
         $countSql = "
@@ -455,6 +455,29 @@ class ExitInterviewModel extends ExitManagementModel
             ");
         }
         return $stmt->execute([$status, $interviewId]);
+    }
+
+    /**
+     * Check if the interview has an HR assessment with at least one non-empty field.
+     */
+    public function hasHrAssessmentContent(int $interviewId): bool
+    {
+        $stmt = $this->db->prepare("SELECT summary, key_findings, hr_recommendations, follow_up_actions, rehire_eligibility, knowledge_transfer_required FROM exit_interview_hr_assessments WHERE interview_id = ? LIMIT 1");
+        $stmt->execute([$interviewId]);
+        $assessment = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$assessment) {
+            return false;
+        }
+
+        return (
+            trim((string)($assessment['summary'] ?? '')) !== '' ||
+            trim((string)($assessment['key_findings'] ?? '')) !== '' ||
+            trim((string)($assessment['hr_recommendations'] ?? '')) !== '' ||
+            trim((string)($assessment['follow_up_actions'] ?? '')) !== '' ||
+            trim((string)($assessment['rehire_eligibility'] ?? '')) !== '' ||
+            (string)($assessment['knowledge_transfer_required'] ?? '') === '1'
+        );
     }
 
     /**
