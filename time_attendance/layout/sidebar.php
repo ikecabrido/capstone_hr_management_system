@@ -53,12 +53,6 @@ $roleLabel = $current_role === 'time' ? 'HR' : 'User';
             <p>Absence & Late Management</p>
           </a>
         </li>
-        <li class="nav-item">
-          <a href="approve_attendance.php" class="nav-link <?= $current_page === 'approve_attendance.php' ? 'active' : '' ?>">
-            <i class="nav-icon fas fa-check-circle"></i>
-            <p>Approve Manual Time</p>
-          </a>
-        </li>
         <!-- Biometric links removed -->
         <li class="nav-item">
           <a href="shifts.php" class="nav-link <?= $current_page === 'shifts.php' ? 'active' : '' ?>">

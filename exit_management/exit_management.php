@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once "../auth/auth_check.php";
+require_once __DIR__ . "/../auth/auth_check.php";
 require_once "controllers/ExitManagementController.php";
 require_once "controllers/ResignationController.php";
 require_once "controllers/ExitInterviewController.php";

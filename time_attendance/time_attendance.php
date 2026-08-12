@@ -27,85 +27,8 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
     href="../assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css" />
   <!-- Theme style -->
   <link rel="stylesheet" href="../assets/dist/css/adminlte.min.css" />
-  <link rel="stylesheet" href="custom.css" />
   <link rel="stylesheet" href="../layout/toast.css" />
-  <style>
-    /* AdminLTE Preloader Styles */
-    .preloader {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, #0d47a1 0%, #0b3c91 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      z-index: 99999;
-    }
-
-    .preloader.flex-column {
-      flex-direction: column;
-    }
-
-    .preloader.justify-content-center {
-      justify-content: center;
-    }
-
-    .preloader.align-items-center {
-      align-items: center;
-    }
-
-    .preloader img {
-      max-width: 100px;
-      height: auto;
-      display: block;
-    }
-
-    .animation__wobble {
-      animation: wobble 2.5s infinite ease-in-out;
-    }
-
-    @keyframes wobble {
-      0% {
-        transform: translateX(0);
-      }
-      15% {
-        transform: translateX(-5px) rotate(-5deg);
-      }
-      30% {
-        transform: translateX(3px) rotate(3deg);
-      }
-      45% {
-        transform: translateX(-3px) rotate(-3deg);
-      }
-      60% {
-        transform: translateX(2px) rotate(2deg);
-      }
-      75% {
-        transform: translateX(-1px) rotate(-1deg);
-      }
-      100% {
-        transform: translateX(0);
-      }
-    }
-
-    /* Remove sidebar list markers */
-    .nav-sidebar,
-    .nav-sidebar ul {
-      list-style: none !important;
-      margin: 0 !important;
-      padding: 0 !important;
-    }
-
-    .nav-sidebar li,
-    .nav-sidebar li.nav-item {
-      list-style: none !important;
-      margin: 0 !important;
-      padding: 0 !important;
-    }
-  </style>
+  <link rel="stylesheet" href="assets/css/preloader.css" />
 </head>
 
 <body
@@ -550,7 +473,6 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
   <script src="../assets/dist/js/global_modal.js"></script>
   <script src="../assets/dist/js/profile.js"></script>
 
-  <script></script>
 </body>
 
 =======
@@ -588,7 +510,7 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet" />
   <!-- Calendar Schedule CSS -->
   <link rel="stylesheet" href="app/css/calendar_schedule.css" />
-  <link rel="stylesheet" href="custom.css" />
+  <link rel="stylesheet" href="assets/css/custom.css" />
   <link rel="stylesheet" href="../layout/toast.css" />
 </head>
 
@@ -1069,38 +991,8 @@ $theme = $_SESSION['user']['theme'] ?? 'light';
   <script src="app/js/calendar_schedule.js"></script>
   <!-- Holiday Calendar JS -->
   <script src="app/js/holiday_calendar.js"></script>
-
-  <script>
-    // Hide preloader after page loads
-    document.addEventListener('DOMContentLoaded', function() {
-      const preloader = document.querySelector('.preloader');
-      setTimeout(() => {
-        if (preloader) {
-          preloader.style.display = 'none';
-        }
-      }, 3000); // Allow animation to loop multiple times
-    });
-
-    // Activate correct tab based on URL parameter
-    (function() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const tab = urlParams.get('tab');
-      if (tab) {
-        const tabLink = document.querySelector('a[href="#' + tab + '"]');
-        if (tabLink) {
-          // Use Bootstrap tab or jQuery fallback
-          if (typeof $.fn.tab === 'function') {
-            $(tabLink).tab('show');
-          } else if (typeof bootstrap !== 'undefined') {
-            const bsTab = new bootstrap.Tab(tabLink);
-            bsTab.show();
-          }
-        }
-      }
-    })();
-  </script>
-
-  <script></script>
+  <script src="assets/js/preloader.js"></script>
+  <script src="assets/js/time-attendance-dashboard.js"></script>
 </body>
 
 >>>>>>> master

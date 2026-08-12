@@ -45,7 +45,7 @@ try {
 }
 
 // Initialize if requested
-if ($_POST['action'] === 'init' && $tableExists) {
+if (($_POST['action'] ?? null) === 'init' && $tableExists) {
     try {
         // Sync current and next year holidays
         $result = $nagerService->syncHolidays($_SESSION['user_id'] ?? null);
@@ -82,76 +82,7 @@ if ($tableExists) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Holiday Feature Setup</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css">
-    <style>
-        .setup-container {
-            max-width: 600px;
-            margin: 50px auto;
-            padding: 30px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .setup-header {
-            text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 20px;
-        }
-
-        .setup-header h1 {
-            color: #333;
-            font-weight: 600;
-        }
-
-        .stats-card {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 10px 0;
-        }
-
-        .stats-card h5 {
-            color: #007bff;
-            margin-bottom: 10px;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 3px;
-            font-size: 0.9rem;
-        }
-
-        .status-success {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .status-error {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .feature-list {
-            list-style: none;
-            padding: 0;
-        }
-
-        .feature-list li {
-            padding: 10px;
-            margin: 5px 0;
-            background: #f8f9fa;
-            border-left: 4px solid #007bff;
-        }
-
-        .feature-list li:before {
-            content: "✓ ";
-            color: #28a745;
-            font-weight: bold;
-            margin-right: 10px;
-        }
-    </style>
+    <link rel="stylesheet" href="../../assets/css/holiday-setup.css">
 </head>
 <body>
     <div class="setup-container">

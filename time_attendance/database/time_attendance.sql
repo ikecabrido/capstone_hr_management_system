@@ -4999,38 +4999,6 @@ INSERT INTO `ta_attendance` (`attendance_id`, `employee_id`, `shift_id`, `attend
 -- --------------------------------------------------------
 
 --
--- Table structure for table `ta_attendance_backup`
---
-
-CREATE TABLE `ta_attendance_backup` (
-  `attendance_id` int(11) NOT NULL DEFAULT 0,
-  `employee_id` varchar(50) DEFAULT NULL,
-  `shift_id` int(11) DEFAULT NULL,
-  `attendance_date` date NOT NULL,
-  `time_in` datetime DEFAULT NULL,
-  `time_out` datetime DEFAULT NULL,
-  `recorded_by` enum('MANUAL','QR','SYSTEM') NOT NULL DEFAULT 'MANUAL',
-  `status` enum('PRESENT','ABSENT','LATE','EARLY_OUT','PENDING_APPROVAL') NOT NULL DEFAULT 'PENDING_APPROVAL',
-  `is_approved` tinyint(1) DEFAULT 0,
-  `approved_by` int(11) DEFAULT NULL,
-  `approval_remarks` varchar(255) DEFAULT NULL,
-  `approved_at` datetime DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `total_hours_worked` decimal(5,2) DEFAULT NULL,
-  `regular_hours` decimal(5,2) DEFAULT NULL,
-  `overtime_hours` decimal(5,2) DEFAULT NULL,
-  `is_within_time_window` tinyint(1) DEFAULT 1,
-  `is_within_timeout_window` tinyint(1) DEFAULT 1,
-  `is_within_shift_hours` tinyint(1) DEFAULT 1,
-  `late_minutes` int(11) DEFAULT 0 COMMENT 'Number of minutes employee was late (0 if on time)',
-  `early_out_minutes` int(11) DEFAULT 0 COMMENT 'Number of minutes employee left early (0 if on time)',
-  `shift_minutes` int(11) DEFAULT 0 COMMENT 'Expected shift duration in minutes'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `ta_attendance_metrics`
 --
 
@@ -7620,23 +7588,6 @@ INSERT INTO `ta_leave_balances` (`leave_balance_id`, `employee_id`, `leave_type_
 (0, 12, 7, 2026, 5.00, 0.00, 5.00, 'Bereavement Leave', '2026-04-05 20:59:11', '2026-04-05 20:59:11', NULL),
 (0, 13, 7, 2026, 5.00, 0.00, 5.00, 'Bereavement Leave', '2026-04-05 20:59:11', '2026-04-05 20:59:11', NULL),
 (0, 14, 7, 2026, 5.00, 0.00, 5.00, 'Bereavement Leave', '2026-04-05 20:59:11', '2026-04-05 20:59:11', NULL);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `ta_leave_daily_records`
---
-
-CREATE TABLE `ta_leave_daily_records` (
-  `daily_record_id` int(11) NOT NULL,
-  `leave_request_id` int(11) NOT NULL,
-  `employee_id` int(11) NOT NULL,
-  `leave_date` date NOT NULL,
-  `leave_type_id` int(11) NOT NULL,
-  `is_holiday` tinyint(1) DEFAULT 0,
-  `balance_deducted` tinyint(1) DEFAULT 1,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 

@@ -122,8 +122,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generate QR Codes - Time & Attendance System</title>
     <link rel="icon" href="../Bestlink College of the Philippines.jpeg" type="image/jpeg">
-    <link rel="stylesheet" href="../assets/style.css">
-    <script src="../assets/mobile-responsive.js" defer></script>
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <script src="../assets/js/mobile-responsive.js" defer></script>
 </head>
 <body>
     <div class="preloader flex-column justify-content-center align-items-center">
@@ -323,16 +323,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         </div>
     </main>
 
-    <script>
-        function copyToClipboard(text) {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            alert('Token copied to clipboard!');
-        }
-    </script>
+    <script src="../assets/js/qr-generate.js"></script>
 </html>
 
