@@ -554,6 +554,8 @@ class ExitManagementController
 
                 case 'get_approved_exit_cases':
                     return $this->model->getApprovedExitCases();
+                case 'get_eligible_post_exit_cases':
+                    return $this->model->getEligiblePostExitFeedbackCases();
                 case 'get_active_exit_cases':
                     return $this->model->getActiveExitCases();
 

@@ -153,8 +153,9 @@ class DocumentationController extends ExitManagementController
     /**
      * Get employee documents
      */
-    public function getEmployeeDocuments(int $employeeId): array
+    public function getEmployeeDocuments(string $employeeId): array
     {
+        // Accept alphanumeric employee identifiers (some deployments use codes instead of numeric IDs)
         return $this->documentationModel->getDocumentsByEmployee($employeeId);
     }
 
@@ -376,7 +377,8 @@ class DocumentationController extends ExitManagementController
                 return $this->updateDocument($data);
 
             case 'get_employee_documents':
-                return $this->getEmployeeDocuments($data['employee_id'] ?? 0);
+                // pass through the provided employee identifier (may be alphanumeric)
+                return $this->getEmployeeDocuments($data['employee_id'] ?? '');
 
             case 'check_required_documents':
                 return $this->checkRequiredDocuments($data['employee_id'] ?? 0);

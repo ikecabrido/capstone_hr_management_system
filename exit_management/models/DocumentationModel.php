@@ -109,14 +109,15 @@ class DocumentationModel extends ExitManagementModel
     /**
      * Get documents by employee
      */
-    public function getDocumentsByEmployee(int $employeeId): array
+    public function getDocumentsByEmployee(string $employeeId): array
     {
+        // employee_id column is varchar(50) in many deployments; accept string identifiers
         $stmt = $this->db->prepare("
             SELECT * FROM exit_documents
             WHERE employee_id = ? AND status = 'active'
             ORDER BY created_at DESC
         ");
-        $stmt->execute([$employeeId]);
+        $stmt->execute([(string)$employeeId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 

@@ -767,8 +767,37 @@ function loadEmployees(callback) {
     });
 }
 
+function syncInterviewCaseFieldsFromSelect(selectSelector = '#interviewCaseSelect') {
+    const $select = $(selectSelector);
+    const selected = $select.val();
+
+    if (!selected) {
+        $('#interviewExitCaseType').val('');
+        $('#interviewExitCaseId').val('');
+        $('#interviewEmployeeId').val('');
+        return;
+    }
+
+    const [caseType, ...caseIdParts] = String(selected).split(':');
+    const caseId = caseIdParts.join(':');
+    const employeeId = $select.find('option:selected').data('employee-id') || '';
+
+    if (!caseType || !caseId) {
+        $('#interviewExitCaseType').val('');
+        $('#interviewExitCaseId').val('');
+        $('#interviewEmployeeId').val('');
+        return;
+    }
+
+    $('#interviewExitCaseType').val(caseType);
+    $('#interviewExitCaseId').val(caseId);
+    $('#interviewEmployeeId').val(employeeId);
+}
+
 // Load employees with resignations for exit interview modal
 function updateInterviewSubmitState() {
+    syncInterviewCaseFieldsFromSelect();
+
     const selectedCase = $('#interviewCaseSelect').val();
     const selectedInterviewer = $('#interviewerSelect').val();
     const scheduledDate = $('#interviewDate').val();
@@ -838,10 +867,11 @@ function loadApprovedExitCases(selectSelector, callback) {
             const employeeField = selectSelector === '#interviewCaseSelect' ? '#interviewEmployeeId' : '#answerSurveyEmployeeId';
 
             if (selected) {
-                const [caseType, caseId] = selected.split(':');
-                const employeeId = $(this).find('option:selected').data('employee-id');
-                $(caseTypeField).val(caseType);
-                $(caseIdField).val(caseId);
+                const [caseType, ...caseIdParts] = String(selected).split(':');
+                const caseId = caseIdParts.join(':');
+                const employeeId = $(this).find('option:selected').data('employee-id') || '';
+                $(caseTypeField).val(caseType || '');
+                $(caseIdField).val(caseId || '');
                 $(employeeField).val(employeeId);
             } else {
                 $(caseTypeField).val('');
@@ -854,6 +884,10 @@ function loadApprovedExitCases(selectSelector, callback) {
             }
         });
 
+        if (selectSelector === '#interviewCaseSelect') {
+            syncInterviewCaseFieldsFromSelect();
+        }
+
         if (typeof callback === 'function') callback();
     }, 'json').fail(function(err) {
         console.error('Error loading approved exit cases:', err);
@@ -863,6 +897,65 @@ function loadApprovedExitCases(selectSelector, callback) {
         if (selectSelector === '#interviewCaseSelect') {
             updateInterviewSubmitState();
         }
+        if (typeof callback === 'function') callback();
+    });
+}
+
+function loadEligiblePostExitFeedbackCases(selectSelector, callback) {
+    const $select = $(selectSelector || '#answerSurveyCaseSelect');
+
+    $.post('exit_management.php', {
+        ajax_action: 'get_eligible_post_exit_cases',
+        controller: 'exit_management'
+    }, function(response) {
+        const cases = Array.isArray(response)
+            ? response
+            : (response && Array.isArray(response.data)
+                ? response.data
+                : (response && Array.isArray(response.cases)
+                    ? response.cases
+                    : []));
+
+        if (cases && cases.length > 0) {
+            const caseOptions = '<option value="">Select Eligible Exit Case</option>' +
+                cases.map(emp => {
+                    const exitDate = emp.exit_date || emp.last_working_date || emp.effective_date || '';
+                    const exitType = emp.exit_case_type ? emp.exit_case_type.charAt(0).toUpperCase() + emp.exit_case_type.slice(1) : '';
+                    return `
+                        <option value="${emp.exit_case_type}:${emp.exit_case_id}"
+                                data-employee-id="${emp.employee_id}">
+                            ${emp.full_name} (${emp.username}) - ${exitType} - ${emp.exit_reason || ''} (${exitDate})
+                        </option>
+                    `;
+                }).join('');
+
+            $select.html(caseOptions);
+        } else {
+            $select.html('<option value="">No eligible exit cases found</option>');
+            showToast('info', 'No approved exit cases have completed all required exit-management steps for post-exit feedback yet.');
+        }
+
+        $select.off('change').on('change', function() {
+            const selected = $(this).val();
+            if (selected) {
+                const [caseType, ...caseIdParts] = String(selected).split(':');
+                const caseId = caseIdParts.join(':');
+                const employeeId = $(this).find('option:selected').data('employee-id') || '';
+                $('#answerSurveyExitCaseType').val(caseType || '');
+                $('#answerSurveyExitCaseId').val(caseId || '');
+                $('#answerSurveyEmployeeId').val(employeeId);
+            } else {
+                $('#answerSurveyExitCaseType').val('');
+                $('#answerSurveyExitCaseId').val('');
+                $('#answerSurveyEmployeeId').val('');
+            }
+            updateAnswerSurveySubmitState();
+        });
+
+        if (typeof callback === 'function') callback();
+    }, 'json').fail(function(err) {
+        console.error('Error loading eligible post-exit feedback cases:', err);
+        $select.html('<option value="">Error loading eligible exit cases</option>');
         if (typeof callback === 'function') callback();
     });
 }
@@ -1210,16 +1303,68 @@ function showDocumentModal(documentId = null, options = {}) {
 }
 
 function showSurveyModal(surveyId = null) {
+    $('#surveyForm')[0].reset();
+    $('#surveyId').val('');
+    $('#surveyTitle').val('Post-Exit Survey');
+    $('#surveyExitCaseType').val('');
+    $('#surveyExitCaseId').val('');
+    $('#surveyEmployeeSelect').html('<option value="">Loading eligible employees...</option>');
+    $('#surveyCaseSelect').html('<option value="">Select eligible exit case</option>');
+
     if (surveyId) {
-        $('#surveyModalTitle').text('Edit Survey');
-        loadSurveyData(surveyId);
-    } else {
-        $('#surveyModalTitle').text('Create Post-Exit Survey');
-        $('#surveyForm')[0].reset();
-        $('#surveyId').val('');
-        $('#surveyQuestionsContainer').html(getSurveyQuestionTemplate(0));
+        $('#surveyModalTitle').text('View Scheduled Post-Exit Survey');
+        viewScheduledSurvey(surveyId);
+        return;
     }
+
+    $('#surveyModalTitle').text('Schedule Post-Exit Survey');
+    loadEligibleSurveyEmployees();
     $('#surveyModal').modal('show');
+}
+
+function loadEligibleSurveyEmployees() {
+    $.post('exit_management.php', {
+        ajax_action: 'get_eligible_post_exit_cases',
+        controller: 'exit_management'
+    }, function(response) {
+        const cases = Array.isArray(response) ? response : (response && Array.isArray(response.data) ? response.data : []);
+
+        if (!cases.length) {
+            $('#surveyEmployeeSelect').html('<option value="">No eligible employees found</option>');
+            $('#surveyExitCaseType').val('');
+            $('#surveyExitCaseId').val('');
+            return;
+        }
+
+        const employeeMap = {};
+        cases.forEach(item => {
+            if (!employeeMap[item.employee_id]) {
+                employeeMap[item.employee_id] = item;
+            }
+        });
+
+        const employeeOptions = '<option value="">Select eligible employee</option>' +
+            Object.values(employeeMap).map(item => `<option value="${item.employee_id}" data-case-type="${item.exit_case_type}" data-case-id="${item.exit_case_id}">${item.full_name} (${item.username}) - ${item.exit_case_type.charAt(0).toUpperCase() + item.exit_case_type.slice(1)} #${item.exit_case_id}</option>`).join('');
+
+        $('#surveyEmployeeSelect').html(employeeOptions);
+        $('#surveyEmployeeSelect').off('change').on('change', function() {
+            const employeeId = $(this).val();
+            const selectedEmployeeCase = cases.find(item => String(item.employee_id) === String(employeeId));
+
+            if (!employeeId || !selectedEmployeeCase) {
+                $('#surveyExitCaseType').val('');
+                $('#surveyExitCaseId').val('');
+                return;
+            }
+
+            $('#surveyExitCaseType').val(selectedEmployeeCase.exit_case_type || '');
+            $('#surveyExitCaseId').val(selectedEmployeeCase.exit_case_id || '');
+        });
+    }, 'json').fail(function() {
+        $('#surveyEmployeeSelect').html('<option value="">Error loading eligible employees</option>');
+        $('#surveyExitCaseType').val('');
+        $('#surveyExitCaseId').val('');
+    });
 }
 
 // Form submission functions
@@ -1264,6 +1409,8 @@ function submitResignationForm() {
 }
 
 function submitInterviewForm() {
+    syncInterviewCaseFieldsFromSelect();
+
     const formData = new FormData($('#interviewForm')[0]);
     const interviewId = $('#interviewId').val();
     
@@ -1509,11 +1656,31 @@ function loadDocumentCases(employeeId = '') {
 function submitSurveyForm() {
     const formData = new FormData($('#surveyForm')[0]);
     const surveyId = $('#surveyId').val();
-    
+    const employeeId = $('#surveyEmployeeSelect').val();
+    const exitCaseType = $('#surveyExitCaseType').val();
+    const exitCaseId = $('#surveyExitCaseId').val();
+    const scheduledDate = $('#surveyScheduledDate').val();
+    const scheduledTime = $('#surveyScheduledTime').val();
+
+    if (!employeeId || !exitCaseType || !exitCaseId) {
+        showToast('error', 'Please select an eligible employee and exit case.');
+        return;
+    }
+
+    if (!scheduledDate || !scheduledTime) {
+        showToast('error', 'Please choose the scheduled date and time for the post-exit survey.');
+        return;
+    }
+
+    formData.set('employee_id', employeeId);
+    formData.set('exit_case_type', exitCaseType);
+    formData.set('exit_case_id', exitCaseId);
+    formData.set('scheduled_date', scheduledDate);
+    formData.set('scheduled_time', scheduledTime);
     formData.append('ajax_action', surveyId ? 'update_survey' : 'submit_survey');
     formData.append('controller', 'survey');
 
-    $('#surveySubmitBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+    $('#surveySubmitBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Scheduling...');
 
     $.ajax({
         url: 'exit_management.php',
@@ -1524,18 +1691,150 @@ function submitSurveyForm() {
         success: function(response) {
             if (response.success) {
                 $('#surveyModal').modal('hide');
-                showToast('success', response.message);
+                showToast('success', response.message || 'Post-exit survey scheduled successfully.');
                 loadSurveysTable();
             } else {
-                showToast('error', response.message);
+                showToast('error', response.message || 'Unable to schedule the survey.');
             }
         },
         error: function() {
             showToast('error', 'An error occurred while saving the survey.');
         },
         complete: function() {
-            $('#surveySubmitBtn').prop('disabled', false).html('Create Survey');
+            $('#surveySubmitBtn').prop('disabled', false).html('Schedule Survey');
         }
+    });
+}
+
+function viewScheduledSurvey(surveyId) {
+    const jq = $.ajax({
+        url: 'exit_management.php',
+        type: 'POST',
+        dataType: 'json',
+        data: {
+            ajax_action: 'get_survey',
+            controller: 'survey',
+            survey_id: surveyId
+        }
+    });
+
+    jq.done(function(response) {
+        // Accept either raw survey object or wrapper { success: true, data: {...} }
+        let surveyResponse = response;
+        if (response && response.success && response.data) {
+            surveyResponse = response.data;
+        }
+
+        if (!surveyResponse || typeof surveyResponse.id === 'undefined' || surveyResponse.id === null) {
+            console.error('viewScheduledSurvey: unexpected response', response);
+            showToast('error', response && (response.message || response.error) ? (response.message || response.error) : 'Survey details could not be loaded.');
+            return;
+        }
+
+        const questions = Array.isArray(surveyResponse.questions) ? surveyResponse.questions : [];
+        const questionHtml = questions.length ? questions.map((question, index) => {
+            const qType = question.question_type || 'rating';
+            const qText = question.question_text || question.text || `Question ${index + 1}`;
+            const requiredMark = question.required ? ' <span class="text-danger">*</span>' : '';
+
+            let inputHtml = '<textarea class="form-control" rows="3" data-question-id="' + question.id + '" placeholder="Enter answer..."></textarea>';
+            if (qType === 'rating') {
+                inputHtml = '<div class="rating-row" data-question-id="' + question.id + '">';
+                inputHtml += [1, 2, 3, 4, 5].map(value => '\n                    <button type="button" class="btn btn-outline-warning rating-star mr-1" data-rating="' + value + '" aria-label="' + value + ' stars"><i class="far fa-star"></i></button>\n                ').join('');
+                inputHtml += '<input type="hidden" id="rating_' + question.id + '" name="responses[' + question.id + ']" class="rating-value-hidden" value="">';
+                inputHtml += '</div>';
+            }
+
+            return '<div class="card mb-3"><div class="card-body"><p class="font-weight-bold mb-2">' + (index + 1) + '. ' + qText + requiredMark + '</p>' + inputHtml + '</div></div>';
+        }).join('') : '<div class="alert alert-info">No questions found for this survey.</div>';
+
+        const modalHtml = `
+            <div class="modal fade exit-modal" id="scheduledSurveyViewModal" tabindex="-1" role="dialog">
+                <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title">${surveyResponse.title || 'Post-Exit Survey'} - ${surveyResponse.employee_name || 'Employee'}</h5>
+                            <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3 p-3 border rounded bg-light">
+                                <div><strong>Employee:</strong> ${surveyResponse.employee_name || 'N/A'}</div>
+                                <div><strong>Exit Case:</strong> ${surveyResponse.exit_case_type ? surveyResponse.exit_case_type.charAt(0).toUpperCase() + surveyResponse.exit_case_type.slice(1) : 'N/A'} #${surveyResponse.exit_case_id || 'N/A'}</div>
+                                <div><strong>Schedule:</strong> ${surveyResponse.scheduled_date || 'N/A'} ${surveyResponse.scheduled_time || ''}</div>
+                            </div>
+                            ${questionHtml}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-success" onclick="approveScheduledSurvey(${surveyId})"><i class="fas fa-check"></i> Approve & Archive</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        $('body').append(modalHtml);
+        $('#scheduledSurveyViewModal').modal('show');
+        $('#scheduledSurveyViewModal').on('hidden.bs.modal', function() {
+            $(this).remove();
+        });
+
+        $(document).off('click.surveyRating').on('click.surveyRating', '.rating-star, .rating-star-btn', function() {
+            const $btn = $(this);
+            const rating = $btn.data('rating');
+            const $container = $btn.closest('.rating-row');
+            if (!$container.length) return;
+            // reset stars within this question only
+            $container.find('.rating-star, .rating-star-btn').removeClass('btn-warning').addClass('btn-outline-warning');
+            $container.find('.rating-star[data-rating] i').removeClass('fas').addClass('far');
+            // set selected stars icon and button style
+            $container.find('.rating-star').each(function() {
+                const val = $(this).data('rating');
+                if (val <= rating) {
+                    $(this).removeClass('btn-outline-warning').addClass('btn-warning');
+                    $(this).find('i').removeClass('far').addClass('fas');
+                }
+            });
+            $container.find('.rating-value-hidden').val(rating);
+        });
+    });
+
+    jq.fail(function(jqxhr, status, err) {
+        console.error('viewScheduledSurvey: AJAX failed', status, err, jqxhr.responseText);
+        showToast('error', 'Failed to load survey details (server or network error).');
+    });
+}
+
+function approveScheduledSurvey(surveyId) {
+    const $modal = $('#scheduledSurveyViewModal');
+    const hasMissing = $modal.find('textarea[data-question-id], .rating-value-hidden').filter(function() {
+        if ($(this).hasClass('rating-value-hidden')) {
+            return !$(this).val();
+        }
+        return !$(this).val().trim();
+    }).length > 0;
+
+    if (hasMissing) {
+        showToast('warning', 'Please complete all 15 questions before approving the survey.');
+        return;
+    }
+
+    $.post('exit_management.php', {
+        ajax_action: 'archive_survey',
+        controller: 'survey',
+        survey_id: surveyId,
+        archive_reason: 'Post-exit survey approved and archived.'
+    }, function(response) {
+        if (response && response.success) {
+            showToast('success', 'Survey approved and archived successfully.');
+            $modal.modal('hide');
+            loadSurveysTable();
+            loadDashboardData();
+        } else {
+            showToast('error', response && response.message ? response.message : 'Unable to approve this survey.');
+        }
+    }, 'json').fail(function() {
+        showToast('error', 'Failed to approve the post-exit survey.');
     });
 }
 
@@ -1752,7 +2051,7 @@ function loadResignationData(id, callback) {
         controller: 'resignation',
         resignation_id: id
     }, function(response) {
-        response = response && response.data && !response.id ? response.data : response;
+        response = response && response.data && (typeof response.id === 'undefined' || response.id === null) ? response.data : response;
         if (response && !response.error) {
             const employeeId = response.employee_id || response.emp_id || '';
 
@@ -1897,7 +2196,7 @@ function loadInterviewData(id, viewOnly = false) {
             response = response.data;
         }
         if (response && !response.error) {
-            response.id = response.id || id;
+            if (typeof response.id === 'undefined' || response.id === null) response.id = id;
             $('#interviewId').val(response.id);
             const caseType = response.exit_case_type || '';
             const caseId = response.exit_case_id || '';
@@ -2141,9 +2440,9 @@ function loadSettlementData(id, viewOnly = false, callback = null) {
     }, function(response) {
         console.log('Settlement response:', response);
         // Support both the direct settlement payload and an optional data wrapper.
-        response = response && response.data && !response.id ? response.data : response;
+        response = response && response.data && (typeof response.id === 'undefined' || response.id === null) ? response.data : response;
         if (response && !response.error) {
-            $('#settlementId').val(response.id || id);
+            $('#settlementId').val((typeof response.id !== 'undefined' && response.id !== null) ? response.id : id);
             const responseCaseType = response.exit_case_type || (response.resignation_id ? 'resignation' : '');
             const responseCaseId = response.exit_case_id || response.resignation_id || '';
             let selectedCaseValue = responseCaseType && responseCaseId
@@ -2490,12 +2789,74 @@ function loadTerminationsTable(status = 'active', page = 1, searchTerm = '') {
     });
 }
 
+function buildTerminationLetterPreview(data = {}) {
+    const employeeName = data.employee_name || 'Employee';
+    const reason = (data.termination_reason || '').trim();
+    const effectiveDate = data.effective_date || 'TBD';
+    const comments = (data.comments || '').trim();
+    const reasonText = reason ? `Reason for termination: ${escapeHtml(reason)}` : 'Reason for termination: ________________________________________________';
+    const commentsHtml = comments ? `<div style="margin-top: 18px;"><strong>Additional Notes:</strong> ${escapeHtml(comments)}</div>` : '';
+
+    return `
+        <div style="background:#fff; border:1px solid #dfe5ec; box-shadow:0 2px 10px rgba(15,23,42,0.06); width:100%; min-height:760px; padding:34px 40px; color:#212529; font-family:'Segoe UI', Arial, sans-serif; box-sizing:border-box;">
+            <div style="display:flex; align-items:center; border-bottom:2px solid #1f5fbf; padding-bottom:14px; margin-bottom:20px;">
+                <img src="/capstone_hr_management_system2/assets/pics/bcpLogo.png" alt="Bestlink College of the Philippines logo" style="width:86px; height:86px; object-fit:contain; margin-right:18px;">
+                <div>
+                    <div style="font-size:20px; font-weight:700; color:#174a8b;">Bestlink College of the Philippines - Bulacan Campus</div>
+                    <div style="font-size:12px; line-height:1.6; color:#333; margin-top:4px;">Lot 1 Ipo Road Brgy. Minuyan Proper, City of San Jose Del Monte, Bulacan.<br>Tel. No.: (044)792-1992</div>
+                </div>
+            </div>
+
+            <div style="font-size:30px; font-weight:700; letter-spacing:0.04em; color:#1d2d3d; margin-bottom:28px;">TERMINATION LETTER</div>
+
+            <div style="font-size:20px; line-height:1.9; color:#1f2937;">
+                <p style="margin:0 0 18px;">This letter serves as formal notice that <strong>${escapeHtml(employeeName)}</strong> is being terminated effective <strong>${escapeHtml(effectiveDate)}</strong>.</p>
+                <p style="margin:0 0 18px;">${reasonText}</p>
+                ${commentsHtml}
+                <p style="margin:20px 0 0;">This action is being carried out in accordance with company policy and the approved exit process. The employee will receive the applicable final documentation and settlement details through the appropriate HR channels.</p>
+
+                <div style="margin-top:72px; font-size:18px;">
+                    <div style="margin-bottom:8px;">HR Management</div>
+                    <div>Bestlink College of the Philippines</div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function updateTerminationLetterPreview() {
+    const employeeName = $('#terminationEmployeeSelect option:selected').text() || 'Employee';
+    const previewData = {
+        employee_name: employeeName.replace(/\s*\([^)]*\)$/, ''),
+        termination_reason: $('#terminationReason').val(),
+        effective_date: $('#terminationEffectiveDate').val() || 'TBD',
+        comments: $('#terminationComments').val()
+    };
+
+    $('#terminationLetterContent').html(buildTerminationLetterPreview(previewData));
+}
+
 function showTerminationModal(terminationId = null) {
     $('#terminationForm')[0].reset();
     $('#terminationId').val('');
     $('#terminationApprovalSection').hide();
+    $('#terminationLetterSection').hide();
     $('#terminationEligibilityMessage').hide();
     $('#terminationSubmitBtn').prop('disabled', false).text('Submit Termination');
+
+    $('#terminationReason').off('input.terminationLetter').on('input.terminationLetter', updateTerminationLetterPreview);
+    $('#terminationEffectiveDate').off('change.terminationLetter').on('change.terminationLetter', updateTerminationLetterPreview);
+    $('#terminationComments').off('input.terminationLetter').on('input.terminationLetter', updateTerminationLetterPreview);
+    $('#terminationEmployeeSelect').off('change.terminationLetter').on('change.terminationLetter', updateTerminationLetterPreview);
 
     if (terminationId) {
         $('#terminationModalTitle').text('Review Termination');
@@ -2516,6 +2877,8 @@ function showTerminationModal(terminationId = null) {
                 $('#terminationComments').val(response.data.comments || '');
                 $('#terminationApprovalStatus').val(response.data.status || 'pending_review');
                 $('#terminationApprovalComments').val('');
+                $('#terminationLetterContent').html(buildTerminationLetterPreview(response.data));
+                $('#terminationLetterSection').show();
                 $('#terminationModal').modal('show');
             } else {
                 showToast('error', response.message || 'Unable to load termination details.');
@@ -2526,6 +2889,8 @@ function showTerminationModal(terminationId = null) {
         });
     } else {
         $('#terminationModalTitle').text('Initiate Termination');
+        $('#terminationLetterSection').show();
+        updateTerminationLetterPreview();
         $('#terminationModal').modal('show');
     }
 }
@@ -2627,7 +2992,7 @@ function unarchiveTermination(id) {
 function loadArchivedResignationsTable(page = 1, inModal = false) {
     const tbody = inModal ? $('#modal-archived-resignations-tbody') : $('#archived-resignations-tbody');
     const paginationId = inModal ? 'modal-archived-resignations-pagination' : 'archived-resignations-pagination';
-    const noDataCols = inModal ? 7 : 10;
+    const noDataCols = 10;
     showTableLoading(tbody, noDataCols);
 
     $.post('exit_management.php', {
@@ -2644,41 +3009,28 @@ function loadArchivedResignationsTable(page = 1, inModal = false) {
                 const tooltip = resignation.archive_reason ? `Archive reason: ${resignation.archive_reason}` : '';
                 const actions = `
                     <div class="table-actions">
+                        <button class="btn btn-sm btn-info action-button" onclick='showArchivedResignationDetails(${JSON.stringify(resignation)})' title="View Archived Resignation" aria-label="View Archived Resignation">
+                            <i class="fas fa-eye"></i>
+                        </button>
                         <button class="btn btn-sm btn-success action-button" onclick="unarchiveResignation(${resignation.id})" title="Unarchive Resignation" aria-label="Unarchive Resignation">
                             <i class="fas fa-undo"></i>
                         </button>
                     </div>
                 `;
 
-                if (inModal) {
-                    tbody.append(`
-                        <tr title="${tooltip}">
-                            <td>${resignation.employee_name || '<em class="text-danger">Missing Employee</em>'}</td>
-                            <td>${resignation.department || '-'}</td>
-                            <td>${resignation.email || '-'}</td>
-                            <td>${resignation.position || '-'}</td>
-                            <td>${resignation.resignation_type || '-'}</td>
-                            <td>${resignation.reason || '-'}</td>
-                            <td>${actions}</td>
-                        </tr>
-                    `);
-                } else {
-                    tbody.append(`
-                        <tr title="${tooltip}">
-                            <td>${resignation.employee_name || '<em class="text-danger">Missing Employee</em>'}</td>
-                            <td>${resignation.department || '-'}</td>
-                            <td>${resignation.email || '-'}</td>
-                            <td>${resignation.position || '-'}</td>
-                            <td>${resignation.resignation_type || '-'}</td>
-                            <td>${resignation.reason || '-'}</td>
-                            <td>${resignation.notice_date || '-'}</td>
-                            <td>${resignation.last_working_date || '-'}</td>
-                            <td>${resignation.comments ? resignation.comments.substring(0, 50) + '...' : '-'}</td>
-                            <td class="status-cell">${statusBadge}</td>
-                            <td class="actions-cell">${actions}</td>
-                        </tr>
-                    `);
-                }
+                tbody.append(`
+                    <tr title="${tooltip}">
+                        <td>${resignation.employee_name || '<em class="text-danger">Missing Employee</em>'}</td>
+                        <td>${resignation.department || '-'}</td>
+                        <td>${resignation.email || '-'}</td>
+                        <td>${resignation.position || '-'}</td>
+                        <td>${resignation.reason || '-'}</td>
+                        <td>${resignation.notice_date || '-'}</td>
+                        <td>${resignation.last_working_date || '-'}</td>
+                        <td class="status-cell">${statusBadge}</td>
+                        <td class="actions-cell">${actions}</td>
+                    </tr>
+                `);
             });
 
             renderPagination(paginationId, response.total, page, response.limit || 10, (newPage) => loadArchivedResignationsTable(newPage, inModal));
@@ -2692,6 +3044,88 @@ function loadArchivedResignationsTable(page = 1, inModal = false) {
         $(`#${paginationId}`).empty();
     });
 }
+
+function showArchivedResignationDetails(resignation) {
+    const body = $('#viewArchivedResignationBody');
+    const employeeName = resignation.employee_name || 'Unknown Employee';
+    const email = resignation.email || '-';
+    const department = resignation.department || '-';
+    const position = resignation.position || '-';
+    const reason = (resignation.reason || 'No reason provided').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const comments = (resignation.comments || 'No comments provided').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const archiveReason = (resignation.archive_reason || 'No archive reason provided').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const noticeDate = resignation.notice_date || '-';
+    const lastWorkingDate = resignation.last_working_date || '-';
+    const statusBadge = getStatusBadge(resignation.status || 'archived');
+
+    body.html(`
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label>Employee</label>
+                    <input type="text" class="form-control" value="${employeeName}" readonly>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label>Status</label>
+                    <div class="form-control-plaintext">${statusBadge}</div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label>Department</label>
+                    <input type="text" class="form-control" value="${department}" readonly>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label>Position</label>
+                    <input type="text" class="form-control" value="${position}" readonly>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="text" class="form-control" value="${email}" readonly>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label>Notice Date</label>
+                    <input type="text" class="form-control" value="${noticeDate}" readonly>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label>Last Working Date</label>
+                    <input type="text" class="form-control" value="${lastWorkingDate}" readonly>
+                </div>
+            </div>
+            <div class="col-md-12">
+                <div class="form-group">
+                    <label>Reason</label>
+                    <textarea class="form-control" rows="3" readonly>${reason}</textarea>
+                </div>
+            </div>
+            <div class="col-md-12">
+                <div class="form-group">
+                    <label>Comments</label>
+                    <textarea class="form-control" rows="3" readonly>${comments}</textarea>
+                </div>
+            </div>
+            <div class="col-md-12">
+                <div class="form-group">
+                    <label>Archive Reason</label>
+                    <textarea class="form-control" rows="3" readonly>${archiveReason}</textarea>
+                </div>
+            </div>
+        </div>
+    `);
+
+    $('#viewArchivedResignationModal').appendTo('body').modal('show');
+}
+
 
 function renderArchivedResignationsPage() {
     const tbody = $('#archived-resignations-tbody');
@@ -3255,7 +3689,11 @@ function viewExitCaseDocumentation(exitCaseId, exitCaseType) {
         const caseRecordEntryLabel = `${caseRecordLabel} Record`;
         const caseDocumentEntryLabel = `${caseDocumentLabel}`;
         const caseRecordSectionTitle = caseRecordLabel;
-        const caseLetterUploaded = Array.isArray(response.documents) && response.documents.some(doc => new RegExp(caseRecordLabel, 'i').test(doc.document_type || doc.title || '') || /letter/i.test(doc.document_type || doc.title || ''));
+        const caseLetterUploaded = Array.isArray(response.documents) && response.documents.some(doc => {
+            const dt = String(doc.document_type || '');
+            const tt = String(doc.title || '');
+            return new RegExp(caseRecordLabel, 'i').test(dt) || new RegExp(caseRecordLabel, 'i').test(tt) || /letter/i.test(dt) || /letter/i.test(tt);
+        });
         const interviewStarted = Boolean(response.exit_interview);
         const knowledgeTransferStarted = Boolean(response.knowledge_transfer);
         const settlementStarted = Boolean(response.settlement);
@@ -3321,7 +3759,12 @@ function viewExitCaseDocumentation(exitCaseId, exitCaseType) {
                     <div class="exit-record-group mb-4">
                         <div class="exit-record-title">${caseRecordSectionTitle}</div>
                         ${buildStatusItem(caseRecordCompleted, caseRecordEntryLabel)}
-                        ${buildStatusItem(caseRecordCompleted && caseLetterUploaded, caseDocumentEntryLabel)}
+                        ${caseRecordCompleted && caseLetterUploaded ? `
+                            <div class="exit-status-item" style="cursor:pointer;" onclick="openCaseLetterPreview(${exitCaseId}, '${exitCaseType}');">
+                                <span class="status-icon"><i class="fas fa-check-circle text-success"></i></span>
+                                <span>${caseDocumentEntryLabel}</span>
+                            </div>
+                        ` : buildStatusItem(caseRecordCompleted && caseLetterUploaded, caseDocumentEntryLabel)}
                     </div>
                     <div class="exit-record-group mb-4 d-flex justify-content-between align-items-start">
                         <div>
@@ -3365,9 +3808,14 @@ function viewExitCaseDocumentation(exitCaseId, exitCaseType) {
                             <div class="font-weight-bold">${docTitle}</div>
                             ${docDate}
                         </div>
-                        <button class="btn btn-sm btn-outline-success" onclick="downloadDocument(${doc.id})">
-                            <i class="fas fa-download"></i>
-                        </button>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary mr-2" onclick="previewDocument(${doc.id}, '${(doc.title||'').replace("'","\\'")}')" title="Preview Document">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-success" onclick="downloadDocument(${doc.id})" title="Download Document">
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </div>
                     </div>
                 `;
             });
@@ -3544,30 +3992,25 @@ function loadSurveysTable(status = 'all', page = 1, limit = 10, searchTerm = '')
 
         if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
             response.data.forEach(function(survey) {
-                const statusBadge = getStatusBadge(survey.status);
+                const statusBadge = getStatusBadge(survey.approval_status || survey.status || 'scheduled');
+                const employeeName = survey.employee_name || 'Unknown Employee';
+                const scheduledDate = survey.scheduled_date || survey.start_date || 'N/A';
+                const scheduledTime = survey.scheduled_time || 'N/A';
                 const actions = `
-                    <button class="btn btn-sm btn-success" onclick="answerSurvey(${survey.id})">
-                        <i class="fas fa-comments"></i> Record Feedback
-                    </button>
-                    <button class="btn btn-sm btn-info" onclick="showSurveyModal(${survey.id})">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-sm btn-warning" onclick="viewSurveyResponses(${survey.id})">
-                        <i class="fas fa-chart-bar"></i>
-                    </button>
-                    <button class="btn btn-sm btn-primary" onclick="duplicateSurvey(${survey.id})">
-                        <i class="fas fa-copy"></i>
+                    <button class="btn btn-sm btn-primary" onclick="viewScheduledSurvey(${survey.id})">
+                        <i class="fas fa-eye"></i> View
                     </button>
                     <button class="btn btn-sm btn-secondary" onclick="archiveSurvey(${survey.id})" title="Archive Survey">
-                        <i class="fas fa-archive"></i>
+                        <i class="fas fa-archive"></i> Archive
                     </button>
                 `;
 
                 tbody.append(`
                     <tr>
-                        <td>${survey.title}</td>
-                        <td>${survey.start_date}</td>
-                        <td>${survey.end_date}</td>
+                        <td>${employeeName}</td>
+                        <td>${survey.title || 'Post-Exit Survey'}</td>
+                        <td>${scheduledDate}</td>
+                        <td>${scheduledTime}</td>
                         <td>${statusBadge}</td>
                         <td>${actions}</td>
                     </tr>
@@ -3910,7 +4353,7 @@ function openArchivedResignationsModal(page = 1) {
     // ensure inline archived container is hidden when opening modal
     $('#archived-resignations-container').hide();
 
-    $('#modal-archived-resignations-tbody').html('<tr><td colspan="7" class="text-center text-muted">Loading archived resignations...</td></tr>');
+    $('#modal-archived-resignations-tbody').html('<tr><td colspan="10" class="text-center text-muted">Loading archived resignations...</td></tr>');
     $('#modal-archived-resignations-pagination').empty();
     // ensure modal is appended to body so Bootstrap places it above other containers
     $('#archivedResignationsModal').appendTo('body').modal('show');
@@ -4449,31 +4892,36 @@ function duplicateSurvey(id) {
 
 // Answer Survey Functions
 function answerSurvey(surveyId) {
-    $.post('exit_management.php', {
-        ajax_action: 'get_survey',
-        controller: 'survey',
-        survey_id: surveyId
-    }, function(response) {
-        if (response && response.id) {
-            const survey = response;
+    const jq = $.ajax({
+        url: 'exit_management.php',
+        type: 'POST',
+        dataType: 'json',
+        data: {
+            ajax_action: 'get_survey',
+            controller: 'survey',
+            survey_id: surveyId
+        }
+    });
 
-            // Set survey title and description
+    jq.done(function(response) {
+        let survey = response;
+        if (response && response.success && response.data) survey = response.data;
+
+        if (survey && survey.id) {
             $('#answerSurveyTitle').text('Record Post-Exit Feedback: ' + survey.title);
             $('#answerSurveyDesc').text(survey.description || '');
             $('#answerSurveyId').val(surveyId);
             $('#answerSurveyEmployeeId').val('');
             $('#answerSurveyExitCaseType').val('');
             $('#answerSurveyExitCaseId').val('');
-            $('#answerSurveyCaseSelect').html('<option value="">Select Approved Exit Case</option>');
+            $('#answerSurveyCaseSelect').html('<option value="">Select Eligible Exit Case</option>');
             $('#surveyType').val('post_exit_feedback');
             setDateInputValue('#surveyScheduledDate', new Date());
             $('#surveyScheduledTime').val(new Date().toTimeString().slice(0, 5));
 
-            // Initialize survey wizard
             initializeSurveyWizard(survey);
 
-            // Load approved exit cases before showing the modal
-            loadApprovedExitCases('#answerSurveyCaseSelect', function() {
+            loadEligiblePostExitFeedbackCases('#answerSurveyCaseSelect', function() {
                 $('#answerSurveyModal').modal('show');
                 updateAnswerSurveySubmitState();
             });
@@ -4520,7 +4968,7 @@ function loadSurveyQuestion(index) {
 }
 
 function generateModernQuestionField(question, index) {
-    const questionId = question.id;
+    const questionId = (typeof question.id !== 'undefined' && question.id !== null) ? question.id : ('qidx_' + index);
     const questionText = question.question_text || question.text || '';
     const questionType = question.question_type || question.type || 'text';
     const required = question.required ? ' <span class="text-danger">*</span>' : '';
@@ -4625,20 +5073,15 @@ function generateModernQuestionField(question, index) {
             
         case 'rating':
             fieldHtml += `
-                <div class="rating-container">
-                    <div class="rating-stars">
+                <div class="rating-row" data-question-id="${questionId}">
             `;
             for (let i = 1; i <= 5; i++) {
                 fieldHtml += `
-                    <div class="rating-star" onclick="selectRating(${questionId}, ${i})" data-rating="${i}">
-                        <i class="far fa-star"></i>
-                        <span class="rating-label">${i}</span>
-                    </div>
+                    <button type="button" class="btn btn-outline-warning rating-star mr-1" data-rating="${i}" aria-label="${i} stars"><i class="far fa-star"></i></button>
                 `;
             }
             fieldHtml += `
-                    </div>
-                    <input type="hidden" name="responses[${questionId}]" id="rating_${questionId}">
+                    <input type="hidden" name="responses[${questionId}]" id="rating_${questionId}" class="rating-value-hidden">
                 </div>
             `;
             break;
@@ -4683,15 +5126,15 @@ function toggleCheckboxOption(optionId) {
 }
 
 function selectRating(questionId, rating) {
-    $(`.rating-star[data-rating]`).removeClass('selected');
-    $(`.rating-star[data-rating]`).find('i').removeClass('fas').addClass('far');
-    
+    const $container = $(`.rating-row[data-question-id="${questionId}"]`);
+    if (!$container.length) return;
+    $container.find('.rating-star').removeClass('selected btn-warning').addClass('btn-outline-warning');
+    $container.find('.rating-star i').removeClass('fas').addClass('far');
     for (let i = 1; i <= rating; i++) {
-        $(`.rating-star[data-rating="${i}"]`).addClass('selected');
-        $(`.rating-star[data-rating="${i}"]`).find('i').removeClass('far').addClass('fas');
+        $container.find(`.rating-star[data-rating="${i}"]`).removeClass('btn-outline-warning').addClass('btn-warning selected');
+        $container.find(`.rating-star[data-rating="${i}"]`).find('i').removeClass('far').addClass('fas');
     }
-    
-    $(`#rating_${questionId}`).val(rating);
+    $container.find(`#rating_${questionId}`).val(rating);
 }
 
 function restoreQuestionAnswer(question, answer) {
@@ -4716,11 +5159,11 @@ function restoreQuestionAnswer(question, answer) {
 
 function updateProgress() {
     const answeredCount = Object.keys(window.surveyAnswers || {}).length;
-    const totalQuestions = window.currentSurvey.questions.length;
-    const progress = Math.round(((window.currentQuestionIndex + 1) / totalQuestions) * 100);
+    const totalQuestions = (window.currentSurvey && Array.isArray(window.currentSurvey.questions)) ? window.currentSurvey.questions.length : 0;
+    const progress = totalQuestions > 0 ? Math.round(((window.currentQuestionIndex + 1) / totalQuestions) * 100) : 0;
     $('#surveyProgress').css('width', progress + '%');
     $('#surveyProgress').attr('aria-valuenow', progress);
-    $('#questionCounter').text(`Question ${window.currentQuestionIndex + 1} of ${totalQuestions}`);
+    $('#questionCounter').text(totalQuestions > 0 ? `Question ${window.currentQuestionIndex + 1} of ${totalQuestions}` : `Question 0 of 0`);
 }
 
 function areAllRequiredSurveyAnswersProvided() {
@@ -4750,7 +5193,8 @@ function updateAnswerSurveySubmitState() {
     const scheduledTime = $('#surveyScheduledTime').val();
     const isScheduleComplete = exitCaseType && exitCaseId && surveyType && scheduledDate && scheduledTime;
 
-    const isLastQuestion = window.currentQuestionIndex === (window.currentSurvey.questions.length - 1);
+    const totalQuestions = (window.currentSurvey && Array.isArray(window.currentSurvey.questions)) ? window.currentSurvey.questions.length : 0;
+    const isLastQuestion = totalQuestions > 0 && window.currentQuestionIndex === (totalQuestions - 1);
     const hasAllRequiredAnswers = areAllRequiredSurveyAnswersProvided();
 
     $('#nextQuestionBtn').prop('disabled', !hasAllRequiredAnswers && isLastQuestion);
@@ -4779,6 +5223,7 @@ $('#nextQuestionBtn').on('click', function() {
 });
 
 function saveCurrentAnswer() {
+    if (!window.currentSurvey || !Array.isArray(window.currentSurvey.questions)) return;
     const question = window.currentSurvey.questions[window.currentQuestionIndex];
     const questionType = question.question_type || question.type;
     let answer = null;
@@ -4803,6 +5248,7 @@ function saveCurrentAnswer() {
 }
 
 function validateCurrentQuestion() {
+    if (!window.currentSurvey || !Array.isArray(window.currentSurvey.questions)) return true;
     const question = window.currentSurvey.questions[window.currentQuestionIndex];
     const questionType = question.question_type || question.type;
     let isValid = true;
@@ -4849,7 +5295,7 @@ function submitSurveyAnswers() {
     const scheduledTime = $('#surveyScheduledTime').val();
 
     if (!exitCaseType || !exitCaseId) {
-        showToast('warning', 'Please choose the approved exit case associated with this survey response.');
+        showToast('warning', 'Please choose an eligible exit case that has completed the required exit-management steps.');
         return;
     }
 
@@ -4922,13 +5368,23 @@ var charts = {};
 
 // Load resignation trend chart
 function loadResignationTrendChart() {
-    $.post('exit_management.php', {
-        ajax_action: 'get_resignation_trend'
-    }, function(response) {
+    const req = $.ajax({
+        url: 'exit_management.php',
+        type: 'POST',
+        dataType: 'json',
+        data: { ajax_action: 'get_resignation_trend' }
+    });
+
+    req.done(function(response) {
         if (response && response.labels && response.data) {
             renderResignationTrendChart(response.labels, response.data);
         }
-    }, 'json');
+    });
+
+    req.fail(function(jqxhr, status, err) {
+        console.error('loadResignationTrendChart: AJAX failed', status, err, jqxhr && jqxhr.responseText);
+        showToast('error', 'Failed to load resignation trend chart.');
+    });
 }
 
 // Render resignation trend line chart
@@ -6374,11 +6830,12 @@ function openMultiDocumentPreview(docs) {
                     if (src.startsWith('/')) {
                         // absolute path from host root - use as-is
                     } else {
-                        // make relative to current location directory
+                        // make relative to project root. If current path includes /exit_management/,
+                        // strip that segment so paths like 'uploads/documents/...' resolve to
+                        // '/<project-root>/uploads/documents/...'
                         let baseDir = window.location.pathname.replace(/\/[^\/]*$/, '/');
-                        // if current path is not under /exit_management/, assume files are under that folder
-                        if (!baseDir.includes('/exit_management/')) {
-                            baseDir = baseDir + 'exit_management/';
+                        if (baseDir.includes('/exit_management/')) {
+                            baseDir = baseDir.replace(/\/exit_management\/?$/, '/');
                         }
                         src = baseDir + src;
                     }
@@ -6411,4 +6868,174 @@ function openMultiDocumentPreview(docs) {
         });
 
         $('#multiDocPreviewModal').on('shown.bs.modal', function() { loadIndex(0); }).on('hidden.bs.modal', function() { $(this).remove(); });
+}
+
+function showPdfPreview(url, title) {
+    $('#exitPreviewModal').remove();
+    const modal = `
+    <div class="modal fade" id="exitPreviewModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-xl" role="document" style="max-width:1100px;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">${title || 'Document Preview'}</h5>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body p-0" style="height:80vh;">
+                    <iframe id="exitPdfPreviewIframe" style="width:100%;height:100%;border:0;" ></iframe>
+                </div>
+            </div>
+        </div>
+    </div>`;
+
+    $('body').append(modal);
+    $('#exitPreviewModal').modal({ backdrop: 'static' }).modal('show');
+    $('#exitPreviewModal').on('shown.bs.modal', function() {
+        const iframe = document.getElementById('exitPdfPreviewIframe');
+        try {
+            iframe.src = url;
+        } catch (e) {
+            const parent = document.getElementById('exitPreviewModal');
+            $(parent).find('.modal-body').html('<div class="p-3 text-danger">Failed to load document preview. Check file availability and server headers.</div>');
+        }
+    }).on('hidden.bs.modal', function() { $(this).remove(); });
+}
+
+function openCaseLetterPreview(exitCaseId, exitCaseType) {
+    if (!exitCaseId || !exitCaseType) {
+        showToast('error', 'Invalid case for document preview');
+        return;
+    }
+
+    $.post('exit_management.php', {
+        ajax_action: 'get_exit_case_documentation',
+        controller: 'exit_management',
+        exit_case_id: exitCaseId,
+        exit_case_type: exitCaseType
+    }, function(response) {
+        if (!response || !response.success) {
+            showToast('error', response?.message || 'Failed to load documents for preview');
+            return;
+        }
+
+        const docs = response.documents || [];
+        const letterDoc = docs.find(d => /letter/i.test((d.title || d.document_type || '').toLowerCase()));
+        if (!letterDoc) {
+            showToast('info', 'No termination letter found for this case');
+            return;
+        }
+
+        // Request download info (gives actual file_path)
+        $.get('exit_management.php', { ajax_action: 'download_document', document_id: letterDoc.id }, function(resp) {
+            if (resp && resp.success) {
+                showPdfPreview(resp.file_path, resp.title || 'Termination Letter');
+            } else {
+                showToast('error', resp?.message || 'Failed to load document file');
+            }
+        }, 'json').fail(function() {
+            showToast('error', 'Failed to load document file');
+        });
+    }, 'json').fail(function() {
+        showToast('error', 'Failed to load documents for preview');
+    });
+}
+
+function previewDocument(id, title) {
+    // Request download info first (will return file_path)
+    $.get('exit_management.php', {
+        ajax_action: 'download_document',
+        document_id: id
+    }, function(response) {
+        if (!response || !response.success) {
+            showToast('error', response?.message || 'Failed to load document');
+            return;
+        }
+
+        const filePath = response.file_path;
+        const fileName = response.title || title || '';
+
+        // If it's clearly a PDF, open inline preview, otherwise fall back to download
+        if (filePath && /\.pdf($|\?)/i.test(filePath)) {
+            showPdfPreview(filePath, fileName || 'Document Preview');
+        } else {
+            // attempt to preview non-PDF by opening in new tab; browsers may download instead
+            const win = window.open(filePath, '_blank');
+            if (!win) {
+                // popup blocked, fallback to download
+                downloadFile(filePath, fileName || 'document');
+            }
+        }
+    }, 'json').fail(function() {
+        showToast('error', 'Failed to load document');
+    });
+}
+
+function archiveDocuments(page = 1) {
+    $('#modal-archived-documents-tbody').html('<tr><td colspan="6" class="text-center text-muted">Loading archived documents...</td></tr>');
+    $('#modal-archived-documents-pagination').empty();
+    $('#archivedDocumentsModal').appendTo('body').modal('show');
+    loadArchivedDocumentsTable(page);
+}
+
+function loadArchivedDocumentsTable(page = 1) {
+    const tbody = $('#modal-archived-documents-tbody');
+    const paginationId = 'modal-archived-documents-pagination';
+    showTableLoading(tbody, 6);
+
+    $.post('exit_management.php', {
+        ajax_action: 'get_documents',
+        controller: 'documentation',
+        status: 'archived',
+        page: page,
+        limit: 10
+    }, function(response) {
+        tbody.empty();
+        if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
+            response.data.forEach(function(doc) {
+                const linked = doc.exit_case_type ? `${doc.exit_case_type} #${doc.exit_case_id}` : '-';
+                const actions = `
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-info" onclick="previewDocument(${doc.id}, '${(doc.title||'').replace("'","\\'")}')" title="Preview Document"><i class="fas fa-eye"></i></button>
+                        <button class="btn btn-success" onclick="unarchiveDocument(${doc.id})" title="Restore Document"><i class="fas fa-undo"></i></button>
+                    </div>
+                `;
+
+                tbody.append(`
+                    <tr>
+                        <td>${escapeHtml(doc.employee_name || doc.employee || 'Unknown')}</td>
+                        <td>${escapeHtml(doc.title || doc.document_type || 'Document')}</td>
+                        <td>${escapeHtml(doc.document_type || '-')}</td>
+                        <td>${escapeHtml(linked)}</td>
+                        <td>${escapeHtml(doc.archived_at || doc.created_at || '-')}</td>
+                        <td>${actions}</td>
+                    </tr>
+                `);
+            });
+
+            renderPagination(paginationId, response.total, page, response.limit || 10, (newPage) => `loadArchivedDocumentsTable(${newPage})`);
+        } else {
+            tbody.append('<tr><td colspan="6" class="text-center">No archived documents found</td></tr>');
+            $('#' + paginationId).empty();
+        }
+    }).fail(function() {
+        tbody.html('<tr><td colspan="6" class="text-center text-danger">Failed to load archived documents</td></tr>');
+    });
+}
+
+function unarchiveDocument(id) {
+    if (!confirm('Restore this document back to active documents?')) return;
+    $.post('exit_management.php', {
+        ajax_action: 'unarchive_document',
+        controller: 'documentation',
+        document_id: id
+    }, function(response) {
+        if (response && response.success) {
+            showToast('success', response.message || 'Document restored');
+            loadArchivedDocumentsTable();
+            loadDocumentsTable();
+        } else {
+            showToast('error', response ? response.message : 'Failed to restore document');
+        }
+    }, 'json').fail(function() {
+        showToast('error', 'Failed to restore document');
+    });
 }

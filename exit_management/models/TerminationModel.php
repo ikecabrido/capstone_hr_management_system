@@ -133,7 +133,107 @@ class TerminationModel extends ExitManagementModel
 
         $terminationId = (int)$this->db->lastInsertId();
         $this->db->commit();
+
+        // After creating the termination record, also generate and save a termination letter
+        // as an HTML document and create a document record linked to this termination case.
+        try {
+            $this->saveTerminationLetter($terminationId, $data);
+        } catch (Exception $e) {
+            // Do not fail the termination submission if document save fails; log for debugging.
+            error_log('Failed to auto-save termination letter: ' . $e->getMessage());
+        }
+
         return $terminationId;
+    }
+
+    /**
+     * Generate termination letter HTML, save to uploads, and create a document record
+     */
+    protected function saveTerminationLetter(int $terminationId, array $data): void
+    {
+        // Build a simple HTML letter. Keep it consistent with settlement header used elsewhere.
+        $employeeId = $data['employee_id'] ?? '';
+        $employeeName = '';
+        try {
+            $stmt = $this->db->prepare("SELECT full_name FROM employees WHERE employee_id = ? LIMIT 1");
+            $stmt->execute([$employeeId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($row) $employeeName = $row['full_name'];
+        } catch (Exception $e) {
+            // ignore
+        }
+
+        $effectiveDate = $data['effective_date'] ?? '';
+        $reason = $data['termination_reason'] ?? '';
+        $comments = $data['comments'] ?? '';
+
+        $html = '<!doctype html><html><head><meta charset="utf-8"><title>Termination Letter</title>' .
+            '<style>body{font-family:Arial,sans-serif;margin:24px;color:#172b4d;} .school-header{display:flex;align-items:center;border-bottom:2px solid #1f5fbf;padding-bottom:14px;margin-bottom:20px;} .school-header img{width:86px;height:86px;object-fit:contain;margin-right:18px;} .school-name{font-size:20px;font-weight:700;color:#174a8b;} .school-details{font-size:12px;line-height:1.6;color:#333;margin-top:4px;} .content{font-size:14px;line-height:1.7;color:#1f2937;}</style>' .
+            '</head><body>' .
+            '<div class="school-header"><img src="/capstone_hr_management_system2/assets/pics/bcpLogo.png" alt="BCP logo"><div><div class="school-name">Bestlink College of the Philippines - Bulacan Campus</div><div class="school-details">Lot 1 Ipo Road Brgy. Minuyan Proper, City of San Jose Del Monte, Bulacan.<br>Tel. No.: (044)792-1992</div></div></div>' .
+            '<h2>Termination Letter</h2>' .
+            '<div class="content">' .
+            '<p>This letter serves as formal notice that <strong>' . htmlspecialchars($employeeName, ENT_QUOTES) . '</strong> (Employee ID: ' . htmlspecialchars($employeeId, ENT_QUOTES) . ') is being terminated effective <strong>' . htmlspecialchars($effectiveDate, ENT_QUOTES) . '</strong>.</p>' .
+            '<p><strong>Reason for termination:</strong> ' . nl2br(htmlspecialchars($reason, ENT_QUOTES)) . '</p>' .
+            ($comments ? '<p><strong>Additional notes:</strong> ' . nl2br(htmlspecialchars($comments, ENT_QUOTES)) . '</p>' : '') .
+            '<p>Issued by HR Management</p>' .
+            '</div></body></html>';
+
+        // Ensure uploads directory exists
+        $uploadDir = __DIR__ . '/../uploads/documents/';
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0755, true);
+        }
+
+        // Prefer to generate a PDF using Dompdf if available
+        $pdfFileName = 'termination_' . time() . '_' . $terminationId . '.pdf';
+        $filePathRelative = 'uploads/documents/' . $pdfFileName;
+        $fullPath = __DIR__ . '/../' . $filePathRelative;
+
+        $pdfGenerated = false;
+        // Try to load Dompdf from payroll vendor (existing installation)
+        $dompdfAutoload = __DIR__ . '/../payroll/vendor/autoload.php';
+        if (file_exists($dompdfAutoload)) {
+            try {
+                require_once $dompdfAutoload;
+                if (class_exists('\Dompdf\Dompdf')) {
+                    $dompdf = new \Dompdf\Dompdf();
+                    $dompdf->loadHtml($html);
+                    $dompdf->setPaper('A4', 'portrait');
+                    $dompdf->render();
+                    $pdfOutput = $dompdf->output();
+                    file_put_contents($fullPath, $pdfOutput);
+                    $pdfGenerated = true;
+                }
+            } catch (Exception $e) {
+                error_log('Dompdf generation failed: ' . $e->getMessage());
+                $pdfGenerated = false;
+            }
+        }
+
+        // Fallback: save HTML if PDF couldn't be created
+        if (!$pdfGenerated) {
+            $fileName = 'termination_' . time() . '_' . $terminationId . '.html';
+            $filePathRelative = 'uploads/documents/' . $fileName;
+            $fullPath = __DIR__ . '/../' . $filePathRelative;
+            file_put_contents($fullPath, $html);
+        }
+
+        // Create document record linking to this termination
+        require_once __DIR__ . '/DocumentationModel.php';
+        $docModel = new DocumentationModel();
+
+        $docData = [
+            'employee_id' => $employeeId,
+            'exit_case_type' => 'termination',
+            'exit_case_id' => $terminationId,
+            'document_type' => 'other',
+            'title' => 'Termination Letter',
+            'file_path' => $filePathRelative,
+            'uploaded_by' => $_SESSION['user']['id'] ?? null
+        ];
+
+        $docModel->createDocument($docData);
     }
 
     public function getTerminationById(int $terminationId): ?array

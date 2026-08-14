@@ -18,17 +18,20 @@ class SurveyController extends ExitManagementController
     public function createSurvey(array $data): array
     {
         try {
-            // Validate required fields
-            $required = ['title', 'start_date', 'end_date'];
+            $required = ['title'];
             foreach ($required as $field) {
                 if (empty($data[$field])) {
                     return ['success' => false, 'message' => "Field '$field' is required"];
                 }
             }
 
-            // Add created_by from session
-            $data['created_by'] = $_SESSION['user']['id'] ?? 0;
+            if (!empty($data['employee_id']) || !empty($data['exit_case_type']) || !empty($data['exit_case_id'])) {
+                if (empty($data['employee_id']) || empty($data['exit_case_type']) || empty($data['exit_case_id'])) {
+                    return ['success' => false, 'message' => 'Employee and exit case selection are required for a scheduled post-exit survey.'];
+                }
+            }
 
+            $data['created_by'] = $_SESSION['user']['id'] ?? 0;
             $surveyId = $this->surveyModel->createSurvey($data);
 
             return [

@@ -4,31 +4,106 @@ require_once 'ExitManagementModel.php';
 
 class SurveyModel extends ExitManagementModel
 {
+    public function __construct()
+    {
+        parent::__construct();
+        $this->ensureSurveyScheduleColumns();
+    }
+
+    protected function ensureSurveyScheduleColumns(): void
+    {
+        $schemaChecks = [
+            ['employee_id', 'varchar(50) NULL'],
+            ['exit_case_type', "enum('resignation','termination') NULL"],
+            ['exit_case_id', 'int(11) NULL'],
+            ['scheduled_date', 'date NULL'],
+            ['scheduled_time', 'time NULL'],
+            ['approval_status', "enum('draft','scheduled','approved','archived') NOT NULL DEFAULT 'scheduled'"],
+            ['employee_status_updated', 'tinyint(1) NOT NULL DEFAULT 0']
+        ];
+
+        foreach ($schemaChecks as [$columnName, $definition]) {
+            if (!$this->columnExists('exit_surveys', $columnName)) {
+                $this->db->exec("ALTER TABLE exit_surveys ADD COLUMN {$columnName} {$definition}");
+            }
+        }
+    }
+
+    public function getDefaultPostExitQuestions(): array
+    {
+        return [
+            'How satisfied were you with the overall exit process?',
+            'How clearly were your exit responsibilities and final tasks explained?',
+            'How well did the HR team communicate with you during your exit?',
+            'How would you rate the professionalism of the exit process?',
+            'How would you rate the clarity of your final pay and settlement process?',
+            'How would you rate the knowledge transfer process and handover support?',
+            'How respectful and considerate was the offboarding experience?',
+            'How well did the company address your questions and concerns?',
+            'How likely are you to recommend this company to others?',
+            'How satisfied were you with the interview and feedback process?',
+            'How clear were the timelines for your exit and last working day?',
+            'How would you rate the support available during your transition?',
+            'How well did management communicate the reason and next steps for your exit?',
+            'What could the company improve in its exit process?',
+            'Any final comments or suggestions for improving future exits?'
+        ];
+    }
+
     /**
      * Create a survey
      */
     public function createSurvey(array $data): int
     {
+        $this->ensureSurveyScheduleColumns();
+
+        $title = trim((string)($data['title'] ?? ''));
+        if ($title === '') {
+            $title = 'Post-Exit Survey';
+        }
+
+        $employeeId = isset($data['employee_id']) && $data['employee_id'] !== '' ? (string)$data['employee_id'] : null;
+        $exitCaseType = !empty($data['exit_case_type']) ? $data['exit_case_type'] : null;
+        $exitCaseId = !empty($data['exit_case_id']) ? (int)$data['exit_case_id'] : null;
+        $scheduledDate = !empty($data['scheduled_date']) ? $data['scheduled_date'] : ($data['start_date'] ?? null);
+        $scheduledTime = !empty($data['scheduled_time']) ? $data['scheduled_time'] : '09:00:00';
+
         $stmt = $this->db->prepare("
-            INSERT INTO exit_surveys (title, description, target_audience, start_date,
-                                    end_date, status, created_by, created_at)
-            VALUES (?, ?, ?, ?, ?, 'active', ?, NOW())
+            INSERT INTO exit_surveys (title, description, target_audience, employee_id, exit_case_type, exit_case_id,
+                                    start_date, end_date, scheduled_date, scheduled_time, status, created_by, created_at, approval_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, NOW(), 'scheduled')
         ");
 
         $stmt->execute([
-            $data['title'],
+            $title,
             $data['description'] ?? null,
             $data['target_audience'] ?? 'all',
-            $data['start_date'],
-            $data['end_date'],
-            $data['created_by']
+            $employeeId,
+            $exitCaseType,
+            $exitCaseId,
+            $data['start_date'] ?? $scheduledDate,
+            $data['end_date'] ?? $scheduledDate,
+            $scheduledDate,
+            $scheduledTime,
+            $data['created_by'] ?? null
         ]);
 
         $surveyId = (int)$this->db->lastInsertId();
 
-        // Add questions if provided
-        if (isset($data['questions']) && is_array($data['questions'])) {
-            $this->addSurveyQuestions($surveyId, $data['questions']);
+        $questions = $data['questions'] ?? [];
+        if (empty($questions)) {
+            $questions = array_map(function ($questionText, $index) {
+                return [
+                    'text' => $questionText,
+                    'type' => $index >= 13 ? 'textarea' : 'rating',
+                    'options' => $index >= 13 ? null : ['1', '2', '3', '4', '5'],
+                    'required' => true
+                ];
+            }, $this->getDefaultPostExitQuestions(), array_keys($this->getDefaultPostExitQuestions()));
+        }
+
+        if (!empty($questions)) {
+            $this->addSurveyQuestions($surveyId, $questions);
         }
 
         return $surveyId;
@@ -70,7 +145,10 @@ class SurveyModel extends ExitManagementModel
     public function getSurveyById(int $surveyId): ?array
     {
         $stmt = $this->db->prepare("
-            SELECT * FROM exit_surveys WHERE id = ? AND status = 'active'
+            SELECT s.*, e.full_name AS employee_name, e.employment_status
+            FROM exit_surveys s
+            LEFT JOIN employees e ON e.employee_id = s.employee_id
+            WHERE s.id = ?
         ");
         $stmt->execute([$surveyId]);
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
@@ -233,6 +311,19 @@ class SurveyModel extends ExitManagementModel
         return true;
     }
 
+    protected function validatePostExitFeedbackEligibility(?string $exitCaseType, ?int $exitCaseId, int $employeeId): bool
+    {
+        if (!$exitCaseType || !$exitCaseId) {
+            throw new Exception('Eligible exit case selection is required for post-exit feedback.');
+        }
+
+        if (!$this->isExitCaseEligibleForPostExitFeedback($exitCaseType, $exitCaseId, $employeeId)) {
+            throw new Exception('Selected exit case is not eligible for post-exit feedback because the required exit-management steps are not complete.');
+        }
+
+        return true;
+    }
+
     /**
      * Submit survey response
      */
@@ -240,6 +331,10 @@ class SurveyModel extends ExitManagementModel
     {
         if ($this->hasResponseCaseColumns()) {
             $this->validateApprovedExitCase($exitCaseType, $exitCaseId, $employeeId);
+
+            if (($surveyType ?? '') === 'post_exit_feedback') {
+                $this->validatePostExitFeedbackEligibility($exitCaseType, $exitCaseId, $employeeId);
+            }
         }
 
         if ($this->hasResponseScheduleColumns()) {
@@ -431,36 +526,45 @@ class SurveyModel extends ExitManagementModel
 
         $sql = "
             SELECT
-                id,
-                title,
-                description,
-                status,
-                created_at,
-                updated_at
-            FROM exit_surveys
+                s.id,
+                s.title,
+                s.description,
+                s.status,
+                s.employee_id,
+                s.exit_case_type,
+                s.exit_case_id,
+                s.scheduled_date,
+                s.scheduled_time,
+                s.approval_status,
+                s.created_at,
+                s.updated_at,
+                e.full_name AS employee_name,
+                CONCAT(COALESCE(UPPER(LEFT(s.exit_case_type, 1)), ''), SUBSTRING(COALESCE(s.exit_case_type, ''), 2)) AS exit_case_label
+            FROM exit_surveys s
+            LEFT JOIN employees e ON e.employee_id = s.employee_id
         ";
 
         $countSql = "
             SELECT COUNT(*) as total
-            FROM exit_surveys
+            FROM exit_surveys s
         ";
 
         $params = [];
         $whereClause = "";
 
         if ($status && $status !== 'all') {
-            $whereClause = " WHERE status = :status";
+            $whereClause = " WHERE s.status = :status";
             $params['status'] = $status;
         }
 
-        // Add search condition if provided
         if (!empty($search)) {
             $searchCondition = $whereClause ? " AND" : " WHERE";
-            $searchCondition .= " (title LIKE :search0 OR description LIKE :search1)";
+            $searchCondition .= " (s.title LIKE :search0 OR s.description LIKE :search1 OR e.full_name LIKE :search2)";
             $whereClause .= $searchCondition;
             $searchParam = "%$search%";
             $params['search0'] = $searchParam;
             $params['search1'] = $searchParam;
+            $params['search2'] = $searchParam;
         }
 
         // Get total count
@@ -468,8 +572,7 @@ class SurveyModel extends ExitManagementModel
         $countStmt->execute($params);
         $total = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
 
-        // Get paginated data
-        $stmt = $this->db->prepare($sql . $whereClause . " ORDER BY created_at DESC LIMIT :limit OFFSET :offset");
+        $stmt = $this->db->prepare($sql . $whereClause . " ORDER BY s.created_at DESC LIMIT :limit OFFSET :offset");
         foreach ($params as $key => $value) {
             $stmt->bindValue(':' . $key, $value);
         }

@@ -905,16 +905,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                   <button type="button" class="btn btn-warning btn-sm mr-2" onclick="archiveSurveys()">
                     <i class="fas fa-archive"></i> Archive
                   </button>
-
+                  <button id="showSurveyModalBtn" type="button" class="btn btn-success btn-sm" onclick="showSurveyModal()" style="display: inline-block;" aria-label="Schedule Post-Exit Survey">
+                    <i class="fas fa-plus"></i> Schedule Survey
+                  </button>
                 </div>
               </div>
               <div class="card-body">
                 <table id="surveys-table" class="table table-bordered table-striped">
                   <thead>
                     <tr>
+                      <th>Employee</th>
                       <th>Survey Title</th>
-                      <th>Start Date</th>
-                      <th>End Date</th>
+                      <th>Schedule Date</th>
+                      <th>Schedule Time</th>
                       <th>Status</th>
                       <th>Actions</th>
                     </tr>
@@ -985,6 +988,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
 
       // Load data for the section
       loadSectionData(sectionName);
+
+      // Debug / fix: ensure surveys action buttons are visible when surveys section is shown
+      if (sectionName === 'surveys') {
+        try {
+          const scheduleBtn = document.querySelector('#surveys-section .card-tools .btn-success');
+          if (scheduleBtn) {
+            scheduleBtn.style.display = '';
+            console.log('Survey schedule button present and unhidden');
+          } else {
+            console.log('Survey schedule button NOT found in DOM');
+          }
+        } catch (e) {
+          console.error('Error ensuring survey button visible', e);
+        }
+      }
     }
 
     // Initialize

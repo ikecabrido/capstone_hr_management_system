@@ -131,6 +131,13 @@
                         <textarea class="form-control" id="terminationComments" name="comments" rows="2"></textarea>
                     </div>
 
+                    <div class="form-group" id="terminationLetterSection" style="display: none;">
+                        <label>Termination Letter</label>
+                        <div class="border rounded p-3 bg-light" id="terminationLetterContent" style="white-space: pre-line; line-height: 1.7;">
+                            Generated termination letter preview appears here.
+                        </div>
+                    </div>
+
                     <div id="terminationApprovalSection" style="display: none;">
                         <hr>
                         <h6>Approval</h6>
@@ -786,7 +793,7 @@
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title" id="surveyModalTitle">
-                    <i class="fas fa-poll mr-2"></i>Create Post-Exit Survey
+                    <i class="fas fa-calendar-check mr-2"></i>Schedule Post-Exit Survey
                 </h5>
                 <button type="button" class="close text-white" data-dismiss="modal">
                     <span>&times;</span>
@@ -796,144 +803,58 @@
                 <div class="modal-body">
                     <input type="hidden" id="surveyId" name="survey_id">
 
-                    <!-- Survey Overview Section -->
                     <div class="card mb-4 border-left-primary">
                         <div class="card-header bg-light">
-                            <h6 class="mb-0"><i class="fas fa-info-circle text-primary mr-2"></i>Survey Overview</h6>
+                            <h6 class="mb-0"><i class="fas fa-user-check text-primary mr-2"></i>Eligible Employee</h6>
                         </div>
                         <div class="card-body">
                             <div class="form-group mb-0">
-                                <label for="surveyTitle" class="font-weight-bold">Survey Title <span class="text-danger">*</span></label>
-                                <small class="form-text text-muted d-block mb-2">Give your survey a clear, descriptive title</small>
-                                <input type="text" class="form-control" id="surveyTitle" name="title" placeholder="e.g., Exit Experience Survey 2026" required>
-                            </div>
-
-                            <div class="form-group mt-3 mb-0">
-                                <label for="surveyDescription" class="font-weight-bold">Description</label>
-                                <small class="form-text text-muted d-block mb-2">Optional: Add context or instructions for respondents</small>
-                                <textarea class="form-control" id="surveyDescription" name="description" rows="2" placeholder="e.g., Please help us improve by sharing your feedback..."></textarea>
+                                <label for="surveyEmployeeSelect" class="font-weight-bold">Employee <span class="text-danger">*</span></label>
+                                <select class="form-control" id="surveyEmployeeSelect" name="employee_id" required>
+                                    <option value="">Select eligible employee</option>
+                                </select>
+                                <small class="form-text text-muted">Only employees with an approved exit case that completed the required workflow are available. The eligible exit case is auto-selected for them.</small>
+                                <input type="hidden" id="surveyExitCaseType" name="exit_case_type">
+                                <input type="hidden" id="surveyExitCaseId" name="exit_case_id">
                             </div>
                         </div>
                     </div>
 
-                    <!-- Survey Timeline Section -->
                     <div class="card mb-4 border-left-info">
                         <div class="card-header bg-light">
-                            <h6 class="mb-0"><i class="fas fa-calendar text-info mr-2"></i>Survey Timeline</h6>
+                            <h6 class="mb-0"><i class="fas fa-calendar text-info mr-2"></i>Survey Schedule</h6>
                         </div>
                         <div class="card-body">
+                            <div class="form-group">
+                                <label for="surveyTitle" class="font-weight-bold">Title <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="surveyTitle" name="title" value="Post-Exit Survey" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="surveyDescription" class="font-weight-bold">Notes</label>
+                                <textarea class="form-control" id="surveyDescription" name="description" rows="2" placeholder="Add instructions or reminders for the exit survey."></textarea>
+                            </div>
+
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group mb-0">
-                                        <label for="surveyStartDate" class="font-weight-bold">Start Date <span class="text-danger">*</span></label>
-                                        <small class="form-text text-muted d-block mb-2">When survey becomes available</small>
-                                        <input type="date" class="form-control" id="surveyStartDate" name="start_date" required>
+                                        <label for="surveyScheduledDate" class="font-weight-bold">Scheduled Date <span class="text-danger">*</span></label>
+                                        <input type="date" class="form-control" id="surveyScheduledDate" name="scheduled_date" required>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group mb-0">
-                                        <label for="surveyEndDate" class="font-weight-bold">End Date <span class="text-danger">*</span></label>
-                                        <small class="form-text text-muted d-block mb-2">When survey closes</small>
-                                        <input type="date" class="form-control" id="surveyEndDate" name="end_date" required>
+                                        <label for="surveyScheduledTime" class="font-weight-bold">Scheduled Time <span class="text-danger">*</span></label>
+                                        <input type="time" class="form-control" id="surveyScheduledTime" name="scheduled_time" required>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Survey Settings Section -->
-                    <div class="card mb-4 border-left-success">
-                        <div class="card-header bg-light">
-                            <h6 class="mb-0"><i class="fas fa-cog text-success mr-2"></i>Survey Settings</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="form-group mb-0">
-                                <label for="surveyAudience" class="font-weight-bold">Target Audience</label>
-                                <small class="form-text text-muted d-block mb-2">Who should receive this survey?</small>
-                                <select class="form-control" id="surveyAudience" name="target_audience">
-                                    <option value="all">All Ex-Employees</option>
-                                    <option value="voluntary">Voluntary Resignations Only</option>
-                                    <option value="involuntary">Involuntary Resignations Only</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Survey Questions Section -->
-                    <div class="card border-left-warning">
-                        <div class="card-header bg-light">
-                            <h6 class="mb-0"><i class="fas fa-list-check text-warning mr-2"></i>Survey Questions</h6>
-                            <small class="text-muted">Build your survey by adding questions below</small>
-                        </div>
-                        <div class="card-body">
-                            <div id="surveyQuestionsContainer">
-                                <!-- First question template -->
-                                <div class="question-item card mb-3 shadow-sm border-0">
-                                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                                        <span class="font-weight-bold">
-                                            <i class="fas fa-question-circle text-primary mr-2"></i>Question 1
-                                        </span>
-                                        <button type="button" class="btn btn-sm btn-outline-danger remove-question" title="Delete question">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </div>
-                                    <div class="card-body pt-3 pb-2">
-                                        <!-- Question Text -->
-                                        <div class="form-group mb-3">
-                                            <label class="font-weight-bold">Question Text <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control form-control-lg" name="questions[0][text]" placeholder="Enter your question here..." required>
-                                        </div>
-
-                                        <!-- Question Type & Required -->
-                                        <div class="row">
-                                            <div class="col-md-8">
-                                                <div class="form-group mb-0">
-                                                    <label class="font-weight-bold">Question Type <span class="text-danger">*</span></label>
-                                                    <select class="form-control question-type" name="questions[0][type]" required>
-                                                        <option value="">-- Select Type --</option>
-                                                        <option value="text">📝 Short Text</option>
-                                                        <option value="textarea">📄 Long Text / Paragraph</option>
-                                                        <option value="radio">⭕ Multiple Choice (Single Answer)</option>
-                                                        <option value="checkbox">☑️ Multiple Choice (Multiple Answers)</option>
-                                                        <option value="select">⬇️ Dropdown List</option>
-                                                        <option value="rating">⭐ Rating Scale (1-5)</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group mb-0">
-                                                    <label class="font-weight-bold">Question Settings</label>
-                                                    <div class="form-check mt-2">
-                                                        <input class="form-check-input" type="checkbox" id="req0" name="questions[0][required]" checked>
-                                                        <label class="form-check-label" for="req0">
-                                                            Required <span class="text-danger">*</span>
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Options Container -->
-                                        <div class="options-container mt-3 pt-3 border-top" style="display: none;">
-                                            <label class="font-weight-bold">Answer Options <span class="text-danger">*</span></label>
-                                            <small class="form-text text-muted d-block mb-2">Enter each option on a new line</small>
-                                            <textarea class="form-control" name="questions[0][options]" rows="3" placeholder="Option 1&#10;Option 2&#10;Option 3"></textarea>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Add Question Button -->
-                            <button type="button" class="btn btn-outline-primary btn-block mt-3" id="addSurveyQuestion">
-                                <i class="fas fa-plus-circle mr-2"></i>Add Another Question
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Help Text -->
-                    <div class="alert alert-info alert-sm mt-3" role="alert">
+                    <div class="alert alert-info alert-sm mb-0" role="alert">
                         <i class="fas fa-lightbulb mr-2"></i>
-                        <strong>Tip:</strong> Use rating scales for satisfaction, yes/no multiple choice for quick feedback, and text fields for detailed comments.
+                        The survey will use the default 15-question post-exit review and can be approved only after the employee has completed all 15 items.
                     </div>
                 </div>
 
@@ -942,7 +863,7 @@
                         <i class="fas fa-times mr-2"></i>Cancel
                     </button>
                     <button type="submit" class="btn btn-primary" id="surveySubmitBtn">
-                        <i class="fas fa-save mr-2"></i>Create Survey
+                        <i class="fas fa-save mr-2"></i>Schedule Survey
                     </button>
                 </div>
             </form>
@@ -968,11 +889,11 @@
                     <input type="hidden" id="answerSurveyExitCaseId" name="exit_case_id">
 
                     <div class="form-group">
-                        <label for="answerSurveyCaseSelect">Approved Exit Case *</label>
+                        <label for="answerSurveyCaseSelect">Eligible Exit Case *</label>
                         <select class="form-control" id="answerSurveyCaseSelect" required>
-                            <option value="">Select Approved Exit Case</option>
+                            <option value="">Select Eligible Exit Case</option>
                         </select>
-                        <small class="form-text text-muted">Select the exit case associated with this survey response.</small>
+                        <small class="form-text text-muted">Only approved exit cases that have completed the required exit-management steps are shown here.</small>
                     </div>
 
                     <div class="card mb-3 border-left-info">
@@ -1209,47 +1130,67 @@
  
 <!-- Archived Resignations Modal -->
 <div class="modal fade exit-modal" id="archivedResignationsModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
         <div class="modal-content">
-            <div class="modal-header bg-warning">
+            <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title">Archived Resignations</h5>
-                <button type="button" class="close" data-dismiss="modal">
+                <button type="button" class="close text-white" data-dismiss="modal">
                     <span>&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <table class="table table-bordered table-striped table-sm">
-                    <colgroup>
-                        <col style="width: 15%;">
-                        <col style="width: 8%;">
-                        <col style="width: 14%;">
-                        <col style="width: 10%;">
-                        <col style="width: 11%;">
-                        <col style="width: 8%;">
-                        <col style="width: 10%;">
-                        <col style="width: 8%;">
-                        <col style="width: 10%;">
-                        <col style="width: 6%;">
-                    </colgroup>
-                    <thead>
-                        <tr>
-                            <th>Employee</th>
-                            <th>Department</th>
-                            <th>Email</th>
-                            <th>Position</th>
-                            <th>Reason</th>
-                            <th>Notice Date</th>
-                            <th>Last Working Date</th>
-                            <th>Comments</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="modal-archived-resignations-tbody">
-                        <tr><td colspan="10" class="text-center text-muted">Loading archived resignations...</td></tr>
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped table-sm mb-0">
+                        <colgroup>
+                            <col style="width: 15%;">
+                            <col style="width: 10%;">
+                            <col style="width: 18%;">
+                            <col style="width: 14%;">
+                            <col style="width: 12%;">
+                            <col style="width: 10%;">
+                            <col style="width: 9%;">
+                            <col style="width: 8%;">
+                            <col style="width: 14%;">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Department</th>
+                                <th>Email</th>
+                                <th>Position</th>
+                                <th>Reason</th>
+                                <th>Notice Date</th>
+                                <th>Last Working Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-archived-resignations-tbody">
+                            <tr><td colspan="10" class="text-center text-muted">Loading archived resignations...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
                 <div id="modal-archived-resignations-pagination" class="mt-2 d-flex justify-content-end"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Archived Resignation Details Modal -->
+<div class="modal fade exit-modal" id="viewArchivedResignationModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">Archived Resignation Details</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="viewArchivedResignationBody">
+                <p class="text-muted">Select an archived resignation to view its details.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -1544,6 +1485,41 @@
                             </div>
                         </div>
                     </div>
+
+                            <!-- Archived Documents List Modal -->
+                            <div class="modal fade exit-modal" id="archivedDocumentsModal" tabindex="-1" role="dialog">
+                                <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-warning">
+                                            <h5 class="modal-title">Archived Documents</h5>
+                                            <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="table-responsive">
+                                                <table id="modal-archived-documents-table" class="table table-bordered table-striped table-sm">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Employee</th>
+                                                            <th>Document</th>
+                                                            <th>Type</th>
+                                                            <th>Linked Case</th>
+                                                            <th>Archived At</th>
+                                                            <th>Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="modal-archived-documents-tbody">
+                                                        <tr><td colspan="6" class="text-center text-muted">Loading archived documents...</td></tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div id="modal-archived-documents-pagination" class="mt-2 d-flex justify-content-end"></div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
                     <input type="hidden" id="archiveDocumentReason" name="archive_reason" value="Process completed; archived.">
                     <div class="form-group">

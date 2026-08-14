@@ -102,6 +102,126 @@ class ExitManagementModel
     }
 
     /**
+     * Get exit cases that are approved and have completed the full exit workflow required
+     * before post-exit feedback can be recorded.
+     */
+    public function getEligiblePostExitFeedbackCases(): array
+    {
+        $approvedCases = $this->getExitCases(['approved']);
+        $eligibleCases = [];
+
+        foreach ($approvedCases as $case) {
+            $exitCaseType = $case['exit_case_type'] ?? '';
+            $exitCaseId = (int)($case['exit_case_id'] ?? 0);
+            $employeeId = (int)($case['employee_id'] ?? 0);
+
+            if ($exitCaseType !== '' && $exitCaseId > 0 && $this->isExitCaseEligibleForPostExitFeedback($exitCaseType, $exitCaseId, $employeeId)) {
+                $eligibleCases[] = $case;
+            }
+        }
+
+        return $eligibleCases;
+    }
+
+    public function isExitCaseEligibleForPostExitFeedback(string $exitCaseType, int $exitCaseId, int $employeeId = 0): bool
+    {
+        if (!in_array($exitCaseType, ['resignation', 'termination'], true)) {
+            return false;
+        }
+
+        $approvedCaseQuery = $exitCaseType === 'resignation'
+            ? "SELECT id, employee_id FROM exit_resignations WHERE id = ? AND status = 'approved'"
+            : "SELECT id, employee_id FROM exit_terminations WHERE id = ? AND status = 'approved'";
+
+        $stmt = $this->db->prepare($approvedCaseQuery);
+        $stmt->execute([$exitCaseId]);
+        $caseRecord = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$caseRecord) {
+            return false;
+        }
+
+        if ($employeeId > 0 && (string)($caseRecord['employee_id'] ?? '') !== (string)$employeeId) {
+            return false;
+        }
+
+        $interviewStmt = $this->db->prepare(
+            "SELECT id, employee_id, status FROM exit_interviews WHERE exit_case_type = ? AND exit_case_id = ? AND status = 'completed' ORDER BY updated_at DESC LIMIT 1"
+        );
+        $interviewStmt->execute([$exitCaseType, $exitCaseId]);
+        $interview = $interviewStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$interview) {
+            return false;
+        }
+
+        $assessmentRequired = false;
+        if ($this->tableExists('exit_interview_hr_assessments')) {
+            $assessmentStmt = $this->db->prepare(
+                "SELECT knowledge_transfer_required FROM exit_interview_hr_assessments WHERE interview_id = ? LIMIT 1"
+            );
+            $assessmentStmt->execute([$interview['id']]);
+            $assessment = $assessmentStmt->fetch(PDO::FETCH_ASSOC);
+            $assessmentRequired = !empty($assessment['knowledge_transfer_required']) && (string)$assessment['knowledge_transfer_required'] !== '0';
+
+            if ($assessmentRequired) {
+                $orderCol = $this->columnExists('exit_knowledge_transfer_plans', 'completed_at') ? 'completed_at' : ($this->columnExists('exit_knowledge_transfer_plans', 'updated_at') ? 'updated_at' : 'id');
+                // Accept plans marked as 'completed' or 'active' to accommodate varying workflows
+                $transferSql = "SELECT id, status FROM exit_knowledge_transfer_plans WHERE employee_id = ? AND status IN ('completed','active') ORDER BY {$orderCol} DESC LIMIT 1";
+                $transferStmt = $this->db->prepare($transferSql);
+                $transferStmt->execute([$employeeId ?: (int)($interview['employee_id'] ?? 0)]);
+                $transferPlan = $transferStmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$transferPlan) {
+                    return false;
+                }
+            }
+        }
+
+        if ($this->tableExists('exit_employee_settlements') && $this->columnExists('exit_employee_settlements', 'exit_case_type')) {
+            $settOrder = $this->columnExists('exit_employee_settlements', 'updated_at') ? 'updated_at' : ($this->columnExists('exit_employee_settlements', 'created_at') ? 'created_at' : 'id');
+            $settlementSql = "SELECT id, status FROM exit_employee_settlements WHERE exit_case_type = ? AND exit_case_id = ? AND status IN ('approved', 'paid') ORDER BY {$settOrder} DESC LIMIT 1";
+            $settlementStmt = $this->db->prepare($settlementSql);
+            $settlementStmt->execute([$exitCaseType, $exitCaseId]);
+            $settlement = $settlementStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$settlement) {
+                return false;
+            }
+        }
+
+        if ($this->tableExists('exit_survey_responses')) {
+            // Defensive: use whichever linkage columns are available to detect duplicates
+            if ($this->columnExists('exit_survey_responses', 'exit_case_type') && $this->columnExists('exit_survey_responses', 'exit_case_id')) {
+                if ($this->columnExists('exit_survey_responses', 'survey_type')) {
+                    $duplicateSql = "SELECT COUNT(*) FROM exit_survey_responses WHERE exit_case_type = ? AND exit_case_id = ? AND survey_type = 'post_exit_feedback'";
+                } else {
+                    $duplicateSql = "SELECT COUNT(*) FROM exit_survey_responses WHERE exit_case_type = ? AND exit_case_id = ?";
+                }
+                $duplicateStmt = $this->db->prepare($duplicateSql);
+                $duplicateStmt->execute([$exitCaseType, $exitCaseId]);
+                $dupCount = (int)$duplicateStmt->fetchColumn();
+            } elseif ($this->columnExists('exit_survey_responses', 'exit_case_id')) {
+                $duplicateStmt = $this->db->prepare("SELECT COUNT(*) FROM exit_survey_responses WHERE exit_case_id = ?");
+                $duplicateStmt->execute([$exitCaseId]);
+                $dupCount = (int)$duplicateStmt->fetchColumn();
+            } elseif ($this->columnExists('exit_survey_responses', 'employee_id')) {
+                $duplicateStmt = $this->db->prepare("SELECT COUNT(*) FROM exit_survey_responses WHERE employee_id = ?");
+                $duplicateStmt->execute([$employeeId]);
+                $dupCount = (int)$duplicateStmt->fetchColumn();
+            } else {
+                $dupCount = 0; // cannot determine, assume none
+            }
+
+            if ($dupCount > 0) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Get active/approved exit cases for valid documentation and process linkage
      */
     public function getActiveExitCases(string $employeeId = ''): array
@@ -694,7 +814,7 @@ class ExitManagementModel
      */
     public function getEmployeesNeedingKnowledgeTransfer(): array
     {
-        if (!$this->tableExists('exit_interview_hr_assessments')) {
+        if ($this->tableExists('exit_interview_hr_assessments')) {
             return [];
         }
 
