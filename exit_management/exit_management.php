@@ -13,15 +13,16 @@ require_once "controllers/SurveyController.php";
 $theme = $_SESSION['user']['theme'] ?? 'light';
 session_write_close();
 
-// Initialize controllers
-$exitController = new ExitManagementController();
-$resignationController = new ResignationController();
-$terminationController = new TerminationController();
-$interviewController = new ExitInterviewController();
-$transferController = new KnowledgeTransferController();
-$settlementController = new SettlementController();
-$documentationController = new DocumentationController();
-$surveyController = new SurveyController();
+// Controllers are instantiated on-demand to avoid heavy model initialization on every request
+// (this prevents DB schema repair calls from running for unrelated AJAX requests).
+ $exitController = null;
+ $resignationController = null;
+ $terminationController = null;
+ $interviewController = null;
+ $transferController = null;
+ $settlementController = null;
+ $documentationController = null;
+ $surveyController = null;
 
 // Handle GET requests for document viewing and print views
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
@@ -34,13 +35,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
         header('Content-Type: text/html; charset=UTF-8');
 
         if ($action === 'print_settlement') {
-            echo $settlementController->renderSettlementPrintPage((int)$_GET['settlement_id']);
+          $settlementController = $settlementController ?? new SettlementController();
+          echo $settlementController->renderSettlementPrintPage((int)$_GET['settlement_id']);
         } elseif ($action === 'print_interview') {
-            echo $interviewController->renderInterviewPrintPage((int)$_GET['interview_id']);
+          $interviewController = $interviewController ?? new ExitInterviewController();
+          echo $interviewController->renderInterviewPrintPage((int)$_GET['interview_id']);
         } elseif ($action === 'print_transfer') {
-            echo $transferController->renderTransferPrintPage((int)$_GET['plan_id']);
+          $transferController = $transferController ?? new KnowledgeTransferController();
+          echo $transferController->renderTransferPrintPage((int)$_GET['plan_id']);
         } else {
-            echo $resignationController->renderResignationPrintPage((int)$_GET['resignation_id']);
+          $resignationController = $resignationController ?? new ResignationController();
+          echo $resignationController->renderResignationPrintPage((int)$_GET['resignation_id']);
         }
 
         exit;
@@ -49,17 +54,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
     header('Content-Type: application/json');
     
     if ($action === 'view_document' && isset($_GET['document_id'])) {
-        $response = $documentationController->viewDocument((int)$_GET['document_id']);
-        echo json_encode($response);
-        exit;
+      $documentationController = $documentationController ?? new DocumentationController();
+      $response = $documentationController->viewDocument((int)$_GET['document_id']);
+      echo json_encode($response);
+      exit;
     } elseif ($action === 'serve_document' && isset($_GET['document_id'])) {
       // stream the document file for inline preview
+      $documentationController = $documentationController ?? new DocumentationController();
       $documentationController->serveDocument((int)$_GET['document_id']);
       exit;
     } elseif ($action === 'download_document' && isset($_GET['document_id'])) {
-        $response = $documentationController->downloadDocument((int)$_GET['document_id']);
-        echo json_encode($response);
-        exit;
+      $documentationController = $documentationController ?? new DocumentationController();
+      $response = $documentationController->downloadDocument((int)$_GET['document_id']);
+      echo json_encode($response);
+      exit;
     }
 }
 
@@ -78,29 +86,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
   error_log("=== AJAX REQUEST: action=$action, controller=$controller, data=" . json_encode($data) . " ===");
 
     switch ($controller) {
-        case 'resignation':
-            $response = $resignationController->handleAjaxRequest($action, $data);
-            break;
-        case 'termination':
-            $response = $terminationController->handleAjaxRequest($action, $data);
-            break;
-        case 'interview':
-            $response = $interviewController->handleAjaxRequest($action, $data);
-            break;
-        case 'transfer':
-            $response = $transferController->handleAjaxRequest($action, $data);
-            break;
-        case 'settlement':
-            $response = $settlementController->handleAjaxRequest($action, $data);
-            break;
-        case 'documentation':
-            $response = $documentationController->handleAjaxRequest($action, $data);
-            break;
-        case 'survey':
-            $response = $surveyController->handleAjaxRequest($action, $data);
-            break;
-        default:
-            $response = $exitController->handleAjaxRequest($action, $data);
+      case 'resignation':
+        $resignationController = $resignationController ?? new ResignationController();
+        $response = $resignationController->handleAjaxRequest($action, $data);
+        break;
+      case 'termination':
+        $terminationController = $terminationController ?? new TerminationController();
+        $response = $terminationController->handleAjaxRequest($action, $data);
+        break;
+      case 'interview':
+        $interviewController = $interviewController ?? new ExitInterviewController();
+        $response = $interviewController->handleAjaxRequest($action, $data);
+        break;
+      case 'transfer':
+        $transferController = $transferController ?? new KnowledgeTransferController();
+        $response = $transferController->handleAjaxRequest($action, $data);
+        break;
+      case 'settlement':
+        $settlementController = $settlementController ?? new SettlementController();
+        $response = $settlementController->handleAjaxRequest($action, $data);
+        break;
+      case 'documentation':
+        $documentationController = $documentationController ?? new DocumentationController();
+        $response = $documentationController->handleAjaxRequest($action, $data);
+        break;
+      case 'survey':
+        $surveyController = $surveyController ?? new SurveyController();
+        $response = $surveyController->handleAjaxRequest($action, $data);
+        break;
+      default:
+        $exitController = $exitController ?? new ExitManagementController();
+        $response = $exitController->handleAjaxRequest($action, $data);
     }
 
     error_log("=== AJAX RESPONSE: " . json_encode($response) . " ===");
@@ -303,205 +319,119 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
 
       <!-- Main content -->
       <section class="content">
+        <div class="dashboard-header">
+          <h1>Dashboard</h1>
+        </div>
         <div class="container-fluid">
           <!-- Dashboard Section -->
           <div id="dashboard-section" class="section">
-            <div class="row dashboard-box-row">
-              <div class="dashboard-box-col">
-                <div class="small-box bg-info">
-                  <div class="inner">
-                    <h3 id="pending-resignations">0</h3>
-                    <p>Pending Resignations</p>
-                  </div>
-                  <div class="icon">
-                    <i class="fas fa-user-times"></i>
-                  </div>
-                </div>
-              </div>
-              <div class="dashboard-box-col">
-                <div class="small-box bg-success">
-                  <div class="inner">
-                    <h3 id="scheduled-interviews">0</h3>
-                    <p>Scheduled Interviews</p>
-                  </div>
-                  <div class="icon">
-                    <i class="fas fa-comments"></i>
+            <div class="row">
+              <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card text-center kpi-card kpi-active" style="background: linear-gradient(180deg, #1f6ddb 0%, #1557b0 100%); color:#fff;">
+                  <div class="card-body d-flex align-items-start">
+                    <div>
+                      <div class="kpi-value" id="active-exits">0</div>
+                      <div class="kpi-label">Total Exited (this year)</div>
+                    </div>
+                    <i class="kpi-ghost fa fa-exchange-alt" aria-hidden="true"></i>
                   </div>
                 </div>
               </div>
-              <div class="dashboard-box-col">
-                <div class="small-box bg-warning">
-                  <div class="inner">
-                    <h3 id="active-transfers">0</h3>
-                    <p>Active Transfers</p>
-                  </div>
-                  <div class="icon">
-                    <i class="fas fa-exchange-alt"></i>
-                  </div>
-                </div>
-              </div>
-              <div class="dashboard-box-col">
-                <div class="small-box bg-danger">
-                  <div class="inner">
-                    <h3 id="pending-settlements">0</h3>
-                    <p>Pending Settlements</p>
-                  </div>
-                  <div class="icon">
-                    <i class="fas fa-calculator"></i>
+              <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card text-center kpi-card kpi-pending" style="background: linear-gradient(180deg, #2b90ff 0%, #1f6ddb 100%); color:#fff;">
+                  <div class="card-body d-flex align-items-start">
+                    <div>
+                      <div class="kpi-value" id="pending-approval">0</div>
+                      <div class="kpi-label">Avg notice period (days)</div>
+                    </div>
+                    <i class="kpi-ghost fa fa-calendar-alt" aria-hidden="true"></i>
                   </div>
                 </div>
               </div>
-              <div class="dashboard-box-col">
-                <div class="small-box bg-primary">
-                  <div class="inner">
-                    <h3 id="approved-preclearances">0</h3>
-                    <p>Payroll Approved</p>
+              <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card text-center kpi-card kpi-upcoming" style="background: linear-gradient(180deg, #4aa3ff 0%, #2b90ff 100%); color:#fff;">
+                  <div class="card-body d-flex align-items-start">
+                    <div>
+                      <div class="kpi-value" id="upcoming-exits-small">0</div>
+                      <div class="kpi-label">Top resignation reason</div>
+                    </div>
+                    <i class="kpi-ghost fa fa-chart-pie" aria-hidden="true"></i>
                   </div>
-                  <div class="icon">
-                    <i class="fas fa-receipt"></i>
+                </div>
+              </div>
+              <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card text-center kpi-card kpi-settlements" style="background: linear-gradient(180deg, #1fb3a3 0%, #0f9b8a 100%); color:#fff;">
+                  <div class="card-body d-flex align-items-start">
+                    <div>
+                      <div class="kpi-value" id="settlements-pending">0</div>
+                      <div class="kpi-label">Settlements Pending</div>
+                    </div>
+                    <i class="kpi-ghost fa fa-hand-holding-usd" aria-hidden="true"></i>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div id="payroll-approval-notification-row" class="row mt-3" style="display: none;">
+            <div class="row mt-3">
               <div class="col-12">
-                <div class="card card-outline card-primary">
+                <div class="card">
                   <div class="card-header">
-                    <h3 class="card-title">Recent Payroll Pre-Clearance Approvals</h3>
+                    <h3 class="card-title">Exit Process Pipeline</h3>
                   </div>
-                  <div class="card-body p-3">
+                  <div class="card-body" style="min-height:120px;">
+                    <canvas id="exitPipelineChart" height="120"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mt-3">
+              <div class="col-lg-6 col-md-12 mb-3">
+                <div class="card h-100">
+                  <div class="card-header"><h3 class="card-title">Upcoming Last Working Dates</h3></div>
+                  <div class="card-body p-2" style="min-height:160px;">
+                    <ul class="list-unstyled" id="upcoming-exits-list">
+                      <!-- fallback to table rows if needed -->
+                    </ul>
+                    <div class="mt-2 text-right"><button class="btn btn-sm btn-link" onclick="showSection('resignations', event)">View All Resignations</button></div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-6 col-md-12 mb-3">
+                <div class="card h-100">
+                  <div class="card-header d-flex justify-content-between align-items-center"><h3 class="card-title">Action Required</h3><button class="btn btn-sm btn-outline-primary" onclick="loadActionRequiredList()">Refresh</button></div>
+                  <div class="card-body p-2" style="min-height:160px;">
+                    <div class="list-group" id="action-required-list"></div>
+                    <div class="mt-2 text-right"><button class="btn btn-sm btn-link" onclick="showSection('resignations', event)">Manage All</button></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mt-3">
+              <div class="col-12">
+                <div class="card">
+                  <div class="card-header"><h3 class="card-title">Recent / Active Exit Cases</h3></div>
+                  <div class="card-body p-2">
                     <div class="table-responsive">
-                      <table class="table table-sm table-bordered table-hover">
+                      <table class="table table-sm table-hover mb-0">
                         <thead>
                           <tr>
-                            <th>#</th>
                             <th>Employee</th>
-                            <th>Settlement Date</th>
-                            <th>Net Payable</th>
-                            <th>Approved At</th>
+                            <th>Type</th>
+                            <th>Last Day</th>
+                            <th>Stage</th>
+                            <th>Status</th>
+                            <th>View</th>
                           </tr>
                         </thead>
-                        <tbody id="payroll-approval-notification-body"></tbody>
+                        <tbody id="recent-active-tbody"></tbody>
                       </table>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-
-            <!-- Key Metrics -->
-            <div class="row mt-4 dashboard-box-row">
-              <div class="dashboard-box-col">
-                <div class="small-box bg-primary">
-                  <div class="inner">
-                    <h3 id="total-exited">0</h3>
-                    <p>Total Exited (This Year)</p>
-                  </div>
-                  <div class="icon">
-                    <i class="fas fa-sign-out-alt"></i>
-                  </div>
-                </div>
-              </div>
-              <div class="dashboard-box-col">
-                <div class="small-box bg-info">
-                  <div class="inner">
-                    <h3 id="avg-notice">0</h3>
-                    <p>Avg Notice Period (Days)</p>
-                  </div>
-                  <div class="icon">
-                    <i class="fas fa-calendar"></i>
-                  </div>
-                </div>
-              </div>
-              <div class="dashboard-box-col">
-                <div class="small-box bg-success">
-                  <div class="inner">
-                    <h3 id="top-reason">--</h3>
-                    <p>Top Resignation Reason</p>
-                  </div>
-                  <div class="icon">
-                    <i class="fas fa-chart-pie"></i>
-                  </div>
-                </div>
-              </div>
-              <div class="dashboard-box-col">
-                <div class="small-box bg-warning">
-                  <div class="inner">
-                    <h3 id="avg-interviews">0%</h3>
-                    <p>Interviews Completed</p>
-                  </div>
-                  <div class="icon">
-                    <i class="fas fa-percentage"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Charts Row -->
-            <!-- Charts: top row reasons/status, bottom row trends (2 + 2) -->
-            <div class="row mt-4">
-              <div class="col-lg-6 col-md-6 mb-3">
-                <div class="card h-100">
-                  <div class="card-header">
-                    <h3 class="card-title">Resignation Reasons</h3>
-                  </div>
-                  <div class="card-body" style="min-height:260px;">
-                    <canvas id="resignationReasonsChart" height="240"></canvas>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-lg-6 col-md-6 mb-3">
-                <div class="card h-100">
-                  <div class="card-header">
-                    <h3 class="card-title">Termination Status</h3>
-                  </div>
-                  <div class="card-body" style="min-height:260px;">
-                    <canvas id="terminationStatusChart" height="240"></canvas>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="row mt-4">
-              <div class="col-lg-6 col-md-6 mb-3">
-                <div class="card h-100">
-                  <div class="card-header">
-                    <h3 class="card-title">Resignation Trend</h3>
-                  </div>
-                  <div class="card-body" style="min-height:260px;">
-                    <canvas id="resignationTrendChart" height="240"></canvas>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-lg-6 col-md-6 mb-3">
-                <div class="card h-100">
-                  <div class="card-header">
-                    <h3 class="card-title">Termination Trend</h3>
-                  </div>
-                  <div class="card-body" style="min-height:260px;">
-                    <canvas id="terminationTrendChart" height="240"></canvas>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Exit Status below (full width) -->
-            <div class="row mt-4">
-              <div class="col-12">
-                <div class="card h-100">
-                  <div class="card-header">
-                    <h3 class="card-title">Exit Status Overview</h3>
-                  </div>
-                  <div class="card-body" style="min-height:260px;">
-                    <canvas id="exitStatusChart" height="240"></canvas>
-                  </div>
-                </div>
-              </div>
-            </div>
-
           </div>
 
           <!-- Resignations Section -->

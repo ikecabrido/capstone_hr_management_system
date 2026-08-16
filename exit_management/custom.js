@@ -2688,8 +2688,10 @@ function loadResignationsTable(status = 'active', page = 1, searchTerm = '') {
                     </div>
                 `;
 
-                tbody.append(`
-                    <tr title="${tooltip}">
+                (function() {
+                    const highlight = window._targetResignationId && String(window._targetResignationId) === String(resignation.id);
+                    const rowHtml = `
+                    <tr id="resignation-row-${resignation.id}" data-resignation-id="${resignation.id}" title="${tooltip}" class="${highlight ? 'row-highlight' : ''}">
                         <td>${resignation.employee_name || '<em class="text-danger">Missing Employee</em>'}</td>
                         <td>${resignation.department || '-'}</td>
                         <td>${resignation.email || '-'}</td>
@@ -2701,7 +2703,18 @@ function loadResignationsTable(status = 'active', page = 1, searchTerm = '') {
                         <td class="status-cell">${statusBadge}</td>
                         <td class="actions-cell">${actions}</td>
                     </tr>
-                `);
+                    `;
+
+                    tbody.append(rowHtml);
+
+                    if (highlight) {
+                        try {
+                            const $r = $(`#resignation-row-${resignation.id}`);
+                            $r[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            setTimeout(function() { $r.removeClass('row-highlight'); window._targetResignationId = null; }, 4500);
+                        } catch (e) { console.warn(e); }
+                    }
+                })();
             });
 
             // Add pagination controls
@@ -4179,10 +4192,24 @@ function loadDashboardData() {
         },
         success: function(response) {
             if (response && typeof response === 'object') {
-                $('#pending-resignations').text(response.pending_resignations || 0);
-                $('#scheduled-interviews').text(response.scheduled_interviews || 0);
-                $('#active-transfers').text(response.active_transfers || 0);
-                $('#pending-settlements').text(response.pending_settlements || 0);
+                // New compact dashboard KPIs
+                $('#active-exits').text(response.active_exit_cases || 0);
+                $('#pending-approval').text(response.pending_resignations || 0);
+                $('#upcoming-exits-small').text(response.upcoming_exits || 0);
+                $('#settlements-pending').text(response.pending_settlements || 0);
+                    // Optional KPIs
+                    if (typeof response.approved_preclearances !== 'undefined') {
+                        $('#approved-preclearances').text(response.approved_preclearances || 0);
+                    }
+                    if (typeof response.upcoming_exits !== 'undefined') {
+                        $('#upcoming-exits').text(response.upcoming_exits || 0);
+                    }
+                    if (typeof response.documentation_incomplete !== 'undefined') {
+                        $('#documentation-incomplete').text(response.documentation_incomplete || 0);
+                    }
+                    if (typeof response.interviews_completed_percent !== 'undefined') {
+                        $('#avg-interviews').text((response.interviews_completed_percent || 0) + '%');
+                    }
             } else {
                 console.error('Invalid dashboard stats response:', response);
             }
@@ -4198,10 +4225,14 @@ function loadDashboardData() {
     loadResignationTrendChart();
     loadResignationReasonsChart();
     loadExitStatusChart();
+    loadExitPipelineChart();
     // resignation type chart removed
     loadTerminationTrendChart();
     loadTerminationStatusChart();
     loadDashboardMetrics();
+    loadUpcomingExits();
+    loadActionRequiredList();
+    loadRecentActiveCases();
 }
 
 function loadPayrollApprovalNotifications() {
@@ -5366,6 +5397,27 @@ function submitSurveyAnswers() {
 
 var charts = {};
 
+// Simple debounce helper
+function debounce(func, wait) {
+    let timeout;
+    return function() {
+        const context = this, args = arguments;
+        clearTimeout(timeout);
+        timeout = setTimeout(function() { func.apply(context, args); }, wait);
+    };
+}
+
+// Re-render department chart on resize (debounced)
+window.addEventListener('resize', debounce(function() {
+    if (charts._exitDepartmentCache && charts._exitDepartmentCache.labels) {
+        try {
+            renderExitDepartmentChart(charts._exitDepartmentCache.labels, charts._exitDepartmentCache.data);
+        } catch (e) {
+            console.error('Error re-rendering department chart on resize:', e);
+        }
+    }
+}, 300));
+
 // Load resignation trend chart
 function loadResignationTrendChart() {
     const req = $.ajax({
@@ -5396,41 +5448,25 @@ function renderResignationTrendChart(labels, data) {
     if (charts.resignationTrend) {
         charts.resignationTrend.destroy();
     }
-
     charts.resignationTrend = new Chart(ctx, {
-        type: 'line',
+        type: 'bar',
         data: {
             labels: labels,
             datasets: [{
                 label: 'Resignations',
                 data: data,
-                borderColor: '#3498db',
-                backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4,
-                pointBackgroundColor: '#3498db',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 5,
-                pointHoverRadius: 7
+                backgroundColor: 'rgba(47, 123, 230, 0.6)',
+                borderColor: '#2f7be6',
+                borderWidth: 1
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
+            plugins: { legend: { display: false } },
             scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1
-                    }
-                }
+                x: { ticks: { autoSkip: true, maxRotation: 45 } },
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
             }
         }
     });
@@ -5457,8 +5493,8 @@ function renderResignationReasonsChart(labels, data) {
     }
 
     const colors = [
-        '#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff',
-        '#ff9999', '#66ff99', '#99ccff', '#ffcc99', '#cc99ff'
+        '#2f7be6', '#5bc0ff', '#4fa3ff', '#8ec8ff', '#3675e6',
+        '#2b6fd8', '#99ccff', '#66a3ff', '#4b95e6', '#cfe3ff'
     ];
 
     charts.resignationReasons = new Chart(ctx, {
@@ -5486,10 +5522,15 @@ function renderResignationReasonsChart(labels, data) {
 // Load exit status chart
 function loadExitStatusChart() {
     $.post('exit_management.php', {
-        ajax_action: 'get_exit_status'
+        ajax_action: 'get_exit_status_and_department'
     }, function(response) {
-        if (response && response.labels && response.data) {
-            renderExitStatusChart(response.labels, response.data);
+        if (!response) return;
+        // render status (doughnut) and department (vertical bar)
+        if (response.status && response.status.labels && response.status.data) {
+            renderExitStatusChart(response.status.labels, response.status.data);
+        }
+        if (response.department && response.department.labels && response.department.data) {
+            renderExitDepartmentChart(response.department.labels, response.department.data);
         }
     }, 'json');
 }
@@ -5503,9 +5544,45 @@ function renderExitStatusChart(labels, data) {
         charts.exitStatus.destroy();
     }
 
-    const colors = ['#27ae60', '#f39c12', '#e74c3c'];
+    const colors = ['#4fa3ff', '#2f7be6', '#2763c8', '#99ccff', '#3675e6'];
 
     charts.exitStatus = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: colors.slice(0, labels.length),
+                borderColor: '#fff',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right' }
+            }
+        }
+    });
+}
+
+function renderExitDepartmentChart(labels, data) {
+    const ctx = document.getElementById('exitDepartmentChart');
+    if (!ctx) return;
+
+    if (charts.exitDepartment) {
+        charts.exitDepartment.destroy();
+    }
+
+    // cache labels/data for responsive re-render on resize
+    charts._exitDepartmentCache = { labels: labels.slice(), data: data.slice() };
+
+    const colors = ['#2f7be6', '#5bc0ff', '#4fa3ff', '#8ec8ff', '#3675e6', '#2b6fd8', '#99ccff'];
+
+    // choose orientation based on viewport width: on small screens use horizontal bars
+    const isSmall = window.innerWidth < 768;
+    charts.exitDepartment = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: labels,
@@ -5518,20 +5595,18 @@ function renderExitStatusChart(labels, data) {
             }]
         },
         options: {
-            indexAxis: 'y',
+            indexAxis: isSmall ? 'y' : 'x',
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    display: false
-                }
+                legend: { display: false },
+                title: { display: true, text: 'Exits by Department', font: { size: 14 } }
             },
-            scales: {
-                x: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1
-                    }
-                }
+            scales: isSmall ? {
+                x: { beginAtZero: true, ticks: { stepSize: 1 } }
+            } : {
+                x: { ticks: { autoSkip: true, maxRotation: 45, minRotation: 0 } },
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
             }
         }
     });
@@ -6254,26 +6329,26 @@ function renderTerminationTrendChart(labels, data) {
     if (!ctx) return;
 
     if (charts.terminationTrend) charts.terminationTrend.destroy();
-
     charts.terminationTrend = new Chart(ctx, {
-        type: 'line',
+        type: 'bar',
         data: {
             labels: labels,
             datasets: [{
                 label: 'Terminations',
                 data: data,
-                borderColor: '#c0392b',
-                backgroundColor: 'rgba(192, 57, 43, 0.08)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
+                backgroundColor: 'rgba(39, 99, 200, 0.6)',
+                borderColor: '#2763c8',
+                borderWidth: 1
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            scales: {
+                x: { ticks: { autoSkip: true, maxRotation: 45 } },
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
         }
     });
 }
@@ -6305,7 +6380,7 @@ function renderTerminationStatusChart(labels, data) {
 
     if (charts.terminationStatus) charts.terminationStatus.destroy();
 
-    const colors = ['#2ecc71', '#f39c12', '#e74c3c', '#9b59b6', '#3498db'];
+    const colors = ['#4fa3ff', '#2f7be6', '#2763c8', '#99ccff', '#3675e6'];
 
     charts.terminationStatus = new Chart(ctx, {
         type: 'doughnut',
@@ -7038,4 +7113,348 @@ function unarchiveDocument(id) {
     }, 'json').fail(function() {
         showToast('error', 'Failed to restore document');
     });
+}
+
+// Load and render exit pipeline chart
+function loadExitPipelineChart() {
+    $.post('exit_management.php', { ajax_action: 'get_exit_pipeline' }, function(response) {
+        if (!response || !response.labels || !response.data) {
+            console.warn('Invalid exit pipeline response', response);
+            return;
+        }
+
+        const ctx = document.getElementById('exitPipelineChart');
+        if (!ctx) return;
+
+        // destroy existing chart instance if present
+        if (ctx._chartInstance) {
+            try { ctx._chartInstance.destroy(); } catch (e) {}
+        }
+
+        ctx._chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: response.labels,
+                datasets: [{
+                    label: 'Count',
+                    data: response.data,
+                    backgroundColor: response.labels.map(() => 'rgba(54, 123, 255, 0.85)'),
+                    borderColor: 'rgba(30, 90, 200, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                // vertical bars by default
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision:0 } }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { mode: 'index', intersect: false }
+                }
+            }
+        });
+    }, 'json').fail(function(xhr, status, err) {
+        console.error('Failed to load exit pipeline:', status, err);
+    });
+}
+
+function loadUpcomingExits(days = 14, limit = 6) {
+    $.post('exit_management.php', { ajax_action: 'get_upcoming_exits', days: days, limit: limit }, function(response) {
+        // Populate both the small list and legacy table if present
+        const list = $('#upcoming-exits-list');
+        const tbody = $('#upcoming-exits-tbody');
+        if (list.length) list.empty();
+        if (tbody.length) tbody.empty();
+
+        const rows = response && Array.isArray(response.data) ? response.data : [];
+        if (!rows.length) {
+            if (list.length) list.append('<li class="text-muted">No upcoming exits found</li>');
+            if (tbody.length) tbody.append('<tr><td colspan="5">No upcoming exits found</td></tr>');
+            return;
+        }
+
+        rows.forEach(function(row) {
+            const name = row.full_name || row.employee_id || 'Unknown';
+            const lwd = row.last_working_date ? row.last_working_date.split(' ')[0] : '-';
+            const daysLeft = typeof row.days_left !== 'undefined' ? row.days_left : '';
+            const btnHtml = `<button class="btn btn-sm btn-outline-primary" onclick="openResignationDetails(${row.resignation_id})">View</button>`;
+
+            if (list.length) {
+                list.append(`<li class="py-1">${escapeHtml(name)} - <span class="text-muted">${escapeHtml(lwd)}</span></li>`);
+            }
+            if (tbody.length) {
+                const dept = row.department || '-';
+                tbody.append(`<tr>
+                    <td>${escapeHtml(name)}</td>
+                    <td>${escapeHtml(dept)}</td>
+                    <td>${escapeHtml(lwd)}</td>
+                    <td>${escapeHtml(daysLeft)}</td>
+                    <td>${btnHtml}</td>
+                </tr>`);
+            }
+        });
+    }, 'json').fail(function(xhr, status, err) {
+        console.error('[loadUpcomingExits] AJAX fail:', status, err, xhr.responseText);
+        const list = $('#upcoming-exits-list');
+        const tbody = $('#upcoming-exits-tbody');
+        if (list.length) list.empty().append('<li class="text-danger">Failed to load</li>');
+        if (tbody.length) tbody.empty().append('<tr><td colspan="5">Failed to load</td></tr>');
+    });
+}
+
+// Small helper to escape HTML
+function escapeHtml(unsafe) {
+    return String(unsafe).replace(/[&<>"'`]/g, function (s) {
+        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#x60;'})[s];
+    });
+}
+
+function openResignationDetails(resignationId) {
+    if (!resignationId) return;
+    // Set global target so rendering can mark the row when it appears
+    window._targetResignationId = resignationId;
+
+    // Navigate to resignations section
+    try { showSection('resignations', event); } catch (e) { console.warn(e); }
+
+    // Start by asking the server to search for the ID (server-side search may match id/employee)
+    findAndDisplayResignationById(resignationId).then(found => {
+        if (!found) {
+            // Not found by search -> try iterating pages to locate the record
+            locateResignationByPaging(resignationId).then(locatedPage => {
+                if (locatedPage) {
+                    // Render the page that contains the record
+                    try { loadResignationsTable('all', locatedPage, ''); } catch (e) { console.warn(e); }
+                } else {
+                    // As a last resort open the modal directly
+                    try { showResignationModal(resignationId); } catch (e) { console.error(e); }
+                }
+            });
+        }
+    });
+}
+
+// Try server-side search by placing the search term as resignationId
+function findAndDisplayResignationById(resignationId) {
+    return new Promise(function(resolve) {
+        $.post('exit_management.php', { ajax_action: 'get_resignations', controller: 'resignation', status: 'all', page: 1, limit: 10, search: String(resignationId) }, function(response) {
+            const data = response && response.data ? response.data : [];
+            if (Array.isArray(data) && data.some(r => String(r.id) === String(resignationId))) {
+                // Render page 1 with search term to show the result
+                try { loadResignationsTable('all', 1, String(resignationId)); } catch (e) {}
+                // open modal after short delay to allow rendering
+                setTimeout(function() { try { showResignationModal(resignationId); } catch (e) {} }, 600);
+                resolve(true);
+            } else {
+                resolve(false);
+            }
+        }, 'json').fail(function() { resolve(false); });
+    });
+}
+
+// Iterate pages to find which page contains the resignation id
+function locateResignationByPaging(resignationId) {
+    return new Promise(function(resolve) {
+        const limit = 10;
+        // first fetch page 1 to get total
+        $.post('exit_management.php', { ajax_action: 'get_resignations', controller: 'resignation', status: 'all', page: 1, limit: limit, search: '' }, function(response) {
+            if (!response || !response.total) { resolve(null); return; }
+            const total = parseInt(response.total, 10) || 0;
+            const totalPages = Math.ceil(total / limit);
+
+            let foundPage = null;
+            let pageChecks = [];
+            for (let p = 1; p <= totalPages; p++) {
+                pageChecks.push(p);
+            }
+
+            // sequentially check pages (keeps load predictable)
+            (function checkNext() {
+                const p = pageChecks.shift();
+                if (!p) { resolve(foundPage); return; }
+                $.post('exit_management.php', { ajax_action: 'get_resignations', controller: 'resignation', status: 'all', page: p, limit: limit, search: '' }, function(resp) {
+                    const rows = resp && resp.data ? resp.data : [];
+                    if (Array.isArray(rows) && rows.some(r => String(r.id) === String(resignationId))) {
+                        foundPage = p;
+                        resolve(foundPage);
+                    } else {
+                        setTimeout(checkNext, 120); // small delay
+                    }
+                }, 'json').fail(function() { resolve(foundPage); });
+            })();
+        }, 'json').fail(function() { resolve(null); });
+    });
+}
+
+// Load Action Required list
+function loadActionRequiredList() {
+    $.post('exit_management.php', { ajax_action: 'get_action_items' }, function(response) {
+        const container = $('#action-required-list');
+        container.empty();
+
+        const items = response && response.data ? response.data : [];
+        if (!items || !items.length) {
+            container.append('<div class="list-group-item text-muted">No actions required</div>');
+            return;
+        }
+
+        items.forEach(function(item) {
+            const label = item.label || item.type || 'Action';
+            const emp = item.meta && (item.meta.full_name || item.meta.employee_name) ? (item.meta.full_name || item.meta.employee_name) : (item.employee_id || 'Unknown');
+            let badge = '';
+            switch (item.type) {
+                case 'resignation_approval': badge = '<span class="badge badge-primary ml-2">Approve</span>'; break;
+                case 'interview_scheduled': badge = '<span class="badge badge-info ml-2">Interview</span>'; break;
+                case 'knowledge_transfer_required': badge = '<span class="badge badge-primary ml-2">KT</span>'; break;
+                case 'settlement_pending': badge = '<span class="badge badge-secondary ml-2">Settle</span>'; break;
+                case 'documentation_incomplete': badge = '<span class="badge badge-secondary ml-2">Docs</span>'; break;
+                case 'post_exit_schedule': badge = '<span class="badge badge-info ml-2">Survey</span>'; break;
+                default: badge = '<span class="badge badge-light ml-2">Action</span>';
+            }
+
+            const desc = item.meta && (item.meta.reason || item.meta.status || item.meta.scheduled_at) ? (item.meta.reason || item.meta.status || item.meta.scheduled_at) : '';
+            const actionBtn = $('<button/>').addClass('btn btn-sm btn-outline-primary').text('View').on('click', function() { handleActionItemClick(item.type, item.id); });
+
+            const el = $(
+                `<div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <div style="font-weight:600">${escapeHtml(label)} ${badge}</div>
+                        <div class="small text-muted">${escapeHtml(emp)} ${escapeHtml(desc)}</div>
+                    </div>
+                    <div></div>
+                </div>`
+            );
+
+            el.find('div').last().append(actionBtn);
+            container.append(el);
+        });
+    }, 'json').fail(function(xhr, status, err) {
+        console.error('[loadActionRequiredList] AJAX fail:', status, err, xhr.responseText);
+        $('#action-required-list').empty().append('<div class="list-group-item text-danger">Failed to load actions</div>');
+    });
+}
+
+function handleActionItemClick(type, id) {
+    if (!type) return;
+    switch (type) {
+        case 'resignation_approval':
+            openResignationDetails(id); break;
+        case 'interview_scheduled':
+            try { if (typeof showInterviewModal === 'function') showInterviewModal(id); else openResignationDetails(id); } catch (e) { openResignationDetails(id); } break;
+        case 'knowledge_transfer_required':
+            try { if (typeof openTransferFromDocumentation === 'function') openTransferFromDocumentation(id); else openResignationDetails(id); } catch (e) { openResignationDetails(id); } break;
+        case 'settlement_pending':
+            try { if (typeof openSettlementFromDocumentation === 'function') openSettlementFromDocumentation(id); else openResignationDetails(id); } catch (e) { openResignationDetails(id); } break;
+        case 'documentation_incomplete':
+            openResignationDetails(id); break;
+        case 'post_exit_schedule':
+            try { showSurveyModal(); if (id) preselectSurveyCase(id); } catch (e) { openResignationDetails(id); } break;
+        default:
+            openResignationDetails(id);
+    }
+}
+
+// Load Recent & Active cases + feedback
+function loadRecentActiveCases(limit = 8) {
+    $.post('exit_management.php', { ajax_action: 'get_recent_active_cases', limit: limit }, function(response) {
+        // If a table body exists, render rows there; otherwise fall back to the list container
+        const tbody = $('#recent-active-tbody');
+        const listContainer = $('#recent-active-list');
+
+        if (!response) {
+            if (tbody.length) tbody.append('<tr><td colspan="6" class="text-danger">Failed to load</td></tr>');
+            if (listContainer.length) listContainer.html('<div class="small text-danger">Failed to load</div>');
+            return;
+        }
+
+        const resignations = response.recent_resignations || [];
+        const interviews = response.recent_interviews || [];
+        const feedback = response.recent_feedback || [];
+
+        if (tbody.length) tbody.empty();
+        if (listContainer.length) listContainer.empty();
+
+        // Combine and show recent items as rows in the table
+        const rows = [];
+        resignations.slice(0,8).forEach(function(r) {
+            rows.push({ employee: r.full_name || r.employee_name || r.employee_id || 'Unknown', type: 'Resignation', last_day: r.last_working_date ? r.last_working_date.split(' ')[0] : '-', stage: r.status || 'N/A', status: r.status || 'N/A', id: r.id });
+        });
+        interviews.slice(0,8).forEach(function(i) {
+            rows.push({ employee: i.full_name || i.employee_id || 'Unknown', type: 'Interview', last_day: i.scheduled_at ? i.scheduled_at.split(' ')[0] : '-', stage: i.status || 'N/A', status: i.status || 'N/A', id: i.interview_id });
+        });
+        feedback.slice(0,8).forEach(function(f) {
+            rows.push({ employee: f.employee_id || f.responder_id || 'Unknown', type: 'Feedback', last_day: f.created_at ? f.created_at.split(' ')[0] : '-', stage: f.status || 'N/A', status: f.status || 'N/A', id: f.id });
+        });
+
+        if (tbody.length) {
+            if (!rows.length) {
+                tbody.append('<tr><td colspan="6" class="text-muted">No recent cases</td></tr>');
+            } else {
+                rows.slice(0,10).forEach(function(r) {
+                    const viewBtn = `<button class="btn btn-sm btn-outline-primary" onclick="openResignationDetails(${r.id})">View</button>`;
+                    tbody.append(`<tr>
+                        <td>${escapeHtml(r.employee)}</td>
+                        <td>${escapeHtml(r.type)}</td>
+                        <td>${escapeHtml(r.last_day)}</td>
+                        <td>${escapeHtml(r.stage)}</td>
+                        <td>${escapeHtml(r.status)}</td>
+                        <td>${viewBtn}</td>
+                    </tr>`);
+                });
+            }
+        }
+
+        // Fallback list container (if page still shows old card)
+        if (listContainer.length) {
+            if (!rows.length) {
+                listContainer.html('<div class="small text-muted">No recent cases</div>');
+            } else {
+                const ul = $('<ul class="list-unstyled mb-0"/>');
+                rows.slice(0,8).forEach(function(r) {
+                    ul.append(`<li>${escapeHtml(r.employee)} - <span class="text-muted">${escapeHtml(r.type)} (${escapeHtml(r.last_day)})</span></li>`);
+                });
+                listContainer.append(ul);
+            }
+        }
+    }, 'json').fail(function(xhr, status, err) {
+        console.error('[loadRecentActiveCases] AJAX fail:', status, err, xhr.responseText);
+        const tbody = $('#recent-active-tbody');
+        const listContainer = $('#recent-active-list');
+        if (tbody.length) tbody.empty().append('<tr><td colspan="6" class="text-danger">Failed to load</td></tr>');
+        if (listContainer.length) listContainer.empty().append('<div class="small text-danger">Failed to load</div>');
+    });
+}
+
+// Attempt to preselect an exit case in the Survey modal by exit_case_id
+function preselectSurveyCase(exitCaseId) {
+    if (!exitCaseId) return;
+    const start = Date.now();
+    const maxMs = 3000;
+
+    (function poll() {
+        // find option with matching data-case-id
+        const opt = $('#surveyEmployeeSelect option').filter(function() {
+            try { return $(this).data('case-id') != null && String($(this).data('case-id')) === String(exitCaseId); } catch (e) { return false; }
+        }).first();
+
+        if (opt && opt.length) {
+            const val = opt.val();
+            if (val) {
+                $('#surveyEmployeeSelect').val(val).trigger('change');
+                // set hidden fields if available
+                const ct = opt.data('case-type') || '';
+                const cid = opt.data('case-id') || '';
+                if (ct) $('#surveyExitCaseType').val(ct);
+                if (cid) $('#surveyExitCaseId').val(cid);
+            }
+            return;
+        }
+
+        if (Date.now() - start < maxMs) {
+            setTimeout(poll, 200);
+        }
+    })();
 }
